@@ -77,6 +77,15 @@ cmake --build build/axtpctl
 ctest --test-dir build/axtpctl --output-on-failure
 ```
 
+## Documentation
+
+- [Runtime patterns](docs/AXTP_CPP_RUNTIME_PATTERNS.md)
+- [Execution flow](docs/AXTP_CPP_EXECUTION_FLOW.md)
+- [Core API design](docs/AXTP_CORE_API_DESIGN.md)
+- [SDK API design](docs/AXTP_SDK_API_DESIGN.md)
+- [axtpctl command design](docs/AXTPCTL_COMMAND_DESIGN.md)
+- [C++ style guide](docs/AXTP_CPP_STYLE.md)
+
 ## Spec Lock Checks
 
 ```bash

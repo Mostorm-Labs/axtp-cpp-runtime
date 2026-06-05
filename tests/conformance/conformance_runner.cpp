@@ -650,7 +650,10 @@ int main(int argc, char** argv) {
         return 2;
     }
 
-    const std::string manifestPath = std::string(argv[1]) + "/conformance/manifest.yaml";
+    std::string manifestPath = std::string(argv[1]) + "/docs/conformance/manifest.yaml";
+    if (!fileExists(manifestPath)) {
+        manifestPath = std::string(argv[1]) + "/conformance/manifest.yaml";
+    }
     if (!fileExists(manifestPath)) {
         std::fprintf(stderr, "missing conformance manifest: %s\n", manifestPath.c_str());
         return 2;

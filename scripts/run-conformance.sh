@@ -12,7 +12,16 @@ if [[ -z "$spec_path" ]]; then
   fi
 fi
 
-if [[ -z "$spec_path" || ! -f "$spec_path/conformance/manifest.yaml" ]]; then
+conformance_dir=""
+if [[ -n "$spec_path" ]]; then
+  if [[ -f "$spec_path/docs/conformance/manifest.yaml" ]]; then
+    conformance_dir="$spec_path/docs/conformance"
+  elif [[ -f "$spec_path/conformance/manifest.yaml" ]]; then
+    conformance_dir="$spec_path/conformance"
+  fi
+fi
+
+if [[ -z "$spec_path" || -z "$conformance_dir" ]]; then
   echo "AXTP conformance manifest not found. Set AXTP_SPEC_PATH or checkout third_party/axtp-spec." >&2
   exit 2
 fi
@@ -37,7 +46,7 @@ cmake --build "$build_dir" --target axtp_conformance_runner
 mkdir -p "$result_dir"
 "$build_dir/axtp_conformance_runner" "$spec_path" "$result_path" "$profile_path"
 
-node - "$spec_path/conformance/schemas/conformance-result.schema.json" "$result_path" <<'NODE'
+node - "$conformance_dir/schemas/conformance-result.schema.json" "$result_path" <<'NODE'
 const fs = require("node:fs");
 const [schemaPath, resultPath] = process.argv.slice(2);
 JSON.parse(fs.readFileSync(schemaPath, "utf8"));

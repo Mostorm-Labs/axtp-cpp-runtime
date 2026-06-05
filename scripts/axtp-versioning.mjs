@@ -295,7 +295,7 @@ async function writeVersionMetadata(runtimeName) {
     inputs: {
       registryHash: await hashDirectory(path.join(specRoot, "registry")),
       schemasHash: await hashDirectory(path.join(specRoot, "schemas")),
-      conformanceHash: await hashDirectory(path.join(specRoot, "conformance"))
+      conformanceHash: (await hashDirectory(path.join(specRoot, "docs", "conformance"))) ?? await hashDirectory(path.join(specRoot, "conformance"))
     }
   };
   const manifestPath = path.join(root, "generated/axtp_generated_manifest.json");
