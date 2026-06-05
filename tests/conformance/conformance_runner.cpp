@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <fstream>
 #include <functional>
+#include <memory>
 #include <optional>
 #include <queue>
 #include <sstream>
@@ -697,4 +698,3 @@ int main(int argc, char** argv) {
     }
     return 0;
 }
-
