@@ -56,6 +56,31 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
+      - name: Resolve locked AXTP spec tag
+        if: steps.guard.outputs.should_run == 'true'
+        id: spec_lock
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          spec_tag="$(awk '/^[[:space:]]+tag:/ { value = $0; sub("^[[:space:]]+tag:[[:space:]]*", "", value); gsub(/^"/, "", value); gsub(/"$/, "", value); print value; exit }' AXTP_SPEC.lock.yaml)"
+          if [[ ! "$spec_tag" =~ ^spec/v[0-9]+.[0-9]+.[0-9]+$ ]]; then
+            echo "AXTP_SPEC.lock.yaml tag must match spec/vMAJOR.MINOR.PATCH: $spec_tag" >&2
+            exit 2
+          fi
+
+          echo "spec_tag=$spec_tag" >> "$GITHUB_OUTPUT"
+          echo "AXTP_SPEC_TAG=$spec_tag" >> "$GITHUB_ENV"
+
+      - name: Checkout AXTP spec
+        if: steps.guard.outputs.should_run == 'true'
+        uses: actions/checkout@v4
+        with:
+          repository: Mostorm-Labs/axtp
+          ref: ${{ steps.spec_lock.outputs.spec_tag }}
+          path: third_party/axtp-spec
+          persist-credentials: false
+
       - name: Setup Node.js
         if: steps.guard.outputs.should_run == 'true'
         uses: actions/setup-node@v4
@@ -96,7 +121,7 @@ jobs:
           set -euo pipefail
           pnpm --dir generators install --frozen-lockfile
           pnpm --dir generators build
-          pnpm --dir generators test
+          AXTP_SPEC_PATH="$GITHUB_WORKSPACE/third_party/axtp-spec" pnpm --dir generators test
 
       - name: Root package checks
         if: steps.guard.outputs.should_run == 'true'
@@ -150,7 +175,7 @@ jobs:
             ctest --test-dir build --output-on-failure
           elif [[ -f core/CMakeLists.txt ]]; then
             sudo apt-get update
-            sudo apt-get install -y libboost-json-dev
+            sudo apt-get install -y libboost-json-dev libudev-dev libusb-1.0-0-dev
             cmake -S core -B build/core
             cmake --build build/core
             ctest --test-dir build/core --output-on-failure
@@ -167,18 +192,30 @@ jobs:
       - name: Generated mock server checks
         if: steps.guard.outputs.should_run == 'true'
         shell: bash
+        env:
+          AXTP_RUNTIME_AUTOMATION_TOKEN: ${{ secrets.AXTP_RUNTIME_AUTOMATION_TOKEN }}
         run: |
           set -euo pipefail
           if [[ -f generated/node-mock-server/package.json ]]; then
-            pnpm --dir generated/node-mock-server install
+            if [[ ! -d ../axtp-ts-runtime ]]; then
+              runtime_url="https://github.com/Mostorm-Labs/axtp-ts-runtime.git"
+              if [[ -n "${AXTP_RUNTIME_AUTOMATION_TOKEN:-}" ]]; then
+                runtime_url="https://x-access-token:${AXTP_RUNTIME_AUTOMATION_TOKEN}@github.com/Mostorm-Labs/axtp-ts-runtime.git"
+              fi
+              git clone --depth 1 "$runtime_url" ../axtp-ts-runtime
+            fi
+            pnpm --dir ../axtp-ts-runtime install --frozen-lockfile
+            pnpm --dir ../axtp-ts-runtime build
+            pnpm --dir generated/node-mock-server install --no-lockfile
             pnpm --dir generated/node-mock-server build
             pnpm --dir generated/node-mock-server test
+            rm -f generated/node-mock-server/pnpm-lock.yaml
           else
             echo "No generated Node mock server package; skipping."
           fi
           if [[ -f generated/cpp-mock-server/CMakeLists.txt && -d ../axtp-cpp-runtime ]]; then
             sudo apt-get update
-            sudo apt-get install -y libboost-json-dev
+            sudo apt-get install -y libboost-json-dev libudev-dev libusb-1.0-0-dev
             cmake -S generated/cpp-mock-server -B build/generated-cpp-mock-server
             cmake --build build/generated-cpp-mock-server
             ctest --test-dir build/generated-cpp-mock-server --output-on-failure
@@ -203,7 +240,7 @@ jobs:
         if: steps.guard.outputs.should_run == 'true'
         shell: bash
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.AXTP_RUNTIME_AUTOMATION_TOKEN || github.token }}
           PR_URL: ${{ github.event.pull_request.html_url }}
         run: |
           set -euo pipefail
