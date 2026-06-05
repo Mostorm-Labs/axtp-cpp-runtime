@@ -11,6 +11,7 @@
 ## Runtime
 
 - Runtime Version: `{{RUNTIME_VERSION}}`
+- Runtime Tag: `v{{RUNTIME_VERSION}}`
 - Runtime Commit: `{{RUNTIME_COMMIT}}`
 
 ## Artifacts

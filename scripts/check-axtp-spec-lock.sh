@@ -37,13 +37,29 @@ version="$(require_field version)"
 commit="$(require_field commit)"
 compatibility="$(require_field compatibility)"
 
-if [[ "$tag" == "main" ]]; then
-  echo "AXTP Spec lock must not use main as a runtime dependency" >&2
+if [[ "$repository" != "https://github.com/Mostorm-Labs/axtp" ]]; then
+  echo "AXTP Spec repository must be https://github.com/Mostorm-Labs/axtp" >&2
   exit 1
 fi
 
-if [[ "$tag" != "unreleased" && ! "$tag" =~ ^spec/v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-  echo "AXTP Spec tag must be unreleased or spec/vMAJOR.MINOR.PATCH" >&2
+if [[ "$tag" == "main" || "$tag" == "unreleased" ]]; then
+  echo "AXTP Spec lock must use a released spec/vMAJOR.MINOR.PATCH tag" >&2
+  exit 1
+fi
+
+if [[ ! "$tag" =~ ^spec/v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+  echo "AXTP Spec tag must match spec/vMAJOR.MINOR.PATCH" >&2
+  exit 1
+fi
+
+tag_version="${tag#spec/v}"
+if [[ "$version" != "$tag_version" ]]; then
+  echo "AXTP Spec lock version $version does not match tag $tag" >&2
+  exit 1
+fi
+
+if [[ -z "$commit" ]]; then
+  echo "AXTP Spec lock commit must not be empty" >&2
   exit 1
 fi
 

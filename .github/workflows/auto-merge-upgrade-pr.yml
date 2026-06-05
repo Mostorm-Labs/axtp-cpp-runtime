@@ -1,0 +1,217 @@
+name: Auto Merge AXTP Spec Upgrade PR
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Guard upgrade PR
+        id: guard
+        shell: bash
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          BASE_REPO: ${{ github.repository }}
+          DRAFT: ${{ github.event.pull_request.draft }}
+        run: |
+          set -euo pipefail
+
+          if [[ "$DRAFT" == "true" ]]; then
+            echo "should_run=false" >> "$GITHUB_OUTPUT"
+            echo "Draft PR; skipping auto-merge."
+            exit 0
+          fi
+
+          if [[ "$HEAD_REPO" != "$BASE_REPO" ]]; then
+            echo "should_run=false" >> "$GITHUB_OUTPUT"
+            echo "PR is not from this repository; skipping auto-merge."
+            exit 0
+          fi
+
+          if [[ ! "$HEAD_REF" =~ ^automation/upgrade-axtp-spec-v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "should_run=false" >> "$GITHUB_OUTPUT"
+            echo "PR branch is not an AXTP Spec automation branch; skipping auto-merge."
+            exit 0
+          fi
+
+          if [[ ! "$PR_TITLE" =~ ^chore:\ upgrade\ AXTP\ Spec\ to\ spec/v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "should_run=false" >> "$GITHUB_OUTPUT"
+            echo "PR title is not an AXTP Spec upgrade title; skipping auto-merge."
+            exit 0
+          fi
+
+          echo "should_run=true" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout PR head
+        if: steps.guard.outputs.should_run == 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Setup Node.js
+        if: steps.guard.outputs.should_run == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup pnpm
+        if: steps.guard.outputs.should_run == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack prepare pnpm@11.3.0 --activate
+
+      - name: Setup Dart
+        if: steps.guard.outputs.should_run == 'true' && hashFiles('pubspec.yaml') != ''
+        uses: dart-lang/setup-dart@v1
+
+      - name: Setup Python
+        if: steps.guard.outputs.should_run == 'true' && hashFiles('pyproject.toml') != ''
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Version checks
+        if: steps.guard.outputs.should_run == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash -n scripts/*.sh
+          scripts/check-axtp-spec-lock.sh
+          scripts/check-generated-version.sh
+
+      - name: Build generator
+        if: steps.guard.outputs.should_run == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm --dir generators install --frozen-lockfile
+          pnpm --dir generators build
+          pnpm --dir generators test
+
+      - name: Root package checks
+        if: steps.guard.outputs.should_run == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -f package.json ]]; then
+            pnpm install --frozen-lockfile
+            if node -e "const s=require('./package.json').scripts||{}; process.exit(s.build ? 0 : 1)"; then pnpm build; else echo "No root build script; skipping."; fi
+            if node -e "const s=require('./package.json').scripts||{}; process.exit(s.test ? 0 : 1)"; then pnpm test; else echo "No root test script; skipping."; fi
+            if node -e "const s=require('./package.json').scripts||{}; process.exit(s.lint ? 0 : 1)"; then pnpm lint; else echo "No root lint script; skipping."; fi
+          else
+            echo "No root package.json; skipping root package checks."
+          fi
+
+      - name: Dart checks
+        if: steps.guard.outputs.should_run == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -f pubspec.yaml ]]; then
+            dart pub get
+            dart analyze lib test tool
+            dart test
+            if [[ -f tool/smoke.dart ]]; then dart run tool/smoke.dart; else echo "No tool/smoke.dart; skipping Dart smoke check."; fi
+          else
+            echo "No pubspec.yaml; skipping Dart checks."
+          fi
+
+      - name: Python checks
+        if: steps.guard.outputs.should_run == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -f pyproject.toml ]]; then
+            python -m pip install --upgrade pip
+            python -m pip install -e ".[test]"
+            python -m pytest
+          else
+            echo "No pyproject.toml; skipping Python checks."
+          fi
+
+      - name: CMake checks
+        if: steps.guard.outputs.should_run == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -f CMakeLists.txt ]]; then
+            cmake -S . -B build
+            cmake --build build
+            ctest --test-dir build --output-on-failure
+          elif [[ -f core/CMakeLists.txt ]]; then
+            sudo apt-get update
+            sudo apt-get install -y libboost-json-dev
+            cmake -S core -B build/core
+            cmake --build build/core
+            ctest --test-dir build/core --output-on-failure
+            cmake -S sdk -B build/sdk
+            cmake --build build/sdk
+            ctest --test-dir build/sdk --output-on-failure
+            cmake -S tools/axtpctl -B build/axtpctl
+            cmake --build build/axtpctl
+            ctest --test-dir build/axtpctl --output-on-failure
+          else
+            echo "No CMake runtime layout; skipping CMake checks."
+          fi
+
+      - name: Generated mock server checks
+        if: steps.guard.outputs.should_run == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -f generated/node-mock-server/package.json ]]; then
+            pnpm --dir generated/node-mock-server install
+            pnpm --dir generated/node-mock-server build
+            pnpm --dir generated/node-mock-server test
+          else
+            echo "No generated Node mock server package; skipping."
+          fi
+          if [[ -f generated/cpp-mock-server/CMakeLists.txt && -d ../axtp-cpp-runtime ]]; then
+            sudo apt-get update
+            sudo apt-get install -y libboost-json-dev
+            cmake -S generated/cpp-mock-server -B build/generated-cpp-mock-server
+            cmake --build build/generated-cpp-mock-server
+            ctest --test-dir build/generated-cpp-mock-server --output-on-failure
+          elif [[ -f generated/cpp-mock-server/CMakeLists.txt ]]; then
+            echo "TODO: generated C++ mock server requires sibling axtp-cpp-runtime checkout; skipping in workflow."
+          else
+            echo "No generated C++ mock server project; skipping."
+          fi
+
+      - name: Conformance checks
+        if: steps.guard.outputs.should_run == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -x scripts/run-conformance.sh ]]; then
+            scripts/run-conformance.sh
+          else
+            echo "TODO: no dedicated conformance test script exists yet."
+          fi
+
+      - name: Enable GitHub auto-merge
+        if: steps.guard.outputs.should_run == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          set -euo pipefail
+
+          gh label create auto-merge --color 0E8A16 --description "Automatically merge checked AXTP Spec upgrade PRs" || true
+          gh pr edit "$PR_URL" --add-label auto-merge
+
+          if ! gh pr merge "$PR_URL" --auto --squash --delete-branch; then
+            gh pr comment "$PR_URL" --body "AXTP Spec upgrade checks passed, but GitHub auto-merge could not be enabled. Enable repository auto-merge and allow GitHub Actions to create and merge pull requests."
+            exit 1
+          fi

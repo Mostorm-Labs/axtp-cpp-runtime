@@ -7,15 +7,19 @@ if [[ $# -ne 1 ]]; then
 fi
 
 tag="$1"
-if [[ "$tag" == "main" || ! "$tag" =~ ^spec/v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-  echo "Expected a released AXTP Spec tag, for example spec/v0.1.0" >&2
+if [[ "$tag" == "main" || "$tag" == "unreleased" || ! "$tag" =~ ^spec/v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+  echo "Expected a released AXTP Spec tag, for example spec/v0.3.0" >&2
   exit 2
 fi
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 lock="$root/AXTP_SPEC.lock.yaml"
 repo="${AXTP_SPEC_REPOSITORY:-https://github.com/Mostorm-Labs/axtp.git}"
-commit="$(git ls-remote --tags "$repo" "refs/tags/$tag" | awk 'NR == 1 { print $1 }')"
+
+commit="$(git ls-remote "$repo" "refs/tags/$tag^{}" | awk 'NR == 1 { print $1 }')"
+if [[ -z "$commit" ]]; then
+  commit="$(git ls-remote "$repo" "refs/tags/$tag" | awk 'NR == 1 { print $1 }')"
+fi
 
 if [[ -z "$commit" ]]; then
   echo "Could not resolve $tag from $repo" >&2
@@ -46,6 +50,28 @@ if [[ -d "$root/third_party/axtp-spec/.git" ]]; then
   git -C "$root/third_party/axtp-spec" checkout "$tag"
 fi
 
+if [[ -f "$root/package.json" ]]; then
+  AXTP_RUNTIME_ROOT="$root" \
+  AXTP_SPEC_REPOSITORY_METADATA="https://github.com/Mostorm-Labs/axtp" \
+  AXTP_SPEC_TAG_METADATA="$tag" \
+  AXTP_SPEC_VERSION_METADATA="$version" \
+  node --input-type=module <<'NODE'
+import { readFile, writeFile } from "node:fs/promises";
+import path from "node:path";
+
+const packageJsonPath = path.join(process.env.AXTP_RUNTIME_ROOT, "package.json");
+const packageJson = JSON.parse(await readFile(packageJsonPath, "utf8"));
+packageJson.axtp = {
+  ...(packageJson.axtp ?? {}),
+  specRepository: process.env.AXTP_SPEC_REPOSITORY_METADATA,
+  specTag: process.env.AXTP_SPEC_TAG_METADATA,
+  specVersion: process.env.AXTP_SPEC_VERSION_METADATA
+};
+await writeFile(packageJsonPath, `${JSON.stringify(packageJson, null, 2)}\n`, "utf8");
+NODE
+  echo "Updated package.json AXTP spec metadata"
+fi
+
 spec_path="${AXTP_SPEC_PATH:-}"
 if [[ -z "$spec_path" && -d "$root/third_party/axtp-spec/registry" ]]; then
   spec_path="$root/third_party/axtp-spec"
@@ -53,7 +79,7 @@ fi
 
 if [[ -n "$spec_path" && -d "$spec_path/registry" ]]; then
   if [[ -x "$root/scripts/generate-axtp-artifacts.sh" && -f "$root/generators/dist/sourceLoader.js" ]]; then
-    echo "Regenerating AXTP C++ artifacts from $spec_path"
+    echo "Regenerating AXTP artifacts from $spec_path"
     AXTP_SPEC_PATH="$spec_path" "$root/scripts/generate-axtp-artifacts.sh"
   elif [[ -x "$root/scripts/generate-axtp-artifacts.sh" ]]; then
     echo "Skipping generated artifacts: generator is not built. Run: pnpm --dir generators build"

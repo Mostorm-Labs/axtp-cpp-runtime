@@ -331,6 +331,8 @@ async function checkVersionMetadata(runtimeName, { release = false, tagVersion =
   }
   if (tagVersion !== null) {
     assertEqual("runtime tag version", runtimeVersion, tagVersion);
+    assertEqual("AXTP Spec lock version", lock.version, tagVersion);
+    assertEqual("AXTP Spec lock tag", lock.tag, "spec/v" + tagVersion);
   }
   assertEqual("runtime.name", manifest.runtime.name, runtimeName);
   assertEqual("runtime.version", manifest.runtime.version, runtimeVersion);

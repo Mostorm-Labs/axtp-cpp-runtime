@@ -19,7 +19,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if [[ ! "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([-.+][0-9A-Za-z.-]+)?$ ]]; then
+          if [[ ! "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "Runtime release tags must match vMAJOR.MINOR.PATCH" >&2
             exit 2
           fi
@@ -216,5 +216,6 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          name: ${{ github.event.repository.name }} v${{ env.RUNTIME_VERSION }}
           body_path: ${{ runner.temp }}/release-notes.md
           files: release-artifacts/*

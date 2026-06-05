@@ -1,14 +1,22 @@
 name: Upgrade AXTP Spec
 
 on:
+  repository_dispatch:
+    types: [axtp_spec_released]
   workflow_dispatch:
     inputs:
       spec_tag:
         description: AXTP Spec tag, for example spec/v0.3.0
         required: true
         type: string
-  repository_dispatch:
-    types: [axtp-spec-released]
+      spec_version:
+        description: AXTP Spec version, for example 0.3.0
+        required: false
+        type: string
+      spec_commit:
+        description: AXTP Spec commit
+        required: false
+        type: string
 
 permissions:
   contents: write
@@ -16,23 +24,39 @@ permissions:
 
 env:
   SPEC_TAG: ${{ github.event.client_payload.spec_tag || github.event.inputs.spec_tag }}
-  SPEC_COMMIT: ${{ github.event.client_payload.spec_commit || '' }}
+  SPEC_VERSION_INPUT: ${{ github.event.client_payload.spec_version || github.event.inputs.spec_version || '' }}
+  SPEC_COMMIT: ${{ github.event.client_payload.spec_commit || github.event.inputs.spec_commit || '' }}
+  SPEC_REPOSITORY: ${{ github.event.client_payload.spec_repository || 'https://github.com/Mostorm-Labs/axtp' }}
 
 jobs:
   upgrade:
     runs-on: ubuntu-latest
     steps:
-      - name: Validate spec tag
+      - name: Validate dispatch payload
         shell: bash
         run: |
           set -euo pipefail
+
           if [[ -z "${SPEC_TAG:-}" || ! "$SPEC_TAG" =~ ^spec/v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "spec_tag must match spec/vMAJOR.MINOR.PATCH" >&2
             exit 2
           fi
-          echo "SPEC_VERSION=${SPEC_TAG#spec/v}" >> "$GITHUB_ENV"
 
-      - name: Checkout runtime repository
+          spec_version="${SPEC_TAG#spec/v}"
+          if [[ -n "${SPEC_VERSION_INPUT:-}" && "$SPEC_VERSION_INPUT" != "$spec_version" ]]; then
+            echo "spec_version $SPEC_VERSION_INPUT does not match $SPEC_TAG" >&2
+            exit 2
+          fi
+
+          if [[ "$SPEC_REPOSITORY" != "https://github.com/Mostorm-Labs/axtp" ]]; then
+            echo "spec_repository must be https://github.com/Mostorm-Labs/axtp" >&2
+            exit 2
+          fi
+
+          echo "SPEC_VERSION=$spec_version" >> "$GITHUB_ENV"
+          echo "PR_BRANCH=automation/upgrade-axtp-spec-v$spec_version" >> "$GITHUB_ENV"
+
+      - name: Checkout runtime/tool repository
         uses: actions/checkout@v4
 
       - name: Checkout AXTP spec
@@ -59,6 +83,22 @@ jobs:
         if: ${{ hashFiles('pubspec.yaml') != '' }}
         uses: dart-lang/setup-dart@v1
 
+      - name: Setup Python
+        if: ${{ hashFiles('pyproject.toml') != '' }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Upgrade spec lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          AXTP_SPEC_PATH="$GITHUB_WORKSPACE/third_party/axtp-spec" scripts/upgrade-axtp-spec.sh "$SPEC_TAG"
+
+      - name: Align runtime/tool version
+        shell: bash
+        run: scripts/set-runtime-version.sh "$SPEC_VERSION"
+
       - name: Build generator
         shell: bash
         run: |
@@ -66,11 +106,12 @@ jobs:
           pnpm --dir generators install --frozen-lockfile
           pnpm --dir generators build
 
-      - name: Upgrade spec lock and generated artifacts
+      - name: Generate runtime/tool artifacts
         shell: bash
         run: |
           set -euo pipefail
-          AXTP_SPEC_PATH="$GITHUB_WORKSPACE/third_party/axtp-spec" scripts/upgrade-axtp-spec.sh "$SPEC_TAG"
+          AXTP_SPEC_PATH="$GITHUB_WORKSPACE/third_party/axtp-spec" pnpm --dir generators test
+          AXTP_SPEC_PATH="$GITHUB_WORKSPACE/third_party/axtp-spec" pnpm --dir generators generate:runtime
 
       - name: Check spec lock
         shell: bash
@@ -90,27 +131,21 @@ jobs:
             exit 1
           fi
 
-      - name: Verify generator output
-        shell: bash
-        run: |
-          set -euo pipefail
-          AXTP_SPEC_PATH="$GITHUB_WORKSPACE/third_party/axtp-spec" pnpm --dir generators test
-          AXTP_SPEC_PATH="$GITHUB_WORKSPACE/third_party/axtp-spec" pnpm --dir generators generate:runtime
-
       - name: Check generated version metadata
         shell: bash
         run: scripts/check-generated-version.sh
 
-      - name: Runtime package checks
+      - name: Root package checks
         shell: bash
         run: |
           set -euo pipefail
           if [[ -f package.json ]]; then
             pnpm install --frozen-lockfile
-            pnpm build
-            pnpm test
+            if node -e "const s=require('./package.json').scripts||{}; process.exit(s.build ? 0 : 1)"; then pnpm build; else echo "No root build script; skipping."; fi
+            if node -e "const s=require('./package.json').scripts||{}; process.exit(s.test ? 0 : 1)"; then pnpm test; else echo "No root test script; skipping."; fi
+            if node -e "const s=require('./package.json').scripts||{}; process.exit(s.lint ? 0 : 1)"; then pnpm lint; else echo "No root lint script; skipping."; fi
           else
-            echo "No root package.json; skipping runtime package checks."
+            echo "No root package.json; skipping root package checks."
           fi
 
       - name: Dart checks
@@ -121,20 +156,32 @@ jobs:
             dart pub get
             dart analyze lib test tool
             dart test
-            if [[ -f tool/smoke.dart ]]; then
-              dart run tool/smoke.dart
-            else
-              echo "No tool/smoke.dart; skipping Dart smoke check."
-            fi
+            if [[ -f tool/smoke.dart ]]; then dart run tool/smoke.dart; else echo "No tool/smoke.dart; skipping Dart smoke check."; fi
           else
             echo "No pubspec.yaml; skipping Dart checks."
+          fi
+
+      - name: Python checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -f pyproject.toml ]]; then
+            python -m pip install --upgrade pip
+            python -m pip install -e ".[test]"
+            python -m pytest
+          else
+            echo "No pyproject.toml; skipping Python checks."
           fi
 
       - name: CMake checks
         shell: bash
         run: |
           set -euo pipefail
-          if [[ -f core/CMakeLists.txt ]]; then
+          if [[ -f CMakeLists.txt ]]; then
+            cmake -S . -B build
+            cmake --build build
+            ctest --test-dir build --output-on-failure
+          elif [[ -f core/CMakeLists.txt ]]; then
             sudo apt-get update
             sudo apt-get install -y libboost-json-dev
             cmake -S core -B build/core
@@ -148,6 +195,34 @@ jobs:
             ctest --test-dir build/axtpctl --output-on-failure
           else
             echo "No CMake runtime layout; skipping CMake checks."
+          fi
+
+      - name: Generated Node mock server checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -f generated/node-mock-server/package.json ]]; then
+            pnpm --dir generated/node-mock-server install
+            pnpm --dir generated/node-mock-server build
+            pnpm --dir generated/node-mock-server test
+          else
+            echo "No generated Node mock server package; skipping."
+          fi
+
+      - name: Generated C++ mock server checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -f generated/cpp-mock-server/CMakeLists.txt && -d ../axtp-cpp-runtime ]]; then
+            sudo apt-get update
+            sudo apt-get install -y libboost-json-dev
+            cmake -S generated/cpp-mock-server -B build/generated-cpp-mock-server
+            cmake --build build/generated-cpp-mock-server
+            ctest --test-dir build/generated-cpp-mock-server --output-on-failure
+          elif [[ -f generated/cpp-mock-server/CMakeLists.txt ]]; then
+            echo "TODO: generated C++ mock server requires sibling axtp-cpp-runtime checkout; skipping in workflow."
+          else
+            echo "No generated C++ mock server project; skipping."
           fi
 
       - name: Conformance checks
@@ -165,16 +240,40 @@ jobs:
         run: |
           set -euo pipefail
           cat > "$RUNNER_TEMP/axtp-spec-upgrade-pr.md" <<EOF
-          Upgrade AXTP Spec binding to $SPEC_TAG.
+          AXTP Spec tag: $SPEC_TAG
+          AXTP Spec version: $SPEC_VERSION
+          AXTP Spec commit: ${SPEC_COMMIT:-resolved by scripts/upgrade-axtp-spec.sh}
+          Runtime/tool target version: $SPEC_VERSION
+          Generated manifest: generated/axtp_generated_manifest.json
 
-          This workflow updated AXTP_SPEC.lock.yaml, regenerated runtime artifacts, and ran the available build/test/conformance checks. Repositories without a dedicated conformance script report a TODO in workflow logs.
+          This PR updates AXTP_SPEC.lock.yaml, aligns the runtime/tool version with the AXTP Spec version, regenerates runtime/tool artifacts, and runs the available build/test/conformance checks.
           EOF
 
       - name: Create upgrade PR
+        id: create_pr
         uses: peter-evans/create-pull-request@v7
         with:
-          branch: automation/upgrade-axtp-spec-${{ github.run_id }}
-          title: Upgrade AXTP Spec to ${{ env.SPEC_TAG }}
-          commit-message: Upgrade AXTP Spec to ${{ env.SPEC_TAG }}
+          token: ${{ secrets.AXTP_RUNTIME_AUTOMATION_TOKEN || github.token }}
+          branch: ${{ env.PR_BRANCH }}
+          title: chore: upgrade AXTP Spec to ${{ env.SPEC_TAG }}
+          commit-message: chore: upgrade AXTP Spec to ${{ env.SPEC_TAG }}
           body-path: ${{ runner.temp }}/axtp-spec-upgrade-pr.md
+          labels: axtp-spec-upgrade
           delete-branch: true
+
+      - name: Enable auto-merge for upgrade PR
+        if: steps.create_pr.outputs.pull-request-number != ''
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.AXTP_RUNTIME_AUTOMATION_TOKEN || github.token }}
+          PR_NUMBER: ${{ steps.create_pr.outputs.pull-request-number }}
+        run: |
+          set -euo pipefail
+
+          gh label create auto-merge --color 0E8A16 --description "Automatically merge checked AXTP Spec upgrade PRs" || true
+          gh pr edit "$PR_NUMBER" --add-label auto-merge
+
+          if ! gh pr merge "$PR_NUMBER" --auto --squash --delete-branch; then
+            gh pr comment "$PR_NUMBER" --body "AXTP Spec upgrade checks passed, but GitHub auto-merge could not be enabled. Enable repository auto-merge, allow GitHub Actions to create and merge pull requests, and configure AXTP_RUNTIME_AUTOMATION_TOKEN if pull_request workflows must run from automation PRs."
+            exit 1
+          fi

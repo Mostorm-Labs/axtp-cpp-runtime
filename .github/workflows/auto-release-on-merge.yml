@@ -1,0 +1,221 @@
+name: Tag Runtime Release After Spec Upgrade Merge
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  tag-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout runtime/tool repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect release-relevant changes
+        id: detect
+        shell: bash
+        env:
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          if [[ "$BEFORE" =~ ^0+$ ]] || ! git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+            changed="$(git show --name-only --format= "$AFTER")"
+          else
+            changed="$(git diff --name-only "$BEFORE" "$AFTER")"
+          fi
+
+          echo "$changed"
+          if echo "$changed" | grep -Eq '^(AXTP_SPEC\.lock\.yaml|generated/axtp_generated_manifest\.json|VERSION|CMakeLists\.txt|core/CMakeLists\.txt|pubspec\.yaml|package\.json|pyproject\.toml)$'; then
+            echo "should_release=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_release=false" >> "$GITHUB_OUTPUT"
+            echo "No AXTP Spec lock, generated manifest, or runtime/tool version changes detected."
+          fi
+
+      - name: Resolve runtime/tool version
+        if: steps.detect.outputs.should_release == 'true'
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          runtime_version="$(scripts/get-runtime-version.sh)"
+          if [[ ! "$runtime_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Runtime/tool version must match MAJOR.MINOR.PATCH for automated releases: $runtime_version" >&2
+            exit 2
+          fi
+
+          tag="v$runtime_version"
+          echo "runtime_version=$runtime_version" >> "$GITHUB_OUTPUT"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+          if git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null 2>&1; then
+            echo "tag_exists=true" >> "$GITHUB_OUTPUT"
+            echo "Tag $tag already exists; skipping."
+          else
+            echo "tag_exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup Node.js
+        if: steps.detect.outputs.should_release == 'true' && steps.version.outputs.tag_exists == 'false'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup pnpm
+        if: steps.detect.outputs.should_release == 'true' && steps.version.outputs.tag_exists == 'false'
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack prepare pnpm@11.3.0 --activate
+
+      - name: Setup Dart
+        if: steps.detect.outputs.should_release == 'true' && steps.version.outputs.tag_exists == 'false' && hashFiles('pubspec.yaml') != ''
+        uses: dart-lang/setup-dart@v1
+
+      - name: Setup Python
+        if: steps.detect.outputs.should_release == 'true' && steps.version.outputs.tag_exists == 'false' && hashFiles('pyproject.toml') != ''
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Version release checks
+        if: steps.detect.outputs.should_release == 'true' && steps.version.outputs.tag_exists == 'false'
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash -n scripts/*.sh
+          scripts/check-runtime-release.sh "${{ steps.version.outputs.runtime_version }}"
+          scripts/check-axtp-spec-lock.sh
+          scripts/check-generated-version.sh
+
+      - name: Build generator
+        if: steps.detect.outputs.should_release == 'true' && steps.version.outputs.tag_exists == 'false'
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm --dir generators install --frozen-lockfile
+          pnpm --dir generators build
+          pnpm --dir generators test
+
+      - name: Root package checks
+        if: steps.detect.outputs.should_release == 'true' && steps.version.outputs.tag_exists == 'false'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -f package.json ]]; then
+            pnpm install --frozen-lockfile
+            if node -e "const s=require('./package.json').scripts||{}; process.exit(s.build ? 0 : 1)"; then pnpm build; else echo "No root build script; skipping."; fi
+            if node -e "const s=require('./package.json').scripts||{}; process.exit(s.test ? 0 : 1)"; then pnpm test; else echo "No root test script; skipping."; fi
+            if node -e "const s=require('./package.json').scripts||{}; process.exit(s.lint ? 0 : 1)"; then pnpm lint; else echo "No root lint script; skipping."; fi
+          else
+            echo "No root package.json; skipping root package checks."
+          fi
+
+      - name: Dart checks
+        if: steps.detect.outputs.should_release == 'true' && steps.version.outputs.tag_exists == 'false'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -f pubspec.yaml ]]; then
+            dart pub get
+            dart analyze lib test tool
+            dart test
+            if [[ -f tool/smoke.dart ]]; then dart run tool/smoke.dart; else echo "No tool/smoke.dart; skipping Dart smoke check."; fi
+          else
+            echo "No pubspec.yaml; skipping Dart checks."
+          fi
+
+      - name: Python checks
+        if: steps.detect.outputs.should_release == 'true' && steps.version.outputs.tag_exists == 'false'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -f pyproject.toml ]]; then
+            python -m pip install --upgrade pip
+            python -m pip install -e ".[test]"
+            python -m pytest
+          else
+            echo "No pyproject.toml; skipping Python checks."
+          fi
+
+      - name: CMake checks
+        if: steps.detect.outputs.should_release == 'true' && steps.version.outputs.tag_exists == 'false'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -f CMakeLists.txt ]]; then
+            cmake -S . -B build
+            cmake --build build
+            ctest --test-dir build --output-on-failure
+          elif [[ -f core/CMakeLists.txt ]]; then
+            sudo apt-get update
+            sudo apt-get install -y libboost-json-dev
+            cmake -S core -B build/core
+            cmake --build build/core
+            ctest --test-dir build/core --output-on-failure
+            cmake -S sdk -B build/sdk
+            cmake --build build/sdk
+            ctest --test-dir build/sdk --output-on-failure
+            cmake -S tools/axtpctl -B build/axtpctl
+            cmake --build build/axtpctl
+            ctest --test-dir build/axtpctl --output-on-failure
+          else
+            echo "No CMake runtime layout; skipping CMake checks."
+          fi
+
+      - name: Generated mock server checks
+        if: steps.detect.outputs.should_release == 'true' && steps.version.outputs.tag_exists == 'false'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -f generated/node-mock-server/package.json ]]; then
+            pnpm --dir generated/node-mock-server install
+            pnpm --dir generated/node-mock-server build
+            pnpm --dir generated/node-mock-server test
+          else
+            echo "No generated Node mock server package; skipping."
+          fi
+          if [[ -f generated/cpp-mock-server/CMakeLists.txt && -d ../axtp-cpp-runtime ]]; then
+            sudo apt-get update
+            sudo apt-get install -y libboost-json-dev
+            cmake -S generated/cpp-mock-server -B build/generated-cpp-mock-server
+            cmake --build build/generated-cpp-mock-server
+            ctest --test-dir build/generated-cpp-mock-server --output-on-failure
+          elif [[ -f generated/cpp-mock-server/CMakeLists.txt ]]; then
+            echo "TODO: generated C++ mock server requires sibling axtp-cpp-runtime checkout; skipping in workflow."
+          else
+            echo "No generated C++ mock server project; skipping."
+          fi
+
+      - name: Conformance checks
+        if: steps.detect.outputs.should_release == 'true' && steps.version.outputs.tag_exists == 'false'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -x scripts/run-conformance.sh ]]; then
+            scripts/run-conformance.sh
+          else
+            echo "TODO: no dedicated conformance test script exists yet."
+          fi
+
+      - name: Create and push runtime/tool tag
+        if: steps.detect.outputs.should_release == 'true' && steps.version.outputs.tag_exists == 'false'
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="${{ steps.version.outputs.tag }}"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "$tag" -m "Release $tag"
+          git push origin "$tag"

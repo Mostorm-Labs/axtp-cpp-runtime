@@ -97,6 +97,27 @@ scripts/check-axtp-spec-lock.sh
 After upgrading, run generator checks, CMake/CTest, and conformance tests before
 merging. TODO: no dedicated C++ conformance test script exists yet.
 
+## Automated AXTP Spec Upgrade
+
+This repository is automatically upgraded when the AXTP Spec repository publishes a tag like `spec/vX.Y.Z`.
+
+Automation flow:
+
+1. Receive `axtp_spec_released` repository dispatch.
+2. Update `AXTP_SPEC.lock.yaml`.
+3. Set runtime/tool version to `X.Y.Z`.
+4. Generate code and `generated/axtp_generated_manifest.json`.
+5. Open an Upgrade PR.
+6. Auto-merge the PR after checks pass.
+7. Create tag `vX.Y.Z`.
+8. Create a GitHub Release.
+
+AXTP Spec tag: `spec/vX.Y.Z`
+
+Runtime/tool tag: `vX.Y.Z`
+
+Repository settings must allow GitHub Actions to create PRs, enable auto-merge, create tags, and create releases. Configure `AXTP_RUNTIME_AUTOMATION_TOKEN` when PR-created-by-actions workflows must trigger downstream pull_request checks.
+
 ## Local Generator
 
 This repository maintains its own generator under `generators/`.
@@ -138,9 +159,7 @@ Runtime releases are created from runtime tags:
 - Runtime tags: `vX.Y.Z`
 - AXTP Spec tags: `spec/vX.Y.Z`
 
-AXTP Spec updates create upgrade PRs. They do not automatically create runtime
-releases. A runtime release is created only after maintainers tag this runtime
-repository with `vX.Y.Z`.
+AXTP Spec updates create automated upgrade PRs. After checks pass, the PR is auto-merged; the main branch workflow then creates the matching `vX.Y.Z` runtime/tool tag, and that tag triggers the GitHub Release.
 
 Each release records runtime version, AXTP Spec tag, AXTP Spec commit, generator
 version, and the generated manifest.
