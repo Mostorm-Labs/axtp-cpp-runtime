@@ -46,5 +46,23 @@ if [[ -d "$root/third_party/axtp-spec/.git" ]]; then
   git -C "$root/third_party/axtp-spec" checkout "$tag"
 fi
 
+spec_path="${AXTP_SPEC_PATH:-}"
+if [[ -z "$spec_path" && -d "$root/third_party/axtp-spec/registry" ]]; then
+  spec_path="$root/third_party/axtp-spec"
+fi
+
+if [[ -n "$spec_path" && -d "$spec_path/registry" ]]; then
+  if [[ -x "$root/scripts/generate-axtp-artifacts.sh" && -f "$root/generators/dist/sourceLoader.js" ]]; then
+    echo "Regenerating AXTP C++ artifacts from $spec_path"
+    AXTP_SPEC_PATH="$spec_path" "$root/scripts/generate-axtp-artifacts.sh"
+  elif [[ -x "$root/scripts/generate-axtp-artifacts.sh" ]]; then
+    echo "Skipping generated artifacts: generator is not built. Run: pnpm --dir generators build"
+  else
+    echo "Skipping generated artifacts: scripts/generate-axtp-artifacts.sh is missing"
+  fi
+else
+  echo "Skipping generated artifacts: no AXTP spec checkout found via AXTP_SPEC_PATH or third_party/axtp-spec"
+fi
+
 echo "Updated AXTP_SPEC.lock.yaml to $tag at $commit"
 echo "No commit was created."

@@ -1,0 +1,161 @@
+name: Upgrade AXTP Spec
+
+on:
+  workflow_dispatch:
+    inputs:
+      spec_tag:
+        description: AXTP Spec tag, for example spec/v0.3.0
+        required: true
+        type: string
+  repository_dispatch:
+    types: [axtp-spec-released]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  SPEC_TAG: ${{ github.event.client_payload.spec_tag || github.event.inputs.spec_tag }}
+
+jobs:
+  upgrade:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate spec tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${SPEC_TAG:-}" || ! "$SPEC_TAG" =~ ^spec/v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "spec_tag must match spec/vMAJOR.MINOR.PATCH" >&2
+            exit 2
+          fi
+          echo "SPEC_VERSION=${SPEC_TAG#spec/v}" >> "$GITHUB_ENV"
+
+      - name: Checkout runtime repository
+        uses: actions/checkout@v4
+
+      - name: Checkout AXTP spec
+        uses: actions/checkout@v4
+        with:
+          repository: Mostorm-Labs/axtp
+          ref: ${{ env.SPEC_TAG }}
+          path: third_party/axtp-spec
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup pnpm
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack prepare pnpm@11.3.0 --activate
+
+      - name: Setup Dart
+        if: ${{ hashFiles('pubspec.yaml') != '' }}
+        uses: dart-lang/setup-dart@v1
+
+      - name: Build generator
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm --dir generators install --frozen-lockfile
+          pnpm --dir generators build
+
+      - name: Upgrade spec lock and generated artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          AXTP_SPEC_PATH="$GITHUB_WORKSPACE/third_party/axtp-spec" scripts/upgrade-axtp-spec.sh "$SPEC_TAG"
+
+      - name: Check spec lock
+        shell: bash
+        run: scripts/check-axtp-spec-lock.sh
+
+      - name: Verify generator output
+        shell: bash
+        run: |
+          set -euo pipefail
+          AXTP_SPEC_PATH="$GITHUB_WORKSPACE/third_party/axtp-spec" pnpm --dir generators test
+          AXTP_SPEC_PATH="$GITHUB_WORKSPACE/third_party/axtp-spec" pnpm --dir generators generate:runtime
+
+      - name: Runtime package checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -f package.json ]]; then
+            pnpm install --frozen-lockfile
+            pnpm build
+            pnpm test
+          else
+            echo "No root package.json; skipping runtime package checks."
+          fi
+
+      - name: Dart checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -f pubspec.yaml ]]; then
+            dart pub get
+            dart analyze lib test tool
+            dart test
+            if [[ -f tool/smoke.dart ]]; then
+              dart run tool/smoke.dart
+            else
+              echo "No tool/smoke.dart; skipping Dart smoke check."
+            fi
+          else
+            echo "No pubspec.yaml; skipping Dart checks."
+          fi
+
+      - name: CMake checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -f core/CMakeLists.txt ]]; then
+            sudo apt-get update
+            sudo apt-get install -y libboost-json-dev
+            cmake -S core -B build/core
+            cmake --build build/core
+            ctest --test-dir build/core --output-on-failure
+            cmake -S sdk -B build/sdk
+            cmake --build build/sdk
+            ctest --test-dir build/sdk --output-on-failure
+            cmake -S tools/axtpctl -B build/axtpctl
+            cmake --build build/axtpctl
+            ctest --test-dir build/axtpctl --output-on-failure
+          else
+            echo "No CMake runtime layout; skipping CMake checks."
+          fi
+
+      - name: Conformance checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -x scripts/run-conformance.sh ]]; then
+            scripts/run-conformance.sh
+          else
+            echo "TODO: no dedicated conformance test script exists yet."
+          fi
+
+      - name: Write PR body
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > "$RUNNER_TEMP/axtp-spec-upgrade-pr.md" <<EOF
+          Upgrade AXTP Spec binding to $SPEC_TAG.
+
+          This workflow updated AXTP_SPEC.lock.yaml, regenerated runtime artifacts, and ran the available build/test/conformance checks. Repositories without a dedicated conformance script report a TODO in workflow logs.
+          EOF
+
+      - name: Create upgrade PR
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: automation/upgrade-axtp-spec-${{ github.run_id }}
+          title: Upgrade AXTP Spec to ${{ env.SPEC_TAG }}
+          commit-message: Upgrade AXTP Spec to ${{ env.SPEC_TAG }}
+          body-path: ${{ runner.temp }}/axtp-spec-upgrade-pr.md
+          delete-branch: true
