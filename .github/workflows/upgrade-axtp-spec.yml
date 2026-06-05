@@ -255,8 +255,8 @@ jobs:
         with:
           token: ${{ secrets.AXTP_RUNTIME_AUTOMATION_TOKEN || github.token }}
           branch: ${{ env.PR_BRANCH }}
-          title: chore: upgrade AXTP Spec to ${{ env.SPEC_TAG }}
-          commit-message: chore: upgrade AXTP Spec to ${{ env.SPEC_TAG }}
+          title: "chore: upgrade AXTP Spec to ${{ env.SPEC_TAG }}"
+          commit-message: "chore: upgrade AXTP Spec to ${{ env.SPEC_TAG }}"
           body-path: ${{ runner.temp }}/axtp-spec-upgrade-pr.md
           labels: axtp-spec-upgrade
           delete-branch: true
