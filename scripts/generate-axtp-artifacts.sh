@@ -33,3 +33,5 @@ const outDir = path.join(root, "core/include/generated");
 await emitCppFiles(spec, outDir);
 console.log(`[OK] generated C++ artifacts: ${outDir}`);
 NODE
+
+AXTP_SPEC_PATH="$spec" node "$root/scripts/axtp-versioning.mjs" generate --runtime-name axtp-cpp-runtime

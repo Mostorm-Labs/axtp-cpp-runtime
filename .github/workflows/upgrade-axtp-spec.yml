@@ -16,6 +16,7 @@ permissions:
 
 env:
   SPEC_TAG: ${{ github.event.client_payload.spec_tag || github.event.inputs.spec_tag }}
+  SPEC_COMMIT: ${{ github.event.client_payload.spec_commit || '' }}
 
 jobs:
   upgrade:
@@ -75,12 +76,30 @@ jobs:
         shell: bash
         run: scripts/check-axtp-spec-lock.sh
 
+      - name: Check dispatch payload commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${SPEC_COMMIT:-}" ]]; then
+            echo "No spec_commit payload provided; skipping payload commit check."
+            exit 0
+          fi
+          locked_commit="$(awk '/^[[:space:]]+commit:/ { value = $0; sub("^[[:space:]]+commit:[[:space:]]*", "", value); gsub(/^"/, "", value); gsub(/"$/, "", value); print value; exit }' AXTP_SPEC.lock.yaml)"
+          if [[ "$locked_commit" != "$SPEC_COMMIT" ]]; then
+            echo "AXTP_SPEC.lock.yaml commit $locked_commit does not match dispatch payload $SPEC_COMMIT" >&2
+            exit 1
+          fi
+
       - name: Verify generator output
         shell: bash
         run: |
           set -euo pipefail
           AXTP_SPEC_PATH="$GITHUB_WORKSPACE/third_party/axtp-spec" pnpm --dir generators test
           AXTP_SPEC_PATH="$GITHUB_WORKSPACE/third_party/axtp-spec" pnpm --dir generators generate:runtime
+
+      - name: Check generated version metadata
+        shell: bash
+        run: scripts/check-generated-version.sh
 
       - name: Runtime package checks
         shell: bash

@@ -1,0 +1,220 @@
+name: Release Runtime
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout runtime repository
+        uses: actions/checkout@v4
+
+      - name: Validate runtime tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([-.+][0-9A-Za-z.-]+)?$ ]]; then
+            echo "Runtime release tags must match vMAJOR.MINOR.PATCH" >&2
+            exit 2
+          fi
+          echo "RUNTIME_VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup pnpm
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack prepare pnpm@11.3.0 --activate
+
+      - name: Setup Dart
+        if: ${{ hashFiles('pubspec.yaml') != '' }}
+        uses: dart-lang/setup-dart@v1
+
+      - name: Setup Python
+        if: ${{ hashFiles('pyproject.toml') != '' }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Build generator
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm --dir generators install --frozen-lockfile
+          pnpm --dir generators build
+
+      - name: Version release checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash -n scripts/*.sh
+          scripts/check-runtime-release.sh "$RUNTIME_VERSION"
+
+      - name: Root package checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -f package.json ]]; then
+            pnpm install --frozen-lockfile
+            if node -e "const s=require('./package.json').scripts||{}; process.exit(s.build ? 0 : 1)"; then
+              pnpm build
+            else
+              echo "No root build script; skipping."
+            fi
+            if node -e "const s=require('./package.json').scripts||{}; process.exit(s.test ? 0 : 1)"; then
+              pnpm test
+            else
+              echo "No root test script; skipping."
+            fi
+            if node -e "const s=require('./package.json').scripts||{}; process.exit(s.lint ? 0 : 1)"; then
+              pnpm lint
+            else
+              echo "No root lint script; skipping."
+            fi
+          else
+            echo "No root package.json; skipping root package checks."
+          fi
+
+      - name: Dart checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -f pubspec.yaml ]]; then
+            dart pub get
+            dart analyze lib test tool
+            dart test
+            if [[ -f tool/smoke.dart ]]; then
+              dart run tool/smoke.dart
+            else
+              echo "No tool/smoke.dart; skipping Dart smoke check."
+            fi
+          else
+            echo "No pubspec.yaml; skipping Dart checks."
+          fi
+
+      - name: Python checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -f pyproject.toml ]]; then
+            python -m pip install --upgrade pip
+            python -m pip install -e ".[test]"
+            python -m pytest
+          else
+            echo "No pyproject.toml; skipping Python checks."
+          fi
+
+      - name: CMake checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -f CMakeLists.txt ]]; then
+            cmake -S . -B build
+            cmake --build build
+            ctest --test-dir build --output-on-failure
+          elif [[ -f core/CMakeLists.txt ]]; then
+            sudo apt-get update
+            sudo apt-get install -y libboost-json-dev
+            cmake -S core -B build/core
+            cmake --build build/core
+            ctest --test-dir build/core --output-on-failure
+            cmake -S sdk -B build/sdk
+            cmake --build build/sdk
+            ctest --test-dir build/sdk --output-on-failure
+            cmake -S tools/axtpctl -B build/axtpctl
+            cmake --build build/axtpctl
+            ctest --test-dir build/axtpctl --output-on-failure
+          else
+            echo "No CMake runtime layout; skipping CMake checks."
+          fi
+
+      - name: Generated Node mock server checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -f generated/node-mock-server/package.json ]]; then
+            pnpm --dir generated/node-mock-server install
+            pnpm --dir generated/node-mock-server build
+            pnpm --dir generated/node-mock-server test
+          else
+            echo "No generated Node mock server package; skipping."
+          fi
+
+      - name: Generated C++ mock server checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -f generated/cpp-mock-server/CMakeLists.txt && -d ../axtp-cpp-runtime ]]; then
+            sudo apt-get update
+            sudo apt-get install -y libboost-json-dev
+            cmake -S generated/cpp-mock-server -B build/generated-cpp-mock-server
+            cmake --build build/generated-cpp-mock-server
+            ctest --test-dir build/generated-cpp-mock-server --output-on-failure
+          elif [[ -f generated/cpp-mock-server/CMakeLists.txt ]]; then
+            echo "TODO: generated C++ mock server requires sibling axtp-cpp-runtime checkout; skipping in release workflow."
+          else
+            echo "No generated C++ mock server project; skipping."
+          fi
+
+      - name: Conformance checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -x scripts/run-conformance.sh ]]; then
+            scripts/run-conformance.sh
+          else
+            echo "TODO: no dedicated conformance test script exists yet."
+          fi
+
+      - name: Package release artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          runtime_name="${GITHUB_REPOSITORY#*/}"
+          mkdir -p release-artifacts
+          items=()
+          for item in \
+            generated/axtp_generated_manifest.json \
+            generated \
+            include/generated \
+            core/include/generated \
+            sdk/include/generated \
+            lib/src/generated \
+            src/generated \
+            src/axtp_runtime/generated \
+            fixtures/generated \
+            fixtures/test-vectors; do
+            if [[ -e "$item" ]]; then
+              items+=("$item")
+            fi
+          done
+          if [[ ${#items[@]} -eq 0 ]]; then
+            echo "No generated artifacts found." >&2
+            exit 1
+          fi
+          tar --exclude='*/node_modules' --exclude='*/dist' -czf "release-artifacts/${runtime_name}-${RUNTIME_VERSION}-generated.tar.gz" "${items[@]}"
+          cp generated/axtp_generated_manifest.json release-artifacts/axtp_generated_manifest.json
+
+      - name: Write release notes
+        shell: bash
+        run: |
+          set -euo pipefail
+          runtime_name="${GITHUB_REPOSITORY#*/}"
+          node scripts/axtp-versioning.mjs release-notes --runtime-name "$runtime_name" --out "$RUNNER_TEMP/release-notes.md"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: ${{ runner.temp }}/release-notes.md
+          files: release-artifacts/*

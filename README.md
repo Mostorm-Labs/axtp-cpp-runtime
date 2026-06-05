@@ -116,3 +116,31 @@ To move to a later released spec tag:
 ```bash
 scripts/upgrade-axtp-spec.sh spec/v0.1.0
 ```
+
+## Versioning
+
+This repository keeps AXTP Spec, runtime, and generated artifact versions
+separate:
+
+- AXTP Spec tags use `spec/vX.Y.Z` and are recorded in `AXTP_SPEC.lock.yaml`.
+- Runtime releases use `vX.Y.Z`.
+- Generated artifact metadata is recorded in `generated/axtp_generated_manifest.json`.
+
+Use `scripts/check-generated-version.sh` to verify that the lock file,
+generated manifest, runtime version, and generated constants are aligned.
+
+See `docs/generator/GENERATED_VERSIONING.md` for generator versioning details.
+
+## Release
+
+Runtime releases are created from runtime tags:
+
+- Runtime tags: `vX.Y.Z`
+- AXTP Spec tags: `spec/vX.Y.Z`
+
+AXTP Spec updates create upgrade PRs. They do not automatically create runtime
+releases. A runtime release is created only after maintainers tag this runtime
+repository with `vX.Y.Z`.
+
+Each release records runtime version, AXTP Spec tag, AXTP Spec commit, generator
+version, and the generated manifest.
