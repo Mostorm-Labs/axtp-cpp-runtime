@@ -1,0 +1,5 @@
+{
+  "methods": [
+    { "id": "0x90010001", "name": "vendor.echo" }
+  ]
+}

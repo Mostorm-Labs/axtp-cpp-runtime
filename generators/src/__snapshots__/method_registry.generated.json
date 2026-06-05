@@ -1,0 +1,27 @@
+{
+  "methods": [
+    {
+      "id": 2306,
+      "name": "audio.setAlgorithmConfig",
+      "domain": "audio",
+      "status": "stable",
+      "bitOffset": 0,
+      "rpcOp": "request_response",
+      "requestSchema": "AudioSetAlgorithmConfigRequest",
+      "responseSchema": "AudioSetAlgorithmConfigResponse",
+      "recommendedEncoding": [
+        "binary_tlv"
+      ],
+      "capabilities": [
+        "audio.algorithm"
+      ],
+      "events": [
+        "audio.algorithmConfigChanged"
+      ],
+      "errors": [
+        "SUCCESS"
+      ],
+      "idHex": "0x0902"
+    }
+  ]
+}

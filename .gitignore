@@ -66,4 +66,11 @@ vcpkg_installed/
 
 # test output & cache
 Testing/
+!core/include/testing/
+!core/include/testing/**
 .cache/
+
+# Generator local outputs
+generators/node_modules/
+generators/dist/
+generators/.vite/

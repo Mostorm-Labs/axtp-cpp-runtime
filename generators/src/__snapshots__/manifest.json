@@ -1,0 +1,65 @@
+{
+  "vectors": [
+    {
+      "name": "control_open",
+      "payloadType": "CONTROL",
+      "encoding": "tlv",
+      "hexFile": "control_open.hex",
+      "expectDecode": {
+        "opcode": "OPEN"
+      }
+    },
+    {
+      "name": "rpc_audio_get_algorithm_config_request",
+      "payloadType": "RPC",
+      "encoding": "tlv",
+      "hexFile": "rpc_audio_get_algorithm_config.hex",
+      "expectDecode": {
+        "method": "audio.getAlgorithmConfig"
+      }
+    },
+    {
+      "name": "rpc_audio_set_algorithm_config_request",
+      "payloadType": "RPC",
+      "encoding": "tlv",
+      "hexFile": "rpc_audio_set_algorithm_config.hex",
+      "expectDecode": {
+        "method": "audio.setAlgorithmConfig",
+        "field": "noiseSuppression.level"
+      }
+    },
+    {
+      "name": "event_audio_algorithm_config_changed",
+      "payloadType": "RPC",
+      "encoding": "tlv",
+      "hexFile": "event_audio_algorithm_config_changed.hex",
+      "expectDecode": {
+        "event": "audio.algorithmConfigChanged",
+        "field": "noiseSuppression.level"
+      }
+    },
+    {
+      "name": "stream_object_chunk",
+      "payloadType": "STREAM",
+      "encoding": "binary",
+      "hexFile": "stream_object_chunk.hex",
+      "expectDecode": {
+        "streamId": 9
+      }
+    },
+    {
+      "name": "compact_crc8_error",
+      "payloadType": "RPC",
+      "encoding": "tlv",
+      "hexFile": "compact_crc8_error.hex",
+      "expectError": "FRAME_CRC_ERROR"
+    },
+    {
+      "name": "compact_message_id_overflow",
+      "payloadType": "RPC",
+      "encoding": "tlv",
+      "hexFile": "compact_message_id_overflow.hex",
+      "expectError": "COMPACT_MESSAGE_ID_OVERFLOW"
+    }
+  ]
+}

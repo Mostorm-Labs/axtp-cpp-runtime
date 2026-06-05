@@ -1,0 +1,3208 @@
+{
+  "source": "protocol/axtp.protocol.yaml",
+  "protocol": {
+    "name": "AXTP",
+    "version": "1.0.0",
+    "specVersion": 1,
+    "registryVersion": "1.0.0",
+    "status": "rc1"
+  },
+  "overview": {
+    "title": "AXTP Protocol",
+    "summary": "AXTP is a transport-independent device communication protocol for CONTROL, RPC and STREAM payloads across Standard Framed transports, plus a formal WebSocket Unframed JSON RPC profile.",
+    "goals": [
+      "Provide one unified protocol model for control, request/response RPC and stream transfer.",
+      "Make Standard Frame the AXTP v1 Core binary path for USB HID High Speed and TCP.",
+      "Support WebSocket Unframed JSON as the formal RPC-only integration path.",
+      "Keep full dynamic capability modeling optional outside AXTP v1 Core."
+    ],
+    "nonGoals": [
+      "Full dynamic UI capability modeling is not required in v1.",
+      "Compact/HID-64/BLE/UART low-bandwidth framing is not required by AXTP v1 Core.",
+      "STREAM is not carried over WebSocket Unframed JSON.",
+      "Header profile negotiation is not performed dynamically in v1."
+    ]
+  },
+  "architecture": {
+    "layers": [
+      {
+        "name": "Transport Profile",
+        "description": "Defines how AXTP runs over USB HID High Speed, TCP, or WebSocket JSON."
+      },
+      {
+        "name": "Frame Profile",
+        "description": "Standard Frame is the v1 Core binary frame profile; unframed JSON skips the Frame layer."
+      },
+      {
+        "name": "Payload Layer",
+        "description": "Carries CONTROL, RPC or STREAM payloads."
+      },
+      {
+        "name": "RPC Session",
+        "description": "Handles Hello, Identify, requests, responses, events and errors."
+      },
+      {
+        "name": "Stream Session",
+        "description": "Handles OTA, file, audio, video, log and sensor chunk transfer."
+      }
+    ],
+    "lifecycle": [
+      {
+        "step": "OPEN",
+        "from": "Client",
+        "to": "Server",
+        "description": "Open an AXTP logical session and declare runtime limits."
+      },
+      {
+        "step": "ACCEPT",
+        "from": "Server",
+        "to": "Client",
+        "description": "Accept the session and return final runtime parameters."
+      },
+      {
+        "step": "Hello",
+        "from": "Server",
+        "to": "Client",
+        "description": "Announce RPC session rules, protocol version and authentication requirements."
+      },
+      {
+        "step": "Identify",
+        "from": "Client",
+        "to": "Server",
+        "description": "Submit client identity and optional authentication data."
+      },
+      {
+        "step": "Identified",
+        "from": "Server",
+        "to": "Client",
+        "description": "Confirm that the RPC session is ready."
+      },
+      {
+        "step": "Load Adopted Registry",
+        "from": "Client",
+        "to": "Server",
+        "description": "Use the generated protocol registry to select adopted business methods for the current product."
+      }
+    ],
+    "optionalLifecycleExtensions": [
+      {
+        "step": "READY",
+        "status": "optional",
+        "description": "Reserved for transports that need an explicit client acknowledgement after ACCEPT; not required by AXTP v1 Core."
+      }
+    ]
+  },
+  "guide": {
+    "quickStart": [
+      {
+        "title": "Minimal Client Startup",
+        "steps": [
+          "Connect using AXTP-USB-HID, AXTP-TCP, or AXTP-WS-JSON.",
+          "For Standard Framed transports, send CONTROL OPEN and wait for CONTROL ACCEPT.",
+          "For WebSocket Unframed JSON, skip CONTROL and wait for Hello after the WebSocket opens.",
+          "Wait for Hello.",
+          "Send Identify if required.",
+          "Load generated protocol registry for the current product build.",
+          "Start RPC requests."
+        ]
+      },
+      {
+        "title": "WebSocket Unframed JSON Startup",
+        "steps": [
+          "Open the WebSocket connection.",
+          "Wait for Hello from the Logical Server.",
+          "Send Identify using the JSON sid/op/d envelope.",
+          "Wait for Identified.",
+          "Load generated protocol registry for the current product build.",
+          "Start JSON RPC requests and receive JSON events."
+        ]
+      },
+      {
+        "title": "Cloud Reverse Connection",
+        "steps": [
+          "Device opens the WebSocket connection to the cloud endpoint.",
+          "No CONTROL OPEN or Standard Frame is used in this profile.",
+          "Device remains the Logical Server and sends Hello after the WebSocket is established.",
+          "Cloud identifies as the Logical Client and then issues JSON RPC requests."
+        ]
+      }
+    ]
+  },
+  "frameProfiles": [
+    {
+      "name": "STANDARD_FRAME",
+      "magic": "AX",
+      "l1": "STANDARD_L1",
+      "l2": "STANDARD_L2",
+      "supportsMixing": false
+    }
+  ],
+  "transports": [
+    {
+      "name": "AXTP-USB-HID",
+      "family": "usb-hid",
+      "mode": "standard-framed",
+      "frameProfile": "STANDARD_FRAME",
+      "production": true,
+      "rpcEncodings": [
+        "TLV",
+        "JSON",
+        "RAW"
+      ],
+      "supportsControl": true,
+      "supportsStream": true,
+      "physicalClient": "Host / App",
+      "physicalServer": "USB HID Device",
+      "logicalClient": "Host / App",
+      "logicalServer": "Device",
+      "helloSender": "Device",
+      "notes": "USB HID High Speed or large-report HID transport using Standard Frame."
+    },
+    {
+      "name": "AXTP-TCP",
+      "family": "tcp",
+      "mode": "standard-framed",
+      "frameProfile": "STANDARD_FRAME",
+      "production": true,
+      "rpcEncodings": [
+        "TLV",
+        "JSON",
+        "RAW"
+      ],
+      "supportsControl": true,
+      "supportsStream": true,
+      "physicalClient": "App / PC",
+      "physicalServer": "Device",
+      "logicalClient": "App / PC",
+      "logicalServer": "Device",
+      "helloSender": "Device",
+      "notes": "TCP byte stream transport using Standard Frame magic and length parsing."
+    },
+    {
+      "name": "AXTP-WS-JSON",
+      "family": "websocket",
+      "mode": "unframed-json",
+      "frameProfile": "none",
+      "production": true,
+      "rpcEncodings": [
+        "JSON"
+      ],
+      "supportsControl": false,
+      "supportsStream": false,
+      "physicalClient": "App / Cloud",
+      "physicalServer": "Device / Gateway",
+      "logicalClient": "App / Cloud",
+      "logicalServer": "Device",
+      "helloSender": "Device",
+      "notes": "Formal RPC-only WebSocket JSON profile using the sid/op/d envelope."
+    },
+    {
+      "name": "AXTP-WS-CLOUD-REVERSE",
+      "family": "websocket",
+      "mode": "unframed-json-cloud-reverse",
+      "frameProfile": "none",
+      "production": true,
+      "rpcEncodings": [
+        "JSON"
+      ],
+      "supportsControl": false,
+      "supportsStream": false,
+      "physicalClient": "Device",
+      "physicalServer": "Cloud",
+      "logicalClient": "Cloud",
+      "logicalServer": "Device",
+      "helloSender": "Device",
+      "notes": "Device initiates the WebSocket connection but remains the Logical Server."
+    }
+  ],
+  "payloadTypes": [
+    {
+      "name": "CONTROL",
+      "id": 1,
+      "headerBytes": 5,
+      "description": "Logical session control payload."
+    },
+    {
+      "name": "RPC",
+      "id": 2,
+      "headerBytes": 11,
+      "description": "Binary request, response, event and error payload."
+    },
+    {
+      "name": "STREAM",
+      "id": 3,
+      "headerBytes": 16,
+      "description": "Chunk-oriented data plane payload."
+    }
+  ],
+  "control": {
+    "requiredOpcodes": [
+      "OPEN",
+      "ACCEPT"
+    ],
+    "optionalOpcodes": [
+      "READY"
+    ],
+    "reservedOpcodes": [],
+    "rules": [
+      "Standard Framed transports require OPEN and ACCEPT before RPC or STREAM payloads.",
+      "WebSocket Unframed JSON does not use CONTROL payloads.",
+      "READY is not required by v1 Core and must not be assumed by peers.",
+      "Dynamic header negotiation is not performed in v1."
+    ]
+  },
+  "stream": {
+    "header": {
+      "name": "AxtpStreamHeader",
+      "size": 16,
+      "fields": [
+        {
+          "name": "streamId",
+          "type": "uint32"
+        },
+        {
+          "name": "seqId",
+          "type": "uint32"
+        },
+        {
+          "name": "cursor",
+          "type": "uint64"
+        }
+      ]
+    },
+    "rules": [
+      "STREAM uses the unified 16-byte header in Standard Framed transports.",
+      "WebSocket Unframed JSON must not carry STREAM data.",
+      "The historical 8-byte stream header is not part of AXTP v1 Core."
+    ]
+  },
+  "compatibility": {
+    "legacySources": [
+      "docs/archive/source-planning/AXTP-Legacy-Compatibility-Reference.md",
+      "docs/archive/source-planning/AXTP-Legacy-Registry-Migration-Map.md"
+    ],
+    "rules": [
+      "Stable methodId, eventId and error code values must not be reused.",
+      "Legacy command mappings may be preserved as metadata under methods[].legacy.",
+      "Low-bandwidth Compact transports are documented as a degradation path outside AXTP v1 Core."
+    ]
+  },
+  "schemas": [
+    {
+      "name": "Empty",
+      "kind": "object",
+      "fields": []
+    },
+    {
+      "name": "ControlOpenBody",
+      "kind": "object",
+      "fields": [
+        {
+          "fieldId": 2,
+          "name": "protocolVersion",
+          "type": "uint8",
+          "required": true,
+          "min": 1,
+          "max": 15
+        },
+        {
+          "fieldId": 3,
+          "name": "reservedHeaderProfile",
+          "type": "uint8",
+          "required": false,
+          "min": 1,
+          "max": 2,
+          "deprecated": true
+        },
+        {
+          "fieldId": 4,
+          "name": "maxFrameSize",
+          "type": "uint16",
+          "required": true,
+          "min": 1,
+          "max": 65535
+        },
+        {
+          "fieldId": 6,
+          "name": "mtu",
+          "type": "uint16",
+          "required": true,
+          "min": 1,
+          "max": 65535
+        },
+        {
+          "fieldId": 7,
+          "name": "supportedPayloadTypes",
+          "type": "bitmap",
+          "required": true
+        },
+        {
+          "fieldId": 8,
+          "name": "supportedRpcEncodings",
+          "type": "bitmap",
+          "required": true
+        },
+        {
+          "fieldId": 10,
+          "name": "heartbeatIntervalMs",
+          "type": "uint32",
+          "required": true,
+          "min": 500,
+          "max": 60000
+        },
+        {
+          "fieldId": 11,
+          "name": "ackMode",
+          "type": "uint8",
+          "required": true,
+          "min": 0,
+          "max": 4
+        }
+      ]
+    },
+    {
+      "name": "ControlAcceptBody",
+      "kind": "object",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "sessionId",
+          "type": "uint32",
+          "required": true
+        },
+        {
+          "fieldId": 2,
+          "name": "protocolVersion",
+          "type": "uint8",
+          "required": true,
+          "min": 1,
+          "max": 15
+        },
+        {
+          "fieldId": 3,
+          "name": "reservedHeaderProfile",
+          "type": "uint8",
+          "required": false,
+          "min": 1,
+          "max": 2,
+          "deprecated": true
+        },
+        {
+          "fieldId": 4,
+          "name": "maxFrameSize",
+          "type": "uint16",
+          "required": true,
+          "min": 1,
+          "max": 65535
+        },
+        {
+          "fieldId": 6,
+          "name": "mtu",
+          "type": "uint16",
+          "required": true,
+          "min": 1,
+          "max": 65535
+        },
+        {
+          "fieldId": 7,
+          "name": "supportedPayloadTypes",
+          "type": "bitmap",
+          "required": true
+        },
+        {
+          "fieldId": 10,
+          "name": "heartbeatIntervalMs",
+          "type": "uint32",
+          "required": true,
+          "min": 500,
+          "max": 60000
+        },
+        {
+          "fieldId": 11,
+          "name": "ackMode",
+          "type": "uint8",
+          "required": true,
+          "min": 0,
+          "max": 4
+        },
+        {
+          "fieldId": 30,
+          "name": "selectedRpcEncoding",
+          "type": "uint8",
+          "required": true,
+          "min": 1,
+          "max": 4
+        }
+      ]
+    },
+    {
+      "name": "AudioAlgorithmCapability",
+      "kind": "object",
+      "description": "Device-level audio.algorithm capability summary.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "configSchemaVersion",
+          "type": "string",
+          "required": false,
+          "maxLength": 16,
+          "description": "Version of the audio algorithm configuration schema exposed by the device."
+        },
+        {
+          "fieldId": 2,
+          "name": "updatePolicy",
+          "type": "AudioAlgorithmUpdatePolicy",
+          "required": true,
+          "description": "Update and atomicity policy for set and reset operations."
+        },
+        {
+          "fieldId": 3,
+          "name": "supportedAlgorithms",
+          "type": "bytes",
+          "required": false,
+          "maxLength": 64,
+          "description": "Optional compact list of supported algorithm object names; JSON implementations expose names as an array of strings."
+        }
+      ]
+    },
+    {
+      "name": "AudioGetAlgorithmCapabilitiesRequest",
+      "kind": "object",
+      "description": "Optional selector for querying audio algorithm capabilities.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "items",
+          "type": "bytes",
+          "required": false,
+          "maxLength": 128,
+          "description": "Optional JSON array of algorithm object names; omit to query all supported algorithms."
+        }
+      ]
+    },
+    {
+      "name": "AudioGetAlgorithmConfigRequest",
+      "kind": "object",
+      "description": "Optional selector for querying current audio algorithm configuration.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "items",
+          "type": "bytes",
+          "required": false,
+          "maxLength": 128,
+          "description": "Optional JSON array of algorithm object names; omit to query all supported algorithms."
+        }
+      ]
+    },
+    {
+      "name": "AudioSetAlgorithmConfigRequest",
+      "kind": "object",
+      "description": "Partial audio algorithm configuration update.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "config",
+          "type": "AudioAlgorithmConfig",
+          "required": true,
+          "description": "Partial configuration keyed by algorithm object name."
+        }
+      ]
+    },
+    {
+      "name": "AudioResetAlgorithmConfigRequest",
+      "kind": "object",
+      "description": "Selector for resetting audio algorithm configuration to defaults.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "items",
+          "type": "bytes",
+          "required": true,
+          "maxLength": 256,
+          "description": "JSON reset selector: the string all, an array of algorithm object names, or a map from algorithm names to field-name arrays."
+        }
+      ]
+    },
+    {
+      "name": "AudioSetAlgorithmConfigResponse",
+      "kind": "object",
+      "description": "Result of a successful set or reset operation.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "applyState",
+          "type": "enum",
+          "required": true,
+          "description": "Apply state; values are applied or pending_restart."
+        },
+        {
+          "fieldId": 2,
+          "name": "requiresAudioRestart",
+          "type": "bool",
+          "required": true,
+          "description": "Whether the change requires restarting the audio link or rebuilding the audio pipeline."
+        },
+        {
+          "fieldId": 3,
+          "name": "config",
+          "type": "AudioAlgorithmConfig",
+          "required": true,
+          "description": "Final effective configuration for the algorithms affected by this operation."
+        }
+      ]
+    },
+    {
+      "name": "AudioAlgorithmConfigChangedEvent",
+      "kind": "object",
+      "description": "Payload emitted when audio algorithm configuration changes.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "reason",
+          "type": "enum",
+          "required": true,
+          "description": "Change reason; values include user_request, reset_to_default, factory_reset, profile_changed, device_policy, restore_config, and unknown."
+        },
+        {
+          "fieldId": 2,
+          "name": "applyState",
+          "type": "enum",
+          "required": true,
+          "description": "Apply state; values are applied or pending_restart."
+        },
+        {
+          "fieldId": 3,
+          "name": "requiresAudioRestart",
+          "type": "bool",
+          "required": true,
+          "description": "Whether the change requires restarting the audio link or rebuilding the audio pipeline."
+        },
+        {
+          "fieldId": 4,
+          "name": "config",
+          "type": "AudioAlgorithmConfig",
+          "required": true,
+          "description": "Changed or affected algorithm configuration values."
+        },
+        {
+          "fieldId": 5,
+          "name": "changedFields",
+          "type": "bytes",
+          "required": false,
+          "maxLength": 256,
+          "description": "Optional JSON array of changed field paths such as noiseSuppression.level."
+        }
+      ]
+    },
+    {
+      "name": "AudioGetAlgorithmCapabilitiesResponse",
+      "kind": "object",
+      "description": "Supported algorithm objects, fields, defaults, ranges, units, and update policy.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "capability",
+          "type": "string",
+          "required": true,
+          "maxLength": 32,
+          "description": "Fixed capability name audio.algorithm."
+        },
+        {
+          "fieldId": 2,
+          "name": "updatePolicy",
+          "type": "AudioAlgorithmUpdatePolicy",
+          "required": true,
+          "description": "Update and atomicity policy for set and reset operations."
+        },
+        {
+          "fieldId": 3,
+          "name": "algorithms",
+          "type": "AudioAlgorithmCapabilities",
+          "required": true,
+          "description": "Capability descriptors keyed by algorithm object name."
+        }
+      ]
+    },
+    {
+      "name": "AudioAlgorithmUpdatePolicy",
+      "kind": "object",
+      "description": "Audio algorithm update and atomicity policy.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "partialUpdateSupported",
+          "type": "bool",
+          "required": true,
+          "description": "Whether clients may send only the fields they want to modify."
+        },
+        {
+          "fieldId": 2,
+          "name": "multiAlgorithmUpdateSupported",
+          "type": "bool",
+          "required": true,
+          "description": "Whether one request may update multiple algorithm objects."
+        },
+        {
+          "fieldId": 3,
+          "name": "atomicUpdateSupported",
+          "type": "bool",
+          "required": true,
+          "description": "Whether set and reset operations are applied atomically."
+        }
+      ]
+    },
+    {
+      "name": "AudioAlgorithmCapabilities",
+      "kind": "object",
+      "description": "Capability descriptors for audio algorithm objects.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "noiseSuppression",
+          "type": "AudioNoiseSuppressionCapabilities",
+          "required": false,
+          "description": "Noise suppression capability descriptor."
+        },
+        {
+          "fieldId": 2,
+          "name": "echoCancellation",
+          "type": "AudioEchoCancellationCapabilities",
+          "required": false,
+          "description": "Echo cancellation capability descriptor."
+        },
+        {
+          "fieldId": 3,
+          "name": "autoGainControl",
+          "type": "AudioAutoGainControlCapabilities",
+          "required": false,
+          "description": "Automatic gain control capability descriptor."
+        },
+        {
+          "fieldId": 4,
+          "name": "beamforming",
+          "type": "AudioBeamformingCapabilities",
+          "required": false,
+          "description": "Beamforming capability descriptor."
+        },
+        {
+          "fieldId": 5,
+          "name": "dereverberation",
+          "type": "AudioDereverberationCapabilities",
+          "required": false,
+          "description": "Dereverberation capability descriptor."
+        },
+        {
+          "fieldId": 6,
+          "name": "voiceActivityDetection",
+          "type": "AudioVoiceActivityDetectionCapabilities",
+          "required": false,
+          "description": "Voice activity detection capability descriptor."
+        },
+        {
+          "fieldId": 7,
+          "name": "directionOfArrival",
+          "type": "AudioDirectionOfArrivalCapabilities",
+          "required": false,
+          "description": "Direction of arrival capability descriptor."
+        },
+        {
+          "fieldId": 8,
+          "name": "howlingSuppression",
+          "type": "AudioHowlingSuppressionCapabilities",
+          "required": false,
+          "description": "Howling suppression capability descriptor."
+        }
+      ]
+    },
+    {
+      "name": "AudioAlgorithmPropertyCapability",
+      "kind": "object",
+      "description": "Descriptor for one algorithm configuration property.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "type",
+          "type": "enum",
+          "required": true,
+          "description": "Property type; values include boolean, enum, uint8, uint16, uint32, int32, float, string, object, and array."
+        },
+        {
+          "fieldId": 2,
+          "name": "defaultBool",
+          "type": "bool",
+          "required": false,
+          "description": "Boolean default value when type is boolean."
+        },
+        {
+          "fieldId": 3,
+          "name": "defaultEnum",
+          "type": "string",
+          "required": false,
+          "maxLength": 32,
+          "description": "Enum default value when type is enum."
+        },
+        {
+          "fieldId": 4,
+          "name": "defaultInt32",
+          "type": "int32",
+          "required": false,
+          "description": "Numeric default value for integer-backed properties."
+        },
+        {
+          "fieldId": 5,
+          "name": "min",
+          "type": "int32",
+          "required": false,
+          "description": "Inclusive numeric minimum."
+        },
+        {
+          "fieldId": 6,
+          "name": "max",
+          "type": "int32",
+          "required": false,
+          "description": "Inclusive numeric maximum."
+        },
+        {
+          "fieldId": 7,
+          "name": "step",
+          "type": "int32",
+          "required": false,
+          "description": "Numeric step size."
+        },
+        {
+          "fieldId": 8,
+          "name": "values",
+          "type": "bytes",
+          "required": false,
+          "maxLength": 128,
+          "description": "Optional JSON array of enum values."
+        },
+        {
+          "fieldId": 9,
+          "name": "unit",
+          "type": "string",
+          "required": false,
+          "maxLength": 16,
+          "description": "Unit such as ms, dB, or degree."
+        },
+        {
+          "fieldId": 10,
+          "name": "requiresAudioRestart",
+          "type": "bool",
+          "required": false,
+          "description": "Whether modifying this field requires restarting the audio link or rebuilding the audio pipeline."
+        }
+      ]
+    },
+    {
+      "name": "AudioNoiseSuppressionCapabilities",
+      "kind": "object",
+      "description": "Noise suppression supported fields.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "supported",
+          "type": "bool",
+          "required": true,
+          "description": "Whether the device supports noiseSuppression."
+        },
+        {
+          "fieldId": 2,
+          "name": "displayName",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "UI-readable display name."
+        },
+        {
+          "fieldId": 3,
+          "name": "enabled",
+          "type": "AudioAlgorithmPropertyCapability",
+          "required": false,
+          "description": "enabled property descriptor."
+        },
+        {
+          "fieldId": 5,
+          "name": "level",
+          "type": "AudioAlgorithmPropertyCapability",
+          "required": false,
+          "description": "level property descriptor."
+        }
+      ]
+    },
+    {
+      "name": "AudioEchoCancellationCapabilities",
+      "kind": "object",
+      "description": "Echo cancellation supported fields.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "supported",
+          "type": "bool",
+          "required": true,
+          "description": "Whether the device supports echoCancellation."
+        },
+        {
+          "fieldId": 2,
+          "name": "displayName",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "UI-readable display name."
+        },
+        {
+          "fieldId": 3,
+          "name": "enabled",
+          "type": "AudioAlgorithmPropertyCapability",
+          "required": false,
+          "description": "enabled property descriptor."
+        },
+        {
+          "fieldId": 5,
+          "name": "tailLengthMs",
+          "type": "AudioAlgorithmPropertyCapability",
+          "required": false,
+          "description": "tailLengthMs property descriptor."
+        },
+        {
+          "fieldId": 6,
+          "name": "nlpLevel",
+          "type": "AudioAlgorithmPropertyCapability",
+          "required": false,
+          "description": "nlpLevel property descriptor."
+        }
+      ]
+    },
+    {
+      "name": "AudioAutoGainControlCapabilities",
+      "kind": "object",
+      "description": "Automatic gain control supported fields.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "supported",
+          "type": "bool",
+          "required": true,
+          "description": "Whether the device supports autoGainControl."
+        },
+        {
+          "fieldId": 2,
+          "name": "displayName",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "UI-readable display name."
+        },
+        {
+          "fieldId": 3,
+          "name": "enabled",
+          "type": "AudioAlgorithmPropertyCapability",
+          "required": false,
+          "description": "enabled property descriptor."
+        },
+        {
+          "fieldId": 4,
+          "name": "targetLevelDb",
+          "type": "AudioAlgorithmPropertyCapability",
+          "required": false,
+          "description": "targetLevelDb property descriptor."
+        },
+        {
+          "fieldId": 5,
+          "name": "maxGainDb",
+          "type": "AudioAlgorithmPropertyCapability",
+          "required": false,
+          "description": "maxGainDb property descriptor."
+        },
+        {
+          "fieldId": 6,
+          "name": "attackTimeMs",
+          "type": "AudioAlgorithmPropertyCapability",
+          "required": false,
+          "description": "attackTimeMs property descriptor."
+        },
+        {
+          "fieldId": 7,
+          "name": "releaseTimeMs",
+          "type": "AudioAlgorithmPropertyCapability",
+          "required": false,
+          "description": "releaseTimeMs property descriptor."
+        }
+      ]
+    },
+    {
+      "name": "AudioBeamformingCapabilities",
+      "kind": "object",
+      "description": "Beamforming supported fields.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "supported",
+          "type": "bool",
+          "required": true,
+          "description": "Whether the device supports beamforming."
+        },
+        {
+          "fieldId": 2,
+          "name": "displayName",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "UI-readable display name."
+        },
+        {
+          "fieldId": 3,
+          "name": "enabled",
+          "type": "AudioAlgorithmPropertyCapability",
+          "required": false,
+          "description": "enabled property descriptor."
+        },
+        {
+          "fieldId": 5,
+          "name": "lookDirectionDeg",
+          "type": "AudioAlgorithmPropertyCapability",
+          "required": false,
+          "description": "lookDirectionDeg property descriptor."
+        },
+        {
+          "fieldId": 6,
+          "name": "beamWidthDeg",
+          "type": "AudioAlgorithmPropertyCapability",
+          "required": false,
+          "description": "beamWidthDeg property descriptor."
+        }
+      ]
+    },
+    {
+      "name": "AudioDereverberationCapabilities",
+      "kind": "object",
+      "description": "Dereverberation supported fields.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "supported",
+          "type": "bool",
+          "required": true,
+          "description": "Whether the device supports dereverberation."
+        },
+        {
+          "fieldId": 2,
+          "name": "displayName",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "UI-readable display name."
+        },
+        {
+          "fieldId": 3,
+          "name": "enabled",
+          "type": "AudioAlgorithmPropertyCapability",
+          "required": false,
+          "description": "enabled property descriptor."
+        },
+        {
+          "fieldId": 5,
+          "name": "level",
+          "type": "AudioAlgorithmPropertyCapability",
+          "required": false,
+          "description": "level property descriptor."
+        }
+      ]
+    },
+    {
+      "name": "AudioVoiceActivityDetectionCapabilities",
+      "kind": "object",
+      "description": "Voice activity detection supported fields.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "supported",
+          "type": "bool",
+          "required": true,
+          "description": "Whether the device supports voiceActivityDetection."
+        },
+        {
+          "fieldId": 2,
+          "name": "displayName",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "UI-readable display name."
+        },
+        {
+          "fieldId": 3,
+          "name": "enabled",
+          "type": "AudioAlgorithmPropertyCapability",
+          "required": false,
+          "description": "enabled property descriptor."
+        },
+        {
+          "fieldId": 4,
+          "name": "sensitivity",
+          "type": "AudioAlgorithmPropertyCapability",
+          "required": false,
+          "description": "sensitivity property descriptor."
+        },
+        {
+          "fieldId": 5,
+          "name": "hangoverMs",
+          "type": "AudioAlgorithmPropertyCapability",
+          "required": false,
+          "description": "hangoverMs property descriptor."
+        }
+      ]
+    },
+    {
+      "name": "AudioDirectionOfArrivalCapabilities",
+      "kind": "object",
+      "description": "Direction of arrival supported fields.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "supported",
+          "type": "bool",
+          "required": true,
+          "description": "Whether the device supports directionOfArrival."
+        },
+        {
+          "fieldId": 2,
+          "name": "displayName",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "UI-readable display name."
+        },
+        {
+          "fieldId": 3,
+          "name": "enabled",
+          "type": "AudioAlgorithmPropertyCapability",
+          "required": false,
+          "description": "enabled property descriptor."
+        },
+        {
+          "fieldId": 4,
+          "name": "reportingEnabled",
+          "type": "AudioAlgorithmPropertyCapability",
+          "required": false,
+          "description": "reportingEnabled property descriptor."
+        },
+        {
+          "fieldId": 5,
+          "name": "reportIntervalMs",
+          "type": "AudioAlgorithmPropertyCapability",
+          "required": false,
+          "description": "reportIntervalMs property descriptor."
+        },
+        {
+          "fieldId": 6,
+          "name": "smoothingMs",
+          "type": "AudioAlgorithmPropertyCapability",
+          "required": false,
+          "description": "smoothingMs property descriptor."
+        }
+      ]
+    },
+    {
+      "name": "AudioHowlingSuppressionCapabilities",
+      "kind": "object",
+      "description": "Howling suppression supported fields.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "supported",
+          "type": "bool",
+          "required": true,
+          "description": "Whether the device supports howlingSuppression."
+        },
+        {
+          "fieldId": 2,
+          "name": "displayName",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "UI-readable display name."
+        },
+        {
+          "fieldId": 3,
+          "name": "enabled",
+          "type": "AudioAlgorithmPropertyCapability",
+          "required": false,
+          "description": "enabled property descriptor."
+        },
+        {
+          "fieldId": 5,
+          "name": "level",
+          "type": "AudioAlgorithmPropertyCapability",
+          "required": false,
+          "description": "level property descriptor."
+        }
+      ]
+    },
+    {
+      "name": "AudioAlgorithmConfig",
+      "kind": "object",
+      "description": "Audio algorithm configuration keyed by algorithm object name.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "noiseSuppression",
+          "type": "AudioNoiseSuppressionConfig",
+          "required": false,
+          "description": "Noise suppression configuration."
+        },
+        {
+          "fieldId": 2,
+          "name": "echoCancellation",
+          "type": "AudioEchoCancellationConfig",
+          "required": false,
+          "description": "Echo cancellation configuration."
+        },
+        {
+          "fieldId": 3,
+          "name": "autoGainControl",
+          "type": "AudioAutoGainControlConfig",
+          "required": false,
+          "description": "Automatic gain control configuration."
+        },
+        {
+          "fieldId": 4,
+          "name": "beamforming",
+          "type": "AudioBeamformingConfig",
+          "required": false,
+          "description": "Beamforming configuration."
+        },
+        {
+          "fieldId": 5,
+          "name": "dereverberation",
+          "type": "AudioDereverberationConfig",
+          "required": false,
+          "description": "Dereverberation configuration."
+        },
+        {
+          "fieldId": 6,
+          "name": "voiceActivityDetection",
+          "type": "AudioVoiceActivityDetectionConfig",
+          "required": false,
+          "description": "Voice activity detection configuration."
+        },
+        {
+          "fieldId": 7,
+          "name": "directionOfArrival",
+          "type": "AudioDirectionOfArrivalConfig",
+          "required": false,
+          "description": "Direction of arrival configuration."
+        },
+        {
+          "fieldId": 8,
+          "name": "howlingSuppression",
+          "type": "AudioHowlingSuppressionConfig",
+          "required": false,
+          "description": "Howling suppression configuration."
+        }
+      ]
+    },
+    {
+      "name": "AudioNoiseSuppressionConfig",
+      "kind": "object",
+      "description": "Noise suppression configuration object.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "enabled",
+          "type": "bool",
+          "required": false,
+          "description": "Whether noise suppression is enabled."
+        },
+        {
+          "fieldId": 3,
+          "name": "level",
+          "type": "uint8",
+          "required": false,
+          "min": 0,
+          "max": 3,
+          "description": "Suppression strength."
+        }
+      ]
+    },
+    {
+      "name": "AudioEchoCancellationConfig",
+      "kind": "object",
+      "description": "Echo cancellation configuration object.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "enabled",
+          "type": "bool",
+          "required": false,
+          "description": "Whether echo cancellation is enabled."
+        },
+        {
+          "fieldId": 3,
+          "name": "tailLengthMs",
+          "type": "uint32",
+          "required": false,
+          "min": 64,
+          "max": 512,
+          "description": "Echo tail length in milliseconds; modifying it may require restarting the audio link."
+        },
+        {
+          "fieldId": 4,
+          "name": "nlpLevel",
+          "type": "uint8",
+          "required": false,
+          "min": 0,
+          "max": 3,
+          "description": "Non-linear processing strength."
+        }
+      ]
+    },
+    {
+      "name": "AudioAutoGainControlConfig",
+      "kind": "object",
+      "description": "Automatic gain control configuration object.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "enabled",
+          "type": "bool",
+          "required": false,
+          "description": "Whether automatic gain control is enabled."
+        },
+        {
+          "fieldId": 2,
+          "name": "targetLevelDb",
+          "type": "int32",
+          "required": false,
+          "min": -36,
+          "max": -6,
+          "description": "Target output level in dB."
+        },
+        {
+          "fieldId": 3,
+          "name": "maxGainDb",
+          "type": "uint8",
+          "required": false,
+          "min": 0,
+          "max": 36,
+          "description": "Maximum gain in dB."
+        },
+        {
+          "fieldId": 4,
+          "name": "attackTimeMs",
+          "type": "uint32",
+          "required": false,
+          "min": 1,
+          "max": 1000,
+          "description": "Gain attack time in milliseconds."
+        },
+        {
+          "fieldId": 5,
+          "name": "releaseTimeMs",
+          "type": "uint32",
+          "required": false,
+          "min": 10,
+          "max": 5000,
+          "description": "Gain release time in milliseconds."
+        }
+      ]
+    },
+    {
+      "name": "AudioBeamformingConfig",
+      "kind": "object",
+      "description": "Beamforming configuration object.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "enabled",
+          "type": "bool",
+          "required": false,
+          "description": "Whether beamforming is enabled."
+        },
+        {
+          "fieldId": 3,
+          "name": "lookDirectionDeg",
+          "type": "int32",
+          "required": false,
+          "min": -180,
+          "max": 180,
+          "description": "Fixed beam look direction in degrees."
+        },
+        {
+          "fieldId": 4,
+          "name": "beamWidthDeg",
+          "type": "uint32",
+          "required": false,
+          "min": 10,
+          "max": 180,
+          "description": "Beam width in degrees."
+        }
+      ]
+    },
+    {
+      "name": "AudioDereverberationConfig",
+      "kind": "object",
+      "description": "Dereverberation configuration object.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "enabled",
+          "type": "bool",
+          "required": false,
+          "description": "Whether dereverberation is enabled."
+        },
+        {
+          "fieldId": 3,
+          "name": "level",
+          "type": "uint8",
+          "required": false,
+          "min": 0,
+          "max": 3,
+          "description": "Dereverberation strength."
+        }
+      ]
+    },
+    {
+      "name": "AudioVoiceActivityDetectionConfig",
+      "kind": "object",
+      "description": "Voice activity detection configuration object.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "enabled",
+          "type": "bool",
+          "required": false,
+          "description": "Whether voice activity detection is enabled."
+        },
+        {
+          "fieldId": 2,
+          "name": "sensitivity",
+          "type": "uint8",
+          "required": false,
+          "min": 0,
+          "max": 3,
+          "description": "Detection sensitivity."
+        },
+        {
+          "fieldId": 3,
+          "name": "hangoverMs",
+          "type": "uint32",
+          "required": false,
+          "min": 0,
+          "max": 2000,
+          "description": "Speech-end hangover time in milliseconds."
+        }
+      ]
+    },
+    {
+      "name": "AudioDirectionOfArrivalConfig",
+      "kind": "object",
+      "description": "Direction of arrival configuration object.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "enabled",
+          "type": "bool",
+          "required": false,
+          "description": "Whether direction of arrival estimation is enabled."
+        },
+        {
+          "fieldId": 2,
+          "name": "reportingEnabled",
+          "type": "bool",
+          "required": false,
+          "description": "Whether DOA or beam result reporting is enabled by this configuration."
+        },
+        {
+          "fieldId": 3,
+          "name": "reportIntervalMs",
+          "type": "uint32",
+          "required": false,
+          "min": 20,
+          "max": 5000,
+          "description": "Result report interval in milliseconds."
+        },
+        {
+          "fieldId": 4,
+          "name": "smoothingMs",
+          "type": "uint32",
+          "required": false,
+          "min": 0,
+          "max": 5000,
+          "description": "Smoothing window in milliseconds."
+        }
+      ]
+    },
+    {
+      "name": "AudioHowlingSuppressionConfig",
+      "kind": "object",
+      "description": "Howling suppression configuration object.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "enabled",
+          "type": "bool",
+          "required": false,
+          "description": "Whether howling suppression is enabled."
+        },
+        {
+          "fieldId": 3,
+          "name": "level",
+          "type": "uint8",
+          "required": false,
+          "min": 0,
+          "max": 3,
+          "description": "Howling suppression strength."
+        }
+      ]
+    }
+  ],
+  "wireExamples": [],
+  "methods": [
+    {
+      "name": "audio.getAlgorithmCapabilities",
+      "description": "Return supported audio algorithm objects, fields, defaults, ranges, units, and update policy.",
+      "methodId": 2317,
+      "bitOffset": 0,
+      "domain": "audio",
+      "since": "1.0.0",
+      "status": "stable",
+      "request": {
+        "type": "AudioGetAlgorithmCapabilitiesRequest"
+      },
+      "response": {
+        "type": "AudioGetAlgorithmCapabilitiesResponse"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "audio.algorithm"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "INVALID_ARGUMENT",
+        "INTERNAL_ERROR"
+      ]
+    },
+    {
+      "name": "audio.getAlgorithmConfig",
+      "description": "Return the current effective configuration for supported audio algorithm objects.",
+      "methodId": 2305,
+      "bitOffset": 1,
+      "domain": "audio",
+      "since": "1.0.0",
+      "status": "stable",
+      "request": {
+        "type": "AudioGetAlgorithmConfigRequest"
+      },
+      "response": {
+        "type": "AudioAlgorithmConfig"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "audio.algorithm"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "INVALID_ARGUMENT",
+        "INTERNAL_ERROR"
+      ]
+    },
+    {
+      "name": "audio.setAlgorithmConfig",
+      "description": "Partially update one or more audio algorithm configuration objects atomically.",
+      "methodId": 2306,
+      "bitOffset": 2,
+      "domain": "audio",
+      "since": "1.0.0",
+      "status": "stable",
+      "request": {
+        "type": "AudioSetAlgorithmConfigRequest"
+      },
+      "response": {
+        "type": "AudioSetAlgorithmConfigResponse"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "audio.algorithm"
+      ],
+      "events": [
+        "audio.algorithmConfigChanged"
+      ],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "INVALID_ARGUMENT",
+        "OUT_OF_RANGE",
+        "INVALID_STATE",
+        "BUSY",
+        "PERMISSION_DENIED",
+        "INTERNAL_ERROR"
+      ]
+    },
+    {
+      "name": "audio.resetAlgorithmConfig",
+      "description": "Reset all, selected, or selected-field audio algorithm configuration to declared default values.",
+      "methodId": 2318,
+      "bitOffset": 3,
+      "domain": "audio",
+      "since": "1.0.0",
+      "status": "stable",
+      "request": {
+        "type": "AudioResetAlgorithmConfigRequest"
+      },
+      "response": {
+        "type": "AudioSetAlgorithmConfigResponse"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "audio.algorithm"
+      ],
+      "events": [
+        "audio.algorithmConfigChanged"
+      ],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "INVALID_ARGUMENT",
+        "OUT_OF_RANGE",
+        "INVALID_STATE",
+        "BUSY",
+        "PERMISSION_DENIED",
+        "INTERNAL_ERROR"
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "audio.algorithmConfigChanged",
+      "description": "Emitted when audio algorithm configuration changes after set, reset, profile, restore, factory reset, or device policy changes.",
+      "eventId": 2305,
+      "bitOffset": 0,
+      "domain": "audio",
+      "since": "1.0.0",
+      "status": "stable",
+      "payload": {
+        "type": "AudioAlgorithmConfigChangedEvent"
+      },
+      "severity": "info",
+      "trigger": [
+        "audio.setAlgorithmConfig",
+        "audio.resetAlgorithmConfig",
+        "profile changed",
+        "factory reset",
+        "restore config",
+        "device policy"
+      ],
+      "capabilities": [
+        "audio.algorithm"
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "name": "SUCCESS",
+      "code": 0,
+      "category": "common",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "info",
+      "retryable": false,
+      "message": "Operation completed successfully."
+    },
+    {
+      "name": "UNKNOWN_ERROR",
+      "code": 1,
+      "category": "common",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Unknown error."
+    },
+    {
+      "name": "NOT_IMPLEMENTED",
+      "code": 2,
+      "category": "common",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Feature is not implemented."
+    },
+    {
+      "name": "NOT_SUPPORTED",
+      "code": 3,
+      "category": "common",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Feature is not supported by the current device or mode."
+    },
+    {
+      "name": "INVALID_STATE",
+      "code": 4,
+      "category": "common",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Operation is not allowed in the current state."
+    },
+    {
+      "name": "BUSY",
+      "code": 5,
+      "category": "common",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "warning",
+      "retryable": true,
+      "message": "Device or resource is busy."
+    },
+    {
+      "name": "TIMEOUT",
+      "code": 6,
+      "category": "common",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "warning",
+      "retryable": true,
+      "message": "Operation timed out."
+    },
+    {
+      "name": "CANCELED",
+      "code": 7,
+      "category": "common",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Operation was canceled."
+    },
+    {
+      "name": "RESOURCE_EXHAUSTED",
+      "code": 8,
+      "category": "common",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "warning",
+      "retryable": true,
+      "message": "Resource is exhausted."
+    },
+    {
+      "name": "PERMISSION_DENIED",
+      "code": 9,
+      "category": "common",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Permission denied."
+    },
+    {
+      "name": "INVALID_ARGUMENT",
+      "code": 10,
+      "category": "common",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Argument is invalid."
+    },
+    {
+      "name": "OUT_OF_RANGE",
+      "code": 11,
+      "category": "common",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Argument is out of range."
+    },
+    {
+      "name": "NOT_FOUND",
+      "code": 12,
+      "category": "common",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Resource was not found."
+    },
+    {
+      "name": "ALREADY_EXISTS",
+      "code": 13,
+      "category": "common",
+      "since": "1.0.0",
+      "status": "draft",
+      "severity": "error",
+      "retryable": false,
+      "message": "Resource already exists."
+    },
+    {
+      "name": "INTERNAL_ERROR",
+      "code": 14,
+      "category": "common",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Internal error."
+    },
+    {
+      "name": "UNAVAILABLE",
+      "code": 15,
+      "category": "common",
+      "since": "1.0.0",
+      "status": "draft",
+      "severity": "warning",
+      "retryable": true,
+      "message": "Service is temporarily unavailable."
+    },
+    {
+      "name": "FRAME_MAGIC_INVALID",
+      "code": 17,
+      "category": "frame",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Frame magic is invalid."
+    },
+    {
+      "name": "FRAME_VERSION_UNSUPPORTED",
+      "code": 18,
+      "category": "frame",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Frame version is not supported."
+    },
+    {
+      "name": "FRAME_HEADER_INVALID",
+      "code": 19,
+      "category": "frame",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Frame header is invalid."
+    },
+    {
+      "name": "FRAME_LENGTH_INVALID",
+      "code": 20,
+      "category": "frame",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Frame payload length or total length is invalid."
+    },
+    {
+      "name": "FRAME_PAYLOAD_TYPE_INVALID",
+      "code": 21,
+      "category": "frame",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Frame payload type is invalid."
+    },
+    {
+      "name": "FRAME_CRC_ERROR",
+      "code": 22,
+      "category": "frame",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "warning",
+      "retryable": true,
+      "message": "Frame CRC check failed."
+    },
+    {
+      "name": "FRAME_FRAGMENT_INVALID",
+      "code": 23,
+      "category": "frame",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Frame fragment metadata is invalid."
+    },
+    {
+      "name": "FRAME_FRAGMENT_MISSING",
+      "code": 24,
+      "category": "frame",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "warning",
+      "retryable": true,
+      "message": "One or more frame fragments are missing."
+    },
+    {
+      "name": "FRAME_REASSEMBLY_TIMEOUT",
+      "code": 25,
+      "category": "frame",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "warning",
+      "retryable": true,
+      "message": "Frame reassembly timed out."
+    },
+    {
+      "name": "FRAME_TOO_LARGE",
+      "code": 26,
+      "category": "frame",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Frame exceeds the negotiated maximum size."
+    },
+    {
+      "name": "TRANSPORT_MTU_EXCEEDED",
+      "code": 27,
+      "category": "frame",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Transport MTU was exceeded."
+    },
+    {
+      "name": "TRANSPORT_WRITE_FAILED",
+      "code": 28,
+      "category": "frame",
+      "since": "1.0.0",
+      "status": "draft",
+      "severity": "warning",
+      "retryable": true,
+      "message": "Transport write failed."
+    },
+    {
+      "name": "TRANSPORT_READ_FAILED",
+      "code": 29,
+      "category": "frame",
+      "since": "1.0.0",
+      "status": "draft",
+      "severity": "warning",
+      "retryable": true,
+      "message": "Transport read failed."
+    },
+    {
+      "name": "TRANSPORT_DISCONNECTED",
+      "code": 30,
+      "category": "frame",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "warning",
+      "retryable": true,
+      "message": "Transport disconnected."
+    },
+    {
+      "name": "CONTROL_OPCODE_INVALID",
+      "code": 33,
+      "category": "control",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Control opcode is invalid."
+    },
+    {
+      "name": "CONTROL_PAYLOAD_INVALID",
+      "code": 34,
+      "category": "control",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Control payload is invalid."
+    },
+    {
+      "name": "RESERVED_CONTROL_BODY_ENCODING_UNSUPPORTED",
+      "code": 35,
+      "category": "control",
+      "since": "1.0.0",
+      "status": "reserved",
+      "severity": "error",
+      "retryable": false,
+      "message": "Historical control body encoding negotiation error. AXTP v1 implementations must not emit it."
+    },
+    {
+      "name": "CONTROL_OPEN_REQUIRED",
+      "code": 36,
+      "category": "control",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Session has not completed CONTROL OPEN."
+    },
+    {
+      "name": "CONTROL_OPEN_REJECTED",
+      "code": 37,
+      "category": "control",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Control OPEN was rejected."
+    },
+    {
+      "name": "RESERVED_CONTROL_PROFILE_UNSUPPORTED",
+      "code": 38,
+      "category": "control",
+      "since": "1.0.0",
+      "status": "reserved",
+      "severity": "error",
+      "retryable": false,
+      "message": "Historical header profile negotiation error. AXTP v1 implementations must not emit it."
+    },
+    {
+      "name": "CONTROL_NEGOTIATION_FAILED",
+      "code": 39,
+      "category": "control",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Control negotiation failed."
+    },
+    {
+      "name": "CONTROL_SESSION_INVALID",
+      "code": 40,
+      "category": "control",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "SessionId is invalid."
+    },
+    {
+      "name": "CONTROL_SESSION_EXPIRED",
+      "code": 41,
+      "category": "control",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Session has expired."
+    },
+    {
+      "name": "CONTROL_RESUME_FAILED",
+      "code": 42,
+      "category": "control",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Session resume failed."
+    },
+    {
+      "name": "CONTROL_ACK_TARGET_INVALID",
+      "code": 43,
+      "category": "control",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "ACK/NACK target type is invalid."
+    },
+    {
+      "name": "CONTROL_WINDOW_EXCEEDED",
+      "code": 44,
+      "category": "control",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "warning",
+      "retryable": true,
+      "message": "Flow-control window was exceeded."
+    },
+    {
+      "name": "CONTROL_HEARTBEAT_TIMEOUT",
+      "code": 45,
+      "category": "control",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "warning",
+      "retryable": true,
+      "message": "Control heartbeat timed out."
+    },
+    {
+      "name": "RPC_ENCODING_UNSUPPORTED",
+      "code": 49,
+      "category": "rpc",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "RPC encoding is not supported."
+    },
+    {
+      "name": "RPC_OP_INVALID",
+      "code": 50,
+      "category": "rpc",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "RPC operation is invalid."
+    },
+    {
+      "name": "RPC_PAYLOAD_INVALID",
+      "code": 51,
+      "category": "rpc",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "RPC payload is invalid."
+    },
+    {
+      "name": "RPC_BODY_ENCODING_UNSUPPORTED",
+      "code": 52,
+      "category": "rpc",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "RPC body encoding is not supported."
+    },
+    {
+      "name": "RPC_BODY_DECODE_FAILED",
+      "code": 53,
+      "category": "rpc",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "RPC body decoding failed."
+    },
+    {
+      "name": "RPC_METHOD_NOT_FOUND",
+      "code": 54,
+      "category": "rpc",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "MethodId or method name is not registered."
+    },
+    {
+      "name": "RPC_METHOD_NOT_SUPPORTED",
+      "code": 55,
+      "category": "rpc",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Method exists but is not supported by the current device."
+    },
+    {
+      "name": "RPC_METHOD_DISABLED",
+      "code": 56,
+      "category": "rpc",
+      "since": "1.0.0",
+      "status": "draft",
+      "severity": "error",
+      "retryable": false,
+      "message": "Method is disabled."
+    },
+    {
+      "name": "RPC_REQUEST_ID_INVALID",
+      "code": 57,
+      "category": "rpc",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "RPC requestId is invalid."
+    },
+    {
+      "name": "RPC_PARAM_MISSING",
+      "code": 58,
+      "category": "rpc",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Required RPC parameter is missing."
+    },
+    {
+      "name": "RPC_PARAM_INVALID",
+      "code": 59,
+      "category": "rpc",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "RPC parameters are invalid."
+    },
+    {
+      "name": "RPC_PARAM_OUT_OF_RANGE",
+      "code": 60,
+      "category": "rpc",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "RPC parameter is out of range."
+    },
+    {
+      "name": "RPC_EXECUTION_FAILED",
+      "code": 61,
+      "category": "rpc",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "RPC method execution failed."
+    },
+    {
+      "name": "RPC_RESPONSE_TIMEOUT",
+      "code": 62,
+      "category": "rpc",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "warning",
+      "retryable": true,
+      "message": "RPC response timed out."
+    },
+    {
+      "name": "RPC_BATCH_UNSUPPORTED",
+      "code": 63,
+      "category": "rpc",
+      "since": "1.0.0",
+      "status": "draft",
+      "severity": "error",
+      "retryable": false,
+      "message": "RPC batch is not supported."
+    },
+    {
+      "name": "RPC_BATCH_PARTIAL_FAILED",
+      "code": 64,
+      "category": "rpc",
+      "since": "1.0.0",
+      "status": "draft",
+      "severity": "error",
+      "retryable": false,
+      "message": "One or more RPC batch items failed."
+    },
+    {
+      "name": "DEVICE_INFO_UNAVAILABLE",
+      "code": 257,
+      "category": "device",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "warning",
+      "retryable": true,
+      "message": "Device information is unavailable."
+    },
+    {
+      "name": "DEVICE_REBOOT_FAILED",
+      "code": 258,
+      "category": "device",
+      "since": "1.0.0",
+      "status": "draft",
+      "severity": "error",
+      "retryable": false,
+      "message": "Device reboot failed."
+    },
+    {
+      "name": "DEVICE_FACTORY_RESET_FAILED",
+      "code": 259,
+      "category": "device",
+      "since": "1.0.0",
+      "status": "draft",
+      "severity": "error",
+      "retryable": false,
+      "message": "Device factory reset failed."
+    },
+    {
+      "name": "DEVICE_LOW_POWER",
+      "code": 260,
+      "category": "device",
+      "since": "1.0.0",
+      "status": "draft",
+      "severity": "warning",
+      "retryable": true,
+      "message": "Device power is low."
+    },
+    {
+      "name": "DEVICE_OVER_TEMPERATURE",
+      "code": 261,
+      "category": "device",
+      "since": "1.0.0",
+      "status": "draft",
+      "severity": "warning",
+      "retryable": true,
+      "message": "Device temperature is too high."
+    },
+    {
+      "name": "DEVICE_STORAGE_FULL",
+      "code": 262,
+      "category": "device",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Device storage is full."
+    },
+    {
+      "name": "DEVICE_MODE_CONFLICT",
+      "code": 263,
+      "category": "device",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Device mode conflicts with the requested operation."
+    },
+    {
+      "name": "DEVICE_RESOURCE_BUSY",
+      "code": 264,
+      "category": "device",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "warning",
+      "retryable": true,
+      "message": "Device resource is busy."
+    },
+    {
+      "name": "DEVICE_HARDWARE_FAILURE",
+      "code": 265,
+      "category": "device",
+      "since": "1.0.0",
+      "status": "draft",
+      "severity": "error",
+      "retryable": false,
+      "message": "Device hardware failure."
+    },
+    {
+      "name": "CAPABILITY_NOT_FOUND",
+      "code": 513,
+      "category": "capability",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Capability does not exist."
+    },
+    {
+      "name": "CAPABILITY_DOMAIN_NOT_FOUND",
+      "code": 514,
+      "category": "capability",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Capability domain does not exist."
+    },
+    {
+      "name": "CAPABILITY_METHOD_UNSUPPORTED",
+      "code": 515,
+      "category": "capability",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Method capability is not supported."
+    },
+    {
+      "name": "CAPABILITY_EVENT_UNSUPPORTED",
+      "code": 516,
+      "category": "capability",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Event capability is not supported."
+    },
+    {
+      "name": "CAPABILITY_STREAM_UNSUPPORTED",
+      "code": 517,
+      "category": "capability",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Stream capability is not supported."
+    },
+    {
+      "name": "CAPABILITY_ENCODING_UNSUPPORTED",
+      "code": 518,
+      "category": "capability",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Encoding capability is not supported."
+    },
+    {
+      "name": "CAPABILITY_NEGOTIATION_FAILED",
+      "code": 519,
+      "category": "capability",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Business capability negotiation failed."
+    },
+    {
+      "name": "CAPABILITY_LIMIT_EXCEEDED",
+      "code": 520,
+      "category": "capability",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Capability limit was exceeded."
+    },
+    {
+      "name": "FW_IMAGE_INVALID",
+      "code": 1025,
+      "category": "firmware",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Firmware image is invalid."
+    },
+    {
+      "name": "FW_IMAGE_TYPE_UNSUPPORTED",
+      "code": 1026,
+      "category": "firmware",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Firmware image type is not supported."
+    },
+    {
+      "name": "FW_VERSION_UNSUPPORTED",
+      "code": 1027,
+      "category": "firmware",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Firmware version is not supported."
+    },
+    {
+      "name": "FW_VERSION_TOO_OLD",
+      "code": 1028,
+      "category": "firmware",
+      "since": "1.0.0",
+      "status": "draft",
+      "severity": "error",
+      "retryable": false,
+      "message": "Firmware version is too old."
+    },
+    {
+      "name": "FW_TRANSFER_NOT_STARTED",
+      "code": 1029,
+      "category": "firmware",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Firmware transfer has not started."
+    },
+    {
+      "name": "FW_TRANSFER_ALREADY_STARTED",
+      "code": 1030,
+      "category": "firmware",
+      "since": "1.0.0",
+      "status": "draft",
+      "severity": "error",
+      "retryable": false,
+      "message": "Firmware transfer has already started."
+    },
+    {
+      "name": "FW_CHUNK_INVALID",
+      "code": 1031,
+      "category": "firmware",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Firmware chunk is invalid."
+    },
+    {
+      "name": "FW_CHUNK_CRC_ERROR",
+      "code": 1032,
+      "category": "firmware",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "warning",
+      "retryable": true,
+      "message": "Firmware chunk CRC failed."
+    },
+    {
+      "name": "FW_SIZE_MISMATCH",
+      "code": 1033,
+      "category": "firmware",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Firmware size does not match the declared size."
+    },
+    {
+      "name": "FW_HASH_MISMATCH",
+      "code": 1034,
+      "category": "firmware",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Firmware hash does not match the declared verification value."
+    },
+    {
+      "name": "FW_VERIFY_FAILED",
+      "code": 1035,
+      "category": "firmware",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Firmware verification failed."
+    },
+    {
+      "name": "FW_APPLY_FAILED",
+      "code": 1036,
+      "category": "firmware",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Firmware apply failed."
+    },
+    {
+      "name": "FW_ROLLBACK_FAILED",
+      "code": 1037,
+      "category": "firmware",
+      "since": "1.0.0",
+      "status": "draft",
+      "severity": "error",
+      "retryable": false,
+      "message": "Firmware rollback failed."
+    },
+    {
+      "name": "FW_STORAGE_NOT_ENOUGH",
+      "code": 1038,
+      "category": "firmware",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Not enough storage for firmware update."
+    },
+    {
+      "name": "FW_DEVICE_NOT_READY",
+      "code": 1039,
+      "category": "firmware",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "warning",
+      "retryable": true,
+      "message": "Device is not ready for firmware update."
+    },
+    {
+      "name": "FW_REBOOT_REQUIRED",
+      "code": 1040,
+      "category": "firmware",
+      "since": "1.0.0",
+      "status": "draft",
+      "severity": "error",
+      "retryable": false,
+      "message": "Reboot is required before continuing."
+    },
+    {
+      "name": "STREAM_NOT_FOUND",
+      "code": 1281,
+      "category": "stream",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Stream context does not exist."
+    },
+    {
+      "name": "STREAM_TIMEOUT",
+      "code": 1282,
+      "category": "stream",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "warning",
+      "retryable": true,
+      "message": "Stream timed out."
+    },
+    {
+      "name": "STREAM_CRC_ERROR",
+      "code": 1283,
+      "category": "stream",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "warning",
+      "retryable": true,
+      "message": "Stream chunk CRC check failed."
+    },
+    {
+      "name": "STREAM_PAYLOAD_INVALID",
+      "code": 1284,
+      "category": "stream",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Stream payload is invalid."
+    },
+    {
+      "name": "STREAM_ID_INVALID",
+      "code": 1285,
+      "category": "stream",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "StreamId is invalid."
+    },
+    {
+      "name": "STREAM_NOT_OPEN",
+      "code": 1286,
+      "category": "stream",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Stream is not open."
+    },
+    {
+      "name": "STREAM_ALREADY_OPEN",
+      "code": 1287,
+      "category": "stream",
+      "since": "1.0.0",
+      "status": "draft",
+      "severity": "error",
+      "retryable": false,
+      "message": "Stream is already open."
+    },
+    {
+      "name": "STREAM_SEQ_INVALID",
+      "code": 1288,
+      "category": "stream",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Stream seqId is invalid."
+    },
+    {
+      "name": "STREAM_SEQ_DUPLICATED",
+      "code": 1289,
+      "category": "stream",
+      "since": "1.0.0",
+      "status": "draft",
+      "severity": "error",
+      "retryable": false,
+      "message": "Stream seqId is duplicated."
+    },
+    {
+      "name": "STREAM_CHUNK_MISSING",
+      "code": 1290,
+      "category": "stream",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "warning",
+      "retryable": true,
+      "message": "Stream chunk is missing."
+    },
+    {
+      "name": "STREAM_OFFSET_INVALID",
+      "code": 1291,
+      "category": "stream",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Stream cursor or offset is invalid."
+    },
+    {
+      "name": "STREAM_WINDOW_FULL",
+      "code": 1292,
+      "category": "stream",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "warning",
+      "retryable": true,
+      "message": "Stream receive window is full."
+    },
+    {
+      "name": "STREAM_BACKPRESSURE",
+      "code": 1293,
+      "category": "stream",
+      "since": "1.0.0",
+      "status": "draft",
+      "severity": "warning",
+      "retryable": true,
+      "message": "Stream receiver reported backpressure."
+    },
+    {
+      "name": "STREAM_RESUME_UNSUPPORTED",
+      "code": 1294,
+      "category": "stream",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Stream resume is not supported."
+    },
+    {
+      "name": "STREAM_RESUME_FAILED",
+      "code": 1295,
+      "category": "stream",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Stream resume failed."
+    },
+    {
+      "name": "STREAM_CLOSED",
+      "code": 1296,
+      "category": "stream",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Stream is closed."
+    },
+    {
+      "name": "STREAM_TRANSFER_ABORTED",
+      "code": 1297,
+      "category": "stream",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Stream transfer was aborted."
+    },
+    {
+      "name": "MEDIA_SOURCE_NOT_FOUND",
+      "code": 2049,
+      "category": "video",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Requested media source does not exist."
+    },
+    {
+      "name": "MEDIA_SOURCE_UNAVAILABLE",
+      "code": 2050,
+      "category": "video",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "warning",
+      "retryable": true,
+      "message": "Requested media source is currently unavailable."
+    },
+    {
+      "name": "MEDIA_CODEC_UNSUPPORTED",
+      "code": 2051,
+      "category": "video",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Requested media codec or sample format is unsupported."
+    },
+    {
+      "name": "MEDIA_RESOLUTION_UNSUPPORTED",
+      "code": 2052,
+      "category": "video",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Requested video resolution is unsupported."
+    },
+    {
+      "name": "MEDIA_FRAMERATE_UNSUPPORTED",
+      "code": 2053,
+      "category": "video",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Requested video frame rate is unsupported."
+    },
+    {
+      "name": "MEDIA_BITRATE_UNSUPPORTED",
+      "code": 2054,
+      "category": "video",
+      "since": "1.0.0",
+      "status": "draft",
+      "severity": "error",
+      "retryable": false,
+      "message": "Requested media bitrate is unsupported."
+    },
+    {
+      "name": "MEDIA_STREAM_START_FAILED",
+      "code": 2055,
+      "category": "video",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "warning",
+      "retryable": true,
+      "message": "Device failed to start the requested media stream."
+    },
+    {
+      "name": "MEDIA_STREAM_STOP_FAILED",
+      "code": 2056,
+      "category": "video",
+      "since": "1.0.0",
+      "status": "draft",
+      "severity": "warning",
+      "retryable": true,
+      "message": "Device failed to stop the media stream."
+    },
+    {
+      "name": "MEDIA_FRAME_DROPPED",
+      "code": 2057,
+      "category": "video",
+      "since": "1.0.0",
+      "status": "draft",
+      "severity": "warning",
+      "retryable": true,
+      "message": "Media frame was dropped."
+    },
+    {
+      "name": "MEDIA_VIDEO_SIGNAL_LOST",
+      "code": 2059,
+      "category": "video",
+      "since": "1.0.0",
+      "status": "draft",
+      "severity": "warning",
+      "retryable": true,
+      "message": "Video signal was lost."
+    },
+    {
+      "name": "MEDIA_AUDIO_DEVICE_NOT_FOUND",
+      "code": 2314,
+      "category": "audio",
+      "since": "1.0.0",
+      "status": "draft",
+      "severity": "error",
+      "retryable": false,
+      "message": "Audio device was not found."
+    },
+    {
+      "name": "FILE_NOT_FOUND",
+      "code": 4097,
+      "category": "file",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "File does not exist."
+    },
+    {
+      "name": "FILE_ALREADY_EXISTS",
+      "code": 4098,
+      "category": "file",
+      "since": "1.0.0",
+      "status": "draft",
+      "severity": "error",
+      "retryable": false,
+      "message": "File already exists."
+    },
+    {
+      "name": "FILE_PERMISSION_DENIED",
+      "code": 4099,
+      "category": "file",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "File permission denied."
+    },
+    {
+      "name": "FILE_PATH_INVALID",
+      "code": 4100,
+      "category": "file",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "File path is invalid."
+    },
+    {
+      "name": "FILE_TYPE_UNSUPPORTED",
+      "code": 4101,
+      "category": "file",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "File type is not supported."
+    },
+    {
+      "name": "FILE_TOO_LARGE",
+      "code": 4102,
+      "category": "file",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "File is too large."
+    },
+    {
+      "name": "FILE_READ_FAILED",
+      "code": 4103,
+      "category": "file",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "warning",
+      "retryable": true,
+      "message": "File read failed."
+    },
+    {
+      "name": "FILE_WRITE_FAILED",
+      "code": 4104,
+      "category": "file",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "warning",
+      "retryable": true,
+      "message": "File write failed."
+    },
+    {
+      "name": "FILE_DELETE_FAILED",
+      "code": 4105,
+      "category": "file",
+      "since": "1.0.0",
+      "status": "draft",
+      "severity": "error",
+      "retryable": false,
+      "message": "File delete failed."
+    },
+    {
+      "name": "FILE_TRANSFER_FAILED",
+      "code": 4106,
+      "category": "file",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "warning",
+      "retryable": true,
+      "message": "File transfer failed."
+    },
+    {
+      "name": "FILE_VERIFY_FAILED",
+      "code": 4107,
+      "category": "file",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "File verification failed."
+    },
+    {
+      "name": "FILE_STORAGE_FULL",
+      "code": 4108,
+      "category": "file",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "File storage is full."
+    },
+    {
+      "name": "DIAG_TEST_NOT_FOUND",
+      "code": 4609,
+      "category": "diagnostic",
+      "since": "1.0.0",
+      "status": "draft",
+      "severity": "error",
+      "retryable": false,
+      "message": "Diagnostic test was not found."
+    },
+    {
+      "name": "DIAG_TEST_UNSUPPORTED",
+      "code": 4610,
+      "category": "diagnostic",
+      "since": "1.0.0",
+      "status": "draft",
+      "severity": "error",
+      "retryable": false,
+      "message": "Diagnostic test is not supported."
+    },
+    {
+      "name": "DIAG_TEST_RUNNING",
+      "code": 4611,
+      "category": "diagnostic",
+      "since": "1.0.0",
+      "status": "draft",
+      "severity": "error",
+      "retryable": false,
+      "message": "Diagnostic test is already running."
+    },
+    {
+      "name": "DIAG_TEST_FAILED",
+      "code": 4612,
+      "category": "diagnostic",
+      "since": "1.0.0",
+      "status": "draft",
+      "severity": "error",
+      "retryable": false,
+      "message": "Diagnostic test failed."
+    },
+    {
+      "name": "DIAG_METRIC_UNAVAILABLE",
+      "code": 4613,
+      "category": "diagnostic",
+      "since": "1.0.0",
+      "status": "draft",
+      "severity": "warning",
+      "retryable": true,
+      "message": "Diagnostic metric is unavailable."
+    },
+    {
+      "name": "DIAG_LOOPBACK_FAILED",
+      "code": 4614,
+      "category": "diagnostic",
+      "since": "1.0.0",
+      "status": "draft",
+      "severity": "error",
+      "retryable": false,
+      "message": "Diagnostic loopback failed."
+    },
+    {
+      "name": "SEC_AUTH_REQUIRED",
+      "code": 5121,
+      "category": "auth",
+      "since": "1.0.0",
+      "status": "draft",
+      "severity": "error",
+      "retryable": false,
+      "message": "Authentication is required."
+    },
+    {
+      "name": "SEC_AUTH_FAILED",
+      "code": 5122,
+      "category": "auth",
+      "since": "1.0.0",
+      "status": "draft",
+      "severity": "error",
+      "retryable": false,
+      "message": "Authentication failed."
+    },
+    {
+      "name": "SEC_PERMISSION_DENIED",
+      "code": 5123,
+      "category": "auth",
+      "since": "1.0.0",
+      "status": "draft",
+      "severity": "error",
+      "retryable": false,
+      "message": "Security permission denied."
+    },
+    {
+      "name": "SEC_ENCRYPTION_REQUIRED",
+      "code": 5124,
+      "category": "auth",
+      "since": "1.0.0",
+      "status": "draft",
+      "severity": "error",
+      "retryable": false,
+      "message": "Encryption is required."
+    },
+    {
+      "name": "SEC_DECRYPT_FAILED",
+      "code": 5125,
+      "category": "auth",
+      "since": "1.0.0",
+      "status": "draft",
+      "severity": "error",
+      "retryable": false,
+      "message": "Decryption failed."
+    },
+    {
+      "name": "SEC_SIGNATURE_INVALID",
+      "code": 5126,
+      "category": "auth",
+      "since": "1.0.0",
+      "status": "draft",
+      "severity": "error",
+      "retryable": false,
+      "message": "Signature is invalid."
+    },
+    {
+      "name": "SEC_CERT_INVALID",
+      "code": 5127,
+      "category": "auth",
+      "since": "1.0.0",
+      "status": "draft",
+      "severity": "error",
+      "retryable": false,
+      "message": "Certificate is invalid."
+    },
+    {
+      "name": "SEC_TOKEN_EXPIRED",
+      "code": 5128,
+      "category": "auth",
+      "since": "1.0.0",
+      "status": "draft",
+      "severity": "error",
+      "retryable": false,
+      "message": "Security token expired."
+    },
+    {
+      "name": "LEGACY_CMD_UNMAPPED",
+      "code": 32513,
+      "category": "legacy",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Legacy CmdValue is not mapped to an AXTP method."
+    },
+    {
+      "name": "LEGACY_STATUS_UNMAPPED",
+      "code": 32514,
+      "category": "legacy",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Legacy status is not mapped to an AXTP ErrorCode."
+    },
+    {
+      "name": "LEGACY_PAYLOAD_INVALID",
+      "code": 32515,
+      "category": "legacy",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Legacy payload is invalid."
+    },
+    {
+      "name": "LEGACY_PAYLOAD_TOO_SHORT",
+      "code": 32516,
+      "category": "legacy",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Legacy payload is too short."
+    },
+    {
+      "name": "LEGACY_PAYLOAD_TOO_LONG",
+      "code": 32517,
+      "category": "legacy",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Legacy payload is too long."
+    },
+    {
+      "name": "LEGACY_FIELD_UNSUPPORTED",
+      "code": 32518,
+      "category": "legacy",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Legacy field cannot be adapted."
+    },
+    {
+      "name": "LEGACY_CAPABILITY_CONFLICT",
+      "code": 32519,
+      "category": "legacy",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "error",
+      "retryable": false,
+      "message": "Legacy capability conflicts with AXTP capability."
+    },
+    {
+      "name": "LEGACY_RESPONSE_TIMEOUT",
+      "code": 32520,
+      "category": "legacy",
+      "since": "1.0.0",
+      "status": "stable",
+      "severity": "warning",
+      "retryable": true,
+      "message": "Legacy response timed out."
+    }
+  ],
+  "profiles": [
+    {
+      "name": "AXTP-MVP",
+      "since": "1.0.0",
+      "status": "stable",
+      "requiredMethods": [],
+      "requiredEvents": [],
+      "requiredTypes": [],
+      "requiredErrors": [
+        "SUCCESS",
+        "RPC_METHOD_NOT_FOUND",
+        "RPC_PARAM_INVALID",
+        "STREAM_NOT_FOUND",
+        "STREAM_CRC_ERROR",
+        "BUSY"
+      ],
+      "transportProfiles": [
+        "AXTP-USB-HID",
+        "AXTP-TCP",
+        "AXTP-WS-JSON",
+        "AXTP-WS-CLOUD-REVERSE"
+      ],
+      "frameProfiles": [
+        "STANDARD_FRAME"
+      ]
+    },
+    {
+      "name": "AXTP-MVP-HID",
+      "since": "1.0.0",
+      "status": "stable",
+      "extends": "AXTP-MVP",
+      "requiredMethods": [],
+      "requiredEvents": [],
+      "requiredTypes": [],
+      "requiredErrors": [
+        "SUCCESS",
+        "RPC_METHOD_NOT_FOUND",
+        "RPC_PARAM_INVALID",
+        "STREAM_NOT_FOUND",
+        "STREAM_CRC_ERROR",
+        "BUSY"
+      ],
+      "transportProfiles": [
+        "AXTP-USB-HID"
+      ],
+      "frameProfile": "STANDARD_FRAME",
+      "frameProfiles": []
+    }
+  ]
+}

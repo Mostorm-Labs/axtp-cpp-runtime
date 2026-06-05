@@ -1,0 +1,31 @@
+generator:
+  name: axtp-generator
+  version: 1.0.0
+
+input:
+  registry_dir: registry
+  schema_dir: schema
+
+output:
+  markdown_dir: out/generated/docs
+  cpp_dir: out/generated/cpp
+  json_dir: out/generated/json
+  test_vector_dir: out/generated/test_vectors
+
+cpp:
+  namespace: axtp
+  standard: c++17
+  enum_class: true
+  generate_structs: true
+  generate_descriptors: true
+  generate_tlv_helpers: true
+
+validation:
+  level: strict
+  fail_on_duplicate_id: true
+  fail_on_unknown_schema: true
+  fail_on_missing_mvp_item: true
+  allow_experimental: false
+
+compatibility:
+  legacy: true
