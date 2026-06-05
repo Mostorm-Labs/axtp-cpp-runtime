@@ -220,7 +220,7 @@ jobs:
             cmake --build build/generated-cpp-mock-server
             ctest --test-dir build/generated-cpp-mock-server --output-on-failure
           elif [[ -f generated/cpp-mock-server/CMakeLists.txt ]]; then
-            echo "TODO: generated C++ mock server requires sibling axtp-cpp-runtime checkout; skipping in workflow."
+            echo "Generated C++ mock server requires sibling axtp-cpp-runtime checkout; skipping optional generated C++ checks."
           else
             echo "No generated C++ mock server project; skipping."
           fi
@@ -229,11 +229,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if [[ -x scripts/run-conformance.sh ]]; then
-            scripts/run-conformance.sh
-          else
-            echo "TODO: no dedicated conformance test script exists yet."
-          fi
+          CONFORMANCE_ALLOW_INCOMPLETE=true AXTP_SPEC_PATH="$GITHUB_WORKSPACE/third_party/axtp-spec" scripts/run-conformance.sh
 
       - name: Write PR body
         shell: bash

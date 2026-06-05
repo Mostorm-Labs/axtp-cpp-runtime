@@ -36,6 +36,7 @@ endif()
 option(AXTP_BUILD_JSON_RPC "Build optional AXTP WebSocket JSON-RPC headers/tests" ${AXTP_CORE_IS_TOP_LEVEL})
 option(AXTP_BUILD_OPTIONAL_TRANSPORTS "Build optional AXTP example transport targets" ${AXTP_CORE_IS_TOP_LEVEL})
 option(AXTP_CORE_BUILD_TESTS "Build AXTP core runtime tests" ${AXTP_CORE_IS_TOP_LEVEL})
+option(AXTP_BUILD_CONFORMANCE "Build AXTP conformance runner" OFF)
 
 if(AXTP_BUILD_JSON_RPC)
     add_library(axtp_json_rpc INTERFACE)
@@ -151,6 +152,17 @@ if(AXTP_BUILD_OPTIONAL_TRANSPORTS)
             ${AXTP_HIDAPI_TARGET}
     )
     target_compile_features(axtp_transport_hidapi PUBLIC cxx_std_17)
+endif()
+
+if(AXTP_BUILD_CONFORMANCE)
+    if(NOT TARGET axtp_json_rpc)
+        message(FATAL_ERROR "AXTP conformance runner requires AXTP_BUILD_JSON_RPC")
+    endif()
+
+    add_executable(axtp_conformance_runner
+        ../tests/conformance/conformance_runner.cpp
+    )
+    target_link_libraries(axtp_conformance_runner PRIVATE axtp_core axtp_json_rpc Boost::json)
 endif()
 
 if(NOT AXTP_CORE_BUILD_TESTS)

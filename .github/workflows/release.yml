@@ -25,6 +25,29 @@ jobs:
           fi
           echo "RUNTIME_VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
 
+      - name: Resolve locked AXTP spec tag
+        id: spec_lock
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          spec_tag="$(awk '/^[[:space:]]+tag:/ { value = $0; sub("^[[:space:]]+tag:[[:space:]]*", "", value); gsub(/^"/, "", value); gsub(/"$/, "", value); print value; exit }' AXTP_SPEC.lock.yaml)"
+          if [[ ! "$spec_tag" =~ ^spec/v[0-9]+.[0-9]+.[0-9]+$ ]]; then
+            echo "AXTP_SPEC.lock.yaml tag must match spec/vMAJOR.MINOR.PATCH: $spec_tag" >&2
+            exit 2
+          fi
+
+          echo "spec_tag=$spec_tag" >> "$GITHUB_OUTPUT"
+          echo "AXTP_SPEC_TAG=$spec_tag" >> "$GITHUB_ENV"
+
+      - name: Checkout AXTP spec
+        uses: actions/checkout@v4
+        with:
+          repository: Mostorm-Labs/axtp
+          ref: ${{ steps.spec_lock.outputs.spec_tag }}
+          path: third_party/axtp-spec
+          persist-credentials: false
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -162,7 +185,7 @@ jobs:
             cmake --build build/generated-cpp-mock-server
             ctest --test-dir build/generated-cpp-mock-server --output-on-failure
           elif [[ -f generated/cpp-mock-server/CMakeLists.txt ]]; then
-            echo "TODO: generated C++ mock server requires sibling axtp-cpp-runtime checkout; skipping in release workflow."
+            echo "Generated C++ mock server requires sibling axtp-cpp-runtime checkout; skipping optional generated C++ checks."
           else
             echo "No generated C++ mock server project; skipping."
           fi
@@ -171,11 +194,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if [[ -x scripts/run-conformance.sh ]]; then
-            scripts/run-conformance.sh
-          else
-            echo "TODO: no dedicated conformance test script exists yet."
-          fi
+          AXTP_SPEC_PATH="$GITHUB_WORKSPACE/third_party/axtp-spec" scripts/run-conformance.sh
 
       - name: Package release artifacts
         shell: bash
