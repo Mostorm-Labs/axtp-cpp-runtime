@@ -44,7 +44,7 @@ function assertNoUnsupportedProfileKeys(value: unknown): void {
   if (!Array.isArray(profiles)) return;
   profiles.forEach((profile, index) => {
     if (profile && typeof profile === "object" && "requiredCapabilities" in profile) {
-      fail(`profiles[${index}]`, "requiredCapabilities", "profiles[].requiredCapabilities is not defined by 13-AXTP-Profiles-Registry-Spec.md");
+      fail(`profiles[${index}]`, "requiredCapabilities", "profiles[].requiredCapabilities is not defined by docs/specs/2-registry/05-Profiles-Registry.md");
     }
   });
 }
@@ -80,7 +80,7 @@ function assertDomainName(name: string, domain: string, label: string): void {
 function assertMethodReferences(methods: MethodDefinition[], typeNames: Set<string>, eventNames: Set<string>, errorNames: Set<string>): void {
   for (const method of methods) {
     assertDomainName(method.name, method.domain, "method");
-    if (!method.description || method.description.trim() === "") fail(method.name, "description", "method description is required by 09-AXTP-Methods-Registry-Spec.md");
+    if (!method.description || method.description.trim() === "") fail(method.name, "description", "method description is required by docs/specs/2-registry/02-Methods-Registry.md");
     if (!typeNames.has(method.request.type)) fail(method.name, "request.type", `missing type: ${method.request.type}`);
     if (!typeNames.has(method.response.type)) fail(method.name, "response.type", `missing type: ${method.response.type}`);
     for (const event of method.events) {
@@ -144,7 +144,7 @@ function assertEmptySchemaUsage(model: ProtocolModel): void {
   const schemas = new Map(model.schemas.map((schema) => [schema.name, schema]));
   const empty = schemas.get("Empty");
   if (!empty || empty.kind !== "object" || empty.fields.length !== 0) {
-    fail("schemas.Empty", "schema", "09-AXTP-Methods-Registry-Spec.md requires empty request/response to use Empty");
+    fail("schemas.Empty", "schema", "docs/specs/2-registry/02-Methods-Registry.md requires empty request/response to use Empty");
   }
   for (const method of model.methods) {
     const requestSchema = schemas.get(method.request.type);
@@ -227,13 +227,18 @@ function assertStreamHeader(model: ProtocolModel): void {
 }
 
 function assertControlOpcodes(model: ProtocolModel): void {
-  for (const opcode of ["OPEN", "ACCEPT"]) {
-    if (!model.control.requiredOpcodes.includes(opcode)) fail("control.requiredOpcodes", opcode, `${opcode} is required by 04-AXTP-Control-Session-Spec.md`);
+  for (const opcode of ["OPEN", "ACCEPT", "HEARTBEAT", "HEARTBEAT_ACK", "CLOSE", "CLOSE_ACK"]) {
+    if (!model.control.requiredOpcodes.includes(opcode)) fail("control.requiredOpcodes", opcode, `${opcode} is required by docs/specs/1-core/05-Control-Session.md`);
   }
-  if (model.control.requiredOpcodes.includes("READY")) fail("control.requiredOpcodes", "READY", "READY is optional and must not be required");
+  for (const opcode of ["READY", "ACK", "NACK"]) {
+    if (model.control.requiredOpcodes.includes(opcode)) fail("control.requiredOpcodes", opcode, `${opcode} is optional/future and must not be required`);
+  }
   if (!model.control.optionalOpcodes.includes("READY")) fail("control.optionalOpcodes", "READY", "READY must be optional/reserved");
+  for (const opcode of ["ACK", "NACK"]) {
+    if (!model.control.optionalOpcodes.includes(opcode)) fail("control.optionalOpcodes", opcode, `${opcode} must be listed as optional/future, not required`);
+  }
   for (const opcode of ["ACK", "NACK", "RESUME", "HEARTBEAT", "HEARTBEAT_ACK", "CLOSE", "CLOSE_ACK"]) {
-    if (model.control.reservedOpcodes.includes(opcode)) fail("control.reservedOpcodes", opcode, `${opcode} is defined by 04-AXTP-Control-Session-Spec.md and must not be listed as reserved`);
+    if (model.control.reservedOpcodes.includes(opcode)) fail("control.reservedOpcodes", opcode, `${opcode} is defined by docs/specs/1-core/05-Control-Session.md and must not be listed as reserved`);
   }
 }
 
@@ -265,6 +270,11 @@ function assertCurrentTransportPolicy(model: ProtocolModel): void {
     }
     if (transport.supportsControl !== true || transport.supportsStream !== true) {
       fail(transport.name, "transports", "Standard Framed transports must support CONTROL and STREAM");
+    }
+    for (const encoding of ["JSON", "CBOR", "MSGPACK", "JSON_BINARY"]) {
+      if (!rpcEncodings.includes(encoding)) {
+        fail(transport.name, "rpcEncodings", `Standard Framed transports must declare rpcEncoding ${encoding}`);
+      }
     }
   }
 

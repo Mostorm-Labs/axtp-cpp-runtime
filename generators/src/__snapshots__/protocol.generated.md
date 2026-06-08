@@ -26,7 +26,7 @@
 
 ## Overview
 
-AXTP is a transport-independent device communication protocol for CONTROL, RPC and STREAM payloads across Standard Framed transports, plus a formal WebSocket Unframed JSON RPC profile.
+AXTP is a transport-independent device communication protocol for CONTROL, RPC and STREAM payloads across Standard Framed transports, plus a formal WebSocket Unframed JSON RPC profile. Phase 1 requires the STREAM data plane for audio/video media flow profiles.
 
 | Property | Value |
 | ---- | ---- |
@@ -40,21 +40,21 @@ AXTP is a transport-independent device communication protocol for CONTROL, RPC a
 
 AXTP v1 has two formal integration paths:
 
-- **Standard Framed**: uses the 12-byte Standard Frame header, CONTROL OPEN/ACCEPT, RPC, STREAM, fragmentation, CRC16, and optional ACK/NACK.
+- **Standard Framed**: uses the 12-byte Standard Frame header, CONTROL OPEN/ACCEPT, HEARTBEAT/CLOSE, RPC, STREAM, fragmentation and CRC16. ACK/NACK reliability is future/profile-level work.
 - **WebSocket Unframed JSON**: uses the JSON `sid`/`op`/`d` envelope directly over WebSocket. It is RPC-only and does not carry CONTROL or STREAM payloads.
 
 | Path | Transports | Frame | RPC Encodings | CONTROL | STREAM |
 | ---- | ---- | ---- | ---- | ---- | ---- |
-| Standard Framed | AXTP-USB-HID<br>AXTP-TCP | STANDARD_FRAME | `TLV`, `JSON`, `RAW` | Yes | Yes |
+| Standard Framed | AXTP-USB-HID<br>AXTP-TCP | STANDARD_FRAME | `JSON`, `CBOR`, `MSGPACK`, `JSON_BINARY` | Yes | Yes |
 | WebSocket Unframed JSON | AXTP-WS-JSON<br>AXTP-WS-CLOUD-REVERSE | None | `JSON` | No | No |
 
-Compact/HID-64/BLE/UART framing is a low-bandwidth degradation path, not an AXTP v1 Core requirement. See `docs/specs/18-AXTP-Low-Bandwidth-Degradation.md` for that path.
+Compact/HID-64/BLE/UART framing is a low-bandwidth degradation path, not an AXTP v1 Core requirement. See `docs/specs/1-core/08-Low-Bandwidth-Degradation.md` for that path.
 
 ## Design Goals / Non-Goals
 
 ### Goals
 
-- Provide one unified protocol model for control, request/response RPC and stream transfer.
+- Provide one unified protocol model for control, request/response RPC and audio/video stream transfer.
 - Make Standard Frame the AXTP v1 Core binary path for USB HID High Speed and TCP.
 - Support WebSocket Unframed JSON as the formal RPC-only integration path.
 - Keep full dynamic capability modeling optional outside AXTP v1 Core.
@@ -89,8 +89,8 @@ The current protocol definition exposes the connection profiles that are intende
 
 | Profile | Family | Mode | Frame | RPC Encodings | CONTROL | STREAM | Notes |
 | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- |
-| AXTP-USB-HID | usb-hid | standard-framed | STANDARD_FRAME | `TLV`, `JSON`, `RAW` | Yes | Yes | USB HID High Speed or large-report HID transport using Standard Frame. |
-| AXTP-TCP | tcp | standard-framed | STANDARD_FRAME | `TLV`, `JSON`, `RAW` | Yes | Yes | TCP byte stream transport using Standard Frame magic and length parsing. |
+| AXTP-USB-HID | usb-hid | standard-framed | STANDARD_FRAME | `JSON`, `CBOR`, `MSGPACK`, `JSON_BINARY` | Yes | Yes | USB HID High Speed or large-report HID transport using Standard Frame. |
+| AXTP-TCP | tcp | standard-framed | STANDARD_FRAME | `JSON`, `CBOR`, `MSGPACK`, `JSON_BINARY` | Yes | Yes | TCP byte stream transport using Standard Frame magic and length parsing. |
 | AXTP-WS-JSON | websocket | unframed-json | None | `JSON` | No | No | Formal RPC-only WebSocket JSON profile using the sid/op/d envelope. |
 | AXTP-WS-CLOUD-REVERSE | websocket | unframed-json-cloud-reverse | None | `JSON` | No | No | Device initiates the WebSocket connection but remains the Logical Server. |
 
@@ -151,7 +151,7 @@ Every Standard Framed AXTP Frame carries exactly one payload. WebSocket Unframed
 | Type | ID | Header Size | When to Use |
 | ---- | ---- | ---- | ---- |
 | `CONTROL` | 0x01 | 5B | Logical session control payload. |
-| `RPC` | 0x02 | 11B | Binary request, response, event and error payload. |
+| `RPC` | 0x02 | 1B | RPC payload starts with rpcEncoding; JSON_BINARY then carries the fixed binary envelope. |
 | `STREAM` | 0x03 | 16B | Chunk-oriented data plane payload. |
 
 ## Generated Method Index

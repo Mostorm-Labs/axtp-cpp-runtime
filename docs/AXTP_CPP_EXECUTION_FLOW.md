@@ -92,8 +92,8 @@ WebSocket text message bytes
 
 Spec 对齐：
 
-- `docs/specs/03-AXTP-Transport-Profiles.md` 定义 `AXTP-WS-JSON` 和 `AXTP-WS-CLOUD-REVERSE`，它们都是 WebSocket Unframed JSON profile。
-- `docs/specs/05-AXTP-RPC-Session-Spec.md` 定义 `sid/op/d` envelope，以及 Hello、Identify、Identified、Request、RequestResponse、Event、Batch 语义。
+- `docs/specs/1-core/04-Transport-Profiles.md` 定义 `AXTP-WS-JSON` 和 `AXTP-WS-CLOUD-REVERSE`，它们都是 WebSocket Unframed JSON profile。
+- `docs/specs/1-core/06-RPC-Session.md` 定义 `sid/op/d` envelope，以及 Hello、Identify、Identified、Request、RequestResponse、Event、Batch 语义。
 - 当前没有独立 WebSocket JSON-RPC profile 文档；如果后续新增，应作为 runtime 的最具体依据。
 
 Mosculer 只作为历史上下文，用来解释 OBS-style envelope 的来源；runtime 格式以 AXTP specs 为准。WebSocketJsonRpc 不是 AXDP/legacy adapter，也不承载 legacy command id、legacy status code、旧 checksum 或旧 header。需要兼容旧协议时，应做成独立可选 adapter，并依赖 cpp/core 的归一化 payload 接口。

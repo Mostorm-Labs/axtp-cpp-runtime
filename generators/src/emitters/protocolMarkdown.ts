@@ -293,15 +293,21 @@ function yesNo(value: boolean | undefined): string {
   return value === undefined ? "-" : value ? "Yes" : "No";
 }
 
+function streamSupportLabel(t: ProtocolModel["transports"][number]): string {
+  if (t.frameProfile === "none") return "No";
+  return yesNo(t.supportsStream);
+}
+
 function renderProtocolFramework(model: ProtocolModel): string[] {
   const framed = model.transports.filter((transport) => transport.frameProfile !== "none");
   const unframed = model.transports.filter((transport) => transport.frameProfile === "none");
+  const framedRpcEncodings = [...new Set(framed.flatMap((transport) => transport.rpcEncodings ?? []))];
   return [
     "## Protocol Framework",
     "",
     "AXTP v1 has two formal integration paths:",
     "",
-    "- **Standard Framed**: uses the 12-byte Standard Frame header, CONTROL OPEN/ACCEPT, RPC, STREAM, fragmentation, CRC16, and optional ACK/NACK.",
+    "- **Standard Framed**: uses the 12-byte Standard Frame header, CONTROL OPEN/ACCEPT, HEARTBEAT/CLOSE, RPC, STREAM, fragmentation and CRC16. ACK/NACK reliability is future/profile-level work.",
     "- **WebSocket Unframed JSON**: uses the JSON `sid`/`op`/`d` envelope directly over WebSocket. It is RPC-only and does not carry CONTROL or STREAM payloads.",
     "",
     ...table(
@@ -311,7 +317,7 @@ function renderProtocolFramework(model: ProtocolModel): string[] {
           "Standard Framed",
           list(framed.map((transport) => transport.name)),
           "STANDARD_FRAME",
-          "`TLV`, `JSON`, `RAW`",
+          inlineList(framedRpcEncodings),
           "Yes",
           "Yes"
         ],
@@ -326,7 +332,7 @@ function renderProtocolFramework(model: ProtocolModel): string[] {
       ]
     ),
     "",
-    "Compact/HID-64/BLE/UART framing is a low-bandwidth degradation path, not an AXTP v1 Core requirement. See `docs/specs/18-AXTP-Low-Bandwidth-Degradation.md` for that path."
+    "Compact/HID-64/BLE/UART framing is a low-bandwidth degradation path, not an AXTP v1 Core requirement. See `docs/specs/1-core/08-Low-Bandwidth-Degradation.md` for that path."
   ];
 }
 
@@ -338,7 +344,7 @@ function renderConnectionProfiles(model: ProtocolModel): string[] {
     t.frameProfile === "none" ? "None" : t.frameProfile,
     inlineList(t.rpcEncodings),
     yesNo(t.supportsControl),
-    yesNo(t.supportsStream),
+    streamSupportLabel(t),
     t.notes ?? t.usage ?? "-"
   ]);
   const lines: string[] = [

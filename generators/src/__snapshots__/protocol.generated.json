@@ -9,9 +9,9 @@
   },
   "overview": {
     "title": "AXTP Protocol",
-    "summary": "AXTP is a transport-independent device communication protocol for CONTROL, RPC and STREAM payloads across Standard Framed transports, plus a formal WebSocket Unframed JSON RPC profile.",
+    "summary": "AXTP is a transport-independent device communication protocol for CONTROL, RPC and STREAM payloads across Standard Framed transports, plus a formal WebSocket Unframed JSON RPC profile. Phase 1 requires the STREAM data plane for audio/video media flow profiles.",
     "goals": [
-      "Provide one unified protocol model for control, request/response RPC and stream transfer.",
+      "Provide one unified protocol model for control, request/response RPC and audio/video stream transfer.",
       "Make Standard Frame the AXTP v1 Core binary path for USB HID High Speed and TCP.",
       "Support WebSocket Unframed JSON as the formal RPC-only integration path.",
       "Keep full dynamic capability modeling optional outside AXTP v1 Core."
@@ -43,7 +43,7 @@
       },
       {
         "name": "Stream Session",
-        "description": "Handles OTA, file, audio, video, log and sensor chunk transfer."
+        "description": "Handles Phase 1 audio/video stream transfer and later OTA, file, log and sensor chunk transfer profiles."
       }
     ],
     "lifecycle": [
@@ -145,9 +145,10 @@
       "frameProfile": "STANDARD_FRAME",
       "production": true,
       "rpcEncodings": [
-        "TLV",
         "JSON",
-        "RAW"
+        "CBOR",
+        "MSGPACK",
+        "JSON_BINARY"
       ],
       "supportsControl": true,
       "supportsStream": true,
@@ -165,9 +166,10 @@
       "frameProfile": "STANDARD_FRAME",
       "production": true,
       "rpcEncodings": [
-        "TLV",
         "JSON",
-        "RAW"
+        "CBOR",
+        "MSGPACK",
+        "JSON_BINARY"
       ],
       "supportsControl": true,
       "supportsStream": true,
@@ -225,8 +227,8 @@
     {
       "name": "RPC",
       "id": 2,
-      "headerBytes": 11,
-      "description": "Binary request, response, event and error payload."
+      "headerBytes": 1,
+      "description": "RPC payload starts with rpcEncoding; JSON_BINARY then carries the fixed binary envelope."
     },
     {
       "name": "STREAM",
@@ -238,16 +240,24 @@
   "control": {
     "requiredOpcodes": [
       "OPEN",
-      "ACCEPT"
+      "ACCEPT",
+      "HEARTBEAT",
+      "HEARTBEAT_ACK",
+      "CLOSE",
+      "CLOSE_ACK"
     ],
     "optionalOpcodes": [
-      "READY"
+      "READY",
+      "ACK",
+      "NACK"
     ],
     "reservedOpcodes": [],
     "rules": [
       "Standard Framed transports require OPEN and ACCEPT before RPC or STREAM payloads.",
+      "Phase 1 runtimes must implement HEARTBEAT/HEARTBEAT_ACK and CLOSE/CLOSE_ACK for framed links.",
       "WebSocket Unframed JSON does not use CONTROL payloads.",
       "READY is not required by v1 Core and must not be assumed by peers.",
+      "ACK/NACK opcodes and fields are reserved for future reliable-transfer profiles and are not Phase 1 requirements.",
       "Dynamic header negotiation is not performed in v1."
     ]
   },
@@ -273,13 +283,14 @@
     "rules": [
       "STREAM uses the unified 16-byte header in Standard Framed transports.",
       "WebSocket Unframed JSON must not carry STREAM data.",
-      "The historical 8-byte stream header is not part of AXTP v1 Core."
+      "The historical 8-byte stream header is not part of AXTP v1 Core.",
+      "Phase 1 Standard Framed runtimes must implement STREAM data packets for adopted audio/video media stream profiles."
     ]
   },
   "compatibility": {
     "legacySources": [
-      "docs/archive/source-planning/AXTP-Legacy-Compatibility-Reference.md",
-      "docs/archive/source-planning/AXTP-Legacy-Registry-Migration-Map.md"
+      "docs/legacy-migration/planning/AXTP-Legacy-Compatibility-Reference.md",
+      "docs/legacy-migration/planning/AXTP-Legacy-Registry-Migration-Map.md"
     ],
     "rules": [
       "Stable methodId, eventId and error code values must not be reused.",
