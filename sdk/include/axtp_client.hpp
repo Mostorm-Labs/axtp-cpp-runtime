@@ -196,13 +196,13 @@ public:
     }
 
     Bytes callTlv(std::uint32_t methodId, Bytes tlvBody, CallOptions options = {}) {
-        options.encoding = RpcEncoding::Tlv;
-        return callRaw(methodId, RpcEncoding::Tlv, std::move(tlvBody), options);
+        options.encoding = jsonBinaryRpcEncoding();
+        return callRaw(methodId, jsonBinaryRpcEncoding(), std::move(tlvBody), options);
     }
 
     Bytes callRawBytes(std::uint32_t methodId, Bytes body, CallOptions options = {}) {
-        options.encoding = RpcEncoding::Raw;
-        return callRaw(methodId, RpcEncoding::Raw, std::move(body), options);
+        options.encoding = jsonBinaryRpcEncoding();
+        return callRaw(methodId, jsonBinaryRpcEncoding(), std::move(body), options);
     }
 
     template <MethodId Id>
@@ -244,10 +244,7 @@ public:
 
 private:
     static RpcBodyEncoding bodyEncodingFor(RpcEncoding encoding) {
-        if (encoding == RpcEncoding::Tlv || encoding == RpcEncoding::Binary) {
-            return RpcBodyEncoding::Tlv8;
-        }
-        return RpcBodyEncoding::RawBytes;
+        return bodyEncodingForRpcEncoding(encoding);
     }
 
     RpcPayload makeDynamicRequest(std::uint32_t methodId,
@@ -274,8 +271,7 @@ private:
             request.requestId = _nextRequestId++;
         }
         (void)options;
-        if (request.bodyEncoding == RpcBodyEncoding::Tlv8 && request.encoding != RpcEncoding::Tlv &&
-            request.encoding != RpcEncoding::Binary) {
+        if (request.bodyEncoding == RpcBodyEncoding::Tlv8 && !isJsonBinaryRpcEncoding(request.encoding)) {
             request.bodyEncoding = bodyEncodingFor(request.encoding);
         }
         request.op = RpcOp::Request;

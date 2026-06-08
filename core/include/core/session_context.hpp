@@ -11,7 +11,7 @@ namespace axtp {
 struct SessionContext {
     std::uint32_t sessionId = 0;
     TransportProfile transportProfile;
-    RpcEncoding selectedEncoding = RpcEncoding::Tlv;
+    RpcEncoding selectedEncoding = jsonBinaryRpcEncoding();
 };
 
 class IProtocolOutbound {

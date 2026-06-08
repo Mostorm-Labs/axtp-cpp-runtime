@@ -15,7 +15,7 @@ function baseSpec(): SpecModel {
     version: {},
     payloadTypes: [{ id: 1, value: 1, name: "CONTROL", domain: "protocol", status: "mvp" }],
     controlOpcodes: [{ id: 1, value: 1, name: "OPEN", domain: "control", status: "mvp" }],
-    rpcEncodings: [{ id: 2, value: 2, name: "BINARY", domain: "rpc", status: "mvp" }],
+    rpcEncodings: [{ id: 4, value: 4, name: "JSON_BINARY", domain: "rpc", status: "mvp" }],
     rpcBodyEncodings: [{ id: 1, value: 1, name: "TLV8", domain: "rpc", status: "mvp" }],
     rpcOps: [{ id: 7, value: 7, name: "REQUEST", domain: "rpc", status: "mvp" }],
     streamProfiles: [],

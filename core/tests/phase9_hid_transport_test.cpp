@@ -140,7 +140,7 @@ int main() {
     axtp::AxtpEndpoint coreEndpoint(coreBroker);
     coreEndpoint.attachTransport(coreTransport);
     axtp::RpcPayload response;
-    response.encoding = axtp::RpcEncoding::Tlv;
+    response.encoding = axtp::jsonBinaryRpcEncoding();
     response.op = axtp::RpcOp::RequestResponse;
     response.requestId = 0x01020304;
     response.methodOrEventId = 0x0101;

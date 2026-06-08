@@ -52,7 +52,7 @@ axtp::Bytes makeFrame(axtp::PayloadType payloadType,
 axtp::Bytes
 makeRpcPayload(std::uint32_t requestId, std::uint16_t methodId, const axtp::Bytes& body) {
     axtp::ByteWriter writer;
-    writer.writeU8(static_cast<std::uint8_t>(axtp::RpcEncoding::Tlv));
+    writer.writeU8(static_cast<std::uint8_t>(axtp::jsonBinaryRpcEncoding()));
     writer.writeU8(static_cast<std::uint8_t>(axtp::RpcOp::Request));
     writer.writeU32(requestId);
     writer.writeU16(methodId);
@@ -75,7 +75,7 @@ int main() {
         inbound.onBytes(frame.data() + 6, frame.size() - 6);
         assert(sink.rpcs.size() == 1);
         assert(sink.rpcs[0].op == axtp::RpcOp::Request);
-        assert(sink.rpcs[0].encoding == axtp::RpcEncoding::Tlv);
+        assert(sink.rpcs[0].encoding == axtp::jsonBinaryRpcEncoding());
         assert(sink.rpcs[0].requestId == 7);
         assert(sink.rpcs[0].methodOrEventId == 0x0101);
         assert((sink.rpcs[0].body == axtp::Bytes{0xAA}));

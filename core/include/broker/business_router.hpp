@@ -101,7 +101,7 @@ public:
                           [handler = std::move(handler)](const RpcContext& context,
                                                          const RpcRequestView& request) {
                               RpcResponseData response;
-                              response.encoding = RpcEncoding::Tlv;
+                              response.encoding = jsonBinaryRpcEncoding();
                               response.body = handler(context, request.body);
                               response.overrideEncoding = true;
                               return response;
@@ -151,10 +151,7 @@ public:
         const auto data = it->second(context, view);
         if (data.overrideEncoding) {
             response.encoding = data.encoding;
-            response.bodyEncoding =
-                data.encoding == RpcEncoding::Tlv || data.encoding == RpcEncoding::Binary
-                    ? RpcBodyEncoding::Tlv8
-                    : RpcBodyEncoding::RawBytes;
+            response.bodyEncoding = bodyEncodingForRpcEncoding(data.encoding);
         }
         response.body = data.body;
         return response;

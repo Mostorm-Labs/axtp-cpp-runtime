@@ -47,7 +47,7 @@ int main() {
     });
 
     axtp::RpcPayload request;
-    request.encoding = axtp::RpcEncoding::Tlv;
+    request.encoding = axtp::jsonBinaryRpcEncoding();
     request.op = axtp::RpcOp::Request;
     request.requestId = 900;
     request.methodOrEventId = 0x0901;
@@ -101,13 +101,13 @@ int main() {
         jsonTask.rpc.op = axtp::RpcOp::Request;
         jsonTask.rpc.requestId = 1001;
         jsonTask.rpc.methodOrEventId = 0x0901;
-        jsonTask.rpc.bodyEncoding = axtp::RpcBodyEncoding::RawBytes;
+        jsonTask.rpc.bodyEncoding = axtp::RpcBodyEncoding::None;
         jsonTask.rpc.body = {'{', '}'};
         dynamicBroker.submit(std::move(jsonTask));
 
         axtp::BrokerTask tlvTask;
         tlvTask.type = axtp::BrokerTaskType::RpcRequest;
-        tlvTask.rpc.encoding = axtp::RpcEncoding::Tlv;
+        tlvTask.rpc.encoding = axtp::jsonBinaryRpcEncoding();
         tlvTask.rpc.op = axtp::RpcOp::Request;
         tlvTask.rpc.requestId = 1002;
         tlvTask.rpc.methodOrEventId = 0x0902;
@@ -117,11 +117,11 @@ int main() {
 
         axtp::BrokerTask rawTask;
         rawTask.type = axtp::BrokerTaskType::RpcRequest;
-        rawTask.rpc.encoding = axtp::RpcEncoding::Raw;
+        rawTask.rpc.encoding = axtp::jsonBinaryRpcEncoding();
         rawTask.rpc.op = axtp::RpcOp::Request;
         rawTask.rpc.requestId = 1003;
         rawTask.rpc.methodOrEventId = 0x90010001;
-        rawTask.rpc.bodyEncoding = axtp::RpcBodyEncoding::RawBytes;
+        rawTask.rpc.bodyEncoding = axtp::RpcBodyEncoding::None;
         rawTask.rpc.body = {0xDE, 0xAD};
         dynamicBroker.submit(std::move(rawTask));
 
@@ -139,9 +139,9 @@ int main() {
         assert(jsonResult->rpc.encoding == axtp::RpcEncoding::Json);
         assert((jsonResult->rpc.body ==
                 axtp::Bytes{'{', '"', 'o', 'k', '"', ':', 't', 'r', 'u', 'e', '}'}));
-        assert(tlvResult->rpc.encoding == axtp::RpcEncoding::Tlv);
+        assert(tlvResult->rpc.encoding == axtp::jsonBinaryRpcEncoding());
         assert((tlvResult->rpc.body == axtp::Bytes{0x02, 0x01, 0x01}));
-        assert(rawResult->rpc.encoding == axtp::RpcEncoding::Raw);
+        assert(rawResult->rpc.encoding == axtp::jsonBinaryRpcEncoding());
         assert((rawResult->rpc.body == axtp::Bytes{0xDE, 0xAD}));
     }
 

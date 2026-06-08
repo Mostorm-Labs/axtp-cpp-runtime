@@ -39,7 +39,7 @@ public:
         RpcPayload payload;
         payload.encoding = RpcEncoding::Json;
         payload.op = RpcOp::Hello;
-        payload.bodyEncoding = RpcBodyEncoding::RawBytes;
+        payload.bodyEncoding = RpcBodyEncoding::None;
         payload.meta.sourceProtocol = SourceProtocol::JsonRpc;
         return payload;
     }
@@ -48,7 +48,7 @@ public:
         RpcPayload payload;
         payload.encoding = RpcEncoding::Json;
         payload.op = RpcOp::Identified;
-        payload.bodyEncoding = RpcBodyEncoding::RawBytes;
+        payload.bodyEncoding = RpcBodyEncoding::None;
         payload.meta.sourceProtocol = SourceProtocol::JsonRpc;
         payload.meta.jsonSid = std::move(sid);
         return payload;

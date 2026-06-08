@@ -42,7 +42,7 @@ int main() {
         CapturingByteWriter writer;
         axtp::OutboundProcessor outbound(writer);
         axtp::RpcPayload rpc;
-        rpc.encoding = axtp::RpcEncoding::Tlv;
+        rpc.encoding = axtp::jsonBinaryRpcEncoding();
         rpc.op = axtp::RpcOp::Request;
         rpc.requestId = 42;
         rpc.methodOrEventId = 0x0101;
@@ -64,12 +64,12 @@ int main() {
         CapturingByteWriter writer;
         axtp::OutboundProcessor outbound(writer, 24);
         axtp::RpcPayload rpc;
-        rpc.encoding = axtp::RpcEncoding::Tlv;
+        rpc.encoding = axtp::jsonBinaryRpcEncoding();
         rpc.op = axtp::RpcOp::Request;
         rpc.requestId = 43;
         rpc.methodOrEventId = 0x0101;
         rpc.statusCode = axtp::ErrorCode::Success;
-        rpc.bodyEncoding = axtp::RpcBodyEncoding::RawBytes;
+        rpc.bodyEncoding = axtp::RpcBodyEncoding::None;
         for (std::uint8_t value = 0; value < 40; ++value) {
             rpc.body.push_back(value);
         }

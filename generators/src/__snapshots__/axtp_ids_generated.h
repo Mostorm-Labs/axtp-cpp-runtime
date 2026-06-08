@@ -13,7 +13,7 @@ enum class ControlOpcode : std::uint8_t {
 };
 
 enum class RpcEncoding : std::uint8_t {
-    Binary = 0x02,
+    JsonBinary = 0x04,
 };
 
 enum class RpcBodyEncoding : std::uint8_t {

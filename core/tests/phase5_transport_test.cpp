@@ -46,7 +46,7 @@ int main() {
     broker.registerMethod(0x0101, [](const axtp::RpcPayload&) { return axtp::Bytes{0x42}; });
 
     axtp::RpcPayload request;
-    request.encoding = axtp::RpcEncoding::Tlv;
+    request.encoding = axtp::jsonBinaryRpcEncoding();
     request.op = axtp::RpcOp::Request;
     request.requestId = 500;
     request.methodOrEventId = 0x0101;

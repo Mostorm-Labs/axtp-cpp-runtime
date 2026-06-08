@@ -152,7 +152,7 @@ TransportProfile HidTransport::profile() const {
     TransportProfile profile;
     profile.kind = TransportKind::Hid;
     profile.wireMode = AxtpWireMode::FramedBinary;
-    profile.defaultRpcEncoding = RpcEncoding::Tlv;
+    profile.defaultRpcEncoding = jsonBinaryRpcEncoding();
     profile.messageOriented = true;
     profile.supportsTextMessage = false;
     profile.supportsBinaryMessage = true;

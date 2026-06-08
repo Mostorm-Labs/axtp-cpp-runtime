@@ -41,7 +41,7 @@ int main() {
     raw.encoding = axtp::RpcEncoding::Json;
     raw.op = axtp::RpcOp::Request;
     raw.methodOrEventId = static_cast<std::uint16_t>(axtp::MethodId::AudioGetAlgorithmConfig);
-    raw.bodyEncoding = axtp::RpcBodyEncoding::RawBytes;
+    raw.bodyEncoding = axtp::RpcBodyEncoding::None;
     raw.body = {'{', '}'};
     auto response = client.callRaw(raw);
     assert(response.statusCode == axtp::ErrorCode::Success);

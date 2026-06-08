@@ -103,7 +103,7 @@ private:
             error.op = RpcOp::RequestResponse;
             error.requestId = parseRequestId(d);
             error.statusCode = ErrorCode::RpcMethodNotFound;
-            error.bodyEncoding = RpcBodyEncoding::RawBytes;
+            error.bodyEncoding = RpcBodyEncoding::None;
             error.meta.sourceProtocol = SourceProtocol::JsonRpc;
             error.meta.jsonSid = parseSid(object);
             error.meta.jsonMethodOrEventName = method;
@@ -116,7 +116,7 @@ private:
         request.op = RpcOp::Request;
         request.requestId = parseRequestId(d);
         request.methodOrEventId = *methodId;
-        request.bodyEncoding = RpcBodyEncoding::RawBytes;
+        request.bodyEncoding = RpcBodyEncoding::None;
         request.meta.sourceProtocol = SourceProtocol::JsonRpc;
         request.meta.requestId = request.requestId;
         request.meta.jsonSid = parseSid(object);
@@ -141,7 +141,7 @@ private:
         event.op = RpcOp::Event;
         event.requestId = 0;
         event.methodOrEventId = *eventId;
-        event.bodyEncoding = RpcBodyEncoding::RawBytes;
+        event.bodyEncoding = RpcBodyEncoding::None;
         event.meta.sourceProtocol = SourceProtocol::JsonRpc;
         event.meta.jsonSid = parseSid(object);
         event.meta.jsonMethodOrEventName = eventName;
@@ -156,7 +156,7 @@ private:
         RpcPayload payload;
         payload.encoding = RpcEncoding::Json;
         payload.op = op;
-        payload.bodyEncoding = RpcBodyEncoding::RawBytes;
+        payload.bodyEncoding = RpcBodyEncoding::None;
         payload.meta.sourceProtocol = SourceProtocol::JsonRpc;
         payload.meta.jsonSid = parseSid(object);
         payload.body = jsonToBytes(d);
@@ -169,7 +169,7 @@ private:
         payload.op = RpcOp::RequestBatchResponse;
         payload.requestId = parseRequestId(d);
         payload.statusCode = ErrorCode::RpcBatchUnsupported;
-        payload.bodyEncoding = RpcBodyEncoding::RawBytes;
+        payload.bodyEncoding = RpcBodyEncoding::None;
         payload.meta.sourceProtocol = SourceProtocol::JsonRpc;
         payload.meta.requestId = payload.requestId;
         payload.meta.jsonSid = parseSid(object);

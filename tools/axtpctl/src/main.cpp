@@ -515,10 +515,10 @@ bool attachTransport(const CliOptions& options, axtp::sdk::AxtpClient* client) {
 
 axtp::RpcEncoding encodingFromName(const std::string& name) {
     if (name == "tlv") {
-        return axtp::RpcEncoding::Tlv;
+        return axtp::jsonBinaryRpcEncoding();
     }
     if (name == "raw") {
-        return axtp::RpcEncoding::Raw;
+        return axtp::jsonBinaryRpcEncoding();
     }
     return axtp::RpcEncoding::Json;
 }
@@ -569,7 +569,7 @@ bool buildCallBody(const CliOptions& options,
             return false;
         }
         *body = std::move(*parsed);
-        *encoding = axtp::RpcEncoding::Tlv;
+        *encoding = axtp::jsonBinaryRpcEncoding();
         return true;
     }
     if (const auto file = optionValue(args, "--tlv-file")) {
@@ -579,7 +579,7 @@ bool buildCallBody(const CliOptions& options,
             return false;
         }
         *body = *contents;
-        *encoding = axtp::RpcEncoding::Tlv;
+        *encoding = axtp::jsonBinaryRpcEncoding();
         return true;
     }
     if (const auto hex = optionValue(args, "--raw-hex")) {
@@ -589,7 +589,7 @@ bool buildCallBody(const CliOptions& options,
             return false;
         }
         *body = std::move(*parsed);
-        *encoding = axtp::RpcEncoding::Raw;
+        *encoding = axtp::jsonBinaryRpcEncoding();
         return true;
     }
     if (const auto file = optionValue(args, "--raw-file")) {
@@ -599,7 +599,7 @@ bool buildCallBody(const CliOptions& options,
             return false;
         }
         *body = *contents;
-        *encoding = axtp::RpcEncoding::Raw;
+        *encoding = axtp::jsonBinaryRpcEncoding();
         return true;
     }
     return true;
@@ -665,10 +665,7 @@ int callMethod(const CliOptions& options) {
     request.encoding = encoding;
     request.op = axtp::RpcOp::Request;
     request.methodOrEventId = *methodId;
-    request.bodyEncoding =
-        encoding == axtp::RpcEncoding::Tlv || encoding == axtp::RpcEncoding::Binary
-            ? axtp::RpcBodyEncoding::Tlv8
-            : axtp::RpcBodyEncoding::RawBytes;
+    request.bodyEncoding = axtp::bodyEncodingForRpcEncoding(encoding);
     if (methodName.has_value()) {
         request.meta.jsonMethodOrEventName = *methodName;
     }

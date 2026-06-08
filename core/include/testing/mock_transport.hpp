@@ -56,7 +56,7 @@ private:
     TransportProfile _profile{
         TransportKind::Mock,
         AxtpWireMode::FramedBinary,
-        RpcEncoding::Tlv,
+        jsonBinaryRpcEncoding(),
         false,
         false,
         true,

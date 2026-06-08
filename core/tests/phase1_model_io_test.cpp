@@ -114,7 +114,7 @@ int main() {
         assert(control.body.empty());
 
         axtp::RpcPayload rpc;
-        rpc.encoding = axtp::RpcEncoding::Tlv;
+        rpc.encoding = axtp::jsonBinaryRpcEncoding();
         rpc.op = axtp::RpcOp::Request;
         rpc.requestId = 7;
         rpc.methodOrEventId =

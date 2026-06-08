@@ -64,7 +64,7 @@ int main() {
         });
 
         axtp::RpcPayload request;
-        request.encoding = axtp::RpcEncoding::Tlv;
+        request.encoding = axtp::jsonBinaryRpcEncoding();
         request.op = axtp::RpcOp::Request;
         request.requestId = 100;
         request.methodOrEventId = 0x0101;
@@ -121,7 +121,7 @@ int main() {
         core.expectRpcResponse(55);
 
         axtp::RpcPayload response;
-        response.encoding = axtp::RpcEncoding::Tlv;
+        response.encoding = axtp::jsonBinaryRpcEncoding();
         response.op = axtp::RpcOp::RequestResponse;
         response.requestId = 55;
         response.methodOrEventId = 0x0101;

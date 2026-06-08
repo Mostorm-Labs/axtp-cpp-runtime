@@ -9,7 +9,7 @@ export enum ControlOpcode {
 }
 
 export enum RpcEncoding {
-  Binary = 0x02,
+  JsonBinary = 0x04,
 }
 
 export enum RpcBodyEncoding {

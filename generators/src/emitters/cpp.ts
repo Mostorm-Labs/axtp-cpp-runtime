@@ -345,10 +345,7 @@ namespace axtp {
 class SchemaCodec {
 public:
     static RpcBodyEncoding bodyEncodingFor(RpcEncoding encoding) {
-        if (encoding == RpcEncoding::Tlv || encoding == RpcEncoding::Binary) {
-            return RpcBodyEncoding::Tlv8;
-        }
-        return RpcBodyEncoding::RawBytes;
+        return bodyEncodingForRpcEncoding(encoding);
     }
 
     template <MethodId Id>

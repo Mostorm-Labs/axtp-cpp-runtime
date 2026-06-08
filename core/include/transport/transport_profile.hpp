@@ -24,7 +24,7 @@ enum class AxtpWireMode {
 struct TransportProfile {
     TransportKind kind = TransportKind::Custom;
     AxtpWireMode wireMode = AxtpWireMode::FramedBinary;
-    RpcEncoding defaultRpcEncoding = RpcEncoding::Tlv;
+    RpcEncoding defaultRpcEncoding = jsonBinaryRpcEncoding();
     bool messageOriented = false;
     bool supportsTextMessage = false;
     bool supportsBinaryMessage = true;

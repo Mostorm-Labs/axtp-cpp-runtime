@@ -47,7 +47,7 @@ struct CapturingPayloadSink : axtp::IPayloadSink {
 
 axtp::Bytes encodeRpcRequest(std::uint32_t requestId) {
     axtp::RpcPayload request;
-    request.encoding = axtp::RpcEncoding::Tlv;
+    request.encoding = axtp::jsonBinaryRpcEncoding();
     request.op = axtp::RpcOp::Request;
     request.requestId = requestId;
     request.methodOrEventId = 0x0901;

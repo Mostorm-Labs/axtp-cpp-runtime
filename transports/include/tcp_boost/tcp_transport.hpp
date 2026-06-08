@@ -59,7 +59,7 @@ public:
         TransportProfile profile;
         profile.kind = TransportKind::Tcp;
         profile.wireMode = AxtpWireMode::FramedBinary;
-        profile.defaultRpcEncoding = RpcEncoding::Tlv;
+        profile.defaultRpcEncoding = jsonBinaryRpcEncoding();
         profile.messageOriented = false;
         profile.supportsTextMessage = false;
         profile.supportsBinaryMessage = true;
