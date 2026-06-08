@@ -31,19 +31,15 @@ enum class ControlOpcode : std::uint8_t {
 
 enum class RpcEncoding : std::uint8_t {
     Json = 0x01,
-    Tlv = 0x02,
-    Binary = 0x03,
-    Raw = 0x04,
-    Cbor = 0x05,
-    Msgpack = 0x06,
+    Cbor = 0x02,
+    Msgpack = 0x03,
+    JsonBinary = 0x04,
 };
 
 enum class RpcBodyEncoding : std::uint8_t {
     None = 0x00,
     Tlv8 = 0x01,
     Tlv16 = 0x02,
-    RawBytes = 0x03,
-    CborBody = 0x04,
 };
 
 enum class RpcOp : std::uint8_t {
