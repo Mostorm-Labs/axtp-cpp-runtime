@@ -156,7 +156,7 @@ private:
             requestOp == RpcOp::RequestBatch ? RpcOp::RequestBatchResponse : RpcOp::RequestResponse;
         response.requestId = requestId;
         response.statusCode = code;
-        response.bodyEncoding = RpcBodyEncoding::RawBytes;
+        response.bodyEncoding = RpcBodyEncoding::None;
         response.meta.sourceProtocol = SourceProtocol::JsonRpc;
         response.meta.jsonSid = sid.empty() ? _sid : sid;
         sendRpc(std::move(response));
