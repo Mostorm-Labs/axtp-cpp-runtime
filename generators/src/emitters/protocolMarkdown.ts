@@ -465,7 +465,7 @@ function renderWireExamples(examples: WireExample[]): string[] {
   const lines: string[] = [
     "## Wire Format Examples",
     "",
-    "The following examples show the exact byte layout for a complete session establishment over USB HID High Speed (Standard Frame Profile). All integers are Little-Endian."
+    "The following examples show the exact byte layout for a complete session establishment over USB HID High Speed (Standard Frame Profile). Multi-byte integers and CRC fields use Big-Endian / network byte order."
   ];
 
   for (const example of examples) {

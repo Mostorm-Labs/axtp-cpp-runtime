@@ -18,20 +18,20 @@ int main() {
 
         const axtp::Bytes expected = {
             0x12,
-            0x56,
             0x34,
-            0xDE,
-            0xBC,
-            0x9A,
+            0x56,
             0x78,
-            0x88,
-            0x77,
-            0x66,
-            0x55,
-            0x44,
-            0x33,
-            0x22,
+            0x9A,
+            0xBC,
+            0xDE,
             0x11,
+            0x22,
+            0x33,
+            0x44,
+            0x55,
+            0x66,
+            0x77,
+            0x88,
         };
         assert(writer.bytes() == expected);
 

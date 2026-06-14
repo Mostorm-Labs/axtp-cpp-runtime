@@ -338,9 +338,9 @@ bool parseGlobalOptions(int argc, char** argv, CliOptions* options) {
     return true;
 }
 
-std::uint16_t readU16Le(const axtp::Bytes& bytes, std::size_t offset) {
-    return static_cast<std::uint16_t>(bytes[offset]) |
-           static_cast<std::uint16_t>(bytes[offset + 1] << 8);
+std::uint16_t readU16Be(const axtp::Bytes& bytes, std::size_t offset) {
+    return static_cast<std::uint16_t>(bytes[offset] << 8) |
+           static_cast<std::uint16_t>(bytes[offset + 1]);
 }
 
 std::string payloadTypeName(std::uint8_t type) {
@@ -379,11 +379,11 @@ int inspectFrame(const std::vector<std::string>& args) {
             : "invalid";
     object["version"] = (*bytes)[2];
     object["payloadType"] = payloadTypeName((*bytes)[3]);
-    const auto payloadLength = readU16Le(*bytes, 4);
+    const auto payloadLength = readU16Be(*bytes, 4);
     object["payloadLength"] = payloadLength;
     object["sourceId"] = (*bytes)[6];
     object["destinationId"] = (*bytes)[7];
-    object["messageId"] = readU16Le(*bytes, 8);
+    object["messageId"] = readU16Be(*bytes, 8);
     object["frameIndex"] = (*bytes)[10];
     object["frameCount"] = (*bytes)[11];
 
@@ -391,7 +391,7 @@ int inspectFrame(const std::vector<std::string>& args) {
                        axtp::kStandardFrameCrcSize;
     object["complete"] = bytes->size() >= total;
     if (bytes->size() >= total) {
-        const auto expected = readU16Le(*bytes, total - axtp::kStandardFrameCrcSize);
+        const auto expected = readU16Be(*bytes, total - axtp::kStandardFrameCrcSize);
         const auto actual =
             axtp::crc16CcittFalse(bytes->data(), total - axtp::kStandardFrameCrcSize);
         object["crcExpected"] = expected;

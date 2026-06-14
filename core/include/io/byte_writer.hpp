@@ -15,19 +15,19 @@ public:
     }
 
     void writeU16(std::uint16_t value) {
-        _bytes.push_back(static_cast<Byte>(value & 0xFF));
         _bytes.push_back(static_cast<Byte>((value >> 8) & 0xFF));
+        _bytes.push_back(static_cast<Byte>(value & 0xFF));
     }
 
     void writeU32(std::uint32_t value) {
-        _bytes.push_back(static_cast<Byte>(value & 0xFF));
-        _bytes.push_back(static_cast<Byte>((value >> 8) & 0xFF));
-        _bytes.push_back(static_cast<Byte>((value >> 16) & 0xFF));
         _bytes.push_back(static_cast<Byte>((value >> 24) & 0xFF));
+        _bytes.push_back(static_cast<Byte>((value >> 16) & 0xFF));
+        _bytes.push_back(static_cast<Byte>((value >> 8) & 0xFF));
+        _bytes.push_back(static_cast<Byte>(value & 0xFF));
     }
 
     void writeU64(std::uint64_t value) {
-        for (int shift = 0; shift < 64; shift += 8) {
+        for (int shift = 56; shift >= 0; shift -= 8) {
             _bytes.push_back(static_cast<Byte>((value >> shift) & 0xFF));
         }
     }

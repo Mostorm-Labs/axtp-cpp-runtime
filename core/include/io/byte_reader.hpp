@@ -30,8 +30,8 @@ public:
         if (!hasRemaining(2)) {
             return Result<std::uint16_t>::failure(kByteIoOutOfRange, "not enough bytes for u16");
         }
-        std::uint16_t value = static_cast<std::uint16_t>(_data[_offset]) |
-                              static_cast<std::uint16_t>(_data[_offset + 1] << 8);
+        std::uint16_t value = static_cast<std::uint16_t>(_data[_offset] << 8) |
+                              static_cast<std::uint16_t>(_data[_offset + 1]);
         _offset += 2;
         return Result<std::uint16_t>::success(value);
     }
@@ -40,10 +40,10 @@ public:
         if (!hasRemaining(4)) {
             return Result<std::uint32_t>::failure(kByteIoOutOfRange, "not enough bytes for u32");
         }
-        std::uint32_t value = static_cast<std::uint32_t>(_data[_offset]) |
-                              (static_cast<std::uint32_t>(_data[_offset + 1]) << 8) |
-                              (static_cast<std::uint32_t>(_data[_offset + 2]) << 16) |
-                              (static_cast<std::uint32_t>(_data[_offset + 3]) << 24);
+        std::uint32_t value = (static_cast<std::uint32_t>(_data[_offset]) << 24) |
+                              (static_cast<std::uint32_t>(_data[_offset + 1]) << 16) |
+                              (static_cast<std::uint32_t>(_data[_offset + 2]) << 8) |
+                              static_cast<std::uint32_t>(_data[_offset + 3]);
         _offset += 4;
         return Result<std::uint32_t>::success(value);
     }
@@ -53,7 +53,7 @@ public:
             return Result<std::uint64_t>::failure(kByteIoOutOfRange, "not enough bytes for u64");
         }
         std::uint64_t value = 0;
-        for (int shift = 0; shift < 64; shift += 8) {
+        for (int shift = 56; shift >= 0; shift -= 8) {
             value |= static_cast<std::uint64_t>(_data[_offset++]) << shift;
         }
         return Result<std::uint64_t>::success(value);
