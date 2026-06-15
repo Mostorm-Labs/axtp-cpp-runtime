@@ -1,5 +1,3 @@
-#include <boost/json.hpp>
-
 #include <chrono>
 #include <cstdint>
 #include <cstdio>
@@ -7,6 +5,7 @@
 #include <fstream>
 #include <functional>
 #include <memory>
+#include <nlohmann/json.hpp>
 #include <optional>
 #include <queue>
 #include <sstream>
@@ -110,7 +109,7 @@ public:
         }
     }
 
-    std::optional<boost::json::object> popJson(std::string* error = nullptr) {
+    std::optional<nlohmann::json> popJson(std::string* error = nullptr) {
         if (_outgoing.empty()) {
             if (error != nullptr) {
                 *error = "missing outgoing JSON message";
@@ -121,7 +120,7 @@ public:
         _outgoing.pop();
         try {
             const std::string text(bytes.begin(), bytes.end());
-            return boost::json::parse(text).as_object();
+            return nlohmann::json::parse(text);
         } catch (const std::exception& ex) {
             if (error != nullptr) {
                 *error = ex.what();
@@ -193,17 +192,17 @@ void runCase(std::string_view id, const std::function<bool(std::string&)>& fn) {
     }
 }
 
-std::string stringField(const boost::json::object& object, std::string_view key) {
-    return std::string(object.at(key).as_string());
+std::string stringField(const nlohmann::json& object, std::string_view key) {
+    return std::string(object.at(key).get<std::string>());
 }
 
-std::uint16_t statusCode(const boost::json::object& response) {
+std::uint16_t statusCode(const nlohmann::json& response) {
     return static_cast<std::uint16_t>(
-        response.at("d").as_object().at("status").as_object().at("code").as_int64());
+        response.at("d").at("status").at("code").get<int>());
 }
 
-bool statusOk(const boost::json::object& response) {
-    return response.at("d").as_object().at("status").as_object().at("ok").as_bool();
+bool statusOk(const nlohmann::json& response) {
+    return response.at("d").at("status").at("ok").get<bool>();
 }
 
 bool setupJsonAdapter(axtp::BasicBroker<>& broker,
@@ -220,7 +219,7 @@ bool setupJsonAdapter(axtp::BasicBroker<>& broker,
     if (!hello.has_value()) {
         return false;
     }
-    if (hello->at("op").as_int64() != static_cast<int>(axtp::RpcOp::Hello)) {
+    if (hello->at("op").get<int>() != static_cast<int>(axtp::RpcOp::Hello)) {
         message = "adapter did not send HELLO on connection";
         return false;
     }
@@ -233,7 +232,7 @@ bool identify(MemoryJsonTransport& transport, std::string& sid, std::string& mes
     if (!identified.has_value()) {
         return false;
     }
-    if (identified->at("op").as_int64() != static_cast<int>(axtp::RpcOp::Identified)) {
+    if (identified->at("op").get<int>() != static_cast<int>(axtp::RpcOp::Identified)) {
         message = "adapter did not answer IDENTIFY with IDENTIFIED";
         return false;
     }
@@ -242,8 +241,8 @@ bool identify(MemoryJsonTransport& transport, std::string& sid, std::string& mes
         message = "IDENTIFIED sid was empty";
         return false;
     }
-    const auto& d = identified->at("d").as_object();
-    if (d.at("negotiatedRpcVersion").as_int64() != 1) {
+    const auto& d = identified->at("d");
+    if (d.at("negotiatedRpcVersion").get<int>() != 1) {
         message = "IDENTIFIED did not negotiate rpcVersion 1";
         return false;
     }
@@ -275,8 +274,8 @@ bool testRequestBeforeIdentified(std::string& message) {
     if (!response.has_value()) {
         return false;
     }
-    if (response->at("op").as_int64() != static_cast<int>(axtp::RpcOp::RequestResponse) ||
-        response->at("d").as_object().at("id").as_int64() != 700 ||
+    if (response->at("op").get<int>() != static_cast<int>(axtp::RpcOp::RequestResponse) ||
+        response->at("d").at("id").get<int>() != 700 ||
         statusCode(*response) != static_cast<std::uint16_t>(axtp::ErrorCode::ControlOpenRequired)) {
         message = "request before IDENTIFIED was not rejected with CONTROL_OPEN_REQUIRED";
         return false;
@@ -305,10 +304,10 @@ bool testRequestResponseJson(std::string& message) {
     if (!response.has_value()) {
         return false;
     }
-    const auto& d = response->at("d").as_object();
-    if (response->at("op").as_int64() != static_cast<int>(axtp::RpcOp::RequestResponse) ||
-        d.at("id").as_int64() != 701 || !statusOk(*response) ||
-        !d.at("result").as_object().contains("noiseSuppression")) {
+    const auto& d = response->at("d");
+    if (response->at("op").get<int>() != static_cast<int>(axtp::RpcOp::RequestResponse) ||
+        d.at("id").get<int>() != 701 || !statusOk(*response) ||
+        !d.at("result").contains("noiseSuppression")) {
         message = "JSON-RPC request did not produce the expected successful result";
         return false;
     }
@@ -334,7 +333,7 @@ bool testMethodNotFoundWithId(std::uint32_t requestId, std::string& message) {
     if (!response.has_value()) {
         return false;
     }
-    if (response->at("d").as_object().at("id").as_int64() != requestId ||
+    if (response->at("d").at("id").get<int>() != requestId ||
         statusCode(*response) != static_cast<std::uint16_t>(axtp::ErrorCode::RpcMethodNotFound) ||
         statusOk(*response)) {
         message = "unknown JSON-RPC method did not produce standard RPC_METHOD_NOT_FOUND";
@@ -452,7 +451,7 @@ bool testUnsubscribeEvent(std::string& message) {
     transport.injectJson(std::string(R"({"sid":")") + sid + R"(","op":4,"d":{"eventMasks":""}})");
     auto response = transport.popJson(&message);
     if (!response.has_value() ||
-        response->at("op").as_int64() != static_cast<int>(axtp::RpcOp::Identified)) {
+        response->at("op").get<int>() != static_cast<int>(axtp::RpcOp::Identified)) {
         message = "REIDENTIFY did not produce IDENTIFIED";
         return false;
     }
@@ -483,10 +482,10 @@ bool testEmitEvent(std::string& message) {
     if (!response.has_value()) {
         return false;
     }
-    const auto& d = response->at("d").as_object();
-    if (response->at("op").as_int64() != static_cast<int>(axtp::RpcOp::Event) ||
-        d.at("event").as_string() != "audio.algorithmConfigChanged" ||
-        d.at("data").as_object().at("reason").as_string() != "user_request") {
+    const auto& d = response->at("d");
+    if (response->at("op").get<int>() != static_cast<int>(axtp::RpcOp::Event) ||
+        d.at("event").get<std::string>() != "audio.algorithmConfigChanged" ||
+        d.at("data").at("reason").get<std::string>() != "user_request") {
         message = "event output did not match audio.algorithmConfigChanged";
         return false;
     }
@@ -578,8 +577,8 @@ std::string requirementName(Requirement requirement) {
     return "not-selected";
 }
 
-boost::json::value caseToJson(const CaseResult& item) {
-    boost::json::object object;
+nlohmann::json caseToJson(const CaseResult& item) {
+    nlohmann::json object;
     object["id"] = item.id;
     object["level"] = item.level;
     object["requirement"] = requirementName(item.requirement);
@@ -607,22 +606,22 @@ bool writeResult(const std::string& outputPath, const std::string& profilePath) 
         }
     }
 
-    boost::json::object root;
+    nlohmann::json root;
     root["runtime"] = "axtp-cpp-runtime";
     root["runtimeVersion"] = axtp::generated::kRuntimeVersion;
     root["specTag"] = axtp::generated::kSpecTag;
     root["profile"] = profilePath;
     root["requiredLevels"] = {"core", "websocket-jsonrpc"};
     root["optionalLevels"] = {"capability", "framed-binary", "event", "stream"};
-    root["unsupportedLevels"] = boost::json::array{};
-    boost::json::object summary;
+    root["unsupportedLevels"] = nlohmann::json::array();
+    nlohmann::json summary;
     summary["total"] = cases.size();
     summary["passed"] = passed;
     summary["failed"] = failed;
     summary["skipped"] = skipped;
     summary["unsupported"] = unsupported;
     root["summary"] = std::move(summary);
-    boost::json::array caseArray;
+    nlohmann::json caseArray;
     for (const auto& item : cases) {
         caseArray.push_back(caseToJson(item));
     }
@@ -633,7 +632,7 @@ bool writeResult(const std::string& outputPath, const std::string& profilePath) 
         std::fprintf(stderr, "failed to open conformance result for writing: %s\n", outputPath.c_str());
         return false;
     }
-    output << boost::json::serialize(root) << '\n';
+    output << root.dump() << '\n';
     return true;
 }
 

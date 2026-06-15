@@ -1,8 +1,8 @@
 #include <atomic>
-#include <boost/json.hpp>
 #include <cassert>
 #include <chrono>
 #include <memory>
+#include <nlohmann/json.hpp>
 #include <string>
 #include <thread>
 
@@ -55,18 +55,13 @@ int main() {
         client.callJson("audio.setAlgorithmConfig",
                         R"({"config":{"noiseSuppression":{"enabled":true,"level":3}}})",
                         callOptions);
-    const auto setJson = boost::json::parse(setResponse).as_object();
-    assert(setJson.at("applyState").as_string() == "applied");
-    assert(setJson.at("config")
-               .as_object()
-               .at("noiseSuppression")
-               .as_object()
-               .at("level")
-               .as_int64() == 3);
+    const auto setJson = nlohmann::json::parse(setResponse);
+    assert(setJson.at("applyState").get<std::string>() == "applied");
+    assert(setJson.at("config").at("noiseSuppression").at("level").get<int>() == 3);
 
     const auto after = client.callJson("audio.getAlgorithmConfig", "{}", callOptions);
-    const auto afterJson = boost::json::parse(after).as_object();
-    assert(afterJson.at("noiseSuppression").as_object().at("level").as_int64() == 3);
+    const auto afterJson = nlohmann::json::parse(after);
+    assert(afterJson.at("noiseSuppression").at("level").get<int>() == 3);
 
     client.close();
     running.store(false);

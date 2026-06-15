@@ -1,15 +1,20 @@
 #include <array>
 #include <atomic>
 #include <boost/asio.hpp>
-#include <boost/beast/core.hpp>
-#include <boost/beast/websocket.hpp>
-#include <boost/json.hpp>
 #include <cassert>
 #include <chrono>
+#include <condition_variable>
 #include <iostream>
+#include <mutex>
+#include <nlohmann/json.hpp>
+#include <queue>
 #include <string>
 #include <thread>
 #include <utility>
+
+#include <ixwebsocket/IXWebSocket.h>
+#include <ixwebsocket/IXWebSocketMessage.h>
+#include <ixwebsocket/IXWebSocketMessageType.h>
 
 #include "broker/basic_broker.hpp"
 #include "core/axtp_core.hpp"
@@ -21,7 +26,7 @@
 #include "runtime/axtp_endpoint.hpp"
 #include "testing/mock_transport.hpp"
 #include "tcp_boost/tcp_transport.hpp"
-#include "websocket_boost/websocket_transport.hpp"
+#include "websocket_ix/websocket_transport.hpp"
 
 namespace {
 
@@ -62,18 +67,18 @@ void injectJson(axtp::MockTransport& transport, const std::string& text) {
     transport.injectIncoming(axtp::Bytes(text.begin(), text.end()));
 }
 
-boost::json::object popJson(axtp::MockTransport& transport, const char* label) {
+nlohmann::json popJson(axtp::MockTransport& transport, const char* label) {
     auto bytes = transport.tryPopOutgoing();
     if (!bytes.has_value()) {
         std::cerr << "missing JSON output: " << label << '\n';
         assert(bytes.has_value());
     }
     const std::string text(bytes->begin(), bytes->end());
-    return boost::json::parse(text).as_object();
+    return nlohmann::json::parse(text);
 }
 
-std::string jsonString(const boost::json::object& object, const char* key) {
-    return std::string(object.at(key).as_string());
+std::string jsonString(const nlohmann::json& object, const char* key) {
+    return object.at(key).get<std::string>();
 }
 
 }  // namespace
@@ -152,14 +157,14 @@ int main() {
         injectJson(transport,
                    R"({"sid":"","op":7,"d":{"id":700,"method":"audio.getAlgorithmConfig"}})");
         auto beforeIdentify = popJson(transport, "before identify");
-        assert(beforeIdentify.at("op").as_int64() ==
+        assert(beforeIdentify.at("op").get<int>() ==
                static_cast<int>(axtp::RpcOp::RequestResponse));
-        assert(beforeIdentify.at("d").as_object().at("status").as_object().at("code").as_int64() ==
+        assert(beforeIdentify.at("d").at("status").at("code").get<int>() ==
                static_cast<int>(axtp::ErrorCode::ControlOpenRequired));
 
         injectJson(transport, R"({"sid":"","op":2,"d":{"rpcVersion":1,"eventMasks":"850101"}})");
         auto identified = popJson(transport, "identified");
-        assert(identified.at("op").as_int64() == static_cast<int>(axtp::RpcOp::Identified));
+        assert(identified.at("op").get<int>() == static_cast<int>(axtp::RpcOp::Identified));
         const auto sid = jsonString(identified, "sid");
         assert(!sid.empty());
 
@@ -167,45 +172,46 @@ int main() {
                    R"({"sid":")" + sid +
                        R"(","op":7,"d":{"id":701,"method":"audio.getAlgorithmConfig","params":{}}})");
         auto response = popJson(transport, "audio.getAlgorithmConfig");
-        assert(response.at("sid").as_string() == sid);
-        assert(response.at("op").as_int64() == static_cast<int>(axtp::RpcOp::RequestResponse));
-        auto d = response.at("d").as_object();
-        assert(d.at("id").as_int64() == 701);
-        assert(d.at("status").as_object().at("ok").as_bool());
-        assert(d.at("result").as_object().contains("noiseSuppression"));
+        assert(response.at("sid").get<std::string>() == sid);
+        assert(response.at("op").get<int>() == static_cast<int>(axtp::RpcOp::RequestResponse));
+        auto d = response.at("d");
+        assert(d.at("id").get<int>() == 701);
+        assert(d.at("status").at("ok").get<bool>());
+        assert(d.at("result").contains("noiseSuppression"));
 
         injectJson(
             transport,
             R"({"sid":")" + sid +
                 R"(","op":7,"d":{"id":702,"method":"audio.setAlgorithmConfig","params":{"noiseSuppression":{"enabled":true,"level":3}}}})");
         response = popJson(transport, "audio.setAlgorithmConfig");
-        d = response.at("d").as_object();
-        assert(d.at("id").as_int64() == 702);
-        assert(d.at("status").as_object().at("ok").as_bool());
+        d = response.at("d");
+        assert(d.at("id").get<int>() == 702);
+        assert(d.at("status").at("ok").get<bool>());
         assert(!d.contains("result"));
 
         injectJson(transport,
                    R"({"sid":")" + sid +
                        R"(","op":7,"d":{"id":703,"method":"audio.unknown","params":{}}})");
         response = popJson(transport, "unknown method");
-        d = response.at("d").as_object();
-        assert(d.at("status").as_object().at("code").as_int64() ==
+        d = response.at("d");
+        assert(d.at("status").at("code").get<int>() ==
                static_cast<int>(axtp::ErrorCode::RpcMethodNotFound));
 
         injectJson(transport,
                    R"({"sid":")" + sid +
                        R"(","op":7,"d":{"id":704,"method":"audio.getAlgorithmCapabilities","params":{}}})");
         response = popJson(transport, "invalid JSON response body");
-        d = response.at("d").as_object();
-        assert(d.at("status").as_object().at("code").as_int64() ==
+        d = response.at("d");
+        assert(d.at("status").at("code").get<int>() ==
                static_cast<int>(axtp::ErrorCode::RpcBodyDecodeFailed));
         assert(!d.contains("result"));
 
         injectJson(transport, R"({"sid":")" + sid + R"(","op":9,"d":{"id":705,"requests":[]}})");
         response = popJson(transport, "batch unsupported");
-        d = response.at("d").as_object();
-        assert(response.at("op").as_int64() == static_cast<int>(axtp::RpcOp::RequestBatchResponse));
-        assert(d.at("status").as_object().at("code").as_int64() ==
+        d = response.at("d");
+        assert(response.at("op").get<int>() ==
+               static_cast<int>(axtp::RpcOp::RequestBatchResponse));
+        assert(d.at("status").at("code").get<int>() ==
                static_cast<int>(axtp::ErrorCode::RpcBatchUnsupported));
 
         axtp::RpcPayload event;
@@ -217,10 +223,10 @@ int main() {
         event.body = axtp::Bytes(eventData.begin(), eventData.end());
         adapter.sendEvent(std::move(event));
         auto eventJson = popJson(transport, "event");
-        assert(eventJson.at("op").as_int64() == static_cast<int>(axtp::RpcOp::Event));
-        auto eventD = eventJson.at("d").as_object();
-        assert(eventD.at("event").as_string() == "audio.algorithmConfigChanged");
-        assert(eventD.at("data").as_object().at("reason").as_string() == "manual");
+        assert(eventJson.at("op").get<int>() == static_cast<int>(axtp::RpcOp::Event));
+        auto eventD = eventJson.at("d");
+        assert(eventD.at("event").get<std::string>() == "audio.algorithmConfigChanged");
+        assert(eventD.at("data").at("reason").get<std::string>() == "manual");
     }
 
     {
@@ -259,46 +265,62 @@ int main() {
         std::string identifiedText;
         std::string responseText;
         std::thread clientThread([&] {
-            boost::asio::io_context io;
-            boost::beast::websocket::stream<boost::asio::ip::tcp::socket> ws(io);
-            boost::asio::ip::tcp::resolver resolver(io);
-            auto endpoints = resolver.resolve("127.0.0.1", std::to_string(port));
-            boost::asio::connect(ws.next_layer(), endpoints);
-            ws.handshake("127.0.0.1", "/");
-            boost::beast::flat_buffer buffer;
-            ws.read(buffer);
-            helloText = boost::beast::buffers_to_string(buffer.data());
-            buffer.consume(buffer.size());
-            ws.write(boost::asio::buffer(std::string(R"({"sid":"","op":2,"d":{"rpcVersion":1}})")));
-            ws.read(buffer);
-            identifiedText = boost::beast::buffers_to_string(buffer.data());
-            auto identified = boost::json::parse(identifiedText).as_object();
-            const auto sid = std::string(identified.at("sid").as_string());
-            buffer.consume(buffer.size());
-            ws.write(boost::asio::buffer(
-                std::string(R"({"sid":")" + sid +
-                            R"(","op":7,"d":{"id":801,"method":"audio.getAlgorithmConfig","params":{}}})")));
-            ws.read(buffer);
-            responseText = boost::beast::buffers_to_string(buffer.data());
+            std::mutex mutex;
+            std::condition_variable cv;
+            std::queue<std::string> messages;
+            ix::WebSocket ws;
+            ws.setUrl("ws://127.0.0.1:" + std::to_string(port) + "/");
+            ws.setOnMessageCallback([&](const ix::WebSocketMessagePtr& message) {
+                if (!message || message->type != ix::WebSocketMessageType::Message) {
+                    return;
+                }
+                {
+                    std::lock_guard<std::mutex> lock(mutex);
+                    messages.push(message->str);
+                }
+                cv.notify_one();
+            });
+            ws.start();
+
+            auto waitMessage = [&]() {
+                std::unique_lock<std::mutex> lock(mutex);
+                const auto ok = cv.wait_for(lock, std::chrono::seconds(5), [&] {
+                    return !messages.empty();
+                });
+                assert(ok);
+                auto text = std::move(messages.front());
+                messages.pop();
+                return text;
+            };
+
+            helloText = waitMessage();
+            ws.sendText(R"({"sid":"","op":2,"d":{"rpcVersion":1}})");
+            identifiedText = waitMessage();
+            const auto identified = nlohmann::json::parse(identifiedText);
+            const auto sid = identified.at("sid").get<std::string>();
+            ws.sendText(std::string(R"({"sid":")" + sid +
+                                    R"(","op":7,"d":{"id":801,"method":"audio.getAlgorithmConfig","params":{}}})"));
+            responseText = waitMessage();
+            ws.stop();
             clientDone = true;
         });
 
-        for (int i = 0; i < 100 && !clientDone; ++i) {
+        for (int i = 0; i < 2000 && !clientDone; ++i) {
             adapter.poll(server);
             std::this_thread::sleep_for(std::chrono::milliseconds(5));
         }
         clientThread.join();
         assert(clientDone);
-        auto hello = boost::json::parse(helloText).as_object();
-        assert(hello.at("op").as_int64() == static_cast<int>(axtp::RpcOp::Hello));
-        auto identified = boost::json::parse(identifiedText).as_object();
-        assert(identified.at("op").as_int64() == static_cast<int>(axtp::RpcOp::Identified));
-        auto parsed = boost::json::parse(responseText).as_object();
-        assert(parsed.at("op").as_int64() == static_cast<int>(axtp::RpcOp::RequestResponse));
-        const auto& d = parsed.at("d").as_object();
-        assert(d.at("id").as_int64() == 801);
-        assert(d.at("status").as_object().at("ok").as_bool());
-        assert(d.at("result").as_object().at("ok").as_bool());
+        auto hello = nlohmann::json::parse(helloText);
+        assert(hello.at("op").get<int>() == static_cast<int>(axtp::RpcOp::Hello));
+        auto identified = nlohmann::json::parse(identifiedText);
+        assert(identified.at("op").get<int>() == static_cast<int>(axtp::RpcOp::Identified));
+        auto parsed = nlohmann::json::parse(responseText);
+        assert(parsed.at("op").get<int>() == static_cast<int>(axtp::RpcOp::RequestResponse));
+        const auto& d = parsed.at("d");
+        assert(d.at("id").get<int>() == 801);
+        assert(d.at("status").at("ok").get<bool>());
+        assert(d.at("result").at("ok").get<bool>());
         server.close();
     }
 

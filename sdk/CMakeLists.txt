@@ -11,8 +11,6 @@ if(NOT TARGET axtp_core)
     add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../core ${CMAKE_CURRENT_BINARY_DIR}/core)
 endif()
 
-find_package(Boost CONFIG REQUIRED COMPONENTS json)
-
 set(AXTP_SDK_IS_TOP_LEVEL OFF)
 if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
     set(AXTP_SDK_IS_TOP_LEVEL ON)
@@ -29,7 +27,6 @@ target_include_directories(axtp_sdk
 target_link_libraries(axtp_sdk
     INTERFACE
         axtp_core
-        Boost::json
 )
 target_compile_features(axtp_sdk INTERFACE cxx_std_17)
 

@@ -1,7 +1,7 @@
 #pragma once
 
-#include <boost/json.hpp>
 #include <cstdint>
+#include <nlohmann/json.hpp>
 #include <optional>
 #include <string>
 #include <utility>
@@ -55,13 +55,13 @@ public:
     }
 
 private:
-    static std::optional<boost::json::value> bytesToJson(const Bytes& bytes) {
+    static std::optional<nlohmann::json> bytesToJson(const Bytes& bytes) {
         if (bytes.empty()) {
             return std::nullopt;
         }
         try {
             const std::string text(bytes.begin(), bytes.end());
-            return boost::json::parse(text);
+            return nlohmann::json::parse(text);
         } catch (const std::exception&) {
             return std::nullopt;
         }
@@ -72,8 +72,8 @@ private:
         return descriptor != nullptr ? descriptor->name : "UNKNOWN_ERROR";
     }
 
-    static boost::json::object statusObject(ErrorCode code) {
-        boost::json::object status;
+    static nlohmann::json statusObject(ErrorCode code) {
+        auto status = nlohmann::json::object();
         status["ok"] = code == ErrorCode::Success;
         status["code"] = static_cast<std::uint16_t>(code);
         if (code != ErrorCode::Success) {
@@ -87,30 +87,30 @@ private:
     }
 
     static std::string serializeHello() {
-        boost::json::object d;
+        auto d = nlohmann::json::object();
         d["axtpVersion"] = "1.0.0";
         d["rpcVersion"] = 1;
 
-        boost::json::object object;
+        auto object = nlohmann::json::object();
         object["sid"] = "";
         object["op"] = static_cast<std::uint8_t>(RpcOp::Hello);
         object["d"] = std::move(d);
-        return boost::json::serialize(object);
+        return object.dump();
     }
 
     static std::string serializeIdentified(const RpcPayload& payload) {
-        boost::json::object d;
+        auto d = nlohmann::json::object();
         d["negotiatedRpcVersion"] = 1;
 
-        boost::json::object object;
+        auto object = nlohmann::json::object();
         object["sid"] = responseSid(payload.meta);
         object["op"] = static_cast<std::uint8_t>(RpcOp::Identified);
         object["d"] = std::move(d);
-        return boost::json::serialize(object);
+        return object.dump();
     }
 
     static std::string serializeResponse(const RpcPayload& payload) {
-        boost::json::object d;
+        auto d = nlohmann::json::object();
         d["id"] = payload.requestId;
 
         auto statusCode = payload.statusCode;
@@ -123,27 +123,27 @@ private:
             d["result"] = std::move(*result);
         }
 
-        boost::json::object object;
+        auto object = nlohmann::json::object();
         object["sid"] = responseSid(payload.meta);
         object["op"] = static_cast<std::uint8_t>(RpcOp::RequestResponse);
         object["d"] = std::move(d);
-        return boost::json::serialize(object);
+        return object.dump();
     }
 
     static std::string serializeBatchResponse(const RpcPayload& payload) {
-        boost::json::object d;
+        auto d = nlohmann::json::object();
         d["id"] = payload.requestId;
         d["status"] = statusObject(payload.statusCode);
 
-        boost::json::object object;
+        auto object = nlohmann::json::object();
         object["sid"] = responseSid(payload.meta);
         object["op"] = static_cast<std::uint8_t>(RpcOp::RequestBatchResponse);
         object["d"] = std::move(d);
-        return boost::json::serialize(object);
+        return object.dump();
     }
 
     static std::string serializeEvent(const RpcPayload& payload) {
-        boost::json::object d;
+        auto d = nlohmann::json::object();
         std::string eventName = payload.meta.jsonMethodOrEventName;
         if (eventName.empty()) {
             const auto* event =
@@ -155,11 +155,11 @@ private:
             d["data"] = std::move(*data);
         }
 
-        boost::json::object object;
+        auto object = nlohmann::json::object();
         object["sid"] = responseSid(payload.meta);
         object["op"] = static_cast<std::uint8_t>(RpcOp::Event);
         object["d"] = std::move(d);
-        return boost::json::serialize(object);
+        return object.dump();
     }
 };
 

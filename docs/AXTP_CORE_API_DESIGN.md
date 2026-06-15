@@ -33,7 +33,9 @@ ITransport <-> AxtpEndpoint -> AxtpCore -> BasicBroker
 | `axtp_json_rpc` | `INTERFACE` | WebSocket session helper adapter 和 JSON registry-file loader |
 | `axtp_transport_hidapi` | `STATIC` optional | HID report-level transport，位于 `axtp-cpp-runtime/transports`，依赖 vendored `axtp-cpp-runtime/thirdparty/hidapi` |
 | `axtp_transport_tcp_boost` | `INTERFACE` optional | Boost.Asio TCP transport，位于 `axtp-cpp-runtime/transports` |
-| `axtp_transport_websocket_boost` | `INTERFACE` optional | Boost.Beast WebSocket transport，位于 `axtp-cpp-runtime/transports` |
+| `axtp_transport_websocket_ix` | `INTERFACE` optional | 默认 IXWebSocket WebSocket transport，位于 `axtp-cpp-runtime/transports` |
+| `axtp_transport_websocket_websocketpp` | `INTERFACE` optional | 高级可选 websocketpp + standalone Asio WebSocket transport，位于 `axtp-cpp-runtime/transports` |
+| `axtp_transport_websocket_boost` | `INTERFACE` optional | Legacy optional Boost.Beast WebSocket transport，位于 `axtp-cpp-runtime/transports` |
 
 推荐 runtime 聚合 include：
 

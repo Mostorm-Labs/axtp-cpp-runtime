@@ -4,7 +4,7 @@
 #include <exception>
 #include <string>
 
-#include <boost/json.hpp>
+#include <nlohmann/json.hpp>
 
 #include "generated/method_traits.h"
 #include "model/bytes.hpp"
@@ -24,7 +24,7 @@ public:
             return {};
         }
         const auto json = requestToJson<Id>(request);
-        const auto text = boost::json::serialize(json);
+        const auto text = json.dump();
         return Bytes(text.begin(), text.end());
     }
 
@@ -36,9 +36,9 @@ public:
         }
         try {
             const std::string text(bytes.begin(), bytes.end());
-            const auto parsed = boost::json::parse(text);
+            const auto parsed = nlohmann::json::parse(text);
             if (parsed.is_object()) {
-                fillResponse<Id>(parsed.as_object(), response);
+                fillResponse<Id>(parsed, response);
             }
         } catch (const std::exception&) {
         }
@@ -51,27 +51,27 @@ public:
             return {};
         }
         const auto json = eventToJson<Id>(event);
-        const auto text = boost::json::serialize(json);
+        const auto text = json.dump();
         return Bytes(text.begin(), text.end());
     }
 
 private:
     template <MethodId Id>
-    static boost::json::object requestToJson(const typename MethodTraits<Id>::Request& request) {
+    static nlohmann::json requestToJson(const typename MethodTraits<Id>::Request& request) {
         (void)request;
-        return {};
+        return nlohmann::json::object();
     }
 
     template <MethodId Id>
-    static void fillResponse(const boost::json::object& object, typename MethodTraits<Id>::Response& response) {
+    static void fillResponse(const nlohmann::json& object, typename MethodTraits<Id>::Response& response) {
         (void)object;
         (void)response;
     }
 
     template <EventId Id>
-    static boost::json::object eventToJson(const typename EventTraits<Id>::Event& event) {
+    static nlohmann::json eventToJson(const typename EventTraits<Id>::Event& event) {
         (void)event;
-        return {};
+        return nlohmann::json::object();
     }
 };
 

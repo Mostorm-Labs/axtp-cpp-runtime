@@ -1,9 +1,9 @@
 #pragma once
 
-#include <boost/json.hpp>
 #include <cstdint>
 #include <functional>
 #include <limits>
+#include <nlohmann/json.hpp>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -43,8 +43,7 @@ public:
     void onBytes(const Byte* data, std::size_t size) override {
         try {
             const std::string text(reinterpret_cast<const char*>(data), size);
-            const auto parsed = boost::json::parse(text);
-            const auto& object = parsed.as_object();
+            const auto object = nlohmann::json::parse(text);
             const auto op = parseOp(object);
 
             if (op == RpcOp::Identify || op == RpcOp::Reidentify) {
@@ -82,8 +81,8 @@ public:
     }
 
 private:
-    static RpcOp parseOp(const boost::json::object& object) {
-        const auto raw = object.at("op").as_int64();
+    static RpcOp parseOp(const nlohmann::json& object) {
+        const auto raw = object.at("op").get<std::int64_t>();
         if (raw < 0 || raw > std::numeric_limits<std::uint8_t>::max()) {
             throw std::invalid_argument("invalid op");
         }
@@ -99,30 +98,30 @@ private:
         return profile;
     }
 
-    static std::string parseSid(const boost::json::object& object) {
+    static std::string parseSid(const nlohmann::json& object) {
         if (!object.contains("sid") || !object.at("sid").is_string()) {
             return "";
         }
-        return std::string(object.at("sid").as_string());
+        return object.at("sid").get<std::string>();
     }
 
-    static std::uint32_t parseRequestId(const boost::json::object& object) {
+    static std::uint32_t parseRequestId(const nlohmann::json& object) {
         if (!object.contains("d") || !object.at("d").is_object()) {
             return 0;
         }
-        const auto& d = object.at("d").as_object();
+        const auto& d = object.at("d");
         if (!d.contains("id")) {
             return 0;
         }
         const auto& id = d.at("id");
-        if (id.is_uint64()) {
-            const auto raw = id.as_uint64();
+        if (id.is_number_unsigned()) {
+            const auto raw = id.get<std::uint64_t>();
             return raw <= std::numeric_limits<std::uint32_t>::max()
                        ? static_cast<std::uint32_t>(raw)
                        : 0;
         }
-        if (id.is_int64()) {
-            const auto raw = id.as_int64();
+        if (id.is_number_integer()) {
+            const auto raw = id.get<std::int64_t>();
             return raw > 0 && raw <= std::numeric_limits<std::uint32_t>::max()
                        ? static_cast<std::uint32_t>(raw)
                        : 0;
@@ -138,11 +137,15 @@ private:
         _helloSent = true;
     }
 
-    void handleIdentify(const boost::json::object& object) {
-        const auto& d = object.at("d").as_object();
-        if (const auto* resumeSid = d.if_contains("resumeSid");
-            resumeSid != nullptr && resumeSid->is_string() && !resumeSid->as_string().empty()) {
-            _sid = std::string(resumeSid->as_string());
+    void handleIdentify(const nlohmann::json& object) {
+        const auto& d = object.at("d");
+        if (!d.is_object()) {
+            throw std::invalid_argument("invalid d");
+        }
+        if (const auto resumeSid = d.find("resumeSid");
+            resumeSid != d.end() && resumeSid->is_string() &&
+            !resumeSid->get<std::string>().empty()) {
+            _sid = resumeSid->get<std::string>();
         }
         _identified = true;
         sendRpc(JsonRpcEncoder::makeIdentified(_sid));

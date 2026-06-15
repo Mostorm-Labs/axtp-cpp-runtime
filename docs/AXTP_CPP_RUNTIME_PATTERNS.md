@@ -21,7 +21,9 @@ ITransport <-> AxtpEndpoint -> AxtpCore -> BasicBroker<>
 | `axtp_json_rpc` | `INTERFACE` | WebSocket session helper adapter 和 JSON registry-file loader |
 | `axtp_transport_hidapi` | `STATIC` optional | HID report-level transport，位于 `transports`，依赖 `thirdparty/hidapi` |
 | `axtp_transport_tcp_boost` | `INTERFACE` optional | Boost.Asio TCP transport，位于 `transports` |
-| `axtp_transport_websocket_boost` | `INTERFACE` optional | Boost.Beast WebSocket transport，位于 `transports` |
+| `axtp_transport_websocket_ix` | `INTERFACE` optional | 默认 IXWebSocket WebSocket transport，位于 `transports` |
+| `axtp_transport_websocket_websocketpp` | `INTERFACE` optional | 高级可选 websocketpp + standalone Asio WebSocket transport，位于 `transports` |
+| `axtp_transport_websocket_boost` | `INTERFACE` optional | Legacy optional Boost.Beast WebSocket transport，位于 `transports` |
 
 推荐 runtime include：
 
@@ -81,7 +83,7 @@ flowchart TB
 
 - `FramedBinary` 承载 AXTP Standard Frames。
 - `WebSocketJsonRpc` 是正式 AXTP wire mode，使用完整 UTF-8 text message 和 `sid/op/d` envelope。
-- JSON-RPC decoder/encoder 位于 core，因为 runtime 直接支持该 wire mode；因此 Boost.JSON 是允许的 `axtp_core` 依赖。
+- JSON-RPC decoder/encoder 位于 core，因为 runtime 直接支持该 wire mode；因此 nlohmann/json 是允许的 `axtp_core` 依赖。
 - `WebSocketJsonRpcAdapter` 只是可选 session/transport helper，不拥有 `AxtpCore` 或 `BasicBroker<>`。
 
 ## 模式地图

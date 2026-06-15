@@ -1,8 +1,8 @@
 #pragma once
 
-#include <boost/json.hpp>
 #include <cstdint>
 #include <limits>
+#include <nlohmann/json.hpp>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -23,10 +23,12 @@ public:
     void onBytes(const Byte* data, std::size_t size) override {
         try {
             const std::string text(reinterpret_cast<const char*>(data), size);
-            const auto parsed = boost::json::parse(text);
-            const auto& object = parsed.as_object();
+            const auto object = nlohmann::json::parse(text);
             const auto op = parseOp(object);
-            const auto& d = object.at("d").as_object();
+            const auto& d = object.at("d");
+            if (!d.is_object()) {
+                throw std::invalid_argument("invalid d");
+            }
 
             if (op == RpcOp::Request) {
                 decodeRequest(object, d);
@@ -48,31 +50,31 @@ public:
     }
 
 private:
-    static RpcOp parseOp(const boost::json::object& object) {
-        const auto raw = object.at("op").as_int64();
+    static RpcOp parseOp(const nlohmann::json& object) {
+        const auto raw = object.at("op").get<std::int64_t>();
         if (raw < 0 || raw > std::numeric_limits<std::uint8_t>::max()) {
             throw std::invalid_argument("invalid op");
         }
         return static_cast<RpcOp>(static_cast<std::uint8_t>(raw));
     }
 
-    static std::string parseSid(const boost::json::object& object) {
+    static std::string parseSid(const nlohmann::json& object) {
         if (!object.contains("sid") || !object.at("sid").is_string()) {
             return "";
         }
-        return std::string(object.at("sid").as_string());
+        return object.at("sid").get<std::string>();
     }
 
-    static std::uint32_t parseRequestId(const boost::json::object& d) {
+    static std::uint32_t parseRequestId(const nlohmann::json& d) {
         if (!d.contains("id")) {
             throw std::invalid_argument("missing id");
         }
         std::uint64_t raw = 0;
         const auto& id = d.at("id");
-        if (id.is_uint64()) {
-            raw = id.as_uint64();
-        } else if (id.is_int64()) {
-            const auto signedId = id.as_int64();
+        if (id.is_number_unsigned()) {
+            raw = id.get<std::uint64_t>();
+        } else if (id.is_number_integer()) {
+            const auto signedId = id.get<std::int64_t>();
             if (signedId < 0) {
                 throw std::invalid_argument("negative id");
             }
@@ -86,16 +88,16 @@ private:
         return static_cast<std::uint32_t>(raw);
     }
 
-    static Bytes jsonToBytes(const boost::json::value& value) {
-        const auto text = boost::json::serialize(value);
+    static Bytes jsonToBytes(const nlohmann::json& value) {
+        const auto text = value.dump();
         return Bytes(text.begin(), text.end());
     }
 
-    void decodeRequest(const boost::json::object& object, const boost::json::object& d) {
+    void decodeRequest(const nlohmann::json& object, const nlohmann::json& d) {
         if (!d.contains("method") || !d.at("method").is_string()) {
             throw std::invalid_argument("missing method");
         }
-        const std::string method(d.at("method").as_string());
+        const auto method = d.at("method").get<std::string>();
         const auto methodId = RegistryLookup::methodIdByName(method);
         if (!methodId.has_value()) {
             RpcPayload error;
@@ -121,17 +123,17 @@ private:
         request.meta.requestId = request.requestId;
         request.meta.jsonSid = parseSid(object);
         request.meta.jsonMethodOrEventName = method;
-        if (const auto* params = d.if_contains("params")) {
+        if (const auto params = d.find("params"); params != d.end()) {
             request.body = jsonToBytes(*params);
         }
         _sink.onRpc(std::move(request));
     }
 
-    void decodeEvent(const boost::json::object& object, const boost::json::object& d) {
+    void decodeEvent(const nlohmann::json& object, const nlohmann::json& d) {
         if (!d.contains("event") || !d.at("event").is_string()) {
             throw std::invalid_argument("missing event");
         }
-        const std::string eventName(d.at("event").as_string());
+        const auto eventName = d.at("event").get<std::string>();
         const auto eventId = RegistryLookup::eventIdByName(eventName);
         if (!eventId.has_value()) {
             return;
@@ -145,14 +147,14 @@ private:
         event.meta.sourceProtocol = SourceProtocol::JsonRpc;
         event.meta.jsonSid = parseSid(object);
         event.meta.jsonMethodOrEventName = eventName;
-        if (const auto* data = d.if_contains("data")) {
-            event.body = jsonToBytes(*data);
+        if (const auto eventData = d.find("data"); eventData != d.end()) {
+            event.body = jsonToBytes(*eventData);
         }
         _sink.onRpc(std::move(event));
     }
 
     void
-    decodeSessionRpc(const boost::json::object& object, const boost::json::object& d, RpcOp op) {
+    decodeSessionRpc(const nlohmann::json& object, const nlohmann::json& d, RpcOp op) {
         RpcPayload payload;
         payload.encoding = RpcEncoding::Json;
         payload.op = op;
@@ -163,7 +165,7 @@ private:
         _sink.onRpc(std::move(payload));
     }
 
-    void decodeBatch(const boost::json::object& object, const boost::json::object& d) {
+    void decodeBatch(const nlohmann::json& object, const nlohmann::json& d) {
         RpcPayload payload;
         payload.encoding = RpcEncoding::Json;
         payload.op = RpcOp::RequestBatchResponse;

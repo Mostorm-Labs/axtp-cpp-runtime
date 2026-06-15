@@ -10,6 +10,6 @@ inline constexpr const char* kSpecTag = "spec/v0.6.0";
 inline constexpr const char* kSpecCommit = "a044348dccedc675430113cbf96851d4584885b1";
 inline constexpr const char* kGeneratorName = "@axtp/cpp-runtime-generator";
 inline constexpr const char* kGeneratorVersion = "1.0.0";
-inline constexpr const char* kGeneratedAt = "2026-06-15T08:06:27Z";
+inline constexpr const char* kGeneratedAt = "2026-06-15T14:37:00Z";
 
 }  // namespace axtp::generated

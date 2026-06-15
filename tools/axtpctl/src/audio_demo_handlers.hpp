@@ -1,6 +1,6 @@
 #pragma once
 
-#include <boost/json.hpp>
+#include <nlohmann/json.hpp>
 #include <string>
 #include <string_view>
 
@@ -25,109 +25,109 @@ public:
     }
 
     std::string configJson() const {
-        return boost::json::serialize(_config);
+        return _config.dump();
     }
 
     std::string setAlgorithmConfig(std::string_view params) {
         try {
-            const auto parsed = boost::json::parse(params);
+            const auto parsed = nlohmann::json::parse(params);
             if (parsed.is_object()) {
-                const auto& root = parsed.as_object();
-                if (const auto* config = root.if_contains("config");
-                    config != nullptr && config->is_object()) {
-                    mergeConfig(config->as_object());
+                if (const auto config = parsed.find("config");
+                    config != parsed.end() && config->is_object()) {
+                    mergeConfig(*config);
                 } else {
-                    mergeConfig(root);
+                    mergeConfig(parsed);
                 }
             }
         } catch (const std::exception&) {
         }
 
-        boost::json::object response;
+        auto response = nlohmann::json::object();
         response["applyState"] = "applied";
         response["requiresAudioRestart"] = false;
         response["config"] = _config;
-        return boost::json::serialize(response);
+        return response.dump();
     }
 
 private:
-    static boost::json::object defaultConfig() {
-        boost::json::object noiseSuppression;
+    static nlohmann::json defaultConfig() {
+        auto noiseSuppression = nlohmann::json::object();
         noiseSuppression["enabled"] = true;
         noiseSuppression["level"] = 1;
 
-        boost::json::object echoCancellation;
+        auto echoCancellation = nlohmann::json::object();
         echoCancellation["enabled"] = true;
         echoCancellation["nlpLevel"] = 1;
 
-        boost::json::object config;
+        auto config = nlohmann::json::object();
         config["noiseSuppression"] = std::move(noiseSuppression);
         config["echoCancellation"] = std::move(echoCancellation);
         return config;
     }
 
     static std::string capabilitiesJson() {
-        boost::json::object enabled;
+        auto enabled = nlohmann::json::object();
         enabled["type"] = "boolean";
         enabled["defaultBoolean"] = true;
 
-        boost::json::object level;
+        auto level = nlohmann::json::object();
         level["type"] = "uint8";
         level["min"] = 0;
         level["max"] = 5;
         level["step"] = 1;
         level["defaultUInt8"] = 1;
 
-        boost::json::object noiseSuppression;
+        auto noiseSuppression = nlohmann::json::object();
         noiseSuppression["supported"] = true;
         noiseSuppression["enabled"] = enabled;
         noiseSuppression["level"] = level;
 
-        boost::json::object nlpLevel = level;
+        auto nlpLevel = level;
         nlpLevel["max"] = 3;
 
-        boost::json::object echoCancellation;
+        auto echoCancellation = nlohmann::json::object();
         echoCancellation["supported"] = true;
         echoCancellation["enabled"] = enabled;
         echoCancellation["nlpLevel"] = nlpLevel;
 
-        boost::json::object algorithms;
+        auto algorithms = nlohmann::json::object();
         algorithms["noiseSuppression"] = std::move(noiseSuppression);
         algorithms["echoCancellation"] = std::move(echoCancellation);
 
-        boost::json::object updatePolicy;
+        auto updatePolicy = nlohmann::json::object();
         updatePolicy["partialUpdateSupported"] = true;
         updatePolicy["multiAlgorithmUpdateSupported"] = true;
         updatePolicy["atomicUpdateSupported"] = true;
 
-        boost::json::object response;
+        auto response = nlohmann::json::object();
         response["capability"] = "audio.algorithm";
         response["updatePolicy"] = std::move(updatePolicy);
         response["algorithms"] = std::move(algorithms);
-        return boost::json::serialize(response);
+        return response.dump();
     }
 
-    void mergeConfig(const boost::json::object& patch) {
-        for (const auto& algorithm : patch) {
+    void mergeConfig(const nlohmann::json& patch) {
+        for (auto algorithm = patch.begin(); algorithm != patch.end(); ++algorithm) {
             if (!algorithm.value().is_object()) {
                 _config[algorithm.key()] = algorithm.value();
                 continue;
             }
 
-            auto* currentValue = _config.if_contains(algorithm.key());
-            if (currentValue == nullptr || !currentValue->is_object()) {
+            auto currentValue = _config.find(algorithm.key());
+            if (currentValue == _config.end() || !currentValue->is_object()) {
                 _config[algorithm.key()] = algorithm.value();
                 continue;
             }
 
-            auto& current = currentValue->as_object();
-            for (const auto& field : algorithm.value().as_object()) {
+            auto& current = *currentValue;
+            for (auto field = algorithm.value().begin(); field != algorithm.value().end();
+                 ++field) {
                 current[field.key()] = field.value();
             }
         }
     }
 
-    boost::json::object _config;
+    nlohmann::json _config;
 };
 
 inline void installAudioDemoHandlers(sdk::AxtpServer& server, AudioDemoState& state) {

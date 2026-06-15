@@ -1,4 +1,3 @@
-#include <boost/json.hpp>
 #include <cctype>
 #include <chrono>
 #include <cstdint>
@@ -6,6 +5,7 @@
 #include <iostream>
 #include <iterator>
 #include <memory>
+#include <nlohmann/json.hpp>
 #include <optional>
 #include <sstream>
 #include <string>
@@ -18,7 +18,7 @@
 #include "hidapi/hid_local_backend.hpp"
 #include "hidapi/hid_transport.hpp"
 #include "tcp_boost/tcp_transport.hpp"
-#include "websocket_boost/websocket_transport.hpp"
+#include "websocket_ix/websocket_transport.hpp"
 
 #include "axtp_sdk_all.hpp"
 
@@ -372,7 +372,7 @@ int inspectFrame(const std::vector<std::string>& args) {
         return 2;
     }
 
-    boost::json::object object;
+    auto object = nlohmann::json::object();
     object["magic"] =
         ((*bytes)[0] == axtp::kAxtpStandardMagic0 && (*bytes)[1] == axtp::kAxtpStandardMagic1)
             ? "AX"
@@ -399,26 +399,26 @@ int inspectFrame(const std::vector<std::string>& args) {
         object["crcOk"] = expected == actual;
     }
 
-    std::cout << boost::json::serialize(object) << "\n";
+    std::cout << object.dump() << "\n";
     return 0;
 }
 
-boost::json::value parseJsonValueOrString(const axtp::Bytes& bytes) {
+nlohmann::json parseJsonValueOrString(const axtp::Bytes& bytes) {
     if (bytes.empty()) {
         return nullptr;
     }
     try {
         const std::string text(bytes.begin(), bytes.end());
-        return boost::json::parse(text);
+        return nlohmann::json::parse(text);
     } catch (const std::exception&) {
         const std::string text(bytes.begin(), bytes.end());
-        return boost::json::value(boost::json::string(text));
+        return text;
     }
 }
 
 bool validateJson(std::string_view text) {
     try {
-        boost::json::parse(text);
+        nlohmann::json::parse(text);
         return true;
     } catch (const std::exception& ex) {
         std::cerr << "invalid JSON params: " << ex.what() << "\n";
@@ -439,12 +439,12 @@ OutputFormat parseOutputFormat(const std::string& value) {
     return OutputFormat::Pretty;
 }
 
-void printJsonObject(const boost::json::object& object, OutputFormat format) {
+void printJsonObject(const nlohmann::json& object, OutputFormat format) {
     if (format == OutputFormat::Pretty) {
-        std::cout << boost::json::serialize(object) << "\n";
+        std::cout << object.dump() << "\n";
         return;
     }
-    std::cout << boost::json::serialize(object) << "\n";
+    std::cout << object.dump() << "\n";
 }
 
 std::string errorName(axtp::ErrorCode code) {
@@ -692,7 +692,7 @@ int callMethod(const CliOptions& options) {
         return response.statusCode == axtp::ErrorCode::Success ? 0 : 4;
     }
 
-    boost::json::object output;
+    auto output = nlohmann::json::object();
     output["ok"] = response.statusCode == axtp::ErrorCode::Success;
     if (methodName.has_value()) {
         output["method"] = *methodName;
@@ -708,7 +708,7 @@ int callMethod(const CliOptions& options) {
             }
         }
     } else {
-        boost::json::object error;
+        auto error = nlohmann::json::object();
         error["code"] = errorName(response.statusCode);
         error["numericCode"] = static_cast<std::uint16_t>(response.statusCode);
         error["message"] = errorName(response.statusCode);
@@ -719,9 +719,9 @@ int callMethod(const CliOptions& options) {
 }
 
 int printCapabilityMethods() {
-    boost::json::array methods;
+    auto methods = nlohmann::json::array();
     for (const auto& method : axtp::kMethodRegistry) {
-        boost::json::object item;
+        auto item = nlohmann::json::object();
         item["id"] = method.id;
         item["name"] = method.name;
         item["domain"] = method.domain;
@@ -729,19 +729,19 @@ int printCapabilityMethods() {
         item["responseSchema"] = method.response_schema;
         methods.push_back(std::move(item));
     }
-    std::cout << boost::json::serialize(methods) << "\n";
+    std::cout << methods.dump() << "\n";
     return 0;
 }
 
 int ping(const CliOptions& options) {
-    boost::json::object output;
+    auto output = nlohmann::json::object();
     output["ok"] = options.transport == "mock";
     output["transport"] = options.transport;
     output["wire"] = options.wire;
     if (options.transport != "mock") {
         output["message"] = "real transport ping is not implemented in P0";
     }
-    std::cout << boost::json::serialize(output) << "\n";
+    std::cout << output.dump() << "\n";
     return options.transport == "mock" ? 0 : 4;
 }
 

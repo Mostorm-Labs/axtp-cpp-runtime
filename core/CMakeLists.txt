@@ -11,12 +11,21 @@ target_include_directories(axtp_core
     INTERFACE
         ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
-find_package(Boost CONFIG REQUIRED COMPONENTS json)
+
+set(AXTP_THIRDPARTY_JSON_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty/json)
+if(EXISTS ${AXTP_THIRDPARTY_JSON_DIR}/CMakeLists.txt AND NOT TARGET nlohmann_json::nlohmann_json)
+    set(JSON_BuildTests OFF CACHE INTERNAL "")
+    set(JSON_Install OFF CACHE INTERNAL "")
+    add_subdirectory(${AXTP_THIRDPARTY_JSON_DIR} ${CMAKE_CURRENT_BINARY_DIR}/thirdparty/json EXCLUDE_FROM_ALL)
+endif()
+
+if(NOT TARGET nlohmann_json::nlohmann_json)
+    find_package(nlohmann_json CONFIG REQUIRED)
+endif()
 
 target_link_libraries(axtp_core
     INTERFACE
-        Boost::headers
-        Boost::json
+        nlohmann_json::nlohmann_json
 )
 target_compile_features(axtp_core INTERFACE cxx_std_17)
 
@@ -52,6 +61,8 @@ if(AXTP_BUILD_JSON_RPC)
 endif()
 
 if(AXTP_BUILD_OPTIONAL_TRANSPORTS)
+    find_package(Boost CONFIG QUIET)
+
     add_library(axtp_transport_tcp_boost INTERFACE)
     target_include_directories(axtp_transport_tcp_boost
         INTERFACE
@@ -64,17 +75,73 @@ if(AXTP_BUILD_OPTIONAL_TRANSPORTS)
     )
     target_compile_features(axtp_transport_tcp_boost INTERFACE cxx_std_17)
 
-    add_library(axtp_transport_websocket_boost INTERFACE)
-    target_include_directories(axtp_transport_websocket_boost
+    set(AXTP_THIRDPARTY_IXWEBSOCKET_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty/IXWebSocket)
+    if(EXISTS ${AXTP_THIRDPARTY_IXWEBSOCKET_DIR}/CMakeLists.txt AND NOT TARGET ixwebsocket::ixwebsocket)
+        set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+        set(BUILD_DEMO OFF CACHE BOOL "" FORCE)
+        set(USE_TLS OFF CACHE BOOL "" FORCE)
+        set(USE_ZLIB OFF CACHE BOOL "" FORCE)
+        set(IXWEBSOCKET_INSTALL OFF CACHE BOOL "" FORCE)
+        add_subdirectory(${AXTP_THIRDPARTY_IXWEBSOCKET_DIR} ${CMAKE_CURRENT_BINARY_DIR}/thirdparty/IXWebSocket EXCLUDE_FROM_ALL)
+    endif()
+    if(NOT TARGET ixwebsocket::ixwebsocket)
+        find_package(ixwebsocket CONFIG REQUIRED)
+    endif()
+
+    add_library(axtp_transport_websocket_ix INTERFACE)
+    target_include_directories(axtp_transport_websocket_ix
         INTERFACE
             ${CMAKE_CURRENT_SOURCE_DIR}/../transports/include
     )
-    target_link_libraries(axtp_transport_websocket_boost
+    target_link_libraries(axtp_transport_websocket_ix
         INTERFACE
             axtp_runtime
-            Boost::headers
+            ixwebsocket::ixwebsocket
     )
-    target_compile_features(axtp_transport_websocket_boost INTERFACE cxx_std_17)
+    target_compile_features(axtp_transport_websocket_ix INTERFACE cxx_std_17)
+
+    set(AXTP_THIRDPARTY_WEBSOCKETPP_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty/websocketpp)
+    set(AXTP_THIRDPARTY_ASIO_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty/asio)
+    set(AXTP_THIRDPARTY_ASIO_INCLUDE_DIR "")
+    if(EXISTS ${AXTP_THIRDPARTY_ASIO_DIR}/include/asio/version.hpp)
+        set(AXTP_THIRDPARTY_ASIO_INCLUDE_DIR ${AXTP_THIRDPARTY_ASIO_DIR}/include)
+    elseif(EXISTS ${AXTP_THIRDPARTY_ASIO_DIR}/asio/include/asio/version.hpp)
+        set(AXTP_THIRDPARTY_ASIO_INCLUDE_DIR ${AXTP_THIRDPARTY_ASIO_DIR}/asio/include)
+    endif()
+    if(EXISTS ${AXTP_THIRDPARTY_WEBSOCKETPP_DIR}/websocketpp AND
+       AXTP_THIRDPARTY_ASIO_INCLUDE_DIR)
+        add_library(axtp_transport_websocket_websocketpp INTERFACE)
+        target_include_directories(axtp_transport_websocket_websocketpp
+            INTERFACE
+                ${CMAKE_CURRENT_SOURCE_DIR}/../transports/include
+                ${AXTP_THIRDPARTY_WEBSOCKETPP_DIR}
+                ${AXTP_THIRDPARTY_ASIO_INCLUDE_DIR}
+        )
+        target_compile_definitions(axtp_transport_websocket_websocketpp
+            INTERFACE
+                ASIO_STANDALONE
+                _WEBSOCKETPP_CPP11_STL_
+        )
+        target_link_libraries(axtp_transport_websocket_websocketpp
+            INTERFACE
+                axtp_runtime
+        )
+        target_compile_features(axtp_transport_websocket_websocketpp INTERFACE cxx_std_17)
+    endif()
+
+    if(Boost_FOUND)
+        add_library(axtp_transport_websocket_boost INTERFACE)
+        target_include_directories(axtp_transport_websocket_boost
+            INTERFACE
+                ${CMAKE_CURRENT_SOURCE_DIR}/../transports/include
+        )
+        target_link_libraries(axtp_transport_websocket_boost
+            INTERFACE
+                axtp_runtime
+                Boost::headers
+        )
+        target_compile_features(axtp_transport_websocket_boost INTERFACE cxx_std_17)
+    endif()
 
     set(AXTP_HIDAPI_TARGET "")
     set(AXTP_THIRDPARTY_HIDAPI_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty/hidapi)
@@ -162,7 +229,7 @@ if(AXTP_BUILD_CONFORMANCE)
     add_executable(axtp_conformance_runner
         ../tests/conformance/conformance_runner.cpp
     )
-    target_link_libraries(axtp_conformance_runner PRIVATE axtp_core axtp_json_rpc Boost::json)
+    target_link_libraries(axtp_conformance_runner PRIVATE axtp_core axtp_json_rpc)
 endif()
 
 if(NOT AXTP_CORE_BUILD_TESTS)
@@ -171,7 +238,7 @@ endif()
 
 if(NOT TARGET axtp_json_rpc OR
    NOT TARGET axtp_transport_tcp_boost OR
-   NOT TARGET axtp_transport_websocket_boost OR
+   NOT TARGET axtp_transport_websocket_ix OR
    NOT TARGET axtp_transport_hidapi)
     message(FATAL_ERROR "AXTP core tests require AXTP_BUILD_JSON_RPC and AXTP_BUILD_OPTIONAL_TRANSPORTS")
 endif()
@@ -216,8 +283,7 @@ target_link_libraries(phase6_real_transport_test
         axtp_core
         axtp_json_rpc
         axtp_transport_tcp_boost
-        axtp_transport_websocket_boost
-        Boost::json
+        axtp_transport_websocket_ix
 )
 add_test(NAME phase6_real_transport_test COMMAND phase6_real_transport_test)
 
