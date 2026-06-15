@@ -160,6 +160,9 @@ describe("emitters", () => {
       await expect(await readFile(path.join(dir, "docs", "method_registry.generated.md"), "utf8")).toMatchFileSnapshot("./__snapshots__/method_registry.generated.md");
       await expect(await readFile(path.join(dir, "json", "method_registry.generated.json"), "utf8")).toMatchFileSnapshot("./__snapshots__/method_registry.generated.json");
       await expect(await readFile(path.join(dir, "test_vectors", "manifest.json"), "utf8")).toMatchFileSnapshot("./__snapshots__/manifest.json");
+      expect(await readFile(path.join(dir, "test_vectors", "control_open.hex"), "utf8")).toContain("415801010005");
+      expect(await readFile(path.join(dir, "test_vectors", "rpc_audio_set_algorithm_config.hex"), "utf8")).toContain("0902");
+      expect(await readFile(path.join(dir, "test_vectors", "stream_object_chunk.hex"), "utf8")).toContain("00000009000000010000000000000001");
       await expect(await readFile(path.join(dir, "ts", "axtp_ids_generated.ts"), "utf8")).toMatchFileSnapshot("./__snapshots__/axtp_ids_generated.ts");
     } finally {
       await rm(dir, { recursive: true, force: true });

@@ -128,6 +128,13 @@
       }
     ]
   },
+  "wire": {
+    "byteOrder": "big-endian",
+    "byteOrderAlias": "network",
+    "integerEncoding": "unsigned and signed multi-byte integers use Big-Endian / network byte order",
+    "crcByteOrder": "big-endian",
+    "scope": "Standard Framed Binary, CONTROL, RPC JSON_BINARY, TLV, STREAM header, and CRC footer"
+  },
   "frameProfiles": [
     {
       "name": "STANDARD_FRAME",
@@ -1466,6 +1473,3849 @@
           "description": "Howling suppression strength."
         }
       ]
+    },
+    {
+      "name": "AudioGetStreamCapabilitiesParams",
+      "kind": "object",
+      "description": "Selector for real-time audio stream capability.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "source",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "Optional audio source identifier; omit to query all visible sources."
+        },
+        {
+          "fieldId": 2,
+          "name": "includeRuntimeState",
+          "type": "bool",
+          "required": false,
+          "description": "Whether to include current source runtime state."
+        }
+      ]
+    },
+    {
+      "name": "AudioStreamCapabilities",
+      "kind": "object",
+      "description": "Device-level audio.stream capability summary.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "capability",
+          "type": "string",
+          "required": true,
+          "maxLength": 32,
+          "description": "Fixed capability name audio.stream."
+        },
+        {
+          "fieldId": 2,
+          "name": "sources",
+          "type": "bytes",
+          "required": true,
+          "maxLength": 8192,
+          "description": "JSON array of AudioStreamSource objects."
+        },
+        {
+          "fieldId": 3,
+          "name": "streamProfiles",
+          "type": "bytes",
+          "required": true,
+          "maxLength": 512,
+          "description": "JSON array of supported stream profiles, normally media.audio."
+        },
+        {
+          "fieldId": 4,
+          "name": "openModes",
+          "type": "bytes",
+          "required": true,
+          "maxLength": 512,
+          "description": "JSON array of supported open modes, such as producer_open and receiver_pull."
+        },
+        {
+          "fieldId": 5,
+          "name": "peerRoles",
+          "type": "bytes",
+          "required": true,
+          "maxLength": 512,
+          "description": "JSON array of peer roles, such as receiver and transmitter."
+        },
+        {
+          "fieldId": 6,
+          "name": "supportsSourceStateEvent",
+          "type": "bool",
+          "required": true,
+          "description": "Whether audio.streamSourceStateChanged is supported."
+        },
+        {
+          "fieldId": 7,
+          "name": "supportsSyncGroup",
+          "type": "bool",
+          "required": true,
+          "description": "Whether audio streams can share a synchronization group with video streams."
+        },
+        {
+          "fieldId": 8,
+          "name": "flowControlManagedByRuntime",
+          "type": "bool",
+          "required": true,
+          "description": "Whether normal applications can rely on runtime-managed STREAM flow control."
+        },
+        {
+          "fieldId": 9,
+          "name": "aacTransportFormats",
+          "type": "bytes",
+          "required": false,
+          "maxLength": 512,
+          "description": "Optional JSON array of AAC transport format strings; exact supported set remains product-confirmed."
+        }
+      ]
+    },
+    {
+      "name": "AudioStreamSource",
+      "kind": "object",
+      "description": "One real-time audio stream source.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "source",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Source identifier such as wireless_cast_audio."
+        },
+        {
+          "fieldId": 2,
+          "name": "displayName",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "User-visible source name."
+        },
+        {
+          "fieldId": 3,
+          "name": "codecs",
+          "type": "bytes",
+          "required": true,
+          "maxLength": 512,
+          "description": "JSON array of supported audio codecs."
+        },
+        {
+          "fieldId": 4,
+          "name": "sampleRates",
+          "type": "bytes",
+          "required": false,
+          "maxLength": 512,
+          "description": "JSON array of supported sample rates in Hz."
+        },
+        {
+          "fieldId": 5,
+          "name": "channels",
+          "type": "bytes",
+          "required": false,
+          "maxLength": 256,
+          "description": "JSON array of supported channel counts."
+        },
+        {
+          "fieldId": 6,
+          "name": "state",
+          "type": "enum",
+          "required": false,
+          "description": "Runtime source state, such as available, receiving, stopped, or unavailable."
+        }
+      ]
+    },
+    {
+      "name": "AudioOpenStreamParams",
+      "kind": "object",
+      "description": "Request to open a real-time audio stream.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "source",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Audio source identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "peerRole",
+          "type": "enum",
+          "required": true,
+          "description": "Requested peer media role; values include receiver and transmitter."
+        },
+        {
+          "fieldId": 3,
+          "name": "codec",
+          "type": "enum",
+          "required": true,
+          "description": "Requested audio codec, such as aac, opus, or pcm."
+        },
+        {
+          "fieldId": 4,
+          "name": "transportFormat",
+          "type": "enum",
+          "required": false,
+          "description": "Optional codec transport format, such as adts, latm, or raw_aac."
+        },
+        {
+          "fieldId": 5,
+          "name": "sampleRate",
+          "type": "uint32",
+          "required": false,
+          "description": "Requested sample rate in Hz."
+        },
+        {
+          "fieldId": 6,
+          "name": "channels",
+          "type": "uint8",
+          "required": false,
+          "description": "Requested channel count."
+        },
+        {
+          "fieldId": 7,
+          "name": "sampleFormat",
+          "type": "enum",
+          "required": false,
+          "description": "Requested sample format."
+        },
+        {
+          "fieldId": 8,
+          "name": "chunkDurationMs",
+          "type": "uint32",
+          "required": false,
+          "description": "Preferred chunk duration in milliseconds."
+        },
+        {
+          "fieldId": 9,
+          "name": "streamProfile",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "STREAM profile name."
+        },
+        {
+          "fieldId": 10,
+          "name": "cursorUnit",
+          "type": "enum",
+          "required": false,
+          "description": "STREAM cursor unit, such as timestampUs or sampleIndex."
+        },
+        {
+          "fieldId": 11,
+          "name": "syncGroupId",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "Optional synchronization group identifier."
+        },
+        {
+          "fieldId": 12,
+          "name": "castSessionId",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "Optional cast session identifier."
+        },
+        {
+          "fieldId": 13,
+          "name": "clockDomain",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "Source media clock domain."
+        },
+        {
+          "fieldId": 14,
+          "name": "receiverClockDomain",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "Receiver clock domain."
+        },
+        {
+          "fieldId": 15,
+          "name": "maxDataSize",
+          "type": "uint32",
+          "required": false,
+          "description": "Preferred maximum STREAM payload data size."
+        }
+      ]
+    },
+    {
+      "name": "AudioOpenStreamResult",
+      "kind": "object",
+      "description": "Result of opening a real-time audio stream.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "streamId",
+          "type": "uint32",
+          "required": true,
+          "description": "STREAM data plane stream identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "state",
+          "type": "enum",
+          "required": true,
+          "description": "Initial state, normally opening or streaming."
+        },
+        {
+          "fieldId": 3,
+          "name": "source",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Bound source identifier."
+        },
+        {
+          "fieldId": 4,
+          "name": "peerRole",
+          "type": "enum",
+          "required": true,
+          "description": "Confirmed peer media role."
+        },
+        {
+          "fieldId": 5,
+          "name": "codec",
+          "type": "enum",
+          "required": true,
+          "description": "Negotiated codec."
+        },
+        {
+          "fieldId": 6,
+          "name": "transportFormat",
+          "type": "enum",
+          "required": false,
+          "description": "Negotiated transport format."
+        },
+        {
+          "fieldId": 7,
+          "name": "sampleRate",
+          "type": "uint32",
+          "required": true,
+          "description": "Negotiated sample rate in Hz."
+        },
+        {
+          "fieldId": 8,
+          "name": "channels",
+          "type": "uint8",
+          "required": true,
+          "description": "Negotiated channel count."
+        },
+        {
+          "fieldId": 9,
+          "name": "sampleFormat",
+          "type": "enum",
+          "required": false,
+          "description": "Negotiated sample format."
+        },
+        {
+          "fieldId": 10,
+          "name": "streamProfile",
+          "type": "string",
+          "required": true,
+          "maxLength": 64,
+          "description": "Normalized stream profile."
+        },
+        {
+          "fieldId": 11,
+          "name": "cursorUnit",
+          "type": "enum",
+          "required": true,
+          "description": "STREAM cursor unit."
+        },
+        {
+          "fieldId": 12,
+          "name": "syncGroupId",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "Synchronization group identifier."
+        },
+        {
+          "fieldId": 13,
+          "name": "castSessionId",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "Cast session identifier."
+        },
+        {
+          "fieldId": 14,
+          "name": "clockDomain",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "Source media clock domain."
+        },
+        {
+          "fieldId": 15,
+          "name": "receiverClockDomain",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "Receiver clock domain."
+        },
+        {
+          "fieldId": 16,
+          "name": "maxDataSize",
+          "type": "uint32",
+          "required": false,
+          "description": "Negotiated maximum STREAM payload data size."
+        }
+      ]
+    },
+    {
+      "name": "AudioCloseStreamParams",
+      "kind": "object",
+      "description": "Request to close an audio stream.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "streamId",
+          "type": "uint32",
+          "required": true,
+          "description": "STREAM data plane stream identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "peerRole",
+          "type": "enum",
+          "required": false,
+          "description": "Peer role in this stream."
+        },
+        {
+          "fieldId": 3,
+          "name": "reason",
+          "type": "enum",
+          "required": false,
+          "description": "Close reason."
+        },
+        {
+          "fieldId": 4,
+          "name": "finalCursor",
+          "type": "uint64",
+          "required": false,
+          "description": "Last processed cursor value."
+        }
+      ]
+    },
+    {
+      "name": "AudioCloseStreamResult",
+      "kind": "object",
+      "description": "Result of closing an audio stream.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "streamId",
+          "type": "uint32",
+          "required": true,
+          "description": "Closed stream identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "state",
+          "type": "enum",
+          "required": true,
+          "description": "Close state, such as closing, closed, or failed."
+        },
+        {
+          "fieldId": 3,
+          "name": "reason",
+          "type": "enum",
+          "required": false,
+          "description": "Final close reason."
+        },
+        {
+          "fieldId": 4,
+          "name": "alreadyClosed",
+          "type": "bool",
+          "required": false,
+          "description": "Whether the stream was already terminal before this request."
+        }
+      ]
+    },
+    {
+      "name": "AudioGetStreamStateParams",
+      "kind": "object",
+      "description": "Selector for an audio stream state query.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "streamId",
+          "type": "uint32",
+          "required": true,
+          "description": "STREAM data plane stream identifier."
+        }
+      ]
+    },
+    {
+      "name": "AudioStreamState",
+      "kind": "object",
+      "description": "Runtime state of one audio stream.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "streamId",
+          "type": "uint32",
+          "required": true,
+          "description": "STREAM data plane stream identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "state",
+          "type": "enum",
+          "required": true,
+          "description": "Stream state, such as opening, streaming, closing, closed, or failed."
+        },
+        {
+          "fieldId": 3,
+          "name": "source",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Bound audio source."
+        },
+        {
+          "fieldId": 4,
+          "name": "peerRole",
+          "type": "enum",
+          "required": false,
+          "description": "Peer media role."
+        },
+        {
+          "fieldId": 5,
+          "name": "codec",
+          "type": "enum",
+          "required": false,
+          "description": "Negotiated audio codec."
+        },
+        {
+          "fieldId": 6,
+          "name": "streamProfile",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "Stream profile."
+        },
+        {
+          "fieldId": 7,
+          "name": "syncGroupId",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "Synchronization group identifier."
+        },
+        {
+          "fieldId": 8,
+          "name": "cursorUnit",
+          "type": "enum",
+          "required": false,
+          "description": "STREAM cursor unit."
+        },
+        {
+          "fieldId": 9,
+          "name": "lastCursor",
+          "type": "uint64",
+          "required": false,
+          "description": "Last known cursor value."
+        },
+        {
+          "fieldId": 10,
+          "name": "failureReason",
+          "type": "enum",
+          "required": false,
+          "description": "Failure reason when state is failed."
+        }
+      ]
+    },
+    {
+      "name": "AudioGetStreamSourceStateParams",
+      "kind": "object",
+      "description": "Selector for audio source runtime state.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "source",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Audio source identifier."
+        }
+      ]
+    },
+    {
+      "name": "AudioStreamSourceState",
+      "kind": "object",
+      "description": "Runtime state of an audio stream source.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "source",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Audio source identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "mediaKind",
+          "type": "enum",
+          "required": false,
+          "description": "Media kind, normally audio."
+        },
+        {
+          "fieldId": 3,
+          "name": "state",
+          "type": "enum",
+          "required": true,
+          "description": "Source state, such as unavailable, available, receiving, stopped, or failed."
+        },
+        {
+          "fieldId": 4,
+          "name": "available",
+          "type": "bool",
+          "required": false,
+          "description": "Whether the source is available for openStream."
+        },
+        {
+          "fieldId": 5,
+          "name": "activeStreamId",
+          "type": "uint32",
+          "required": false,
+          "description": "Active downstream stream id, if any."
+        },
+        {
+          "fieldId": 6,
+          "name": "lastOpenRejectedReason",
+          "type": "enum",
+          "required": false,
+          "description": "Last open rejection reason."
+        }
+      ]
+    },
+    {
+      "name": "AudioStreamStateChangedEvent",
+      "kind": "object",
+      "description": "Event payload for audio stream state changes.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "streamId",
+          "type": "uint32",
+          "required": true,
+          "description": "STREAM data plane stream identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "state",
+          "type": "enum",
+          "required": true,
+          "description": "New stream state."
+        },
+        {
+          "fieldId": 3,
+          "name": "source",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Bound audio source."
+        },
+        {
+          "fieldId": 4,
+          "name": "reason",
+          "type": "enum",
+          "required": false,
+          "description": "State change reason."
+        },
+        {
+          "fieldId": 5,
+          "name": "stats",
+          "type": "AudioStreamStats",
+          "required": false,
+          "description": "Optional bounded stream statistics."
+        }
+      ]
+    },
+    {
+      "name": "AudioStreamSourceStateChangedEvent",
+      "kind": "object",
+      "description": "Event payload for audio stream source state changes.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "source",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Audio source identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "mediaKind",
+          "type": "enum",
+          "required": false,
+          "description": "Media kind, normally audio."
+        },
+        {
+          "fieldId": 3,
+          "name": "state",
+          "type": "enum",
+          "required": true,
+          "description": "New source state."
+        },
+        {
+          "fieldId": 4,
+          "name": "reason",
+          "type": "enum",
+          "required": false,
+          "description": "Source state change reason."
+        },
+        {
+          "fieldId": 5,
+          "name": "activeStreamId",
+          "type": "uint32",
+          "required": false,
+          "description": "Active downstream stream id, if any."
+        }
+      ]
+    },
+    {
+      "name": "AudioStreamStatsReportedEvent",
+      "kind": "object",
+      "description": "Event payload for audio stream statistics reports.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "streamId",
+          "type": "uint32",
+          "required": true,
+          "description": "STREAM data plane stream identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "stats",
+          "type": "AudioStreamStats",
+          "required": true,
+          "description": "Bounded stream statistics."
+        }
+      ]
+    },
+    {
+      "name": "AudioStreamStats",
+      "kind": "object",
+      "description": "Bounded runtime statistics for an audio stream.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "packets",
+          "type": "uint64",
+          "required": false,
+          "description": "Number of STREAM packets observed."
+        },
+        {
+          "fieldId": 2,
+          "name": "bytes",
+          "type": "uint64",
+          "required": false,
+          "description": "Number of STREAM payload bytes observed."
+        },
+        {
+          "fieldId": 3,
+          "name": "droppedPackets",
+          "type": "uint64",
+          "required": false,
+          "description": "Number of dropped packets."
+        },
+        {
+          "fieldId": 4,
+          "name": "jitterMs",
+          "type": "uint32",
+          "required": false,
+          "description": "Estimated jitter in milliseconds."
+        }
+      ]
+    },
+    {
+      "name": "GetDeviceInfoParams",
+      "kind": "object",
+      "description": "Optional selector for the read-only device information snapshot.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "includeCapabilitySummary",
+          "type": "bool",
+          "required": false,
+          "description": "Whether to include the lightweight DeviceCapabilitySummary block."
+        }
+      ]
+    },
+    {
+      "name": "DeviceInfo",
+      "kind": "object",
+      "description": "Read-only information snapshot for the current AXTP endpoint main device.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "identity",
+          "type": "DeviceIdentity",
+          "required": true,
+          "description": "Stable device identity fields."
+        },
+        {
+          "fieldId": 2,
+          "name": "product",
+          "type": "DeviceProduct",
+          "required": true,
+          "description": "Brand, product type, model, and display information."
+        },
+        {
+          "fieldId": 3,
+          "name": "hardware",
+          "type": "DeviceHardware",
+          "required": false,
+          "description": "Hardware summary."
+        },
+        {
+          "fieldId": 4,
+          "name": "os",
+          "type": "DeviceOs",
+          "required": false,
+          "description": "Operating system summary."
+        },
+        {
+          "fieldId": 5,
+          "name": "software",
+          "type": "DeviceSoftware",
+          "required": false,
+          "description": "Installed or hosted software component summary."
+        },
+        {
+          "fieldId": 6,
+          "name": "runtime",
+          "type": "DeviceAxtpRuntime",
+          "required": false,
+          "description": "AXTP runtime summary."
+        },
+        {
+          "fieldId": 7,
+          "name": "capability",
+          "type": "DeviceCapabilitySummary",
+          "required": false,
+          "description": "Lightweight modeling summary; not a complete capability registry."
+        }
+      ]
+    },
+    {
+      "name": "DeviceIdentity",
+      "kind": "object",
+      "description": "Stable identity fields for the current main device.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "deviceId",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Stable AXTP or business device identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "serialNumber",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "Vendor serial number; may be omitted by permission policy."
+        },
+        {
+          "fieldId": 3,
+          "name": "vendorId",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "Vendor identifier."
+        },
+        {
+          "fieldId": 4,
+          "name": "productId",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "Product identifier."
+        }
+      ]
+    },
+    {
+      "name": "DeviceProduct",
+      "kind": "object",
+      "description": "Product and user-visible model information.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "brand",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "Product brand."
+        },
+        {
+          "fieldId": 2,
+          "name": "productType",
+          "type": "enum",
+          "required": true,
+          "description": "Product type; candidate values include windowsDevice, androidDevice, embeddedDevice, rtosDevice, cameraDevice, displayDevice, and unknown."
+        },
+        {
+          "fieldId": 3,
+          "name": "model",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Hardware or whole-product model."
+        },
+        {
+          "fieldId": 4,
+          "name": "displayName",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "User-visible display name; this feature exposes it as read-only."
+        }
+      ]
+    },
+    {
+      "name": "DeviceHardware",
+      "kind": "object",
+      "description": "Hardware summary.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "revision",
+          "type": "string",
+          "required": false,
+          "maxLength": 32,
+          "description": "Hardware revision."
+        },
+        {
+          "fieldId": 2,
+          "name": "cpuArch",
+          "type": "enum",
+          "required": false,
+          "description": "CPU architecture; candidate values include x86_64, arm64, armv7, riscv64, and unknown."
+        },
+        {
+          "fieldId": 3,
+          "name": "memoryBytes",
+          "type": "uint64",
+          "required": false,
+          "description": "Physical memory capacity in bytes."
+        }
+      ]
+    },
+    {
+      "name": "DeviceOs",
+      "kind": "object",
+      "description": "Operating system summary.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "type",
+          "type": "enum",
+          "required": true,
+          "description": "OS type; candidate values include windows, android, linux, rtos, and unknown."
+        },
+        {
+          "fieldId": 2,
+          "name": "name",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "OS display name."
+        },
+        {
+          "fieldId": 3,
+          "name": "version",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "OS version string."
+        },
+        {
+          "fieldId": 4,
+          "name": "arch",
+          "type": "enum",
+          "required": false,
+          "description": "OS architecture; candidate values include x86_64, arm64, armv7, riscv64, and unknown."
+        }
+      ]
+    },
+    {
+      "name": "DeviceSoftware",
+      "kind": "object",
+      "description": "Software component summary.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "components",
+          "type": "bytes",
+          "required": false,
+          "maxLength": 4096,
+          "description": "JSON array of SoftwareComponent objects."
+        }
+      ]
+    },
+    {
+      "name": "SoftwareComponent",
+      "kind": "object",
+      "description": "One software component running on or hosted by the device.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "id",
+          "type": "string",
+          "required": true,
+          "maxLength": 64,
+          "description": "Component identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "name",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "Component display name."
+        },
+        {
+          "fieldId": 3,
+          "name": "version",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "Component version."
+        },
+        {
+          "fieldId": 4,
+          "name": "role",
+          "type": "enum",
+          "required": false,
+          "description": "Component role, such as axtpHost, launcher, signagePlayer, agent, or unknown."
+        }
+      ]
+    },
+    {
+      "name": "DeviceAxtpRuntime",
+      "kind": "object",
+      "description": "AXTP runtime summary.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "axtpRuntime",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "AXTP runtime implementation name."
+        },
+        {
+          "fieldId": 2,
+          "name": "axtpRuntimeVersion",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "AXTP runtime implementation version."
+        },
+        {
+          "fieldId": 3,
+          "name": "hostAppId",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "Host application identifier."
+        }
+      ]
+    },
+    {
+      "name": "DeviceCapabilitySummary",
+      "kind": "object",
+      "description": "Lightweight capability modeling summary returned by device.getInfo.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "domains",
+          "type": "bytes",
+          "required": false,
+          "maxLength": 1024,
+          "description": "JSON array of domain names represented by the device."
+        },
+        {
+          "fieldId": 2,
+          "name": "features",
+          "type": "bytes",
+          "required": false,
+          "maxLength": 4096,
+          "description": "JSON array of domain.feature names represented by the device."
+        },
+        {
+          "fieldId": 3,
+          "name": "profiles",
+          "type": "bytes",
+          "required": false,
+          "maxLength": 1024,
+          "description": "JSON array of profile names or product profile hints."
+        }
+      ]
+    },
+    {
+      "name": "DeviceInfoCapability",
+      "kind": "object",
+      "description": "Capability descriptor for device.info.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "readOnly",
+          "type": "bool",
+          "required": true,
+          "description": "device.info currently exposes only read-only information."
+        },
+        {
+          "fieldId": 2,
+          "name": "supportsCapabilitySummary",
+          "type": "bool",
+          "required": false,
+          "description": "Whether device.getInfo can include DeviceCapabilitySummary."
+        },
+        {
+          "fieldId": 3,
+          "name": "identityMerged",
+          "type": "bool",
+          "required": false,
+          "description": "Whether device.identity has been merged into device.info."
+        }
+      ]
+    },
+    {
+      "name": "FirmwareUpdateCapabilities",
+      "kind": "object",
+      "description": "P0 firmware update capability and upload constraints.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "supported",
+          "type": "bool",
+          "required": true,
+          "description": "Whether firmware.update P0 is supported."
+        },
+        {
+          "fieldId": 2,
+          "name": "supportsMultiFile",
+          "type": "bool",
+          "required": true,
+          "description": "Whether manifest may contain multiple files."
+        },
+        {
+          "fieldId": 3,
+          "name": "streamLayout",
+          "type": "enum",
+          "required": true,
+          "description": "P0 stream layout, currently file."
+        },
+        {
+          "fieldId": 4,
+          "name": "hashAlgorithm",
+          "type": "enum",
+          "required": true,
+          "description": "P0 hash algorithm, currently md5."
+        },
+        {
+          "fieldId": 5,
+          "name": "autoReboot",
+          "type": "bool",
+          "required": true,
+          "description": "Whether the device automatically reboots after installation."
+        },
+        {
+          "fieldId": 6,
+          "name": "maxChunkSize",
+          "type": "uint32",
+          "required": false,
+          "description": "Maximum STREAM data chunk size supported by the device."
+        },
+        {
+          "fieldId": 7,
+          "name": "devicePolicyVersion",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "Optional device policy version used by host tooling."
+        }
+      ]
+    },
+    {
+      "name": "BeginUpdateParams",
+      "kind": "object",
+      "description": "Request to begin a firmware update session.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "manifest",
+          "type": "FirmwareUpdateManifest",
+          "required": true,
+          "description": "Minimal firmware update manifest."
+        }
+      ]
+    },
+    {
+      "name": "BeginUpdateResult",
+      "kind": "object",
+      "description": "Result of creating a firmware update session.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "updateSessionId",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Firmware update session identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "state",
+          "type": "enum",
+          "required": true,
+          "description": "State after begin, normally receiving."
+        },
+        {
+          "fieldId": 3,
+          "name": "streams",
+          "type": "bytes",
+          "required": true,
+          "maxLength": 4096,
+          "description": "JSON array of FirmwareUpdateStreamBinding objects."
+        },
+        {
+          "fieldId": 4,
+          "name": "chunkSize",
+          "type": "uint32",
+          "required": false,
+          "description": "Recommended STREAM chunk size."
+        }
+      ]
+    },
+    {
+      "name": "FinishUpdateParams",
+      "kind": "object",
+      "description": "Request to finish firmware upload and hand off processing to the device.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "updateSessionId",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Firmware update session identifier."
+        }
+      ]
+    },
+    {
+      "name": "FinishUpdateResult",
+      "kind": "object",
+      "description": "Result of finishUpdate.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "updateSessionId",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Firmware update session identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "accepted",
+          "type": "bool",
+          "required": true,
+          "description": "Whether the device accepted the finish handoff."
+        },
+        {
+          "fieldId": 3,
+          "name": "state",
+          "type": "enum",
+          "required": true,
+          "description": "State after finish, normally verifying or failed."
+        }
+      ]
+    },
+    {
+      "name": "GetUpdateStateParams",
+      "kind": "object",
+      "description": "Selector for firmware update state.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "updateSessionId",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Firmware update session identifier."
+        }
+      ]
+    },
+    {
+      "name": "FirmwareUpdateManifest",
+      "kind": "object",
+      "description": "Minimal firmware update manifest.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "packageId",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "Firmware package identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "version",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "Target firmware version string."
+        },
+        {
+          "fieldId": 3,
+          "name": "files",
+          "type": "bytes",
+          "required": true,
+          "maxLength": 16384,
+          "description": "JSON array of FirmwareUpdateFile objects."
+        },
+        {
+          "fieldId": 4,
+          "name": "devicePolicyVersion",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "Optional policy version used to interpret the package."
+        }
+      ]
+    },
+    {
+      "name": "FirmwareUpdateFile",
+      "kind": "object",
+      "description": "One file in the firmware update manifest.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "fileId",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Manifest-scoped file identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "target",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "Device-defined target component or partition."
+        },
+        {
+          "fieldId": 3,
+          "name": "size",
+          "type": "uint64",
+          "required": true,
+          "description": "File size in bytes."
+        },
+        {
+          "fieldId": 4,
+          "name": "md5",
+          "type": "string",
+          "required": true,
+          "maxLength": 32,
+          "description": "File md5 digest as lowercase hexadecimal."
+        }
+      ]
+    },
+    {
+      "name": "FirmwareUpdateStreamBinding",
+      "kind": "object",
+      "description": "Binding between a manifest file and a STREAM streamId.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "fileId",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Manifest-scoped file identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "streamId",
+          "type": "uint32",
+          "required": true,
+          "description": "STREAM data plane stream identifier."
+        }
+      ]
+    },
+    {
+      "name": "FirmwareUpdateState",
+      "kind": "object",
+      "description": "Current firmware update state.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "updateSessionId",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Firmware update session identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "state",
+          "type": "enum",
+          "required": true,
+          "description": "State, such as idle, receiving, verifying, installing, rebooting, confirmed, or failed."
+        },
+        {
+          "fieldId": 3,
+          "name": "progress",
+          "type": "uint8",
+          "required": false,
+          "min": 0,
+          "max": 100,
+          "description": "Overall progress percentage."
+        },
+        {
+          "fieldId": 4,
+          "name": "currentFileId",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "Current file identifier, if file-level progress is available."
+        },
+        {
+          "fieldId": 5,
+          "name": "error",
+          "type": "FirmwareUpdateErrorInfo",
+          "required": false,
+          "description": "Error details when state is failed."
+        }
+      ]
+    },
+    {
+      "name": "FirmwareUpdateErrorInfo",
+      "kind": "object",
+      "description": "Firmware update error details.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "error",
+          "type": "enum",
+          "required": true,
+          "description": "Candidate or adopted error name."
+        },
+        {
+          "fieldId": 2,
+          "name": "message",
+          "type": "string",
+          "required": false,
+          "maxLength": 256,
+          "description": "Developer-facing error message."
+        },
+        {
+          "fieldId": 3,
+          "name": "fileId",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "Related file identifier, if applicable."
+        }
+      ]
+    },
+    {
+      "name": "FirmwareUpdateProgressEvent",
+      "kind": "object",
+      "description": "Event payload for firmware update progress.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "updateSessionId",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Firmware update session identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "state",
+          "type": "enum",
+          "required": true,
+          "description": "Current firmware update state."
+        },
+        {
+          "fieldId": 3,
+          "name": "progress",
+          "type": "uint8",
+          "required": false,
+          "min": 0,
+          "max": 100,
+          "description": "Overall progress percentage."
+        },
+        {
+          "fieldId": 4,
+          "name": "fileId",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "Current file identifier."
+        }
+      ]
+    },
+    {
+      "name": "FirmwareUpdateStateChangedEvent",
+      "kind": "object",
+      "description": "Event payload for firmware update state changes.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "updateSessionId",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Firmware update session identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "state",
+          "type": "enum",
+          "required": true,
+          "description": "New firmware update state."
+        },
+        {
+          "fieldId": 3,
+          "name": "error",
+          "type": "FirmwareUpdateErrorInfo",
+          "required": false,
+          "description": "Error details when state is failed."
+        }
+      ]
+    },
+    {
+      "name": "NetworkGetInterfacesParams",
+      "kind": "object",
+      "description": "Selector for network interface enumeration.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "includeDisabled",
+          "type": "bool",
+          "required": false,
+          "description": "Whether disabled interfaces should be included."
+        }
+      ]
+    },
+    {
+      "name": "NetworkGetInterfaceInfoParams",
+      "kind": "object",
+      "description": "Selector for one network interface.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "interfaceId",
+          "type": "string",
+          "required": true,
+          "maxLength": 64,
+          "description": "Interface identifier."
+        }
+      ]
+    },
+    {
+      "name": "NetworkInterfaces",
+      "kind": "object",
+      "description": "Network interface enumeration result.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "interfaces",
+          "type": "bytes",
+          "required": true,
+          "maxLength": 8192,
+          "description": "JSON array of NetworkInterfaceSummary objects."
+        },
+        {
+          "fieldId": 2,
+          "name": "defaults",
+          "type": "NetworkDefaultInterfaceIds",
+          "required": false,
+          "description": "Default interface identifiers for common roles."
+        }
+      ]
+    },
+    {
+      "name": "NetworkDefaultInterfaceIds",
+      "kind": "object",
+      "description": "Default network interface identifiers by role.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "primary",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "Primary interface."
+        },
+        {
+          "fieldId": 2,
+          "name": "wifiSta",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "Default Wi-Fi station interface."
+        },
+        {
+          "fieldId": 3,
+          "name": "wifiAp",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "Default Wi-Fi AP interface."
+        }
+      ]
+    },
+    {
+      "name": "NetworkInterfaceSummary",
+      "kind": "object",
+      "description": "Summary of one network interface.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "interfaceId",
+          "type": "string",
+          "required": true,
+          "maxLength": 64,
+          "description": "Interface identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "type",
+          "type": "enum",
+          "required": true,
+          "description": "Interface type; candidate values include ethernet, wifi, cellular, usb, virtual, and unknown."
+        },
+        {
+          "fieldId": 3,
+          "name": "displayName",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "User-visible interface name."
+        },
+        {
+          "fieldId": 4,
+          "name": "state",
+          "type": "NetworkInterfaceState",
+          "required": false,
+          "description": "Current interface state."
+        }
+      ]
+    },
+    {
+      "name": "NetworkInterfaceInfo",
+      "kind": "object",
+      "description": "Detailed information for one network interface.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "interfaceId",
+          "type": "string",
+          "required": true,
+          "maxLength": 64,
+          "description": "Interface identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "type",
+          "type": "enum",
+          "required": true,
+          "description": "Interface type."
+        },
+        {
+          "fieldId": 3,
+          "name": "macAddress",
+          "type": "string",
+          "required": false,
+          "maxLength": 32,
+          "description": "Interface MAC address, if available and permitted."
+        },
+        {
+          "fieldId": 4,
+          "name": "state",
+          "type": "NetworkInterfaceState",
+          "required": false,
+          "description": "Current interface state."
+        },
+        {
+          "fieldId": 5,
+          "name": "supportsIpConfig",
+          "type": "bool",
+          "required": false,
+          "description": "Whether this interface can be used with network.ip."
+        }
+      ]
+    },
+    {
+      "name": "NetworkInterfaceState",
+      "kind": "object",
+      "description": "Network interface administrative and link state.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "admin",
+          "type": "enum",
+          "required": false,
+          "description": "Administrative state; candidate values include up, down, disabled, and unknown."
+        },
+        {
+          "fieldId": 2,
+          "name": "link",
+          "type": "enum",
+          "required": false,
+          "description": "Link state; candidate values include up, down, dormant, unknown."
+        },
+        {
+          "fieldId": 3,
+          "name": "speedMbps",
+          "type": "uint32",
+          "required": false,
+          "description": "Link speed in Mbps."
+        }
+      ]
+    },
+    {
+      "name": "NetworkGetIpConfigParams",
+      "kind": "object",
+      "description": "Selector for IP configuration.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "interfaceId",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "Interface identifier; omitted means default primary interface."
+        },
+        {
+          "fieldId": 2,
+          "name": "family",
+          "type": "enum",
+          "required": false,
+          "description": "IP family; candidate values include ipv4 and ipv6."
+        }
+      ]
+    },
+    {
+      "name": "NetworkSetIpConfigParams",
+      "kind": "object",
+      "description": "IP configuration update request.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "interfaceId",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "Interface identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "family",
+          "type": "enum",
+          "required": false,
+          "description": "IP family."
+        },
+        {
+          "fieldId": 3,
+          "name": "config",
+          "type": "NetworkIpConfig",
+          "required": true,
+          "description": "Target IP configuration."
+        },
+        {
+          "fieldId": 4,
+          "name": "applyPolicy",
+          "type": "enum",
+          "required": false,
+          "description": "Apply policy; candidate values include immediate and pending_restart."
+        }
+      ]
+    },
+    {
+      "name": "NetworkSetIpConfigResult",
+      "kind": "object",
+      "description": "Result of setting IP configuration.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "config",
+          "type": "NetworkIpConfig",
+          "required": true,
+          "description": "Applied or pending IP configuration."
+        },
+        {
+          "fieldId": 2,
+          "name": "applyState",
+          "type": "enum",
+          "required": true,
+          "description": "Apply state; candidate values include applied, pending_restart, and failed."
+        }
+      ]
+    },
+    {
+      "name": "NetworkIpConfig",
+      "kind": "object",
+      "description": "IP configuration for one interface and address family.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "interfaceId",
+          "type": "string",
+          "required": true,
+          "maxLength": 64,
+          "description": "Interface identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "family",
+          "type": "enum",
+          "required": false,
+          "description": "IP family; candidate values include ipv4 and ipv6."
+        },
+        {
+          "fieldId": 3,
+          "name": "mode",
+          "type": "enum",
+          "required": true,
+          "description": "IP mode; candidate values include dhcp, static, disabled, link_local, and unknown."
+        },
+        {
+          "fieldId": 4,
+          "name": "address",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "IP address."
+        },
+        {
+          "fieldId": 5,
+          "name": "prefixLength",
+          "type": "uint8",
+          "required": false,
+          "min": 0,
+          "max": 128,
+          "description": "Network prefix length."
+        },
+        {
+          "fieldId": 6,
+          "name": "gateway",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "Default gateway."
+        },
+        {
+          "fieldId": 7,
+          "name": "dns",
+          "type": "bytes",
+          "required": false,
+          "maxLength": 1024,
+          "description": "JSON array of DNS server addresses."
+        }
+      ]
+    },
+    {
+      "name": "NetworkGetWifiCapabilitiesParams",
+      "kind": "object",
+      "description": "Selector for Wi-Fi station capability.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "interfaceId",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "Wi-Fi station interface identifier."
+        }
+      ]
+    },
+    {
+      "name": "NetworkGetWifiConfigParams",
+      "kind": "object",
+      "description": "Selector for saved Wi-Fi configuration.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "interfaceId",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "Wi-Fi station interface identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "includeProfiles",
+          "type": "bool",
+          "required": false,
+          "description": "Whether to include saved profile summaries."
+        }
+      ]
+    },
+    {
+      "name": "NetworkGetWifiStateParams",
+      "kind": "object",
+      "description": "Selector for Wi-Fi station runtime state.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "interfaceId",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "Wi-Fi station interface identifier."
+        }
+      ]
+    },
+    {
+      "name": "NetworkWifiCapabilities",
+      "kind": "object",
+      "description": "Wi-Fi station capability descriptor.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "capability",
+          "type": "string",
+          "required": true,
+          "maxLength": 32,
+          "description": "Fixed capability name network.wifi."
+        },
+        {
+          "fieldId": 2,
+          "name": "securityTypes",
+          "type": "bytes",
+          "required": true,
+          "maxLength": 1024,
+          "description": "JSON array of supported security type strings."
+        },
+        {
+          "fieldId": 3,
+          "name": "bands",
+          "type": "bytes",
+          "required": false,
+          "maxLength": 512,
+          "description": "JSON array of supported Wi-Fi bands."
+        },
+        {
+          "fieldId": 4,
+          "name": "credentialImportModes",
+          "type": "bytes",
+          "required": true,
+          "maxLength": 512,
+          "description": "JSON array of supported credential import modes such as passphrase, pairing_token, and opaque_ref."
+        },
+        {
+          "fieldId": 5,
+          "name": "savedProfilesSupported",
+          "type": "bool",
+          "required": true,
+          "description": "Whether saved profiles are supported."
+        },
+        {
+          "fieldId": 6,
+          "name": "scanSupported",
+          "type": "bool",
+          "required": true,
+          "description": "Whether Wi-Fi scanning is supported."
+        },
+        {
+          "fieldId": 7,
+          "name": "autoConnectSupported",
+          "type": "bool",
+          "required": false,
+          "description": "Whether profiles can auto-connect."
+        }
+      ]
+    },
+    {
+      "name": "NetworkWifiConfig",
+      "kind": "object",
+      "description": "Saved Wi-Fi profile summary.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "interfaceId",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "Wi-Fi station interface identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "profiles",
+          "type": "bytes",
+          "required": false,
+          "maxLength": 8192,
+          "description": "JSON array of NetworkWifiProfile summaries. Plaintext credentials must not be returned."
+        },
+        {
+          "fieldId": 3,
+          "name": "defaultProfileId",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "Default profile identifier."
+        }
+      ]
+    },
+    {
+      "name": "NetworkWifiProfile",
+      "kind": "object",
+      "description": "Wi-Fi profile object used for station connection.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "profileId",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "Profile identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "ssid",
+          "type": "string",
+          "required": true,
+          "maxLength": 64,
+          "description": "Wi-Fi SSID."
+        },
+        {
+          "fieldId": 3,
+          "name": "bssid",
+          "type": "string",
+          "required": false,
+          "maxLength": 32,
+          "description": "Optional AP BSSID."
+        },
+        {
+          "fieldId": 4,
+          "name": "securityType",
+          "type": "enum",
+          "required": true,
+          "description": "Security type, such as open, wpa2_psk, or wpa3_sae."
+        },
+        {
+          "fieldId": 5,
+          "name": "credential",
+          "type": "NetworkCredential",
+          "required": false,
+          "description": "Credential descriptor or secret reference. Responses must not expose plaintext secrets."
+        },
+        {
+          "fieldId": 6,
+          "name": "source",
+          "type": "enum",
+          "required": false,
+          "description": "Profile source; candidate values include manual, pairing, migrated, and device_policy."
+        },
+        {
+          "fieldId": 7,
+          "name": "persist",
+          "type": "bool",
+          "required": false,
+          "description": "Whether the profile should be persisted. This remains policy-controlled."
+        }
+      ]
+    },
+    {
+      "name": "NetworkCredential",
+      "kind": "object",
+      "description": "Credential descriptor or secret reference.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "type",
+          "type": "enum",
+          "required": true,
+          "description": "Credential type; candidate values include passphrase, pairing_token, opaque_ref, and none."
+        },
+        {
+          "fieldId": 2,
+          "name": "secretRef",
+          "type": "string",
+          "required": false,
+          "maxLength": 256,
+          "description": "Opaque reference to sensitive credential material."
+        },
+        {
+          "fieldId": 3,
+          "name": "expiresInSeconds",
+          "type": "uint32",
+          "required": false,
+          "description": "Relative validity lifetime for ephemeral credentials."
+        }
+      ]
+    },
+    {
+      "name": "NetworkSetWifiConfigParams",
+      "kind": "object",
+      "description": "Wi-Fi profile create or update request.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "interfaceId",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "Wi-Fi station interface identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "profile",
+          "type": "NetworkWifiProfile",
+          "required": true,
+          "description": "Profile to create or update."
+        },
+        {
+          "fieldId": 3,
+          "name": "replaceExisting",
+          "type": "bool",
+          "required": false,
+          "description": "Whether an existing matching profile may be replaced."
+        },
+        {
+          "fieldId": 4,
+          "name": "makeDefault",
+          "type": "bool",
+          "required": false,
+          "description": "Whether to make this the default profile."
+        },
+        {
+          "fieldId": 5,
+          "name": "connectAfterSave",
+          "type": "bool",
+          "required": false,
+          "description": "Whether to start connection after saving."
+        }
+      ]
+    },
+    {
+      "name": "NetworkSetWifiConfigResult",
+      "kind": "object",
+      "description": "Result of setting Wi-Fi profile configuration.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "profileId",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Accepted or assigned profile identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "config",
+          "type": "NetworkWifiConfig",
+          "required": false,
+          "description": "Updated profile summary."
+        },
+        {
+          "fieldId": 3,
+          "name": "connectStarted",
+          "type": "bool",
+          "required": false,
+          "description": "Whether connection was started after saving."
+        }
+      ]
+    },
+    {
+      "name": "NetworkScanWifiParams",
+      "kind": "object",
+      "description": "Wi-Fi scan request.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "interfaceId",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "Wi-Fi station interface identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "ssidFilter",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "Optional SSID filter."
+        },
+        {
+          "fieldId": 3,
+          "name": "timeoutMs",
+          "type": "uint32",
+          "required": false,
+          "description": "Scan timeout in milliseconds."
+        }
+      ]
+    },
+    {
+      "name": "NetworkScanWifiResult",
+      "kind": "object",
+      "description": "Wi-Fi scan result.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "scanId",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "Asynchronous scan identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "results",
+          "type": "bytes",
+          "required": false,
+          "maxLength": 16384,
+          "description": "JSON array of NetworkWifiScanResult objects."
+        },
+        {
+          "fieldId": 3,
+          "name": "complete",
+          "type": "bool",
+          "required": false,
+          "description": "Whether returned results are complete."
+        }
+      ]
+    },
+    {
+      "name": "NetworkConnectWifiParams",
+      "kind": "object",
+      "description": "Wi-Fi station connect request.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "interfaceId",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "Wi-Fi station interface identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "profileId",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "Saved profile identifier."
+        },
+        {
+          "fieldId": 3,
+          "name": "profile",
+          "type": "NetworkWifiProfile",
+          "required": false,
+          "description": "Inline profile to connect with."
+        },
+        {
+          "fieldId": 4,
+          "name": "timeoutMs",
+          "type": "uint32",
+          "required": false,
+          "description": "Connection timeout in milliseconds."
+        }
+      ]
+    },
+    {
+      "name": "NetworkDisconnectWifiParams",
+      "kind": "object",
+      "description": "Wi-Fi station disconnect request.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "interfaceId",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "Wi-Fi station interface identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "reason",
+          "type": "enum",
+          "required": false,
+          "description": "Disconnect reason; candidate values include user_request, profile_changed, shutdown, and unknown."
+        }
+      ]
+    },
+    {
+      "name": "NetworkWifiActionResult",
+      "kind": "object",
+      "description": "Result of a Wi-Fi connect or disconnect action.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "accepted",
+          "type": "bool",
+          "required": true,
+          "description": "Whether the action was accepted."
+        },
+        {
+          "fieldId": 2,
+          "name": "state",
+          "type": "NetworkWifiState",
+          "required": true,
+          "description": "Current or target Wi-Fi state after accepting the action."
+        }
+      ]
+    },
+    {
+      "name": "NetworkWifiState",
+      "kind": "object",
+      "description": "Wi-Fi station runtime state.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "interfaceId",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "Wi-Fi station interface identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "state",
+          "type": "enum",
+          "required": true,
+          "description": "State; candidate values include disabled, disconnected, scanning, authenticating, associating, connected, failed, and unknown."
+        },
+        {
+          "fieldId": 3,
+          "name": "profileId",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "Active profile identifier."
+        },
+        {
+          "fieldId": 4,
+          "name": "ssid",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "Active SSID."
+        },
+        {
+          "fieldId": 5,
+          "name": "rssi",
+          "type": "int32",
+          "required": false,
+          "description": "Received signal strength indicator in dBm."
+        },
+        {
+          "fieldId": 6,
+          "name": "ipReady",
+          "type": "bool",
+          "required": false,
+          "description": "Whether IP configuration is ready."
+        },
+        {
+          "fieldId": 7,
+          "name": "failureReason",
+          "type": "enum",
+          "required": false,
+          "description": "Failure reason, if state is failed."
+        }
+      ]
+    },
+    {
+      "name": "NetworkWifiScanResult",
+      "kind": "object",
+      "description": "One Wi-Fi scan result.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "ssid",
+          "type": "string",
+          "required": true,
+          "maxLength": 64,
+          "description": "SSID."
+        },
+        {
+          "fieldId": 2,
+          "name": "bssid",
+          "type": "string",
+          "required": false,
+          "maxLength": 32,
+          "description": "BSSID."
+        },
+        {
+          "fieldId": 3,
+          "name": "band",
+          "type": "enum",
+          "required": false,
+          "description": "Wi-Fi band."
+        },
+        {
+          "fieldId": 4,
+          "name": "channel",
+          "type": "uint16",
+          "required": false,
+          "description": "Channel number."
+        },
+        {
+          "fieldId": 5,
+          "name": "rssi",
+          "type": "int32",
+          "required": false,
+          "description": "RSSI in dBm."
+        },
+        {
+          "fieldId": 6,
+          "name": "securityType",
+          "type": "enum",
+          "required": false,
+          "description": "Security type."
+        }
+      ]
+    },
+    {
+      "name": "NetworkGetApCapabilitiesParams",
+      "kind": "object",
+      "description": "Selector for Wi-Fi AP capability.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "interfaceId",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "Wi-Fi AP interface identifier."
+        }
+      ]
+    },
+    {
+      "name": "NetworkGetApConfigParams",
+      "kind": "object",
+      "description": "Selector for Wi-Fi AP configuration, state, or client list.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "interfaceId",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "Wi-Fi AP interface identifier."
+        }
+      ]
+    },
+    {
+      "name": "NetworkApCapabilities",
+      "kind": "object",
+      "description": "Wi-Fi AP capability descriptor.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "capability",
+          "type": "string",
+          "required": true,
+          "maxLength": 32,
+          "description": "Fixed capability name network.ap."
+        },
+        {
+          "fieldId": 2,
+          "name": "securityTypes",
+          "type": "bytes",
+          "required": true,
+          "maxLength": 1024,
+          "description": "JSON array of supported security types."
+        },
+        {
+          "fieldId": 3,
+          "name": "bands",
+          "type": "bytes",
+          "required": false,
+          "maxLength": 512,
+          "description": "JSON array of supported bands."
+        },
+        {
+          "fieldId": 4,
+          "name": "credentialExportModes",
+          "type": "bytes",
+          "required": false,
+          "maxLength": 512,
+          "description": "JSON array of credential export modes."
+        },
+        {
+          "fieldId": 5,
+          "name": "clientsSupported",
+          "type": "bool",
+          "required": false,
+          "description": "Whether client list query and client change events are supported."
+        }
+      ]
+    },
+    {
+      "name": "NetworkApConfig",
+      "kind": "object",
+      "description": "Wi-Fi AP configuration.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "interfaceId",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "Wi-Fi AP interface identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "enabled",
+          "type": "bool",
+          "required": false,
+          "description": "Whether AP should be enabled by configuration."
+        },
+        {
+          "fieldId": 3,
+          "name": "ssid",
+          "type": "string",
+          "required": true,
+          "maxLength": 64,
+          "description": "AP SSID."
+        },
+        {
+          "fieldId": 4,
+          "name": "hidden",
+          "type": "bool",
+          "required": false,
+          "description": "Whether SSID broadcast is hidden."
+        },
+        {
+          "fieldId": 5,
+          "name": "band",
+          "type": "enum",
+          "required": false,
+          "description": "AP band."
+        },
+        {
+          "fieldId": 6,
+          "name": "channel",
+          "type": "uint16",
+          "required": false,
+          "description": "AP channel."
+        },
+        {
+          "fieldId": 7,
+          "name": "securityType",
+          "type": "enum",
+          "required": true,
+          "description": "AP security type."
+        },
+        {
+          "fieldId": 8,
+          "name": "credential",
+          "type": "NetworkCredential",
+          "required": false,
+          "description": "Credential descriptor; plaintext must not be returned unless policy explicitly allows it."
+        },
+        {
+          "fieldId": 9,
+          "name": "maxClients",
+          "type": "uint16",
+          "required": false,
+          "description": "Maximum client count."
+        }
+      ]
+    },
+    {
+      "name": "NetworkSetApConfigParams",
+      "kind": "object",
+      "description": "Wi-Fi AP configuration update request.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "interfaceId",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "Wi-Fi AP interface identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "config",
+          "type": "NetworkApConfig",
+          "required": true,
+          "description": "AP configuration patch or target configuration."
+        }
+      ]
+    },
+    {
+      "name": "NetworkSetApConfigResult",
+      "kind": "object",
+      "description": "Result of setting Wi-Fi AP configuration.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "config",
+          "type": "NetworkApConfig",
+          "required": true,
+          "description": "Applied or pending AP configuration."
+        },
+        {
+          "fieldId": 2,
+          "name": "applyState",
+          "type": "enum",
+          "required": true,
+          "description": "Apply state; candidate values include applied, pending_restart, and failed."
+        }
+      ]
+    },
+    {
+      "name": "NetworkApState",
+      "kind": "object",
+      "description": "Wi-Fi AP runtime state.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "interfaceId",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "Wi-Fi AP interface identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "enabled",
+          "type": "bool",
+          "required": true,
+          "description": "Whether AP is currently enabled."
+        },
+        {
+          "fieldId": 3,
+          "name": "state",
+          "type": "enum",
+          "required": true,
+          "description": "AP state; candidate values include disabled, starting, enabled, stopping, failed, and unknown."
+        },
+        {
+          "fieldId": 4,
+          "name": "ssid",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "Active AP SSID."
+        },
+        {
+          "fieldId": 5,
+          "name": "clientCount",
+          "type": "uint16",
+          "required": false,
+          "description": "Current associated client count."
+        },
+        {
+          "fieldId": 6,
+          "name": "failureReason",
+          "type": "enum",
+          "required": false,
+          "description": "Failure reason when state is failed."
+        }
+      ]
+    },
+    {
+      "name": "NetworkApActionParams",
+      "kind": "object",
+      "description": "Start or stop AP request.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "interfaceId",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "Wi-Fi AP interface identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "reason",
+          "type": "enum",
+          "required": false,
+          "description": "Action reason."
+        }
+      ]
+    },
+    {
+      "name": "NetworkApActionResult",
+      "kind": "object",
+      "description": "Result of starting or stopping AP.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "accepted",
+          "type": "bool",
+          "required": true,
+          "description": "Whether the action was accepted."
+        },
+        {
+          "fieldId": 2,
+          "name": "state",
+          "type": "NetworkApState",
+          "required": true,
+          "description": "Current or target AP state."
+        }
+      ]
+    },
+    {
+      "name": "NetworkApClients",
+      "kind": "object",
+      "description": "AP client list result.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "clients",
+          "type": "bytes",
+          "required": true,
+          "maxLength": 16384,
+          "description": "JSON array of NetworkApClientInfo objects."
+        }
+      ]
+    },
+    {
+      "name": "NetworkApClientInfo",
+      "kind": "object",
+      "description": "One AP client summary.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "clientId",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Client identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "macAddress",
+          "type": "string",
+          "required": false,
+          "maxLength": 32,
+          "description": "Client MAC address, if available and permitted."
+        },
+        {
+          "fieldId": 3,
+          "name": "displayName",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "Client display name."
+        },
+        {
+          "fieldId": 4,
+          "name": "rssi",
+          "type": "int32",
+          "required": false,
+          "description": "Client RSSI in dBm."
+        },
+        {
+          "fieldId": 5,
+          "name": "connectedSeconds",
+          "type": "uint32",
+          "required": false,
+          "description": "Connection age in seconds."
+        }
+      ]
+    },
+    {
+      "name": "NetworkInterfaceStateChangedEvent",
+      "kind": "object",
+      "description": "Event payload for network interface state changes.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "interfaceId",
+          "type": "string",
+          "required": true,
+          "maxLength": 64,
+          "description": "Interface identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "state",
+          "type": "NetworkInterfaceState",
+          "required": true,
+          "description": "New interface state."
+        },
+        {
+          "fieldId": 3,
+          "name": "previousState",
+          "type": "NetworkInterfaceState",
+          "required": false,
+          "description": "Previous interface state."
+        },
+        {
+          "fieldId": 4,
+          "name": "reason",
+          "type": "enum",
+          "required": false,
+          "description": "Change reason."
+        }
+      ]
+    },
+    {
+      "name": "NetworkIpConfigChangedEvent",
+      "kind": "object",
+      "description": "Event payload for IP configuration changes.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "interfaceId",
+          "type": "string",
+          "required": true,
+          "maxLength": 64,
+          "description": "Interface identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "family",
+          "type": "enum",
+          "required": false,
+          "description": "IP family."
+        },
+        {
+          "fieldId": 3,
+          "name": "config",
+          "type": "NetworkIpConfig",
+          "required": true,
+          "description": "New IP configuration."
+        },
+        {
+          "fieldId": 4,
+          "name": "previousConfig",
+          "type": "NetworkIpConfig",
+          "required": false,
+          "description": "Previous IP configuration."
+        },
+        {
+          "fieldId": 5,
+          "name": "reason",
+          "type": "enum",
+          "required": false,
+          "description": "Change reason."
+        }
+      ]
+    },
+    {
+      "name": "NetworkWifiConfigChangedEvent",
+      "kind": "object",
+      "description": "Event payload for Wi-Fi profile configuration changes.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "interfaceId",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "Wi-Fi station interface identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "config",
+          "type": "NetworkWifiConfig",
+          "required": true,
+          "description": "New Wi-Fi configuration summary."
+        },
+        {
+          "fieldId": 3,
+          "name": "changedFields",
+          "type": "bytes",
+          "required": false,
+          "maxLength": 1024,
+          "description": "JSON array of changed field paths."
+        },
+        {
+          "fieldId": 4,
+          "name": "reason",
+          "type": "enum",
+          "required": false,
+          "description": "Change reason."
+        }
+      ]
+    },
+    {
+      "name": "NetworkWifiStateChangedEvent",
+      "kind": "object",
+      "description": "Event payload for Wi-Fi station state changes.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "state",
+          "type": "NetworkWifiState",
+          "required": true,
+          "description": "New Wi-Fi station state."
+        },
+        {
+          "fieldId": 2,
+          "name": "previousState",
+          "type": "NetworkWifiState",
+          "required": false,
+          "description": "Previous state."
+        },
+        {
+          "fieldId": 3,
+          "name": "reason",
+          "type": "enum",
+          "required": false,
+          "description": "Change reason."
+        }
+      ]
+    },
+    {
+      "name": "NetworkWifiScanResultReportedEvent",
+      "kind": "object",
+      "description": "Event payload for asynchronous Wi-Fi scan results.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "scanId",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "Scan identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "results",
+          "type": "bytes",
+          "required": false,
+          "maxLength": 16384,
+          "description": "JSON array of NetworkWifiScanResult objects."
+        },
+        {
+          "fieldId": 3,
+          "name": "complete",
+          "type": "bool",
+          "required": true,
+          "description": "Whether this event completes the scan."
+        }
+      ]
+    },
+    {
+      "name": "NetworkApConfigChangedEvent",
+      "kind": "object",
+      "description": "Event payload for Wi-Fi AP configuration changes.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "interfaceId",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "Wi-Fi AP interface identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "config",
+          "type": "NetworkApConfig",
+          "required": true,
+          "description": "New AP configuration."
+        },
+        {
+          "fieldId": 3,
+          "name": "changedFields",
+          "type": "bytes",
+          "required": false,
+          "maxLength": 1024,
+          "description": "JSON array of changed field paths."
+        },
+        {
+          "fieldId": 4,
+          "name": "reason",
+          "type": "enum",
+          "required": false,
+          "description": "Change reason."
+        }
+      ]
+    },
+    {
+      "name": "NetworkApStateChangedEvent",
+      "kind": "object",
+      "description": "Event payload for Wi-Fi AP state changes.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "state",
+          "type": "NetworkApState",
+          "required": true,
+          "description": "New AP state."
+        },
+        {
+          "fieldId": 2,
+          "name": "previousState",
+          "type": "NetworkApState",
+          "required": false,
+          "description": "Previous AP state."
+        },
+        {
+          "fieldId": 3,
+          "name": "reason",
+          "type": "enum",
+          "required": false,
+          "description": "Change reason."
+        }
+      ]
+    },
+    {
+      "name": "NetworkApClientChangedEvent",
+      "kind": "object",
+      "description": "Event payload for Wi-Fi AP client changes.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "change",
+          "type": "enum",
+          "required": true,
+          "description": "Client change type; candidate values include joined, left, and updated."
+        },
+        {
+          "fieldId": 2,
+          "name": "client",
+          "type": "NetworkApClientInfo",
+          "required": true,
+          "description": "Client summary."
+        },
+        {
+          "fieldId": 3,
+          "name": "reason",
+          "type": "enum",
+          "required": false,
+          "description": "Change reason."
+        }
+      ]
+    },
+    {
+      "name": "NetworkInterfaceCapability",
+      "kind": "object",
+      "description": "Capability descriptor for network.interface.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "interfaceTypes",
+          "type": "bytes",
+          "required": false,
+          "maxLength": 512,
+          "description": "JSON array of supported interface type strings."
+        },
+        {
+          "fieldId": 2,
+          "name": "supportsStateEvent",
+          "type": "bool",
+          "required": false,
+          "description": "Whether network.interfaceStateChanged is supported."
+        }
+      ]
+    },
+    {
+      "name": "NetworkIpCapability",
+      "kind": "object",
+      "description": "Capability descriptor for network.ip.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "families",
+          "type": "bytes",
+          "required": false,
+          "maxLength": 256,
+          "description": "JSON array of supported IP families."
+        },
+        {
+          "fieldId": 2,
+          "name": "modes",
+          "type": "bytes",
+          "required": false,
+          "maxLength": 512,
+          "description": "JSON array of supported IP modes."
+        },
+        {
+          "fieldId": 3,
+          "name": "applyPolicies",
+          "type": "bytes",
+          "required": false,
+          "maxLength": 512,
+          "description": "JSON array of supported apply policies."
+        }
+      ]
+    },
+    {
+      "name": "VideoGetStreamCapabilitiesParams",
+      "kind": "object",
+      "description": "Selector for video stream capability.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "source",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "Optional video source identifier; omit to query all visible sources."
+        },
+        {
+          "fieldId": 2,
+          "name": "includeRuntimeState",
+          "type": "bool",
+          "required": false,
+          "description": "Whether to include current source runtime state."
+        }
+      ]
+    },
+    {
+      "name": "VideoStreamCapabilities",
+      "kind": "object",
+      "description": "Device-level video.stream capability summary.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "capability",
+          "type": "string",
+          "required": true,
+          "maxLength": 32,
+          "description": "Fixed capability name video.stream."
+        },
+        {
+          "fieldId": 2,
+          "name": "sources",
+          "type": "bytes",
+          "required": true,
+          "maxLength": 8192,
+          "description": "JSON array of VideoStreamSource objects."
+        },
+        {
+          "fieldId": 3,
+          "name": "streamProfiles",
+          "type": "bytes",
+          "required": true,
+          "maxLength": 512,
+          "description": "JSON array of supported stream profiles, normally media.video."
+        },
+        {
+          "fieldId": 4,
+          "name": "openModes",
+          "type": "bytes",
+          "required": true,
+          "maxLength": 512,
+          "description": "JSON array of supported open modes, such as producer_open and receiver_pull."
+        },
+        {
+          "fieldId": 5,
+          "name": "peerRoles",
+          "type": "bytes",
+          "required": true,
+          "maxLength": 512,
+          "description": "JSON array of peer roles, such as receiver and transmitter."
+        },
+        {
+          "fieldId": 6,
+          "name": "supportsSourceStateEvent",
+          "type": "bool",
+          "required": true,
+          "description": "Whether video.streamSourceStateChanged is supported."
+        },
+        {
+          "fieldId": 7,
+          "name": "supportsSyncGroup",
+          "type": "bool",
+          "required": true,
+          "description": "Whether video streams can share a synchronization group with audio streams."
+        },
+        {
+          "fieldId": 8,
+          "name": "flowControlManagedByRuntime",
+          "type": "bool",
+          "required": true,
+          "description": "Whether normal applications can rely on runtime-managed STREAM flow control."
+        }
+      ]
+    },
+    {
+      "name": "VideoStreamSource",
+      "kind": "object",
+      "description": "One real-time video stream source.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "source",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Source identifier such as wireless_cast_video."
+        },
+        {
+          "fieldId": 2,
+          "name": "displayName",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "User-visible source name."
+        },
+        {
+          "fieldId": 3,
+          "name": "codecs",
+          "type": "bytes",
+          "required": true,
+          "maxLength": 512,
+          "description": "JSON array of supported video codecs."
+        },
+        {
+          "fieldId": 4,
+          "name": "resolutions",
+          "type": "bytes",
+          "required": false,
+          "maxLength": 1024,
+          "description": "JSON array of supported resolution descriptors."
+        },
+        {
+          "fieldId": 5,
+          "name": "frameRates",
+          "type": "bytes",
+          "required": false,
+          "maxLength": 512,
+          "description": "JSON array of supported frame rates."
+        },
+        {
+          "fieldId": 6,
+          "name": "state",
+          "type": "enum",
+          "required": false,
+          "description": "Runtime source state, such as available, receiving, stopped, or unavailable."
+        }
+      ]
+    },
+    {
+      "name": "VideoOpenStreamParams",
+      "kind": "object",
+      "description": "Request to open a real-time video stream.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "source",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Video source identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "peerRole",
+          "type": "enum",
+          "required": true,
+          "description": "Requested peer media role; values include receiver and transmitter."
+        },
+        {
+          "fieldId": 3,
+          "name": "codec",
+          "type": "enum",
+          "required": true,
+          "description": "Requested video codec, such as h264, h265, mjpeg, or raw."
+        },
+        {
+          "fieldId": 4,
+          "name": "width",
+          "type": "uint32",
+          "required": false,
+          "description": "Requested frame width in pixels."
+        },
+        {
+          "fieldId": 5,
+          "name": "height",
+          "type": "uint32",
+          "required": false,
+          "description": "Requested frame height in pixels."
+        },
+        {
+          "fieldId": 6,
+          "name": "frameRate",
+          "type": "uint32",
+          "required": false,
+          "description": "Requested frame rate."
+        },
+        {
+          "fieldId": 7,
+          "name": "bitrateKbps",
+          "type": "uint32",
+          "required": false,
+          "description": "Requested bitrate in kbps."
+        },
+        {
+          "fieldId": 8,
+          "name": "streamProfile",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "STREAM profile name."
+        },
+        {
+          "fieldId": 9,
+          "name": "cursorUnit",
+          "type": "enum",
+          "required": false,
+          "description": "STREAM cursor unit, such as timestampUs or frameIndex."
+        },
+        {
+          "fieldId": 10,
+          "name": "syncGroupId",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "Optional synchronization group identifier."
+        },
+        {
+          "fieldId": 11,
+          "name": "castSessionId",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "Optional cast session identifier."
+        },
+        {
+          "fieldId": 12,
+          "name": "clockDomain",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "Source media clock domain."
+        },
+        {
+          "fieldId": 13,
+          "name": "maxDataSize",
+          "type": "uint32",
+          "required": false,
+          "description": "Preferred maximum STREAM payload data size."
+        }
+      ]
+    },
+    {
+      "name": "VideoOpenStreamResult",
+      "kind": "object",
+      "description": "Result of opening a real-time video stream.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "streamId",
+          "type": "uint32",
+          "required": true,
+          "description": "STREAM data plane stream identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "state",
+          "type": "enum",
+          "required": true,
+          "description": "Initial state, normally opening or streaming."
+        },
+        {
+          "fieldId": 3,
+          "name": "source",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Bound source identifier."
+        },
+        {
+          "fieldId": 4,
+          "name": "peerRole",
+          "type": "enum",
+          "required": true,
+          "description": "Confirmed peer media role."
+        },
+        {
+          "fieldId": 5,
+          "name": "codec",
+          "type": "enum",
+          "required": true,
+          "description": "Negotiated codec."
+        },
+        {
+          "fieldId": 6,
+          "name": "width",
+          "type": "uint32",
+          "required": false,
+          "description": "Negotiated frame width."
+        },
+        {
+          "fieldId": 7,
+          "name": "height",
+          "type": "uint32",
+          "required": false,
+          "description": "Negotiated frame height."
+        },
+        {
+          "fieldId": 8,
+          "name": "frameRate",
+          "type": "uint32",
+          "required": false,
+          "description": "Negotiated frame rate."
+        },
+        {
+          "fieldId": 9,
+          "name": "bitrateKbps",
+          "type": "uint32",
+          "required": false,
+          "description": "Negotiated bitrate in kbps."
+        },
+        {
+          "fieldId": 10,
+          "name": "streamProfile",
+          "type": "string",
+          "required": true,
+          "maxLength": 64,
+          "description": "Normalized stream profile."
+        },
+        {
+          "fieldId": 11,
+          "name": "cursorUnit",
+          "type": "enum",
+          "required": true,
+          "description": "STREAM cursor unit."
+        },
+        {
+          "fieldId": 12,
+          "name": "syncGroupId",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "Synchronization group identifier."
+        },
+        {
+          "fieldId": 13,
+          "name": "maxDataSize",
+          "type": "uint32",
+          "required": false,
+          "description": "Negotiated maximum STREAM payload data size."
+        }
+      ]
+    },
+    {
+      "name": "VideoCloseStreamParams",
+      "kind": "object",
+      "description": "Request to close a video stream.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "streamId",
+          "type": "uint32",
+          "required": true,
+          "description": "STREAM data plane stream identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "peerRole",
+          "type": "enum",
+          "required": false,
+          "description": "Peer role in this stream."
+        },
+        {
+          "fieldId": 3,
+          "name": "reason",
+          "type": "enum",
+          "required": false,
+          "description": "Close reason."
+        },
+        {
+          "fieldId": 4,
+          "name": "finalCursor",
+          "type": "uint64",
+          "required": false,
+          "description": "Last processed cursor value."
+        }
+      ]
+    },
+    {
+      "name": "VideoCloseStreamResult",
+      "kind": "object",
+      "description": "Result of closing a video stream.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "streamId",
+          "type": "uint32",
+          "required": true,
+          "description": "Closed stream identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "state",
+          "type": "enum",
+          "required": true,
+          "description": "Close state, such as closing, closed, or failed."
+        },
+        {
+          "fieldId": 3,
+          "name": "reason",
+          "type": "enum",
+          "required": false,
+          "description": "Final close reason."
+        },
+        {
+          "fieldId": 4,
+          "name": "alreadyClosed",
+          "type": "bool",
+          "required": false,
+          "description": "Whether the stream was already terminal before this request."
+        }
+      ]
+    },
+    {
+      "name": "VideoGetStreamStateParams",
+      "kind": "object",
+      "description": "Selector for a video stream state query.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "streamId",
+          "type": "uint32",
+          "required": true,
+          "description": "STREAM data plane stream identifier."
+        }
+      ]
+    },
+    {
+      "name": "VideoStreamState",
+      "kind": "object",
+      "description": "Runtime state of one video stream.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "streamId",
+          "type": "uint32",
+          "required": true,
+          "description": "STREAM data plane stream identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "state",
+          "type": "enum",
+          "required": true,
+          "description": "Stream state, such as opening, streaming, closing, closed, or failed."
+        },
+        {
+          "fieldId": 3,
+          "name": "source",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Bound video source."
+        },
+        {
+          "fieldId": 4,
+          "name": "peerRole",
+          "type": "enum",
+          "required": false,
+          "description": "Peer media role."
+        },
+        {
+          "fieldId": 5,
+          "name": "codec",
+          "type": "enum",
+          "required": false,
+          "description": "Negotiated video codec."
+        },
+        {
+          "fieldId": 6,
+          "name": "streamProfile",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "Stream profile."
+        },
+        {
+          "fieldId": 7,
+          "name": "syncGroupId",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "Synchronization group identifier."
+        },
+        {
+          "fieldId": 8,
+          "name": "cursorUnit",
+          "type": "enum",
+          "required": false,
+          "description": "STREAM cursor unit."
+        },
+        {
+          "fieldId": 9,
+          "name": "lastCursor",
+          "type": "uint64",
+          "required": false,
+          "description": "Last known cursor value."
+        },
+        {
+          "fieldId": 10,
+          "name": "keyFrameRequested",
+          "type": "bool",
+          "required": false,
+          "description": "Whether a key frame has been requested and is pending."
+        },
+        {
+          "fieldId": 11,
+          "name": "failureReason",
+          "type": "enum",
+          "required": false,
+          "description": "Failure reason when state is failed."
+        }
+      ]
+    },
+    {
+      "name": "VideoGetStreamSourceStateParams",
+      "kind": "object",
+      "description": "Selector for video source runtime state.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "source",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Video source identifier."
+        }
+      ]
+    },
+    {
+      "name": "VideoStreamSourceState",
+      "kind": "object",
+      "description": "Runtime state of a video stream source.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "source",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Video source identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "mediaKind",
+          "type": "enum",
+          "required": false,
+          "description": "Media kind, normally video."
+        },
+        {
+          "fieldId": 3,
+          "name": "state",
+          "type": "enum",
+          "required": true,
+          "description": "Source state, such as unavailable, available, receiving, stopped, or failed."
+        },
+        {
+          "fieldId": 4,
+          "name": "available",
+          "type": "bool",
+          "required": false,
+          "description": "Whether the source is available for openStream."
+        },
+        {
+          "fieldId": 5,
+          "name": "activeStreamId",
+          "type": "uint32",
+          "required": false,
+          "description": "Active downstream stream id, if any."
+        }
+      ]
+    },
+    {
+      "name": "VideoRequestKeyFrameParams",
+      "kind": "object",
+      "description": "Request a key frame for an active video stream.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "streamId",
+          "type": "uint32",
+          "required": true,
+          "description": "STREAM data plane stream identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "reason",
+          "type": "enum",
+          "required": false,
+          "description": "Request reason."
+        }
+      ]
+    },
+    {
+      "name": "VideoRequestKeyFrameResult",
+      "kind": "object",
+      "description": "Result of a key frame request.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "accepted",
+          "type": "bool",
+          "required": true,
+          "description": "Whether the request was accepted."
+        },
+        {
+          "fieldId": 2,
+          "name": "state",
+          "type": "VideoStreamState",
+          "required": false,
+          "description": "Current or updated stream state."
+        }
+      ]
+    },
+    {
+      "name": "VideoStreamStateChangedEvent",
+      "kind": "object",
+      "description": "Event payload for video stream state changes.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "streamId",
+          "type": "uint32",
+          "required": true,
+          "description": "STREAM data plane stream identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "state",
+          "type": "enum",
+          "required": true,
+          "description": "New stream state."
+        },
+        {
+          "fieldId": 3,
+          "name": "source",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Bound video source."
+        },
+        {
+          "fieldId": 4,
+          "name": "reason",
+          "type": "enum",
+          "required": false,
+          "description": "State change reason."
+        },
+        {
+          "fieldId": 5,
+          "name": "stats",
+          "type": "VideoStreamStats",
+          "required": false,
+          "description": "Optional bounded stream statistics."
+        }
+      ]
+    },
+    {
+      "name": "VideoStreamSourceStateChangedEvent",
+      "kind": "object",
+      "description": "Event payload for video stream source state changes.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "source",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Video source identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "mediaKind",
+          "type": "enum",
+          "required": false,
+          "description": "Media kind, normally video."
+        },
+        {
+          "fieldId": 3,
+          "name": "state",
+          "type": "enum",
+          "required": true,
+          "description": "New source state."
+        },
+        {
+          "fieldId": 4,
+          "name": "reason",
+          "type": "enum",
+          "required": false,
+          "description": "Source state change reason."
+        },
+        {
+          "fieldId": 5,
+          "name": "activeStreamId",
+          "type": "uint32",
+          "required": false,
+          "description": "Active downstream stream id, if any."
+        }
+      ]
+    },
+    {
+      "name": "VideoStreamStatsReportedEvent",
+      "kind": "object",
+      "description": "Event payload for video stream statistics reports.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "streamId",
+          "type": "uint32",
+          "required": true,
+          "description": "STREAM data plane stream identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "stats",
+          "type": "VideoStreamStats",
+          "required": true,
+          "description": "Bounded stream statistics."
+        }
+      ]
+    },
+    {
+      "name": "VideoStreamStats",
+      "kind": "object",
+      "description": "Bounded runtime statistics for a video stream.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "frames",
+          "type": "uint64",
+          "required": false,
+          "description": "Number of frames observed."
+        },
+        {
+          "fieldId": 2,
+          "name": "bytes",
+          "type": "uint64",
+          "required": false,
+          "description": "Number of STREAM payload bytes observed."
+        },
+        {
+          "fieldId": 3,
+          "name": "droppedFrames",
+          "type": "uint64",
+          "required": false,
+          "description": "Number of dropped frames."
+        },
+        {
+          "fieldId": 4,
+          "name": "bitrateKbps",
+          "type": "uint32",
+          "required": false,
+          "description": "Estimated bitrate in kbps."
+        }
+      ]
     }
   ],
   "wireExamples": [],
@@ -1597,6 +5447,1084 @@
         "PERMISSION_DENIED",
         "INTERNAL_ERROR"
       ]
+    },
+    {
+      "name": "audio.getStreamCapabilities",
+      "description": "Return real-time audio stream sources, codecs, stream profiles, and open-mode support.",
+      "methodId": 2319,
+      "bitOffset": 4,
+      "domain": "audio",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "AudioGetStreamCapabilitiesParams"
+      },
+      "response": {
+        "type": "AudioStreamCapabilities"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "audio.stream"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "INVALID_ARGUMENT",
+        "PERMISSION_DENIED",
+        "UNAVAILABLE"
+      ]
+    },
+    {
+      "name": "audio.openStream",
+      "description": "Open a real-time audio STREAM and return the negotiated streamId and media metadata.",
+      "methodId": 2320,
+      "bitOffset": 5,
+      "domain": "audio",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "AudioOpenStreamParams"
+      },
+      "response": {
+        "type": "AudioOpenStreamResult"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "audio.stream"
+      ],
+      "events": [
+        "audio.streamStateChanged",
+        "audio.streamSourceStateChanged"
+      ],
+      "errors": [
+        "SUCCESS",
+        "INVALID_ARGUMENT",
+        "BUSY",
+        "RESOURCE_EXHAUSTED",
+        "MEDIA_SOURCE_NOT_FOUND",
+        "MEDIA_SOURCE_UNAVAILABLE",
+        "MEDIA_CODEC_UNSUPPORTED",
+        "MEDIA_STREAM_START_FAILED"
+      ]
+    },
+    {
+      "name": "audio.closeStream",
+      "description": "Close a previously opened audio STREAM.",
+      "methodId": 2321,
+      "bitOffset": 6,
+      "domain": "audio",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "AudioCloseStreamParams"
+      },
+      "response": {
+        "type": "AudioCloseStreamResult"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "audio.stream"
+      ],
+      "events": [
+        "audio.streamStateChanged"
+      ],
+      "errors": [
+        "SUCCESS",
+        "STREAM_NOT_FOUND",
+        "STREAM_CLOSED",
+        "INVALID_STATE",
+        "MEDIA_STREAM_STOP_FAILED"
+      ]
+    },
+    {
+      "name": "audio.getStreamState",
+      "description": "Return runtime state for an opened audio stream.",
+      "methodId": 2322,
+      "bitOffset": 7,
+      "domain": "audio",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "AudioGetStreamStateParams"
+      },
+      "response": {
+        "type": "AudioStreamState"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "audio.stream"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "STREAM_NOT_FOUND",
+        "PERMISSION_DENIED",
+        "UNAVAILABLE"
+      ]
+    },
+    {
+      "name": "audio.getStreamSourceState",
+      "description": "Return availability and receiving state for an audio stream source.",
+      "methodId": 2323,
+      "bitOffset": 8,
+      "domain": "audio",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "AudioGetStreamSourceStateParams"
+      },
+      "response": {
+        "type": "AudioStreamSourceState"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "audio.stream"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "INVALID_ARGUMENT",
+        "MEDIA_SOURCE_NOT_FOUND",
+        "UNAVAILABLE"
+      ]
+    },
+    {
+      "name": "device.getInfo",
+      "description": "Return the current endpoint main device identity, product, hardware, OS, software, AXTP runtime, and optional capability summary.",
+      "methodId": 257,
+      "bitOffset": 0,
+      "domain": "device",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "GetDeviceInfoParams"
+      },
+      "response": {
+        "type": "DeviceInfo"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "device.info"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "INVALID_ARGUMENT",
+        "PERMISSION_DENIED",
+        "INTERNAL_ERROR"
+      ]
+    },
+    {
+      "name": "firmware.getUpdateCapabilities",
+      "description": "Return P0 firmware update capability and upload constraints.",
+      "methodId": 1025,
+      "bitOffset": 0,
+      "domain": "firmware",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "Empty"
+      },
+      "response": {
+        "type": "FirmwareUpdateCapabilities"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "firmware.update"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "INVALID_STATE",
+        "FW_DEVICE_NOT_READY"
+      ]
+    },
+    {
+      "name": "firmware.beginUpdate",
+      "description": "Create a firmware update session, accept the manifest, and bind file IDs to STREAM streamIds.",
+      "methodId": 1026,
+      "bitOffset": 1,
+      "domain": "firmware",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "BeginUpdateParams"
+      },
+      "response": {
+        "type": "BeginUpdateResult"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "firmware.update"
+      ],
+      "events": [
+        "firmware.updateStateChanged",
+        "firmware.updateProgressReported"
+      ],
+      "errors": [
+        "SUCCESS",
+        "INVALID_ARGUMENT",
+        "BUSY",
+        "FW_VERSION_UNSUPPORTED",
+        "FW_STORAGE_NOT_ENOUGH",
+        "FW_DEVICE_NOT_READY"
+      ]
+    },
+    {
+      "name": "firmware.finishUpdate",
+      "description": "Tell the device that upload is complete and hand off verification, install, and reboot to the device.",
+      "methodId": 1035,
+      "bitOffset": 2,
+      "domain": "firmware",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "FinishUpdateParams"
+      },
+      "response": {
+        "type": "FinishUpdateResult"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "firmware.update"
+      ],
+      "events": [
+        "firmware.updateStateChanged",
+        "firmware.updateProgressReported"
+      ],
+      "errors": [
+        "SUCCESS",
+        "INVALID_STATE",
+        "STREAM_CHUNK_MISSING",
+        "FW_SIZE_MISMATCH",
+        "FW_DEVICE_NOT_READY",
+        "BUSY"
+      ]
+    },
+    {
+      "name": "firmware.getUpdateState",
+      "description": "Return current firmware update state for UI refresh, reconnect, or event-loss recovery.",
+      "methodId": 1032,
+      "bitOffset": 3,
+      "domain": "firmware",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "GetUpdateStateParams"
+      },
+      "response": {
+        "type": "FirmwareUpdateState"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "firmware.update"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "NOT_FOUND",
+        "FW_TRANSFER_NOT_STARTED"
+      ]
+    },
+    {
+      "name": "network.getInterfaces",
+      "description": "Return visible network interfaces and default interface identifiers.",
+      "methodId": 3600,
+      "bitOffset": 0,
+      "domain": "network",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "NetworkGetInterfacesParams"
+      },
+      "response": {
+        "type": "NetworkInterfaces"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "network.interface"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "INVALID_ARGUMENT",
+        "PERMISSION_DENIED",
+        "UNAVAILABLE"
+      ]
+    },
+    {
+      "name": "network.getInterfaceInfo",
+      "description": "Return detailed information for one network interface.",
+      "methodId": 3601,
+      "bitOffset": 1,
+      "domain": "network",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "NetworkGetInterfaceInfoParams"
+      },
+      "response": {
+        "type": "NetworkInterfaceInfo"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "network.interface"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "INVALID_ARGUMENT",
+        "NOT_FOUND",
+        "PERMISSION_DENIED",
+        "UNAVAILABLE"
+      ]
+    },
+    {
+      "name": "network.getIpConfig",
+      "description": "Return IP configuration for a network interface.",
+      "methodId": 3586,
+      "bitOffset": 2,
+      "domain": "network",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "NetworkGetIpConfigParams"
+      },
+      "response": {
+        "type": "NetworkIpConfig"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "network.ip"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "INVALID_ARGUMENT",
+        "NOT_FOUND",
+        "PERMISSION_DENIED",
+        "UNAVAILABLE"
+      ]
+    },
+    {
+      "name": "network.setIpConfig",
+      "description": "Set DHCP/static/disabled IP configuration for a network interface.",
+      "methodId": 3587,
+      "bitOffset": 3,
+      "domain": "network",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "NetworkSetIpConfigParams"
+      },
+      "response": {
+        "type": "NetworkSetIpConfigResult"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "network.ip"
+      ],
+      "events": [
+        "network.ipConfigChanged"
+      ],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "INVALID_ARGUMENT",
+        "OUT_OF_RANGE",
+        "INVALID_STATE",
+        "BUSY",
+        "PERMISSION_DENIED"
+      ]
+    },
+    {
+      "name": "network.getWifiCapabilities",
+      "description": "Return Wi-Fi station capability, including security types, bands, scanning, and credential import modes.",
+      "methodId": 3602,
+      "bitOffset": 4,
+      "domain": "network",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "NetworkGetWifiCapabilitiesParams"
+      },
+      "response": {
+        "type": "NetworkWifiCapabilities"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "network.wifi"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "INVALID_ARGUMENT",
+        "NOT_FOUND",
+        "PERMISSION_DENIED",
+        "UNAVAILABLE"
+      ]
+    },
+    {
+      "name": "network.getWifiConfig",
+      "description": "Return saved Wi-Fi profile summaries without plaintext credentials.",
+      "methodId": 3588,
+      "bitOffset": 5,
+      "domain": "network",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "NetworkGetWifiConfigParams"
+      },
+      "response": {
+        "type": "NetworkWifiConfig"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "network.wifi"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "INVALID_ARGUMENT",
+        "NOT_FOUND",
+        "PERMISSION_DENIED",
+        "UNAVAILABLE"
+      ]
+    },
+    {
+      "name": "network.setWifiConfig",
+      "description": "Create or update a Wi-Fi station profile.",
+      "methodId": 3589,
+      "bitOffset": 6,
+      "domain": "network",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "NetworkSetWifiConfigParams"
+      },
+      "response": {
+        "type": "NetworkSetWifiConfigResult"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "network.wifi"
+      ],
+      "events": [
+        "network.wifiConfigChanged",
+        "network.wifiStateChanged"
+      ],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "INVALID_ARGUMENT",
+        "OUT_OF_RANGE",
+        "INVALID_STATE",
+        "BUSY",
+        "PERMISSION_DENIED"
+      ]
+    },
+    {
+      "name": "network.scanWifi",
+      "description": "Scan visible Wi-Fi access points.",
+      "methodId": 3590,
+      "bitOffset": 7,
+      "domain": "network",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "NetworkScanWifiParams"
+      },
+      "response": {
+        "type": "NetworkScanWifiResult"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "network.wifi"
+      ],
+      "events": [
+        "network.wifiScanResultReported"
+      ],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "INVALID_ARGUMENT",
+        "BUSY",
+        "TIMEOUT",
+        "UNAVAILABLE"
+      ]
+    },
+    {
+      "name": "network.connectWifi",
+      "description": "Connect to a saved Wi-Fi profile or an inline profile.",
+      "methodId": 3591,
+      "bitOffset": 8,
+      "domain": "network",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "NetworkConnectWifiParams"
+      },
+      "response": {
+        "type": "NetworkWifiActionResult"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "network.wifi"
+      ],
+      "events": [
+        "network.wifiStateChanged"
+      ],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "INVALID_ARGUMENT",
+        "NOT_FOUND",
+        "INVALID_STATE",
+        "BUSY",
+        "TIMEOUT",
+        "PERMISSION_DENIED"
+      ]
+    },
+    {
+      "name": "network.disconnectWifi",
+      "description": "Disconnect the current Wi-Fi station connection.",
+      "methodId": 3592,
+      "bitOffset": 9,
+      "domain": "network",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "NetworkDisconnectWifiParams"
+      },
+      "response": {
+        "type": "NetworkWifiActionResult"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "network.wifi"
+      ],
+      "events": [
+        "network.wifiStateChanged"
+      ],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "INVALID_ARGUMENT",
+        "INVALID_STATE",
+        "BUSY",
+        "PERMISSION_DENIED"
+      ]
+    },
+    {
+      "name": "network.getWifiState",
+      "description": "Return current Wi-Fi station association, authentication, and connection state.",
+      "methodId": 3593,
+      "bitOffset": 10,
+      "domain": "network",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "NetworkGetWifiStateParams"
+      },
+      "response": {
+        "type": "NetworkWifiState"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "network.wifi"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "INVALID_ARGUMENT",
+        "NOT_FOUND",
+        "PERMISSION_DENIED",
+        "UNAVAILABLE"
+      ]
+    },
+    {
+      "name": "network.getApCapabilities",
+      "description": "Return Wi-Fi AP capability, including supported bands, security types, channel ranges, and credential export policy.",
+      "methodId": 3603,
+      "bitOffset": 11,
+      "domain": "network",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "NetworkGetApCapabilitiesParams"
+      },
+      "response": {
+        "type": "NetworkApCapabilities"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "network.ap"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "INVALID_ARGUMENT",
+        "PERMISSION_DENIED",
+        "UNAVAILABLE"
+      ]
+    },
+    {
+      "name": "network.getApConfig",
+      "description": "Return Wi-Fi AP configuration without exposing plaintext credentials unless explicitly allowed by policy.",
+      "methodId": 3594,
+      "bitOffset": 12,
+      "domain": "network",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "NetworkGetApConfigParams"
+      },
+      "response": {
+        "type": "NetworkApConfig"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "network.ap"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "INVALID_ARGUMENT",
+        "PERMISSION_DENIED",
+        "UNAVAILABLE"
+      ]
+    },
+    {
+      "name": "network.setApConfig",
+      "description": "Partially update Wi-Fi AP configuration.",
+      "methodId": 3595,
+      "bitOffset": 13,
+      "domain": "network",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "NetworkSetApConfigParams"
+      },
+      "response": {
+        "type": "NetworkSetApConfigResult"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "network.ap"
+      ],
+      "events": [
+        "network.apConfigChanged"
+      ],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "INVALID_ARGUMENT",
+        "OUT_OF_RANGE",
+        "INVALID_STATE",
+        "BUSY",
+        "PERMISSION_DENIED"
+      ]
+    },
+    {
+      "name": "network.getApState",
+      "description": "Return runtime state for the device Wi-Fi AP role.",
+      "methodId": 3598,
+      "bitOffset": 14,
+      "domain": "network",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "NetworkGetApConfigParams"
+      },
+      "response": {
+        "type": "NetworkApState"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "network.ap"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "INVALID_ARGUMENT",
+        "PERMISSION_DENIED",
+        "UNAVAILABLE"
+      ]
+    },
+    {
+      "name": "network.startAp",
+      "description": "Start the Wi-Fi AP role.",
+      "methodId": 3596,
+      "bitOffset": 15,
+      "domain": "network",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "NetworkApActionParams"
+      },
+      "response": {
+        "type": "NetworkApActionResult"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "network.ap"
+      ],
+      "events": [
+        "network.apStateChanged"
+      ],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "INVALID_ARGUMENT",
+        "INVALID_STATE",
+        "BUSY",
+        "PERMISSION_DENIED"
+      ]
+    },
+    {
+      "name": "network.stopAp",
+      "description": "Stop the Wi-Fi AP role.",
+      "methodId": 3597,
+      "bitOffset": 16,
+      "domain": "network",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "NetworkApActionParams"
+      },
+      "response": {
+        "type": "NetworkApActionResult"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "network.ap"
+      ],
+      "events": [
+        "network.apStateChanged"
+      ],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "INVALID_ARGUMENT",
+        "INVALID_STATE",
+        "BUSY",
+        "PERMISSION_DENIED"
+      ]
+    },
+    {
+      "name": "network.getApClients",
+      "description": "Return clients currently associated with the Wi-Fi AP.",
+      "methodId": 3604,
+      "bitOffset": 17,
+      "domain": "network",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "NetworkGetApConfigParams"
+      },
+      "response": {
+        "type": "NetworkApClients"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "network.ap"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "INVALID_ARGUMENT",
+        "PERMISSION_DENIED",
+        "UNAVAILABLE"
+      ]
+    },
+    {
+      "name": "video.getStreamCapabilities",
+      "description": "Return video stream sources, codecs, profiles, and open-mode support.",
+      "methodId": 2066,
+      "bitOffset": 0,
+      "domain": "video",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "VideoGetStreamCapabilitiesParams"
+      },
+      "response": {
+        "type": "VideoStreamCapabilities"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "video.stream"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "INVALID_ARGUMENT",
+        "PERMISSION_DENIED",
+        "UNAVAILABLE"
+      ]
+    },
+    {
+      "name": "video.openStream",
+      "description": "Open a real-time video STREAM and return the negotiated streamId and media metadata.",
+      "methodId": 2059,
+      "bitOffset": 1,
+      "domain": "video",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "VideoOpenStreamParams"
+      },
+      "response": {
+        "type": "VideoOpenStreamResult"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "video.stream"
+      ],
+      "events": [
+        "video.streamStateChanged",
+        "video.streamSourceStateChanged"
+      ],
+      "errors": [
+        "SUCCESS",
+        "INVALID_ARGUMENT",
+        "BUSY",
+        "RESOURCE_EXHAUSTED",
+        "MEDIA_SOURCE_NOT_FOUND",
+        "MEDIA_SOURCE_UNAVAILABLE",
+        "MEDIA_CODEC_UNSUPPORTED",
+        "MEDIA_RESOLUTION_UNSUPPORTED",
+        "MEDIA_FRAMERATE_UNSUPPORTED",
+        "MEDIA_STREAM_START_FAILED"
+      ]
+    },
+    {
+      "name": "video.closeStream",
+      "description": "Close a previously opened video STREAM.",
+      "methodId": 2060,
+      "bitOffset": 2,
+      "domain": "video",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "VideoCloseStreamParams"
+      },
+      "response": {
+        "type": "VideoCloseStreamResult"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "video.stream"
+      ],
+      "events": [
+        "video.streamStateChanged"
+      ],
+      "errors": [
+        "SUCCESS",
+        "STREAM_NOT_FOUND",
+        "STREAM_CLOSED",
+        "INVALID_STATE",
+        "MEDIA_STREAM_STOP_FAILED"
+      ]
+    },
+    {
+      "name": "video.getStreamState",
+      "description": "Return runtime state for an opened video stream.",
+      "methodId": 2061,
+      "bitOffset": 3,
+      "domain": "video",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "VideoGetStreamStateParams"
+      },
+      "response": {
+        "type": "VideoStreamState"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "video.stream"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "STREAM_NOT_FOUND",
+        "PERMISSION_DENIED",
+        "UNAVAILABLE"
+      ]
+    },
+    {
+      "name": "video.getStreamSourceState",
+      "description": "Return availability and receiving state for a video stream source.",
+      "methodId": 2067,
+      "bitOffset": 4,
+      "domain": "video",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "VideoGetStreamSourceStateParams"
+      },
+      "response": {
+        "type": "VideoStreamSourceState"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "video.stream"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "INVALID_ARGUMENT",
+        "MEDIA_SOURCE_NOT_FOUND",
+        "UNAVAILABLE"
+      ]
+    },
+    {
+      "name": "video.requestKeyFrame",
+      "description": "Request an encoder key frame for an active video stream.",
+      "methodId": 2068,
+      "bitOffset": 5,
+      "domain": "video",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "VideoRequestKeyFrameParams"
+      },
+      "response": {
+        "type": "VideoRequestKeyFrameResult"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "video.stream"
+      ],
+      "events": [
+        "video.streamStateChanged"
+      ],
+      "errors": [
+        "SUCCESS",
+        "STREAM_NOT_FOUND",
+        "INVALID_STATE",
+        "MEDIA_STREAM_START_FAILED",
+        "PERMISSION_DENIED"
+      ]
     }
   ],
   "events": [
@@ -1622,6 +6550,343 @@
       ],
       "capabilities": [
         "audio.algorithm"
+      ]
+    },
+    {
+      "name": "audio.streamStateChanged",
+      "description": "Emitted when an audio stream enters opening, streaming, closed, or failed state.",
+      "eventId": 2306,
+      "bitOffset": 1,
+      "domain": "audio",
+      "since": "1.0.0",
+      "status": "draft",
+      "payload": {
+        "type": "AudioStreamStateChangedEvent"
+      },
+      "severity": "info",
+      "trigger": [
+        "audio.openStream",
+        "audio.closeStream",
+        "source disconnected",
+        "stream failure"
+      ],
+      "capabilities": [
+        "audio.stream"
+      ]
+    },
+    {
+      "name": "audio.streamSourceStateChanged",
+      "description": "Emitted when an audio stream source availability or receiving state changes.",
+      "eventId": 2307,
+      "bitOffset": 2,
+      "domain": "audio",
+      "since": "1.0.0",
+      "status": "draft",
+      "payload": {
+        "type": "AudioStreamSourceStateChangedEvent"
+      },
+      "severity": "info",
+      "trigger": [
+        "upstream source available",
+        "upstream source receiving",
+        "upstream source stopped"
+      ],
+      "capabilities": [
+        "audio.stream"
+      ]
+    },
+    {
+      "name": "audio.streamStatsReported",
+      "description": "Emitted with bounded runtime statistics for an audio stream.",
+      "eventId": 2308,
+      "bitOffset": 3,
+      "domain": "audio",
+      "since": "1.0.0",
+      "status": "draft",
+      "payload": {
+        "type": "AudioStreamStatsReportedEvent"
+      },
+      "severity": "info",
+      "trigger": [
+        "stream statistics interval",
+        "diagnostic sampling"
+      ],
+      "capabilities": [
+        "audio.stream"
+      ]
+    },
+    {
+      "name": "firmware.updateProgressReported",
+      "description": "Emitted when firmware receiving, verification, or install progress changes.",
+      "eventId": 1026,
+      "bitOffset": 0,
+      "domain": "firmware",
+      "since": "1.0.0",
+      "status": "draft",
+      "payload": {
+        "type": "FirmwareUpdateProgressEvent"
+      },
+      "severity": "info",
+      "trigger": [
+        "STREAM upload progress",
+        "firmware.finishUpdate",
+        "internal verify",
+        "internal install"
+      ],
+      "capabilities": [
+        "firmware.update"
+      ]
+    },
+    {
+      "name": "firmware.updateStateChanged",
+      "description": "Emitted when firmware update state changes or fails.",
+      "eventId": 1027,
+      "bitOffset": 1,
+      "domain": "firmware",
+      "since": "1.0.0",
+      "status": "draft",
+      "payload": {
+        "type": "FirmwareUpdateStateChangedEvent"
+      },
+      "severity": "info",
+      "trigger": [
+        "firmware.beginUpdate",
+        "firmware.finishUpdate",
+        "verify complete",
+        "install complete",
+        "rebooting",
+        "failure"
+      ],
+      "capabilities": [
+        "firmware.update"
+      ]
+    },
+    {
+      "name": "network.interfaceStateChanged",
+      "description": "Emitted when network interface administrative or link state changes.",
+      "eventId": 3585,
+      "bitOffset": 0,
+      "domain": "network",
+      "since": "1.0.0",
+      "status": "draft",
+      "payload": {
+        "type": "NetworkInterfaceStateChangedEvent"
+      },
+      "severity": "info",
+      "trigger": [
+        "link state change",
+        "admin state change",
+        "interface availability change"
+      ],
+      "capabilities": [
+        "network.interface"
+      ]
+    },
+    {
+      "name": "network.ipConfigChanged",
+      "description": "Emitted when IP configuration changes for an interface.",
+      "eventId": 3586,
+      "bitOffset": 1,
+      "domain": "network",
+      "since": "1.0.0",
+      "status": "draft",
+      "payload": {
+        "type": "NetworkIpConfigChangedEvent"
+      },
+      "severity": "info",
+      "trigger": [
+        "network.setIpConfig",
+        "DHCP renew",
+        "device policy"
+      ],
+      "capabilities": [
+        "network.ip"
+      ]
+    },
+    {
+      "name": "network.wifiConfigChanged",
+      "description": "Emitted when saved Wi-Fi profile configuration changes.",
+      "eventId": 3587,
+      "bitOffset": 2,
+      "domain": "network",
+      "since": "1.0.0",
+      "status": "draft",
+      "payload": {
+        "type": "NetworkWifiConfigChangedEvent"
+      },
+      "severity": "info",
+      "trigger": [
+        "network.setWifiConfig",
+        "device policy"
+      ],
+      "capabilities": [
+        "network.wifi"
+      ]
+    },
+    {
+      "name": "network.wifiStateChanged",
+      "description": "Emitted when Wi-Fi station association, authentication, connection, or failure state changes.",
+      "eventId": 3588,
+      "bitOffset": 3,
+      "domain": "network",
+      "since": "1.0.0",
+      "status": "draft",
+      "payload": {
+        "type": "NetworkWifiStateChangedEvent"
+      },
+      "severity": "info",
+      "trigger": [
+        "network.setWifiConfig",
+        "network.connectWifi",
+        "network.disconnectWifi",
+        "local Wi-Fi state change"
+      ],
+      "capabilities": [
+        "network.wifi"
+      ]
+    },
+    {
+      "name": "network.wifiScanResultReported",
+      "description": "Emitted for asynchronous Wi-Fi scan results or scan completion.",
+      "eventId": 3589,
+      "bitOffset": 4,
+      "domain": "network",
+      "since": "1.0.0",
+      "status": "draft",
+      "payload": {
+        "type": "NetworkWifiScanResultReportedEvent"
+      },
+      "severity": "info",
+      "trigger": [
+        "network.scanWifi"
+      ],
+      "capabilities": [
+        "network.wifi"
+      ]
+    },
+    {
+      "name": "network.apConfigChanged",
+      "description": "Emitted when Wi-Fi AP configuration changes.",
+      "eventId": 3590,
+      "bitOffset": 5,
+      "domain": "network",
+      "since": "1.0.0",
+      "status": "draft",
+      "payload": {
+        "type": "NetworkApConfigChangedEvent"
+      },
+      "severity": "info",
+      "trigger": [
+        "network.setApConfig",
+        "device policy"
+      ],
+      "capabilities": [
+        "network.ap"
+      ]
+    },
+    {
+      "name": "network.apStateChanged",
+      "description": "Emitted when Wi-Fi AP runtime state changes.",
+      "eventId": 3591,
+      "bitOffset": 6,
+      "domain": "network",
+      "since": "1.0.0",
+      "status": "draft",
+      "payload": {
+        "type": "NetworkApStateChangedEvent"
+      },
+      "severity": "info",
+      "trigger": [
+        "network.startAp",
+        "network.stopAp",
+        "local AP state change"
+      ],
+      "capabilities": [
+        "network.ap"
+      ]
+    },
+    {
+      "name": "network.apClientChanged",
+      "description": "Emitted when a client joins or leaves the Wi-Fi AP.",
+      "eventId": 3592,
+      "bitOffset": 7,
+      "domain": "network",
+      "since": "1.0.0",
+      "status": "draft",
+      "payload": {
+        "type": "NetworkApClientChangedEvent"
+      },
+      "severity": "info",
+      "trigger": [
+        "AP client join",
+        "AP client leave"
+      ],
+      "capabilities": [
+        "network.ap"
+      ]
+    },
+    {
+      "name": "video.streamStateChanged",
+      "description": "Emitted when a video stream enters opening, streaming, closed, failed, or keyframe-related state.",
+      "eventId": 2054,
+      "bitOffset": 0,
+      "domain": "video",
+      "since": "1.0.0",
+      "status": "draft",
+      "payload": {
+        "type": "VideoStreamStateChangedEvent"
+      },
+      "severity": "info",
+      "trigger": [
+        "video.openStream",
+        "video.closeStream",
+        "video.requestKeyFrame",
+        "source disconnected",
+        "stream failure"
+      ],
+      "capabilities": [
+        "video.stream"
+      ]
+    },
+    {
+      "name": "video.streamSourceStateChanged",
+      "description": "Emitted when a video stream source availability or receiving state changes.",
+      "eventId": 2055,
+      "bitOffset": 1,
+      "domain": "video",
+      "since": "1.0.0",
+      "status": "draft",
+      "payload": {
+        "type": "VideoStreamSourceStateChangedEvent"
+      },
+      "severity": "info",
+      "trigger": [
+        "source available",
+        "source receiving",
+        "source stopped"
+      ],
+      "capabilities": [
+        "video.stream"
+      ]
+    },
+    {
+      "name": "video.streamStatsReported",
+      "description": "Emitted with bounded runtime statistics for a video stream.",
+      "eventId": 2056,
+      "bitOffset": 2,
+      "domain": "video",
+      "since": "1.0.0",
+      "status": "draft",
+      "payload": {
+        "type": "VideoStreamStatsReportedEvent"
+      },
+      "severity": "info",
+      "trigger": [
+        "stream statistics interval",
+        "diagnostic sampling"
+      ],
+      "capabilities": [
+        "video.stream"
       ]
     }
   ],

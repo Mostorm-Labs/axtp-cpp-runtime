@@ -13,9 +13,25 @@ struct EventDescriptor {
 };
 
 inline constexpr EventDescriptor kEventRegistry[] = {
+    { 0x0402, "firmware.updateProgressReported", "firmware", "FirmwareUpdateProgressEvent" },
+    { 0x0403, "firmware.updateStateChanged", "firmware", "FirmwareUpdateStateChangedEvent" },
+    { 0x0806, "video.streamStateChanged", "video", "VideoStreamStateChangedEvent" },
+    { 0x0807, "video.streamSourceStateChanged", "video", "VideoStreamSourceStateChangedEvent" },
+    { 0x0808, "video.streamStatsReported", "video", "VideoStreamStatsReportedEvent" },
     { 0x0901, "audio.algorithmConfigChanged", "audio", "AudioAlgorithmConfigChangedEvent" },
+    { 0x0902, "audio.streamStateChanged", "audio", "AudioStreamStateChangedEvent" },
+    { 0x0903, "audio.streamSourceStateChanged", "audio", "AudioStreamSourceStateChangedEvent" },
+    { 0x0904, "audio.streamStatsReported", "audio", "AudioStreamStatsReportedEvent" },
+    { 0x0E01, "network.interfaceStateChanged", "network", "NetworkInterfaceStateChangedEvent" },
+    { 0x0E02, "network.ipConfigChanged", "network", "NetworkIpConfigChangedEvent" },
+    { 0x0E03, "network.wifiConfigChanged", "network", "NetworkWifiConfigChangedEvent" },
+    { 0x0E04, "network.wifiStateChanged", "network", "NetworkWifiStateChangedEvent" },
+    { 0x0E05, "network.wifiScanResultReported", "network", "NetworkWifiScanResultReportedEvent" },
+    { 0x0E06, "network.apConfigChanged", "network", "NetworkApConfigChangedEvent" },
+    { 0x0E07, "network.apStateChanged", "network", "NetworkApStateChangedEvent" },
+    { 0x0E08, "network.apClientChanged", "network", "NetworkApClientChangedEvent" },
 };
 
-inline constexpr std::size_t kEventRegistryCount = 1;
+inline constexpr std::size_t kEventRegistryCount = 17;
 
 } // namespace axtp

@@ -41,6 +41,14 @@ export interface ProtocolGuide {
   }>;
 }
 
+export interface WireDefinition {
+  byteOrder: string;
+  byteOrderAlias?: string;
+  integerEncoding: string;
+  crcByteOrder: string;
+  scope?: string;
+}
+
 export interface FrameProfile {
   name: string;
   magic?: string | number;
@@ -211,6 +219,7 @@ export interface ProtocolModel {
   overview: ProtocolOverview;
   architecture: ProtocolArchitecture;
   guide: ProtocolGuide;
+  wire: WireDefinition;
   frameProfiles: FrameProfile[];
   transports: TransportProfile[];
   payloadTypes: PayloadType[];

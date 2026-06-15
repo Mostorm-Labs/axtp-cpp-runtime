@@ -20,6 +20,7 @@ import type {
   SchemaField,
   StreamDefinition,
   TransportProfile,
+  WireDefinition,
   WireExample,
   WireExampleStep
 } from "./protocolModel.js";
@@ -196,6 +197,17 @@ function mapGuide(raw: any): ProtocolGuide {
   };
 }
 
+function mapWire(raw: any): WireDefinition {
+  const item = asObject(raw, "wire");
+  return {
+    byteOrder: String(item.byteOrder),
+    byteOrderAlias: item.byteOrderAlias === undefined ? undefined : String(item.byteOrderAlias),
+    integerEncoding: String(item.integerEncoding),
+    crcByteOrder: String(item.crcByteOrder),
+    scope: item.scope === undefined ? undefined : String(item.scope)
+  };
+}
+
 function mapFrameProfiles(value: unknown): FrameProfile[] {
   return asArray(value).map((item) => ({
     name: String(item.name),
@@ -317,6 +329,7 @@ export function loadProtocolDefinitionFromRaw(specRoot: string, sourcePath: stri
     overview: mapOverview(raw.overview),
     architecture: mapArchitecture(raw.architecture),
     guide: mapGuide(raw.guide),
+    wire: mapWire(raw.wire),
     frameProfiles: mapFrameProfiles(raw.frameProfiles),
     transports: mapTransports(raw.transports),
     payloadTypes: mapPayloadTypes(raw.payloadTypes),

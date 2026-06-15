@@ -18,9 +18,17 @@ inline constexpr CapabilityDescriptor kCapabilityRegistry[] = {
     { 0x0002, "protocol.payload.rpc", "protocol", "bool", "" },
     { 0x0003, "protocol.payload.stream", "protocol", "bool", "" },
     { 0x0009, "protocol.reservedRequestIdWidth", "protocol", "reserved", "" },
+    { 0x0101, "device.info", "device", "object", "DeviceInfoCapability" },
+    { 0x0401, "firmware.update", "firmware", "object", "FirmwareUpdateCapabilities" },
+    { 0x0801, "video.stream", "video", "object", "VideoStreamCapabilities" },
     { 0x0901, "audio.algorithm", "audio", "object", "AudioAlgorithmCapability" },
+    { 0x0902, "audio.stream", "audio", "object", "AudioStreamCapabilities" },
+    { 0x0E01, "network.interface", "network", "object", "NetworkInterfaceCapability" },
+    { 0x0E02, "network.ip", "network", "object", "NetworkIpCapability" },
+    { 0x0E03, "network.wifi", "network", "object", "NetworkWifiCapabilities" },
+    { 0x0E04, "network.ap", "network", "object", "NetworkApCapabilities" },
 };
 
-inline constexpr std::size_t kCapabilityRegistryCount = 5;
+inline constexpr std::size_t kCapabilityRegistryCount = 13;
 
 } // namespace axtp

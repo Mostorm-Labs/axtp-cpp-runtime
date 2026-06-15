@@ -29,11 +29,11 @@ export async function emitTestVectorFiles(_spec: SpecModel, dir: string): Promis
   ];
 
   const hexData: Record<string, string> = {
-    "control_open.hex": "415801000C000110010000010101",
-    "rpc_audio_get_algorithm_config.hex": "415801020B000110020000010207010000000109000000",
-    "rpc_audio_set_algorithm_config.hex": "415801020E000110030000010207010000000209000001010103",
-    "event_audio_algorithm_config_changed.hex": "415801020E000110040000010206000000000109000001010101",
-    "stream_object_chunk.hex": "415803001C010100050001090000000100000001000000000000000000000000AABBCCDD",
+    "control_open.hex": "4158010100050110000100010100010000",
+    "rpc_audio_get_algorithm_config.hex": "41580102000B0110000200010207000000010901000000",
+    "rpc_audio_set_algorithm_config.hex": "41580102000E0110000300010207000000010902000001010103",
+    "event_audio_algorithm_config_changed.hex": "41580102000E0110000400010206000000000901000001010101",
+    "stream_object_chunk.hex": "41580103001401100005000100000009000000010000000000000001AABBCCDD",
     "compact_crc8_error.hex": "121101020701000000020500000101015000",
     "compact_message_id_overflow.hex": "1211FF01020701000000020500000101015000"
   };

@@ -460,12 +460,16 @@ function renderPayloadTypes(model: ProtocolModel): string[] {
   return lines;
 }
 
-function renderWireExamples(examples: WireExample[]): string[] {
+function renderWireExamples(model: ProtocolModel): string[] {
+  const examples = model.wireExamples;
   if (examples.length === 0) return [];
+  const byteOrder = model.wire.byteOrderAlias
+    ? `${model.wire.byteOrder} / ${model.wire.byteOrderAlias} byte order`
+    : model.wire.byteOrder;
   const lines: string[] = [
     "## Wire Format Examples",
     "",
-    "The following examples show the exact byte layout for a complete session establishment over USB HID High Speed (Standard Frame Profile). Multi-byte integers and CRC fields use Big-Endian / network byte order."
+    `The following examples show the exact byte layout for a complete session establishment over USB HID High Speed (Standard Frame Profile). Multi-byte integers and CRC fields use ${byteOrder}.`
   ];
 
   for (const example of examples) {
@@ -517,7 +521,10 @@ export function renderProtocolMarkdown(model: ProtocolModel): string {
         ["Version", model.protocol.version],
         ["Spec Version", String(model.protocol.specVersion)],
         ["Registry Version", model.protocol.registryVersion],
-        ["Status", optional(model.protocol.status)]
+        ["Status", optional(model.protocol.status)],
+        ["Wire Byte Order", model.wire.byteOrderAlias ? `${model.wire.byteOrder} / ${model.wire.byteOrderAlias}` : model.wire.byteOrder],
+        ["Wire Integer Encoding", model.wire.integerEncoding],
+        ["CRC Byte Order", model.wire.crcByteOrder]
       ]
     ),
     "",
@@ -563,7 +570,7 @@ export function renderProtocolMarkdown(model: ProtocolModel): string {
     "",
     ...renderPayloadTypes(model),
     "",
-    ...renderWireExamples(model.wireExamples),
+    ...renderWireExamples(model),
     "",
     "## Generated Method Index",
     "",

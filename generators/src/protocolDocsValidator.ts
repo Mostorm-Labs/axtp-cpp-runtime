@@ -4,6 +4,7 @@ import { GeneratorError } from "./errors.js";
 import type { ProtocolModel } from "./protocolModel.js";
 
 export interface ProtocolDocsText {
+  frameSpec: string;
   streamSpec: string;
   controlSpec: string;
   typesSpec: string;
@@ -78,19 +79,27 @@ function assertYamlCapability(model: ProtocolModel): void {
 
 export async function loadProtocolDocs(specRoot: string): Promise<ProtocolDocsText> {
   const docsRoot = path.join(specRoot, "docs", "specs");
-  const [streamSpec, controlSpec, typesSpec] = await Promise.all([
+  const [frameSpec, streamSpec, controlSpec, typesSpec] = await Promise.all([
+    readFile(path.join(docsRoot, "1-core", "03-Frame-and-Payload.md"), "utf8"),
     readFile(path.join(docsRoot, "1-core", "07-Stream-Data-Plane.md"), "utf8"),
     readFile(path.join(docsRoot, "1-core", "05-Control-Session.md"), "utf8"),
-    readFile(path.join(docsRoot, "3-codec", "02-Capability-Types.md"), "utf8")
+    readFile(path.join(docsRoot, "3-codec", "01-Type-System.md"), "utf8")
   ]);
-  return { streamSpec, controlSpec, typesSpec };
+  return { frameSpec, streamSpec, controlSpec, typesSpec };
 }
 
 export function validateProtocolDocsConsistency(model: ProtocolModel, docs: ProtocolDocsText): string[] {
+  requirePattern(docs.frameSpec, /Big-Endian[\s\S]{0,80}network byte order/, "docs/specs/1-core/03-Frame-and-Payload.md", "Wire Byte Order", "frame spec must define Big-Endian / network byte order");
   requirePattern(docs.streamSpec, /STREAM Header[^\n]*16B|16B STREAM Header/, "docs/specs/1-core/07-Stream-Data-Plane.md", "STREAM Header", "stream spec must define a 16B STREAM Header");
   requirePattern(docs.streamSpec, /streamId:uint32/, "docs/specs/1-core/07-Stream-Data-Plane.md", "STREAM Header", "stream spec must define streamId:uint32");
   requirePattern(docs.streamSpec, /seqId:uint32/, "docs/specs/1-core/07-Stream-Data-Plane.md", "STREAM Header", "stream spec must define seqId:uint32");
   requirePattern(docs.streamSpec, /cursor:uint64/, "docs/specs/1-core/07-Stream-Data-Plane.md", "STREAM Header", "stream spec must define cursor:uint64");
+  requirePattern(docs.streamSpec, /Big-Endian[\s\S]{0,80}network byte order/, "docs/specs/1-core/07-Stream-Data-Plane.md", "STREAM Byte Order", "stream spec must define Big-Endian / network byte order");
+  requirePattern(docs.typesSpec, /Big-Endian[\s\S]{0,80}network byte order/, "docs/specs/3-codec/01-Type-System.md", "Codec Byte Order", "codec spec must define Big-Endian / network byte order");
+
+  if (model.wire.byteOrder !== "big-endian" || model.wire.byteOrderAlias !== "network") {
+    fail("protocol/axtp.protocol.yaml", "wire.byteOrder", "YAML wire byte order must match docs/specs Big-Endian / network byte order");
+  }
 
   requirePattern(docs.controlSpec, /OPEN[\s\S]*ACCEPT/, "docs/specs/1-core/05-Control-Session.md", "OPEN/ACCEPT", "control spec must define OPEN and ACCEPT");
   requirePattern(docs.controlSpec, /HEARTBEAT[\s\S]*HEARTBEAT_ACK/, "docs/specs/1-core/05-Control-Session.md", "HEARTBEAT", "control spec must define HEARTBEAT and HEARTBEAT_ACK");
@@ -104,6 +113,7 @@ export function validateProtocolDocsConsistency(model: ProtocolModel, docs: Prot
   assertYamlCapability(model);
 
   return [
+    "[OK] docs/specs: wire byte order facts checked",
     "[OK] docs/specs: STREAM header facts checked",
     "[OK] docs/specs: CONTROL Phase 1 opcode facts checked",
     "[OK] docs/specs: optional capability discovery facts checked"

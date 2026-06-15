@@ -268,6 +268,738 @@ inline constexpr FieldDescriptor kAudioHowlingSuppressionConfigFields[] = {
     { 0x03, "level", FieldType::Uint8, false, 0, 3 },
 };
 
+inline constexpr FieldDescriptor kAudioGetStreamCapabilitiesParamsFields[] = {
+    { 0x01, "source", FieldType::String, false, 0, 0 },
+    { 0x02, "includeRuntimeState", FieldType::Bool, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kAudioStreamCapabilitiesFields[] = {
+    { 0x01, "capability", FieldType::String, true, 0, 0 },
+    { 0x02, "sources", FieldType::Bytes, true, 0, 0 },
+    { 0x03, "streamProfiles", FieldType::Bytes, true, 0, 0 },
+    { 0x04, "openModes", FieldType::Bytes, true, 0, 0 },
+    { 0x05, "peerRoles", FieldType::Bytes, true, 0, 0 },
+    { 0x06, "supportsSourceStateEvent", FieldType::Bool, true, 0, 0 },
+    { 0x07, "supportsSyncGroup", FieldType::Bool, true, 0, 0 },
+    { 0x08, "flowControlManagedByRuntime", FieldType::Bool, true, 0, 0 },
+    { 0x09, "aacTransportFormats", FieldType::Bytes, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kAudioStreamSourceFields[] = {
+    { 0x01, "source", FieldType::String, true, 0, 0 },
+    { 0x02, "displayName", FieldType::String, false, 0, 0 },
+    { 0x03, "codecs", FieldType::Bytes, true, 0, 0 },
+    { 0x04, "sampleRates", FieldType::Bytes, false, 0, 0 },
+    { 0x05, "channels", FieldType::Bytes, false, 0, 0 },
+    { 0x06, "state", FieldType::Enum, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kAudioOpenStreamParamsFields[] = {
+    { 0x01, "source", FieldType::String, true, 0, 0 },
+    { 0x02, "peerRole", FieldType::Enum, true, 0, 0 },
+    { 0x03, "codec", FieldType::Enum, true, 0, 0 },
+    { 0x04, "transportFormat", FieldType::Enum, false, 0, 0 },
+    { 0x05, "sampleRate", FieldType::Uint32, false, 0, 0 },
+    { 0x06, "channels", FieldType::Uint8, false, 0, 0 },
+    { 0x07, "sampleFormat", FieldType::Enum, false, 0, 0 },
+    { 0x08, "chunkDurationMs", FieldType::Uint32, false, 0, 0 },
+    { 0x09, "streamProfile", FieldType::String, false, 0, 0 },
+    { 0x0A, "cursorUnit", FieldType::Enum, false, 0, 0 },
+    { 0x0B, "syncGroupId", FieldType::String, false, 0, 0 },
+    { 0x0C, "castSessionId", FieldType::String, false, 0, 0 },
+    { 0x0D, "clockDomain", FieldType::String, false, 0, 0 },
+    { 0x0E, "receiverClockDomain", FieldType::String, false, 0, 0 },
+    { 0x0F, "maxDataSize", FieldType::Uint32, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kAudioOpenStreamResultFields[] = {
+    { 0x01, "streamId", FieldType::Uint32, true, 0, 0 },
+    { 0x02, "state", FieldType::Enum, true, 0, 0 },
+    { 0x03, "source", FieldType::String, true, 0, 0 },
+    { 0x04, "peerRole", FieldType::Enum, true, 0, 0 },
+    { 0x05, "codec", FieldType::Enum, true, 0, 0 },
+    { 0x06, "transportFormat", FieldType::Enum, false, 0, 0 },
+    { 0x07, "sampleRate", FieldType::Uint32, true, 0, 0 },
+    { 0x08, "channels", FieldType::Uint8, true, 0, 0 },
+    { 0x09, "sampleFormat", FieldType::Enum, false, 0, 0 },
+    { 0x0A, "streamProfile", FieldType::String, true, 0, 0 },
+    { 0x0B, "cursorUnit", FieldType::Enum, true, 0, 0 },
+    { 0x0C, "syncGroupId", FieldType::String, false, 0, 0 },
+    { 0x0D, "castSessionId", FieldType::String, false, 0, 0 },
+    { 0x0E, "clockDomain", FieldType::String, false, 0, 0 },
+    { 0x0F, "receiverClockDomain", FieldType::String, false, 0, 0 },
+    { 0x10, "maxDataSize", FieldType::Uint32, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kAudioCloseStreamParamsFields[] = {
+    { 0x01, "streamId", FieldType::Uint32, true, 0, 0 },
+    { 0x02, "peerRole", FieldType::Enum, false, 0, 0 },
+    { 0x03, "reason", FieldType::Enum, false, 0, 0 },
+    { 0x04, "finalCursor", FieldType::Uint64, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kAudioCloseStreamResultFields[] = {
+    { 0x01, "streamId", FieldType::Uint32, true, 0, 0 },
+    { 0x02, "state", FieldType::Enum, true, 0, 0 },
+    { 0x03, "reason", FieldType::Enum, false, 0, 0 },
+    { 0x04, "alreadyClosed", FieldType::Bool, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kAudioGetStreamStateParamsFields[] = {
+    { 0x01, "streamId", FieldType::Uint32, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kAudioStreamStateFields[] = {
+    { 0x01, "streamId", FieldType::Uint32, true, 0, 0 },
+    { 0x02, "state", FieldType::Enum, true, 0, 0 },
+    { 0x03, "source", FieldType::String, true, 0, 0 },
+    { 0x04, "peerRole", FieldType::Enum, false, 0, 0 },
+    { 0x05, "codec", FieldType::Enum, false, 0, 0 },
+    { 0x06, "streamProfile", FieldType::String, false, 0, 0 },
+    { 0x07, "syncGroupId", FieldType::String, false, 0, 0 },
+    { 0x08, "cursorUnit", FieldType::Enum, false, 0, 0 },
+    { 0x09, "lastCursor", FieldType::Uint64, false, 0, 0 },
+    { 0x0A, "failureReason", FieldType::Enum, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kAudioGetStreamSourceStateParamsFields[] = {
+    { 0x01, "source", FieldType::String, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kAudioStreamSourceStateFields[] = {
+    { 0x01, "source", FieldType::String, true, 0, 0 },
+    { 0x02, "mediaKind", FieldType::Enum, false, 0, 0 },
+    { 0x03, "state", FieldType::Enum, true, 0, 0 },
+    { 0x04, "available", FieldType::Bool, false, 0, 0 },
+    { 0x05, "activeStreamId", FieldType::Uint32, false, 0, 0 },
+    { 0x06, "lastOpenRejectedReason", FieldType::Enum, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kAudioStreamStateChangedEventFields[] = {
+    { 0x01, "streamId", FieldType::Uint32, true, 0, 0 },
+    { 0x02, "state", FieldType::Enum, true, 0, 0 },
+    { 0x03, "source", FieldType::String, true, 0, 0 },
+    { 0x04, "reason", FieldType::Enum, false, 0, 0 },
+    { 0x05, "stats", FieldType::Object, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kAudioStreamSourceStateChangedEventFields[] = {
+    { 0x01, "source", FieldType::String, true, 0, 0 },
+    { 0x02, "mediaKind", FieldType::Enum, false, 0, 0 },
+    { 0x03, "state", FieldType::Enum, true, 0, 0 },
+    { 0x04, "reason", FieldType::Enum, false, 0, 0 },
+    { 0x05, "activeStreamId", FieldType::Uint32, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kAudioStreamStatsReportedEventFields[] = {
+    { 0x01, "streamId", FieldType::Uint32, true, 0, 0 },
+    { 0x02, "stats", FieldType::Object, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kAudioStreamStatsFields[] = {
+    { 0x01, "packets", FieldType::Uint64, false, 0, 0 },
+    { 0x02, "bytes", FieldType::Uint64, false, 0, 0 },
+    { 0x03, "droppedPackets", FieldType::Uint64, false, 0, 0 },
+    { 0x04, "jitterMs", FieldType::Uint32, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kGetDeviceInfoParamsFields[] = {
+    { 0x01, "includeCapabilitySummary", FieldType::Bool, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kDeviceInfoFields[] = {
+    { 0x01, "identity", FieldType::Object, true, 0, 0 },
+    { 0x02, "product", FieldType::Object, true, 0, 0 },
+    { 0x03, "hardware", FieldType::Object, false, 0, 0 },
+    { 0x04, "os", FieldType::Object, false, 0, 0 },
+    { 0x05, "software", FieldType::Object, false, 0, 0 },
+    { 0x06, "runtime", FieldType::Object, false, 0, 0 },
+    { 0x07, "capability", FieldType::Object, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kDeviceIdentityFields[] = {
+    { 0x01, "deviceId", FieldType::String, true, 0, 0 },
+    { 0x02, "serialNumber", FieldType::String, false, 0, 0 },
+    { 0x03, "vendorId", FieldType::String, false, 0, 0 },
+    { 0x04, "productId", FieldType::String, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kDeviceProductFields[] = {
+    { 0x01, "brand", FieldType::String, false, 0, 0 },
+    { 0x02, "productType", FieldType::Enum, true, 0, 0 },
+    { 0x03, "model", FieldType::String, true, 0, 0 },
+    { 0x04, "displayName", FieldType::String, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kDeviceHardwareFields[] = {
+    { 0x01, "revision", FieldType::String, false, 0, 0 },
+    { 0x02, "cpuArch", FieldType::Enum, false, 0, 0 },
+    { 0x03, "memoryBytes", FieldType::Uint64, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kDeviceOsFields[] = {
+    { 0x01, "type", FieldType::Enum, true, 0, 0 },
+    { 0x02, "name", FieldType::String, false, 0, 0 },
+    { 0x03, "version", FieldType::String, false, 0, 0 },
+    { 0x04, "arch", FieldType::Enum, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kDeviceSoftwareFields[] = {
+    { 0x01, "components", FieldType::Bytes, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kSoftwareComponentFields[] = {
+    { 0x01, "id", FieldType::String, true, 0, 0 },
+    { 0x02, "name", FieldType::String, false, 0, 0 },
+    { 0x03, "version", FieldType::String, false, 0, 0 },
+    { 0x04, "role", FieldType::Enum, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kDeviceAxtpRuntimeFields[] = {
+    { 0x01, "axtpRuntime", FieldType::String, false, 0, 0 },
+    { 0x02, "axtpRuntimeVersion", FieldType::String, false, 0, 0 },
+    { 0x03, "hostAppId", FieldType::String, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kDeviceCapabilitySummaryFields[] = {
+    { 0x01, "domains", FieldType::Bytes, false, 0, 0 },
+    { 0x02, "features", FieldType::Bytes, false, 0, 0 },
+    { 0x03, "profiles", FieldType::Bytes, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kDeviceInfoCapabilityFields[] = {
+    { 0x01, "readOnly", FieldType::Bool, true, 0, 0 },
+    { 0x02, "supportsCapabilitySummary", FieldType::Bool, false, 0, 0 },
+    { 0x03, "identityMerged", FieldType::Bool, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kFirmwareUpdateCapabilitiesFields[] = {
+    { 0x01, "supported", FieldType::Bool, true, 0, 0 },
+    { 0x02, "supportsMultiFile", FieldType::Bool, true, 0, 0 },
+    { 0x03, "streamLayout", FieldType::Enum, true, 0, 0 },
+    { 0x04, "hashAlgorithm", FieldType::Enum, true, 0, 0 },
+    { 0x05, "autoReboot", FieldType::Bool, true, 0, 0 },
+    { 0x06, "maxChunkSize", FieldType::Uint32, false, 0, 0 },
+    { 0x07, "devicePolicyVersion", FieldType::String, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kBeginUpdateParamsFields[] = {
+    { 0x01, "manifest", FieldType::Object, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kBeginUpdateResultFields[] = {
+    { 0x01, "updateSessionId", FieldType::String, true, 0, 0 },
+    { 0x02, "state", FieldType::Enum, true, 0, 0 },
+    { 0x03, "streams", FieldType::Bytes, true, 0, 0 },
+    { 0x04, "chunkSize", FieldType::Uint32, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kFinishUpdateParamsFields[] = {
+    { 0x01, "updateSessionId", FieldType::String, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kFinishUpdateResultFields[] = {
+    { 0x01, "updateSessionId", FieldType::String, true, 0, 0 },
+    { 0x02, "accepted", FieldType::Bool, true, 0, 0 },
+    { 0x03, "state", FieldType::Enum, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kGetUpdateStateParamsFields[] = {
+    { 0x01, "updateSessionId", FieldType::String, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kFirmwareUpdateManifestFields[] = {
+    { 0x01, "packageId", FieldType::String, false, 0, 0 },
+    { 0x02, "version", FieldType::String, false, 0, 0 },
+    { 0x03, "files", FieldType::Bytes, true, 0, 0 },
+    { 0x04, "devicePolicyVersion", FieldType::String, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kFirmwareUpdateFileFields[] = {
+    { 0x01, "fileId", FieldType::String, true, 0, 0 },
+    { 0x02, "target", FieldType::String, false, 0, 0 },
+    { 0x03, "size", FieldType::Uint64, true, 0, 0 },
+    { 0x04, "md5", FieldType::String, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kFirmwareUpdateStreamBindingFields[] = {
+    { 0x01, "fileId", FieldType::String, true, 0, 0 },
+    { 0x02, "streamId", FieldType::Uint32, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kFirmwareUpdateStateFields[] = {
+    { 0x01, "updateSessionId", FieldType::String, true, 0, 0 },
+    { 0x02, "state", FieldType::Enum, true, 0, 0 },
+    { 0x03, "progress", FieldType::Uint8, false, 0, 100 },
+    { 0x04, "currentFileId", FieldType::String, false, 0, 0 },
+    { 0x05, "error", FieldType::Object, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kFirmwareUpdateErrorInfoFields[] = {
+    { 0x01, "error", FieldType::Enum, true, 0, 0 },
+    { 0x02, "message", FieldType::String, false, 0, 0 },
+    { 0x03, "fileId", FieldType::String, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kFirmwareUpdateProgressEventFields[] = {
+    { 0x01, "updateSessionId", FieldType::String, true, 0, 0 },
+    { 0x02, "state", FieldType::Enum, true, 0, 0 },
+    { 0x03, "progress", FieldType::Uint8, false, 0, 100 },
+    { 0x04, "fileId", FieldType::String, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kFirmwareUpdateStateChangedEventFields[] = {
+    { 0x01, "updateSessionId", FieldType::String, true, 0, 0 },
+    { 0x02, "state", FieldType::Enum, true, 0, 0 },
+    { 0x03, "error", FieldType::Object, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kNetworkGetInterfacesParamsFields[] = {
+    { 0x01, "includeDisabled", FieldType::Bool, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kNetworkGetInterfaceInfoParamsFields[] = {
+    { 0x01, "interfaceId", FieldType::String, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kNetworkInterfacesFields[] = {
+    { 0x01, "interfaces", FieldType::Bytes, true, 0, 0 },
+    { 0x02, "defaults", FieldType::Object, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kNetworkDefaultInterfaceIdsFields[] = {
+    { 0x01, "primary", FieldType::String, false, 0, 0 },
+    { 0x02, "wifiSta", FieldType::String, false, 0, 0 },
+    { 0x03, "wifiAp", FieldType::String, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kNetworkInterfaceSummaryFields[] = {
+    { 0x01, "interfaceId", FieldType::String, true, 0, 0 },
+    { 0x02, "type", FieldType::Enum, true, 0, 0 },
+    { 0x03, "displayName", FieldType::String, false, 0, 0 },
+    { 0x04, "state", FieldType::Object, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kNetworkInterfaceInfoFields[] = {
+    { 0x01, "interfaceId", FieldType::String, true, 0, 0 },
+    { 0x02, "type", FieldType::Enum, true, 0, 0 },
+    { 0x03, "macAddress", FieldType::String, false, 0, 0 },
+    { 0x04, "state", FieldType::Object, false, 0, 0 },
+    { 0x05, "supportsIpConfig", FieldType::Bool, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kNetworkInterfaceStateFields[] = {
+    { 0x01, "admin", FieldType::Enum, false, 0, 0 },
+    { 0x02, "link", FieldType::Enum, false, 0, 0 },
+    { 0x03, "speedMbps", FieldType::Uint32, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kNetworkGetIpConfigParamsFields[] = {
+    { 0x01, "interfaceId", FieldType::String, false, 0, 0 },
+    { 0x02, "family", FieldType::Enum, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kNetworkSetIpConfigParamsFields[] = {
+    { 0x01, "interfaceId", FieldType::String, false, 0, 0 },
+    { 0x02, "family", FieldType::Enum, false, 0, 0 },
+    { 0x03, "config", FieldType::Object, true, 0, 0 },
+    { 0x04, "applyPolicy", FieldType::Enum, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kNetworkSetIpConfigResultFields[] = {
+    { 0x01, "config", FieldType::Object, true, 0, 0 },
+    { 0x02, "applyState", FieldType::Enum, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kNetworkIpConfigFields[] = {
+    { 0x01, "interfaceId", FieldType::String, true, 0, 0 },
+    { 0x02, "family", FieldType::Enum, false, 0, 0 },
+    { 0x03, "mode", FieldType::Enum, true, 0, 0 },
+    { 0x04, "address", FieldType::String, false, 0, 0 },
+    { 0x05, "prefixLength", FieldType::Uint8, false, 0, 128 },
+    { 0x06, "gateway", FieldType::String, false, 0, 0 },
+    { 0x07, "dns", FieldType::Bytes, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kNetworkGetWifiCapabilitiesParamsFields[] = {
+    { 0x01, "interfaceId", FieldType::String, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kNetworkGetWifiConfigParamsFields[] = {
+    { 0x01, "interfaceId", FieldType::String, false, 0, 0 },
+    { 0x02, "includeProfiles", FieldType::Bool, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kNetworkGetWifiStateParamsFields[] = {
+    { 0x01, "interfaceId", FieldType::String, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kNetworkWifiCapabilitiesFields[] = {
+    { 0x01, "capability", FieldType::String, true, 0, 0 },
+    { 0x02, "securityTypes", FieldType::Bytes, true, 0, 0 },
+    { 0x03, "bands", FieldType::Bytes, false, 0, 0 },
+    { 0x04, "credentialImportModes", FieldType::Bytes, true, 0, 0 },
+    { 0x05, "savedProfilesSupported", FieldType::Bool, true, 0, 0 },
+    { 0x06, "scanSupported", FieldType::Bool, true, 0, 0 },
+    { 0x07, "autoConnectSupported", FieldType::Bool, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kNetworkWifiConfigFields[] = {
+    { 0x01, "interfaceId", FieldType::String, false, 0, 0 },
+    { 0x02, "profiles", FieldType::Bytes, false, 0, 0 },
+    { 0x03, "defaultProfileId", FieldType::String, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kNetworkWifiProfileFields[] = {
+    { 0x01, "profileId", FieldType::String, false, 0, 0 },
+    { 0x02, "ssid", FieldType::String, true, 0, 0 },
+    { 0x03, "bssid", FieldType::String, false, 0, 0 },
+    { 0x04, "securityType", FieldType::Enum, true, 0, 0 },
+    { 0x05, "credential", FieldType::Object, false, 0, 0 },
+    { 0x06, "source", FieldType::Enum, false, 0, 0 },
+    { 0x07, "persist", FieldType::Bool, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kNetworkCredentialFields[] = {
+    { 0x01, "type", FieldType::Enum, true, 0, 0 },
+    { 0x02, "secretRef", FieldType::String, false, 0, 0 },
+    { 0x03, "expiresInSeconds", FieldType::Uint32, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kNetworkSetWifiConfigParamsFields[] = {
+    { 0x01, "interfaceId", FieldType::String, false, 0, 0 },
+    { 0x02, "profile", FieldType::Object, true, 0, 0 },
+    { 0x03, "replaceExisting", FieldType::Bool, false, 0, 0 },
+    { 0x04, "makeDefault", FieldType::Bool, false, 0, 0 },
+    { 0x05, "connectAfterSave", FieldType::Bool, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kNetworkSetWifiConfigResultFields[] = {
+    { 0x01, "profileId", FieldType::String, true, 0, 0 },
+    { 0x02, "config", FieldType::Object, false, 0, 0 },
+    { 0x03, "connectStarted", FieldType::Bool, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kNetworkScanWifiParamsFields[] = {
+    { 0x01, "interfaceId", FieldType::String, false, 0, 0 },
+    { 0x02, "ssidFilter", FieldType::String, false, 0, 0 },
+    { 0x03, "timeoutMs", FieldType::Uint32, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kNetworkScanWifiResultFields[] = {
+    { 0x01, "scanId", FieldType::String, false, 0, 0 },
+    { 0x02, "results", FieldType::Bytes, false, 0, 0 },
+    { 0x03, "complete", FieldType::Bool, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kNetworkConnectWifiParamsFields[] = {
+    { 0x01, "interfaceId", FieldType::String, false, 0, 0 },
+    { 0x02, "profileId", FieldType::String, false, 0, 0 },
+    { 0x03, "profile", FieldType::Object, false, 0, 0 },
+    { 0x04, "timeoutMs", FieldType::Uint32, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kNetworkDisconnectWifiParamsFields[] = {
+    { 0x01, "interfaceId", FieldType::String, false, 0, 0 },
+    { 0x02, "reason", FieldType::Enum, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kNetworkWifiActionResultFields[] = {
+    { 0x01, "accepted", FieldType::Bool, true, 0, 0 },
+    { 0x02, "state", FieldType::Object, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kNetworkWifiStateFields[] = {
+    { 0x01, "interfaceId", FieldType::String, false, 0, 0 },
+    { 0x02, "state", FieldType::Enum, true, 0, 0 },
+    { 0x03, "profileId", FieldType::String, false, 0, 0 },
+    { 0x04, "ssid", FieldType::String, false, 0, 0 },
+    { 0x05, "rssi", FieldType::Int32, false, 0, 0 },
+    { 0x06, "ipReady", FieldType::Bool, false, 0, 0 },
+    { 0x07, "failureReason", FieldType::Enum, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kNetworkWifiScanResultFields[] = {
+    { 0x01, "ssid", FieldType::String, true, 0, 0 },
+    { 0x02, "bssid", FieldType::String, false, 0, 0 },
+    { 0x03, "band", FieldType::Enum, false, 0, 0 },
+    { 0x04, "channel", FieldType::Uint16, false, 0, 0 },
+    { 0x05, "rssi", FieldType::Int32, false, 0, 0 },
+    { 0x06, "securityType", FieldType::Enum, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kNetworkGetApCapabilitiesParamsFields[] = {
+    { 0x01, "interfaceId", FieldType::String, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kNetworkGetApConfigParamsFields[] = {
+    { 0x01, "interfaceId", FieldType::String, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kNetworkApCapabilitiesFields[] = {
+    { 0x01, "capability", FieldType::String, true, 0, 0 },
+    { 0x02, "securityTypes", FieldType::Bytes, true, 0, 0 },
+    { 0x03, "bands", FieldType::Bytes, false, 0, 0 },
+    { 0x04, "credentialExportModes", FieldType::Bytes, false, 0, 0 },
+    { 0x05, "clientsSupported", FieldType::Bool, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kNetworkApConfigFields[] = {
+    { 0x01, "interfaceId", FieldType::String, false, 0, 0 },
+    { 0x02, "enabled", FieldType::Bool, false, 0, 0 },
+    { 0x03, "ssid", FieldType::String, true, 0, 0 },
+    { 0x04, "hidden", FieldType::Bool, false, 0, 0 },
+    { 0x05, "band", FieldType::Enum, false, 0, 0 },
+    { 0x06, "channel", FieldType::Uint16, false, 0, 0 },
+    { 0x07, "securityType", FieldType::Enum, true, 0, 0 },
+    { 0x08, "credential", FieldType::Object, false, 0, 0 },
+    { 0x09, "maxClients", FieldType::Uint16, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kNetworkSetApConfigParamsFields[] = {
+    { 0x01, "interfaceId", FieldType::String, false, 0, 0 },
+    { 0x02, "config", FieldType::Object, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kNetworkSetApConfigResultFields[] = {
+    { 0x01, "config", FieldType::Object, true, 0, 0 },
+    { 0x02, "applyState", FieldType::Enum, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kNetworkApStateFields[] = {
+    { 0x01, "interfaceId", FieldType::String, false, 0, 0 },
+    { 0x02, "enabled", FieldType::Bool, true, 0, 0 },
+    { 0x03, "state", FieldType::Enum, true, 0, 0 },
+    { 0x04, "ssid", FieldType::String, false, 0, 0 },
+    { 0x05, "clientCount", FieldType::Uint16, false, 0, 0 },
+    { 0x06, "failureReason", FieldType::Enum, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kNetworkApActionParamsFields[] = {
+    { 0x01, "interfaceId", FieldType::String, false, 0, 0 },
+    { 0x02, "reason", FieldType::Enum, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kNetworkApActionResultFields[] = {
+    { 0x01, "accepted", FieldType::Bool, true, 0, 0 },
+    { 0x02, "state", FieldType::Object, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kNetworkApClientsFields[] = {
+    { 0x01, "clients", FieldType::Bytes, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kNetworkApClientInfoFields[] = {
+    { 0x01, "clientId", FieldType::String, true, 0, 0 },
+    { 0x02, "macAddress", FieldType::String, false, 0, 0 },
+    { 0x03, "displayName", FieldType::String, false, 0, 0 },
+    { 0x04, "rssi", FieldType::Int32, false, 0, 0 },
+    { 0x05, "connectedSeconds", FieldType::Uint32, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kNetworkInterfaceStateChangedEventFields[] = {
+    { 0x01, "interfaceId", FieldType::String, true, 0, 0 },
+    { 0x02, "state", FieldType::Object, true, 0, 0 },
+    { 0x03, "previousState", FieldType::Object, false, 0, 0 },
+    { 0x04, "reason", FieldType::Enum, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kNetworkIpConfigChangedEventFields[] = {
+    { 0x01, "interfaceId", FieldType::String, true, 0, 0 },
+    { 0x02, "family", FieldType::Enum, false, 0, 0 },
+    { 0x03, "config", FieldType::Object, true, 0, 0 },
+    { 0x04, "previousConfig", FieldType::Object, false, 0, 0 },
+    { 0x05, "reason", FieldType::Enum, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kNetworkWifiConfigChangedEventFields[] = {
+    { 0x01, "interfaceId", FieldType::String, false, 0, 0 },
+    { 0x02, "config", FieldType::Object, true, 0, 0 },
+    { 0x03, "changedFields", FieldType::Bytes, false, 0, 0 },
+    { 0x04, "reason", FieldType::Enum, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kNetworkWifiStateChangedEventFields[] = {
+    { 0x01, "state", FieldType::Object, true, 0, 0 },
+    { 0x02, "previousState", FieldType::Object, false, 0, 0 },
+    { 0x03, "reason", FieldType::Enum, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kNetworkWifiScanResultReportedEventFields[] = {
+    { 0x01, "scanId", FieldType::String, false, 0, 0 },
+    { 0x02, "results", FieldType::Bytes, false, 0, 0 },
+    { 0x03, "complete", FieldType::Bool, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kNetworkApConfigChangedEventFields[] = {
+    { 0x01, "interfaceId", FieldType::String, false, 0, 0 },
+    { 0x02, "config", FieldType::Object, true, 0, 0 },
+    { 0x03, "changedFields", FieldType::Bytes, false, 0, 0 },
+    { 0x04, "reason", FieldType::Enum, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kNetworkApStateChangedEventFields[] = {
+    { 0x01, "state", FieldType::Object, true, 0, 0 },
+    { 0x02, "previousState", FieldType::Object, false, 0, 0 },
+    { 0x03, "reason", FieldType::Enum, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kNetworkApClientChangedEventFields[] = {
+    { 0x01, "change", FieldType::Enum, true, 0, 0 },
+    { 0x02, "client", FieldType::Object, true, 0, 0 },
+    { 0x03, "reason", FieldType::Enum, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kNetworkInterfaceCapabilityFields[] = {
+    { 0x01, "interfaceTypes", FieldType::Bytes, false, 0, 0 },
+    { 0x02, "supportsStateEvent", FieldType::Bool, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kNetworkIpCapabilityFields[] = {
+    { 0x01, "families", FieldType::Bytes, false, 0, 0 },
+    { 0x02, "modes", FieldType::Bytes, false, 0, 0 },
+    { 0x03, "applyPolicies", FieldType::Bytes, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kVideoGetStreamCapabilitiesParamsFields[] = {
+    { 0x01, "source", FieldType::String, false, 0, 0 },
+    { 0x02, "includeRuntimeState", FieldType::Bool, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kVideoStreamCapabilitiesFields[] = {
+    { 0x01, "capability", FieldType::String, true, 0, 0 },
+    { 0x02, "sources", FieldType::Bytes, true, 0, 0 },
+    { 0x03, "streamProfiles", FieldType::Bytes, true, 0, 0 },
+    { 0x04, "openModes", FieldType::Bytes, true, 0, 0 },
+    { 0x05, "peerRoles", FieldType::Bytes, true, 0, 0 },
+    { 0x06, "supportsSourceStateEvent", FieldType::Bool, true, 0, 0 },
+    { 0x07, "supportsSyncGroup", FieldType::Bool, true, 0, 0 },
+    { 0x08, "flowControlManagedByRuntime", FieldType::Bool, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kVideoStreamSourceFields[] = {
+    { 0x01, "source", FieldType::String, true, 0, 0 },
+    { 0x02, "displayName", FieldType::String, false, 0, 0 },
+    { 0x03, "codecs", FieldType::Bytes, true, 0, 0 },
+    { 0x04, "resolutions", FieldType::Bytes, false, 0, 0 },
+    { 0x05, "frameRates", FieldType::Bytes, false, 0, 0 },
+    { 0x06, "state", FieldType::Enum, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kVideoOpenStreamParamsFields[] = {
+    { 0x01, "source", FieldType::String, true, 0, 0 },
+    { 0x02, "peerRole", FieldType::Enum, true, 0, 0 },
+    { 0x03, "codec", FieldType::Enum, true, 0, 0 },
+    { 0x04, "width", FieldType::Uint32, false, 0, 0 },
+    { 0x05, "height", FieldType::Uint32, false, 0, 0 },
+    { 0x06, "frameRate", FieldType::Uint32, false, 0, 0 },
+    { 0x07, "bitrateKbps", FieldType::Uint32, false, 0, 0 },
+    { 0x08, "streamProfile", FieldType::String, false, 0, 0 },
+    { 0x09, "cursorUnit", FieldType::Enum, false, 0, 0 },
+    { 0x0A, "syncGroupId", FieldType::String, false, 0, 0 },
+    { 0x0B, "castSessionId", FieldType::String, false, 0, 0 },
+    { 0x0C, "clockDomain", FieldType::String, false, 0, 0 },
+    { 0x0D, "maxDataSize", FieldType::Uint32, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kVideoOpenStreamResultFields[] = {
+    { 0x01, "streamId", FieldType::Uint32, true, 0, 0 },
+    { 0x02, "state", FieldType::Enum, true, 0, 0 },
+    { 0x03, "source", FieldType::String, true, 0, 0 },
+    { 0x04, "peerRole", FieldType::Enum, true, 0, 0 },
+    { 0x05, "codec", FieldType::Enum, true, 0, 0 },
+    { 0x06, "width", FieldType::Uint32, false, 0, 0 },
+    { 0x07, "height", FieldType::Uint32, false, 0, 0 },
+    { 0x08, "frameRate", FieldType::Uint32, false, 0, 0 },
+    { 0x09, "bitrateKbps", FieldType::Uint32, false, 0, 0 },
+    { 0x0A, "streamProfile", FieldType::String, true, 0, 0 },
+    { 0x0B, "cursorUnit", FieldType::Enum, true, 0, 0 },
+    { 0x0C, "syncGroupId", FieldType::String, false, 0, 0 },
+    { 0x0D, "maxDataSize", FieldType::Uint32, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kVideoCloseStreamParamsFields[] = {
+    { 0x01, "streamId", FieldType::Uint32, true, 0, 0 },
+    { 0x02, "peerRole", FieldType::Enum, false, 0, 0 },
+    { 0x03, "reason", FieldType::Enum, false, 0, 0 },
+    { 0x04, "finalCursor", FieldType::Uint64, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kVideoCloseStreamResultFields[] = {
+    { 0x01, "streamId", FieldType::Uint32, true, 0, 0 },
+    { 0x02, "state", FieldType::Enum, true, 0, 0 },
+    { 0x03, "reason", FieldType::Enum, false, 0, 0 },
+    { 0x04, "alreadyClosed", FieldType::Bool, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kVideoGetStreamStateParamsFields[] = {
+    { 0x01, "streamId", FieldType::Uint32, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kVideoStreamStateFields[] = {
+    { 0x01, "streamId", FieldType::Uint32, true, 0, 0 },
+    { 0x02, "state", FieldType::Enum, true, 0, 0 },
+    { 0x03, "source", FieldType::String, true, 0, 0 },
+    { 0x04, "peerRole", FieldType::Enum, false, 0, 0 },
+    { 0x05, "codec", FieldType::Enum, false, 0, 0 },
+    { 0x06, "streamProfile", FieldType::String, false, 0, 0 },
+    { 0x07, "syncGroupId", FieldType::String, false, 0, 0 },
+    { 0x08, "cursorUnit", FieldType::Enum, false, 0, 0 },
+    { 0x09, "lastCursor", FieldType::Uint64, false, 0, 0 },
+    { 0x0A, "keyFrameRequested", FieldType::Bool, false, 0, 0 },
+    { 0x0B, "failureReason", FieldType::Enum, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kVideoGetStreamSourceStateParamsFields[] = {
+    { 0x01, "source", FieldType::String, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kVideoStreamSourceStateFields[] = {
+    { 0x01, "source", FieldType::String, true, 0, 0 },
+    { 0x02, "mediaKind", FieldType::Enum, false, 0, 0 },
+    { 0x03, "state", FieldType::Enum, true, 0, 0 },
+    { 0x04, "available", FieldType::Bool, false, 0, 0 },
+    { 0x05, "activeStreamId", FieldType::Uint32, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kVideoRequestKeyFrameParamsFields[] = {
+    { 0x01, "streamId", FieldType::Uint32, true, 0, 0 },
+    { 0x02, "reason", FieldType::Enum, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kVideoRequestKeyFrameResultFields[] = {
+    { 0x01, "accepted", FieldType::Bool, true, 0, 0 },
+    { 0x02, "state", FieldType::Object, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kVideoStreamStateChangedEventFields[] = {
+    { 0x01, "streamId", FieldType::Uint32, true, 0, 0 },
+    { 0x02, "state", FieldType::Enum, true, 0, 0 },
+    { 0x03, "source", FieldType::String, true, 0, 0 },
+    { 0x04, "reason", FieldType::Enum, false, 0, 0 },
+    { 0x05, "stats", FieldType::Object, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kVideoStreamSourceStateChangedEventFields[] = {
+    { 0x01, "source", FieldType::String, true, 0, 0 },
+    { 0x02, "mediaKind", FieldType::Enum, false, 0, 0 },
+    { 0x03, "state", FieldType::Enum, true, 0, 0 },
+    { 0x04, "reason", FieldType::Enum, false, 0, 0 },
+    { 0x05, "activeStreamId", FieldType::Uint32, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kVideoStreamStatsReportedEventFields[] = {
+    { 0x01, "streamId", FieldType::Uint32, true, 0, 0 },
+    { 0x02, "stats", FieldType::Object, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kVideoStreamStatsFields[] = {
+    { 0x01, "frames", FieldType::Uint64, false, 0, 0 },
+    { 0x02, "bytes", FieldType::Uint64, false, 0, 0 },
+    { 0x03, "droppedFrames", FieldType::Uint64, false, 0, 0 },
+    { 0x04, "bitrateKbps", FieldType::Uint32, false, 0, 0 },
+};
+
 inline constexpr SchemaDescriptor kEmptySchema = { "Empty", kEmptyFields, 0 };
 inline constexpr SchemaDescriptor kCommonEmptyRequestSchema = { "CommonEmptyRequest", kCommonEmptyRequestFields, 0 };
 inline constexpr SchemaDescriptor kCommonEmptyResponseSchema = { "CommonEmptyResponse", kCommonEmptyResponseFields, 0 };
@@ -301,5 +1033,109 @@ inline constexpr SchemaDescriptor kAudioDereverberationConfigSchema = { "AudioDe
 inline constexpr SchemaDescriptor kAudioVoiceActivityDetectionConfigSchema = { "AudioVoiceActivityDetectionConfig", kAudioVoiceActivityDetectionConfigFields, 3 };
 inline constexpr SchemaDescriptor kAudioDirectionOfArrivalConfigSchema = { "AudioDirectionOfArrivalConfig", kAudioDirectionOfArrivalConfigFields, 4 };
 inline constexpr SchemaDescriptor kAudioHowlingSuppressionConfigSchema = { "AudioHowlingSuppressionConfig", kAudioHowlingSuppressionConfigFields, 2 };
+inline constexpr SchemaDescriptor kAudioGetStreamCapabilitiesParamsSchema = { "AudioGetStreamCapabilitiesParams", kAudioGetStreamCapabilitiesParamsFields, 2 };
+inline constexpr SchemaDescriptor kAudioStreamCapabilitiesSchema = { "AudioStreamCapabilities", kAudioStreamCapabilitiesFields, 9 };
+inline constexpr SchemaDescriptor kAudioStreamSourceSchema = { "AudioStreamSource", kAudioStreamSourceFields, 6 };
+inline constexpr SchemaDescriptor kAudioOpenStreamParamsSchema = { "AudioOpenStreamParams", kAudioOpenStreamParamsFields, 15 };
+inline constexpr SchemaDescriptor kAudioOpenStreamResultSchema = { "AudioOpenStreamResult", kAudioOpenStreamResultFields, 16 };
+inline constexpr SchemaDescriptor kAudioCloseStreamParamsSchema = { "AudioCloseStreamParams", kAudioCloseStreamParamsFields, 4 };
+inline constexpr SchemaDescriptor kAudioCloseStreamResultSchema = { "AudioCloseStreamResult", kAudioCloseStreamResultFields, 4 };
+inline constexpr SchemaDescriptor kAudioGetStreamStateParamsSchema = { "AudioGetStreamStateParams", kAudioGetStreamStateParamsFields, 1 };
+inline constexpr SchemaDescriptor kAudioStreamStateSchema = { "AudioStreamState", kAudioStreamStateFields, 10 };
+inline constexpr SchemaDescriptor kAudioGetStreamSourceStateParamsSchema = { "AudioGetStreamSourceStateParams", kAudioGetStreamSourceStateParamsFields, 1 };
+inline constexpr SchemaDescriptor kAudioStreamSourceStateSchema = { "AudioStreamSourceState", kAudioStreamSourceStateFields, 6 };
+inline constexpr SchemaDescriptor kAudioStreamStateChangedEventSchema = { "AudioStreamStateChangedEvent", kAudioStreamStateChangedEventFields, 5 };
+inline constexpr SchemaDescriptor kAudioStreamSourceStateChangedEventSchema = { "AudioStreamSourceStateChangedEvent", kAudioStreamSourceStateChangedEventFields, 5 };
+inline constexpr SchemaDescriptor kAudioStreamStatsReportedEventSchema = { "AudioStreamStatsReportedEvent", kAudioStreamStatsReportedEventFields, 2 };
+inline constexpr SchemaDescriptor kAudioStreamStatsSchema = { "AudioStreamStats", kAudioStreamStatsFields, 4 };
+inline constexpr SchemaDescriptor kGetDeviceInfoParamsSchema = { "GetDeviceInfoParams", kGetDeviceInfoParamsFields, 1 };
+inline constexpr SchemaDescriptor kDeviceInfoSchema = { "DeviceInfo", kDeviceInfoFields, 7 };
+inline constexpr SchemaDescriptor kDeviceIdentitySchema = { "DeviceIdentity", kDeviceIdentityFields, 4 };
+inline constexpr SchemaDescriptor kDeviceProductSchema = { "DeviceProduct", kDeviceProductFields, 4 };
+inline constexpr SchemaDescriptor kDeviceHardwareSchema = { "DeviceHardware", kDeviceHardwareFields, 3 };
+inline constexpr SchemaDescriptor kDeviceOsSchema = { "DeviceOs", kDeviceOsFields, 4 };
+inline constexpr SchemaDescriptor kDeviceSoftwareSchema = { "DeviceSoftware", kDeviceSoftwareFields, 1 };
+inline constexpr SchemaDescriptor kSoftwareComponentSchema = { "SoftwareComponent", kSoftwareComponentFields, 4 };
+inline constexpr SchemaDescriptor kDeviceAxtpRuntimeSchema = { "DeviceAxtpRuntime", kDeviceAxtpRuntimeFields, 3 };
+inline constexpr SchemaDescriptor kDeviceCapabilitySummarySchema = { "DeviceCapabilitySummary", kDeviceCapabilitySummaryFields, 3 };
+inline constexpr SchemaDescriptor kDeviceInfoCapabilitySchema = { "DeviceInfoCapability", kDeviceInfoCapabilityFields, 3 };
+inline constexpr SchemaDescriptor kFirmwareUpdateCapabilitiesSchema = { "FirmwareUpdateCapabilities", kFirmwareUpdateCapabilitiesFields, 7 };
+inline constexpr SchemaDescriptor kBeginUpdateParamsSchema = { "BeginUpdateParams", kBeginUpdateParamsFields, 1 };
+inline constexpr SchemaDescriptor kBeginUpdateResultSchema = { "BeginUpdateResult", kBeginUpdateResultFields, 4 };
+inline constexpr SchemaDescriptor kFinishUpdateParamsSchema = { "FinishUpdateParams", kFinishUpdateParamsFields, 1 };
+inline constexpr SchemaDescriptor kFinishUpdateResultSchema = { "FinishUpdateResult", kFinishUpdateResultFields, 3 };
+inline constexpr SchemaDescriptor kGetUpdateStateParamsSchema = { "GetUpdateStateParams", kGetUpdateStateParamsFields, 1 };
+inline constexpr SchemaDescriptor kFirmwareUpdateManifestSchema = { "FirmwareUpdateManifest", kFirmwareUpdateManifestFields, 4 };
+inline constexpr SchemaDescriptor kFirmwareUpdateFileSchema = { "FirmwareUpdateFile", kFirmwareUpdateFileFields, 4 };
+inline constexpr SchemaDescriptor kFirmwareUpdateStreamBindingSchema = { "FirmwareUpdateStreamBinding", kFirmwareUpdateStreamBindingFields, 2 };
+inline constexpr SchemaDescriptor kFirmwareUpdateStateSchema = { "FirmwareUpdateState", kFirmwareUpdateStateFields, 5 };
+inline constexpr SchemaDescriptor kFirmwareUpdateErrorInfoSchema = { "FirmwareUpdateErrorInfo", kFirmwareUpdateErrorInfoFields, 3 };
+inline constexpr SchemaDescriptor kFirmwareUpdateProgressEventSchema = { "FirmwareUpdateProgressEvent", kFirmwareUpdateProgressEventFields, 4 };
+inline constexpr SchemaDescriptor kFirmwareUpdateStateChangedEventSchema = { "FirmwareUpdateStateChangedEvent", kFirmwareUpdateStateChangedEventFields, 3 };
+inline constexpr SchemaDescriptor kNetworkGetInterfacesParamsSchema = { "NetworkGetInterfacesParams", kNetworkGetInterfacesParamsFields, 1 };
+inline constexpr SchemaDescriptor kNetworkGetInterfaceInfoParamsSchema = { "NetworkGetInterfaceInfoParams", kNetworkGetInterfaceInfoParamsFields, 1 };
+inline constexpr SchemaDescriptor kNetworkInterfacesSchema = { "NetworkInterfaces", kNetworkInterfacesFields, 2 };
+inline constexpr SchemaDescriptor kNetworkDefaultInterfaceIdsSchema = { "NetworkDefaultInterfaceIds", kNetworkDefaultInterfaceIdsFields, 3 };
+inline constexpr SchemaDescriptor kNetworkInterfaceSummarySchema = { "NetworkInterfaceSummary", kNetworkInterfaceSummaryFields, 4 };
+inline constexpr SchemaDescriptor kNetworkInterfaceInfoSchema = { "NetworkInterfaceInfo", kNetworkInterfaceInfoFields, 5 };
+inline constexpr SchemaDescriptor kNetworkInterfaceStateSchema = { "NetworkInterfaceState", kNetworkInterfaceStateFields, 3 };
+inline constexpr SchemaDescriptor kNetworkGetIpConfigParamsSchema = { "NetworkGetIpConfigParams", kNetworkGetIpConfigParamsFields, 2 };
+inline constexpr SchemaDescriptor kNetworkSetIpConfigParamsSchema = { "NetworkSetIpConfigParams", kNetworkSetIpConfigParamsFields, 4 };
+inline constexpr SchemaDescriptor kNetworkSetIpConfigResultSchema = { "NetworkSetIpConfigResult", kNetworkSetIpConfigResultFields, 2 };
+inline constexpr SchemaDescriptor kNetworkIpConfigSchema = { "NetworkIpConfig", kNetworkIpConfigFields, 7 };
+inline constexpr SchemaDescriptor kNetworkGetWifiCapabilitiesParamsSchema = { "NetworkGetWifiCapabilitiesParams", kNetworkGetWifiCapabilitiesParamsFields, 1 };
+inline constexpr SchemaDescriptor kNetworkGetWifiConfigParamsSchema = { "NetworkGetWifiConfigParams", kNetworkGetWifiConfigParamsFields, 2 };
+inline constexpr SchemaDescriptor kNetworkGetWifiStateParamsSchema = { "NetworkGetWifiStateParams", kNetworkGetWifiStateParamsFields, 1 };
+inline constexpr SchemaDescriptor kNetworkWifiCapabilitiesSchema = { "NetworkWifiCapabilities", kNetworkWifiCapabilitiesFields, 7 };
+inline constexpr SchemaDescriptor kNetworkWifiConfigSchema = { "NetworkWifiConfig", kNetworkWifiConfigFields, 3 };
+inline constexpr SchemaDescriptor kNetworkWifiProfileSchema = { "NetworkWifiProfile", kNetworkWifiProfileFields, 7 };
+inline constexpr SchemaDescriptor kNetworkCredentialSchema = { "NetworkCredential", kNetworkCredentialFields, 3 };
+inline constexpr SchemaDescriptor kNetworkSetWifiConfigParamsSchema = { "NetworkSetWifiConfigParams", kNetworkSetWifiConfigParamsFields, 5 };
+inline constexpr SchemaDescriptor kNetworkSetWifiConfigResultSchema = { "NetworkSetWifiConfigResult", kNetworkSetWifiConfigResultFields, 3 };
+inline constexpr SchemaDescriptor kNetworkScanWifiParamsSchema = { "NetworkScanWifiParams", kNetworkScanWifiParamsFields, 3 };
+inline constexpr SchemaDescriptor kNetworkScanWifiResultSchema = { "NetworkScanWifiResult", kNetworkScanWifiResultFields, 3 };
+inline constexpr SchemaDescriptor kNetworkConnectWifiParamsSchema = { "NetworkConnectWifiParams", kNetworkConnectWifiParamsFields, 4 };
+inline constexpr SchemaDescriptor kNetworkDisconnectWifiParamsSchema = { "NetworkDisconnectWifiParams", kNetworkDisconnectWifiParamsFields, 2 };
+inline constexpr SchemaDescriptor kNetworkWifiActionResultSchema = { "NetworkWifiActionResult", kNetworkWifiActionResultFields, 2 };
+inline constexpr SchemaDescriptor kNetworkWifiStateSchema = { "NetworkWifiState", kNetworkWifiStateFields, 7 };
+inline constexpr SchemaDescriptor kNetworkWifiScanResultSchema = { "NetworkWifiScanResult", kNetworkWifiScanResultFields, 6 };
+inline constexpr SchemaDescriptor kNetworkGetApCapabilitiesParamsSchema = { "NetworkGetApCapabilitiesParams", kNetworkGetApCapabilitiesParamsFields, 1 };
+inline constexpr SchemaDescriptor kNetworkGetApConfigParamsSchema = { "NetworkGetApConfigParams", kNetworkGetApConfigParamsFields, 1 };
+inline constexpr SchemaDescriptor kNetworkApCapabilitiesSchema = { "NetworkApCapabilities", kNetworkApCapabilitiesFields, 5 };
+inline constexpr SchemaDescriptor kNetworkApConfigSchema = { "NetworkApConfig", kNetworkApConfigFields, 9 };
+inline constexpr SchemaDescriptor kNetworkSetApConfigParamsSchema = { "NetworkSetApConfigParams", kNetworkSetApConfigParamsFields, 2 };
+inline constexpr SchemaDescriptor kNetworkSetApConfigResultSchema = { "NetworkSetApConfigResult", kNetworkSetApConfigResultFields, 2 };
+inline constexpr SchemaDescriptor kNetworkApStateSchema = { "NetworkApState", kNetworkApStateFields, 6 };
+inline constexpr SchemaDescriptor kNetworkApActionParamsSchema = { "NetworkApActionParams", kNetworkApActionParamsFields, 2 };
+inline constexpr SchemaDescriptor kNetworkApActionResultSchema = { "NetworkApActionResult", kNetworkApActionResultFields, 2 };
+inline constexpr SchemaDescriptor kNetworkApClientsSchema = { "NetworkApClients", kNetworkApClientsFields, 1 };
+inline constexpr SchemaDescriptor kNetworkApClientInfoSchema = { "NetworkApClientInfo", kNetworkApClientInfoFields, 5 };
+inline constexpr SchemaDescriptor kNetworkInterfaceStateChangedEventSchema = { "NetworkInterfaceStateChangedEvent", kNetworkInterfaceStateChangedEventFields, 4 };
+inline constexpr SchemaDescriptor kNetworkIpConfigChangedEventSchema = { "NetworkIpConfigChangedEvent", kNetworkIpConfigChangedEventFields, 5 };
+inline constexpr SchemaDescriptor kNetworkWifiConfigChangedEventSchema = { "NetworkWifiConfigChangedEvent", kNetworkWifiConfigChangedEventFields, 4 };
+inline constexpr SchemaDescriptor kNetworkWifiStateChangedEventSchema = { "NetworkWifiStateChangedEvent", kNetworkWifiStateChangedEventFields, 3 };
+inline constexpr SchemaDescriptor kNetworkWifiScanResultReportedEventSchema = { "NetworkWifiScanResultReportedEvent", kNetworkWifiScanResultReportedEventFields, 3 };
+inline constexpr SchemaDescriptor kNetworkApConfigChangedEventSchema = { "NetworkApConfigChangedEvent", kNetworkApConfigChangedEventFields, 4 };
+inline constexpr SchemaDescriptor kNetworkApStateChangedEventSchema = { "NetworkApStateChangedEvent", kNetworkApStateChangedEventFields, 3 };
+inline constexpr SchemaDescriptor kNetworkApClientChangedEventSchema = { "NetworkApClientChangedEvent", kNetworkApClientChangedEventFields, 3 };
+inline constexpr SchemaDescriptor kNetworkInterfaceCapabilitySchema = { "NetworkInterfaceCapability", kNetworkInterfaceCapabilityFields, 2 };
+inline constexpr SchemaDescriptor kNetworkIpCapabilitySchema = { "NetworkIpCapability", kNetworkIpCapabilityFields, 3 };
+inline constexpr SchemaDescriptor kVideoGetStreamCapabilitiesParamsSchema = { "VideoGetStreamCapabilitiesParams", kVideoGetStreamCapabilitiesParamsFields, 2 };
+inline constexpr SchemaDescriptor kVideoStreamCapabilitiesSchema = { "VideoStreamCapabilities", kVideoStreamCapabilitiesFields, 8 };
+inline constexpr SchemaDescriptor kVideoStreamSourceSchema = { "VideoStreamSource", kVideoStreamSourceFields, 6 };
+inline constexpr SchemaDescriptor kVideoOpenStreamParamsSchema = { "VideoOpenStreamParams", kVideoOpenStreamParamsFields, 13 };
+inline constexpr SchemaDescriptor kVideoOpenStreamResultSchema = { "VideoOpenStreamResult", kVideoOpenStreamResultFields, 13 };
+inline constexpr SchemaDescriptor kVideoCloseStreamParamsSchema = { "VideoCloseStreamParams", kVideoCloseStreamParamsFields, 4 };
+inline constexpr SchemaDescriptor kVideoCloseStreamResultSchema = { "VideoCloseStreamResult", kVideoCloseStreamResultFields, 4 };
+inline constexpr SchemaDescriptor kVideoGetStreamStateParamsSchema = { "VideoGetStreamStateParams", kVideoGetStreamStateParamsFields, 1 };
+inline constexpr SchemaDescriptor kVideoStreamStateSchema = { "VideoStreamState", kVideoStreamStateFields, 11 };
+inline constexpr SchemaDescriptor kVideoGetStreamSourceStateParamsSchema = { "VideoGetStreamSourceStateParams", kVideoGetStreamSourceStateParamsFields, 1 };
+inline constexpr SchemaDescriptor kVideoStreamSourceStateSchema = { "VideoStreamSourceState", kVideoStreamSourceStateFields, 5 };
+inline constexpr SchemaDescriptor kVideoRequestKeyFrameParamsSchema = { "VideoRequestKeyFrameParams", kVideoRequestKeyFrameParamsFields, 2 };
+inline constexpr SchemaDescriptor kVideoRequestKeyFrameResultSchema = { "VideoRequestKeyFrameResult", kVideoRequestKeyFrameResultFields, 2 };
+inline constexpr SchemaDescriptor kVideoStreamStateChangedEventSchema = { "VideoStreamStateChangedEvent", kVideoStreamStateChangedEventFields, 5 };
+inline constexpr SchemaDescriptor kVideoStreamSourceStateChangedEventSchema = { "VideoStreamSourceStateChangedEvent", kVideoStreamSourceStateChangedEventFields, 5 };
+inline constexpr SchemaDescriptor kVideoStreamStatsReportedEventSchema = { "VideoStreamStatsReportedEvent", kVideoStreamStatsReportedEventFields, 2 };
+inline constexpr SchemaDescriptor kVideoStreamStatsSchema = { "VideoStreamStats", kVideoStreamStatsFields, 4 };
 
 } // namespace axtp

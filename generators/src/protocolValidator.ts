@@ -226,6 +226,21 @@ function assertStreamHeader(model: ProtocolModel): void {
   });
 }
 
+function assertWireByteOrder(model: ProtocolModel): void {
+  if (model.wire.byteOrder !== "big-endian") {
+    fail("wire", "byteOrder", "AXTP v1 wire byte order must be big-endian");
+  }
+  if (model.wire.byteOrderAlias !== "network") {
+    fail("wire", "byteOrderAlias", "AXTP v1 wire byte order alias must be network");
+  }
+  if (model.wire.crcByteOrder !== "big-endian") {
+    fail("wire", "crcByteOrder", "AXTP v1 CRC fields must be serialized big-endian");
+  }
+  if (!/Big-Endian|big-endian/.test(model.wire.integerEncoding)) {
+    fail("wire", "integerEncoding", "AXTP v1 integerEncoding must explicitly state Big-Endian");
+  }
+}
+
 function assertControlOpcodes(model: ProtocolModel): void {
   for (const opcode of ["OPEN", "ACCEPT", "HEARTBEAT", "HEARTBEAT_ACK", "CLOSE", "CLOSE_ACK"]) {
     if (!model.control.requiredOpcodes.includes(opcode)) fail("control.requiredOpcodes", opcode, `${opcode} is required by docs/specs/1-core/05-Control-Session.md`);
@@ -291,6 +306,7 @@ function assertCurrentTransportPolicy(model: ProtocolModel): void {
 export function validateProtocolDefinition(model: ProtocolModel): string[] {
   assertNoForbiddenKeys(model.raw);
   assertNoUnsupportedProfileKeys(model.raw);
+  assertWireByteOrder(model);
   assertStreamHeader(model);
   assertControlOpcodes(model);
 

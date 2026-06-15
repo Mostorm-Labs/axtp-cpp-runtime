@@ -12,8 +12,15 @@
 - [Capability Discovery](#capability-discovery)
 - [Methods](#methods)
   - [audio Methods](#audio-methods)
+  - [device Methods](#device-methods)
+  - [firmware Methods](#firmware-methods)
+  - [network Methods](#network-methods)
+  - [video Methods](#video-methods)
 - [Events](#events)
   - [audio Events](#audio-events)
+  - [firmware Events](#firmware-events)
+  - [network Events](#network-events)
+  - [video Events](#video-events)
 - [Additional Types](#additional-types)
 - [Errors Reference](#errors-reference)
 - [Profiles Reference](#profiles-reference)
@@ -22,7 +29,11 @@
 
 | Domain | Methods | Events |
 | ---- | ---- | ---- |
-| audio | 4 | 1 |
+| audio | 9 | 4 |
+| device | 1 | 0 |
+| firmware | 4 | 2 |
+| network | 18 | 8 |
+| video | 6 | 3 |
 
 ## Overview
 
@@ -35,6 +46,9 @@ AXTP is a transport-independent device communication protocol for CONTROL, RPC a
 | Spec Version | 1 |
 | Registry Version | 1.0.0 |
 | Status | rc1 |
+| Wire Byte Order | big-endian / network |
+| Wire Integer Encoding | unsigned and signed multi-byte integers use Big-Endian / network byte order |
+| CRC Byte Order | big-endian |
 
 ## Protocol Framework
 
@@ -160,7 +174,11 @@ The generated registry groups methods by domain. Each method keeps a stable `bit
 
 | Domain | Methods |
 | ---- | ---- |
-| audio | 1: audio.getAlgorithmConfig<br>2: audio.setAlgorithmConfig<br>0: audio.getAlgorithmCapabilities<br>3: audio.resetAlgorithmConfig |
+| audio | 1: audio.getAlgorithmConfig<br>2: audio.setAlgorithmConfig<br>0: audio.getAlgorithmCapabilities<br>3: audio.resetAlgorithmConfig<br>4: audio.getStreamCapabilities<br>5: audio.openStream<br>6: audio.closeStream<br>7: audio.getStreamState<br>8: audio.getStreamSourceState |
+| device | 0: device.getInfo |
+| firmware | 0: firmware.getUpdateCapabilities<br>1: firmware.beginUpdate<br>3: firmware.getUpdateState<br>2: firmware.finishUpdate |
+| network | 2: network.getIpConfig<br>3: network.setIpConfig<br>5: network.getWifiConfig<br>6: network.setWifiConfig<br>7: network.scanWifi<br>8: network.connectWifi<br>9: network.disconnectWifi<br>10: network.getWifiState<br>12: network.getApConfig<br>13: network.setApConfig<br>15: network.startAp<br>16: network.stopAp<br>14: network.getApState<br>0: network.getInterfaces<br>1: network.getInterfaceInfo<br>4: network.getWifiCapabilities<br>11: network.getApCapabilities<br>17: network.getApClients |
+| video | 1: video.openStream<br>2: video.closeStream<br>3: video.getStreamState<br>0: video.getStreamCapabilities<br>4: video.getStreamSourceState<br>5: video.requestKeyFrame |
 
 # Methods
 
@@ -172,6 +190,11 @@ The generated registry groups methods by domain. Each method keeps a stable `bit
 - [audio.setAlgorithmConfig](#audiosetalgorithmconfig)
 - [audio.getAlgorithmCapabilities](#audiogetalgorithmcapabilities)
 - [audio.resetAlgorithmConfig](#audioresetalgorithmconfig)
+- [audio.getStreamCapabilities](#audiogetstreamcapabilities)
+- [audio.openStream](#audioopenstream)
+- [audio.closeStream](#audioclosestream)
+- [audio.getStreamState](#audiogetstreamstate)
+- [audio.getStreamSourceState](#audiogetstreamsourcestate)
 
 ---
 
@@ -316,6 +339,1352 @@ Type: `AudioSetAlgorithmConfigResponse`
 
 ---
 
+### audio.getStreamCapabilities
+
+Return real-time audio stream sources, codecs, stream profiles, and open-mode support.
+
+- Method ID: `0x090F`
+- Domain: `audio`
+- bitOffset: `4`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `audio.stream`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `PERMISSION_DENIED`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `AudioGetStreamCapabilitiesParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?source | String | 0x01 | Optional audio source identifier; omit to query all visible sources. | maxLength=128 | Omit if not used. |
+| ?includeRuntimeState | Boolean | 0x02 | Whether to include current source runtime state. | None | Omit if not used. |
+
+#### Response Fields
+
+Type: `AudioStreamCapabilities`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| capability | String | 0x01 | Fixed capability name audio.stream. | maxLength=32 | N/A |
+| sources | Bytes | 0x02 | JSON array of AudioStreamSource objects. | maxLength=8192 | N/A |
+| streamProfiles | Bytes | 0x03 | JSON array of supported stream profiles, normally media.audio. | maxLength=512 | N/A |
+| openModes | Bytes | 0x04 | JSON array of supported open modes, such as producer_open and receiver_pull. | maxLength=512 | N/A |
+| peerRoles | Bytes | 0x05 | JSON array of peer roles, such as receiver and transmitter. | maxLength=512 | N/A |
+| supportsSourceStateEvent | Boolean | 0x06 | Whether audio.streamSourceStateChanged is supported. | None | N/A |
+| supportsSyncGroup | Boolean | 0x07 | Whether audio streams can share a synchronization group with video streams. | None | N/A |
+| flowControlManagedByRuntime | Boolean | 0x08 | Whether normal applications can rely on runtime-managed STREAM flow control. | None | N/A |
+| ?aacTransportFormats | Bytes | 0x09 | Optional JSON array of AAC transport format strings; exact supported set remains product-confirmed. | maxLength=512 | Omit if not used. |
+
+---
+
+### audio.openStream
+
+Open a real-time audio STREAM and return the negotiated streamId and media metadata.
+
+- Method ID: `0x0910`
+- Domain: `audio`
+- bitOffset: `5`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `audio.stream`
+- Possible Events: `audio.streamStateChanged`, `audio.streamSourceStateChanged`
+- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `BUSY`, `RESOURCE_EXHAUSTED`, `MEDIA_SOURCE_NOT_FOUND`, `MEDIA_SOURCE_UNAVAILABLE`, `MEDIA_CODEC_UNSUPPORTED`, `MEDIA_STREAM_START_FAILED`
+
+#### Request Fields
+
+Type: `AudioOpenStreamParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| source | String | 0x01 | Audio source identifier. | maxLength=128 | N/A |
+| peerRole | Enum | 0x02 | Requested peer media role; values include receiver and transmitter. | None | N/A |
+| codec | Enum | 0x03 | Requested audio codec, such as aac, opus, or pcm. | None | N/A |
+| ?transportFormat | Enum | 0x04 | Optional codec transport format, such as adts, latm, or raw_aac. | None | Omit if not used. |
+| ?sampleRate | UInt32 | 0x05 | Requested sample rate in Hz. | None | Omit if not used. |
+| ?channels | UInt8 | 0x06 | Requested channel count. | None | Omit if not used. |
+| ?sampleFormat | Enum | 0x07 | Requested sample format. | None | Omit if not used. |
+| ?chunkDurationMs | UInt32 | 0x08 | Preferred chunk duration in milliseconds. | None | Omit if not used. |
+| ?streamProfile | String | 0x09 | STREAM profile name. | maxLength=64 | Omit if not used. |
+| ?cursorUnit | Enum | 0x0A | STREAM cursor unit, such as timestampUs or sampleIndex. | None | Omit if not used. |
+| ?syncGroupId | String | 0x0B | Optional synchronization group identifier. | maxLength=128 | Omit if not used. |
+| ?castSessionId | String | 0x0C | Optional cast session identifier. | maxLength=128 | Omit if not used. |
+| ?clockDomain | String | 0x0D | Source media clock domain. | maxLength=128 | Omit if not used. |
+| ?receiverClockDomain | String | 0x0E | Receiver clock domain. | maxLength=128 | Omit if not used. |
+| ?maxDataSize | UInt32 | 0x0F | Preferred maximum STREAM payload data size. | None | Omit if not used. |
+
+#### Response Fields
+
+Type: `AudioOpenStreamResult`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| streamId | UInt32 | 0x01 | STREAM data plane stream identifier. | None | N/A |
+| state | Enum | 0x02 | Initial state, normally opening or streaming. | None | N/A |
+| source | String | 0x03 | Bound source identifier. | maxLength=128 | N/A |
+| peerRole | Enum | 0x04 | Confirmed peer media role. | None | N/A |
+| codec | Enum | 0x05 | Negotiated codec. | None | N/A |
+| ?transportFormat | Enum | 0x06 | Negotiated transport format. | None | Omit if not used. |
+| sampleRate | UInt32 | 0x07 | Negotiated sample rate in Hz. | None | N/A |
+| channels | UInt8 | 0x08 | Negotiated channel count. | None | N/A |
+| ?sampleFormat | Enum | 0x09 | Negotiated sample format. | None | Omit if not used. |
+| streamProfile | String | 0x0A | Normalized stream profile. | maxLength=64 | N/A |
+| cursorUnit | Enum | 0x0B | STREAM cursor unit. | None | N/A |
+| ?syncGroupId | String | 0x0C | Synchronization group identifier. | maxLength=128 | Omit if not used. |
+| ?castSessionId | String | 0x0D | Cast session identifier. | maxLength=128 | Omit if not used. |
+| ?clockDomain | String | 0x0E | Source media clock domain. | maxLength=128 | Omit if not used. |
+| ?receiverClockDomain | String | 0x0F | Receiver clock domain. | maxLength=128 | Omit if not used. |
+| ?maxDataSize | UInt32 | 0x10 | Negotiated maximum STREAM payload data size. | None | Omit if not used. |
+
+---
+
+### audio.closeStream
+
+Close a previously opened audio STREAM.
+
+- Method ID: `0x0911`
+- Domain: `audio`
+- bitOffset: `6`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `audio.stream`
+- Possible Events: `audio.streamStateChanged`
+- Possible Errors: `SUCCESS`, `STREAM_NOT_FOUND`, `STREAM_CLOSED`, `INVALID_STATE`, `MEDIA_STREAM_STOP_FAILED`
+
+#### Request Fields
+
+Type: `AudioCloseStreamParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| streamId | UInt32 | 0x01 | STREAM data plane stream identifier. | None | N/A |
+| ?peerRole | Enum | 0x02 | Peer role in this stream. | None | Omit if not used. |
+| ?reason | Enum | 0x03 | Close reason. | None | Omit if not used. |
+| ?finalCursor | UInt64 | 0x04 | Last processed cursor value. | None | Omit if not used. |
+
+#### Response Fields
+
+Type: `AudioCloseStreamResult`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| streamId | UInt32 | 0x01 | Closed stream identifier. | None | N/A |
+| state | Enum | 0x02 | Close state, such as closing, closed, or failed. | None | N/A |
+| ?reason | Enum | 0x03 | Final close reason. | None | Omit if not used. |
+| ?alreadyClosed | Boolean | 0x04 | Whether the stream was already terminal before this request. | None | Omit if not used. |
+
+---
+
+### audio.getStreamState
+
+Return runtime state for an opened audio stream.
+
+- Method ID: `0x0912`
+- Domain: `audio`
+- bitOffset: `7`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `audio.stream`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `STREAM_NOT_FOUND`, `PERMISSION_DENIED`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `AudioGetStreamStateParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| streamId | UInt32 | 0x01 | STREAM data plane stream identifier. | None | N/A |
+
+#### Response Fields
+
+Type: `AudioStreamState`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| streamId | UInt32 | 0x01 | STREAM data plane stream identifier. | None | N/A |
+| state | Enum | 0x02 | Stream state, such as opening, streaming, closing, closed, or failed. | None | N/A |
+| source | String | 0x03 | Bound audio source. | maxLength=128 | N/A |
+| ?peerRole | Enum | 0x04 | Peer media role. | None | Omit if not used. |
+| ?codec | Enum | 0x05 | Negotiated audio codec. | None | Omit if not used. |
+| ?streamProfile | String | 0x06 | Stream profile. | maxLength=64 | Omit if not used. |
+| ?syncGroupId | String | 0x07 | Synchronization group identifier. | maxLength=128 | Omit if not used. |
+| ?cursorUnit | Enum | 0x08 | STREAM cursor unit. | None | Omit if not used. |
+| ?lastCursor | UInt64 | 0x09 | Last known cursor value. | None | Omit if not used. |
+| ?failureReason | Enum | 0x0A | Failure reason when state is failed. | None | Omit if not used. |
+
+---
+
+### audio.getStreamSourceState
+
+Return availability and receiving state for an audio stream source.
+
+- Method ID: `0x0913`
+- Domain: `audio`
+- bitOffset: `8`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `audio.stream`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `MEDIA_SOURCE_NOT_FOUND`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `AudioGetStreamSourceStateParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| source | String | 0x01 | Audio source identifier. | maxLength=128 | N/A |
+
+#### Response Fields
+
+Type: `AudioStreamSourceState`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| source | String | 0x01 | Audio source identifier. | maxLength=128 | N/A |
+| ?mediaKind | Enum | 0x02 | Media kind, normally audio. | None | Omit if not used. |
+| state | Enum | 0x03 | Source state, such as unavailable, available, receiving, stopped, or failed. | None | N/A |
+| ?available | Boolean | 0x04 | Whether the source is available for openStream. | None | Omit if not used. |
+| ?activeStreamId | UInt32 | 0x05 | Active downstream stream id, if any. | None | Omit if not used. |
+| ?lastOpenRejectedReason | Enum | 0x06 | Last open rejection reason. | None | Omit if not used. |
+
+---
+
+## device Methods
+
+### Methods in this domain
+
+- [device.getInfo](#devicegetinfo)
+
+---
+
+### device.getInfo
+
+Return the current endpoint main device identity, product, hardware, OS, software, AXTP runtime, and optional capability summary.
+
+- Method ID: `0x0101`
+- Domain: `device`
+- bitOffset: `0`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `device.info`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `PERMISSION_DENIED`, `INTERNAL_ERROR`
+
+#### Request Fields
+
+Type: `GetDeviceInfoParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?includeCapabilitySummary | Boolean | 0x01 | Whether to include the lightweight DeviceCapabilitySummary block. | None | Omit if not used. |
+
+#### Response Fields
+
+Type: `DeviceInfo`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| identity | DeviceIdentity | 0x01 | Stable device identity fields. | None | N/A |
+| product | DeviceProduct | 0x02 | Brand, product type, model, and display information. | None | N/A |
+| ?hardware | DeviceHardware | 0x03 | Hardware summary. | None | Omit if not used. |
+| ?os | DeviceOs | 0x04 | Operating system summary. | None | Omit if not used. |
+| ?software | DeviceSoftware | 0x05 | Installed or hosted software component summary. | None | Omit if not used. |
+| ?runtime | DeviceAxtpRuntime | 0x06 | AXTP runtime summary. | None | Omit if not used. |
+| ?capability | DeviceCapabilitySummary | 0x07 | Lightweight modeling summary; not a complete capability registry. | None | Omit if not used. |
+
+---
+
+## firmware Methods
+
+### Methods in this domain
+
+- [firmware.getUpdateCapabilities](#firmwaregetupdatecapabilities)
+- [firmware.beginUpdate](#firmwarebeginupdate)
+- [firmware.getUpdateState](#firmwaregetupdatestate)
+- [firmware.finishUpdate](#firmwarefinishupdate)
+
+---
+
+### firmware.getUpdateCapabilities
+
+Return P0 firmware update capability and upload constraints.
+
+- Method ID: `0x0401`
+- Domain: `firmware`
+- bitOffset: `0`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `firmware.update`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_STATE`, `FW_DEVICE_NOT_READY`
+
+#### Request Fields
+
+Type: `Empty`
+
+No fields.
+
+#### Response Fields
+
+Type: `FirmwareUpdateCapabilities`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| supported | Boolean | 0x01 | Whether firmware.update P0 is supported. | None | N/A |
+| supportsMultiFile | Boolean | 0x02 | Whether manifest may contain multiple files. | None | N/A |
+| streamLayout | Enum | 0x03 | P0 stream layout, currently file. | None | N/A |
+| hashAlgorithm | Enum | 0x04 | P0 hash algorithm, currently md5. | None | N/A |
+| autoReboot | Boolean | 0x05 | Whether the device automatically reboots after installation. | None | N/A |
+| ?maxChunkSize | UInt32 | 0x06 | Maximum STREAM data chunk size supported by the device. | None | Omit if not used. |
+| ?devicePolicyVersion | String | 0x07 | Optional device policy version used by host tooling. | maxLength=64 | Omit if not used. |
+
+---
+
+### firmware.beginUpdate
+
+Create a firmware update session, accept the manifest, and bind file IDs to STREAM streamIds.
+
+- Method ID: `0x0402`
+- Domain: `firmware`
+- bitOffset: `1`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `firmware.update`
+- Possible Events: `firmware.updateStateChanged`, `firmware.updateProgressReported`
+- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `BUSY`, `FW_VERSION_UNSUPPORTED`, `FW_STORAGE_NOT_ENOUGH`, `FW_DEVICE_NOT_READY`
+
+#### Request Fields
+
+Type: `BeginUpdateParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| manifest | FirmwareUpdateManifest | 0x01 | Minimal firmware update manifest. | None | N/A |
+
+#### Response Fields
+
+Type: `BeginUpdateResult`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| updateSessionId | String | 0x01 | Firmware update session identifier. | maxLength=128 | N/A |
+| state | Enum | 0x02 | State after begin, normally receiving. | None | N/A |
+| streams | Bytes | 0x03 | JSON array of FirmwareUpdateStreamBinding objects. | maxLength=4096 | N/A |
+| ?chunkSize | UInt32 | 0x04 | Recommended STREAM chunk size. | None | Omit if not used. |
+
+---
+
+### firmware.getUpdateState
+
+Return current firmware update state for UI refresh, reconnect, or event-loss recovery.
+
+- Method ID: `0x0408`
+- Domain: `firmware`
+- bitOffset: `3`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `firmware.update`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `NOT_FOUND`, `FW_TRANSFER_NOT_STARTED`
+
+#### Request Fields
+
+Type: `GetUpdateStateParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| updateSessionId | String | 0x01 | Firmware update session identifier. | maxLength=128 | N/A |
+
+#### Response Fields
+
+Type: `FirmwareUpdateState`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| updateSessionId | String | 0x01 | Firmware update session identifier. | maxLength=128 | N/A |
+| state | Enum | 0x02 | State, such as idle, receiving, verifying, installing, rebooting, confirmed, or failed. | None | N/A |
+| ?progress | UInt8 | 0x03 | Overall progress percentage. | min=0, max=100 | Omit if not used. |
+| ?currentFileId | String | 0x04 | Current file identifier, if file-level progress is available. | maxLength=128 | Omit if not used. |
+| ?error | FirmwareUpdateErrorInfo | 0x05 | Error details when state is failed. | None | Omit if not used. |
+
+---
+
+### firmware.finishUpdate
+
+Tell the device that upload is complete and hand off verification, install, and reboot to the device.
+
+- Method ID: `0x040B`
+- Domain: `firmware`
+- bitOffset: `2`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `firmware.update`
+- Possible Events: `firmware.updateStateChanged`, `firmware.updateProgressReported`
+- Possible Errors: `SUCCESS`, `INVALID_STATE`, `STREAM_CHUNK_MISSING`, `FW_SIZE_MISMATCH`, `FW_DEVICE_NOT_READY`, `BUSY`
+
+#### Request Fields
+
+Type: `FinishUpdateParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| updateSessionId | String | 0x01 | Firmware update session identifier. | maxLength=128 | N/A |
+
+#### Response Fields
+
+Type: `FinishUpdateResult`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| updateSessionId | String | 0x01 | Firmware update session identifier. | maxLength=128 | N/A |
+| accepted | Boolean | 0x02 | Whether the device accepted the finish handoff. | None | N/A |
+| state | Enum | 0x03 | State after finish, normally verifying or failed. | None | N/A |
+
+---
+
+## network Methods
+
+### Methods in this domain
+
+- [network.getIpConfig](#networkgetipconfig)
+- [network.setIpConfig](#networksetipconfig)
+- [network.getWifiConfig](#networkgetwificonfig)
+- [network.setWifiConfig](#networksetwificonfig)
+- [network.scanWifi](#networkscanwifi)
+- [network.connectWifi](#networkconnectwifi)
+- [network.disconnectWifi](#networkdisconnectwifi)
+- [network.getWifiState](#networkgetwifistate)
+- [network.getApConfig](#networkgetapconfig)
+- [network.setApConfig](#networksetapconfig)
+- [network.startAp](#networkstartap)
+- [network.stopAp](#networkstopap)
+- [network.getApState](#networkgetapstate)
+- [network.getInterfaces](#networkgetinterfaces)
+- [network.getInterfaceInfo](#networkgetinterfaceinfo)
+- [network.getWifiCapabilities](#networkgetwificapabilities)
+- [network.getApCapabilities](#networkgetapcapabilities)
+- [network.getApClients](#networkgetapclients)
+
+---
+
+### network.getIpConfig
+
+Return IP configuration for a network interface.
+
+- Method ID: `0x0E02`
+- Domain: `network`
+- bitOffset: `2`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `network.ip`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `NOT_FOUND`, `PERMISSION_DENIED`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `NetworkGetIpConfigParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?interfaceId | String | 0x01 | Interface identifier; omitted means default primary interface. | maxLength=64 | Omit if not used. |
+| ?family | Enum | 0x02 | IP family; candidate values include ipv4 and ipv6. | None | Omit if not used. |
+
+#### Response Fields
+
+Type: `NetworkIpConfig`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| interfaceId | String | 0x01 | Interface identifier. | maxLength=64 | N/A |
+| ?family | Enum | 0x02 | IP family; candidate values include ipv4 and ipv6. | None | Omit if not used. |
+| mode | Enum | 0x03 | IP mode; candidate values include dhcp, static, disabled, link_local, and unknown. | None | N/A |
+| ?address | String | 0x04 | IP address. | maxLength=64 | Omit if not used. |
+| ?prefixLength | UInt8 | 0x05 | Network prefix length. | min=0, max=128 | Omit if not used. |
+| ?gateway | String | 0x06 | Default gateway. | maxLength=64 | Omit if not used. |
+| ?dns | Bytes | 0x07 | JSON array of DNS server addresses. | maxLength=1024 | Omit if not used. |
+
+---
+
+### network.setIpConfig
+
+Set DHCP/static/disabled IP configuration for a network interface.
+
+- Method ID: `0x0E03`
+- Domain: `network`
+- bitOffset: `3`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `network.ip`
+- Possible Events: `network.ipConfigChanged`
+- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `OUT_OF_RANGE`, `INVALID_STATE`, `BUSY`, `PERMISSION_DENIED`
+
+#### Request Fields
+
+Type: `NetworkSetIpConfigParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?interfaceId | String | 0x01 | Interface identifier. | maxLength=64 | Omit if not used. |
+| ?family | Enum | 0x02 | IP family. | None | Omit if not used. |
+| config | NetworkIpConfig | 0x03 | Target IP configuration. | None | N/A |
+| ?applyPolicy | Enum | 0x04 | Apply policy; candidate values include immediate and pending_restart. | None | Omit if not used. |
+
+#### Response Fields
+
+Type: `NetworkSetIpConfigResult`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| config | NetworkIpConfig | 0x01 | Applied or pending IP configuration. | None | N/A |
+| applyState | Enum | 0x02 | Apply state; candidate values include applied, pending_restart, and failed. | None | N/A |
+
+---
+
+### network.getWifiConfig
+
+Return saved Wi-Fi profile summaries without plaintext credentials.
+
+- Method ID: `0x0E04`
+- Domain: `network`
+- bitOffset: `5`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `network.wifi`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `NOT_FOUND`, `PERMISSION_DENIED`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `NetworkGetWifiConfigParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?interfaceId | String | 0x01 | Wi-Fi station interface identifier. | maxLength=64 | Omit if not used. |
+| ?includeProfiles | Boolean | 0x02 | Whether to include saved profile summaries. | None | Omit if not used. |
+
+#### Response Fields
+
+Type: `NetworkWifiConfig`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?interfaceId | String | 0x01 | Wi-Fi station interface identifier. | maxLength=64 | Omit if not used. |
+| ?profiles | Bytes | 0x02 | JSON array of NetworkWifiProfile summaries. Plaintext credentials must not be returned. | maxLength=8192 | Omit if not used. |
+| ?defaultProfileId | String | 0x03 | Default profile identifier. | maxLength=128 | Omit if not used. |
+
+---
+
+### network.setWifiConfig
+
+Create or update a Wi-Fi station profile.
+
+- Method ID: `0x0E05`
+- Domain: `network`
+- bitOffset: `6`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `network.wifi`
+- Possible Events: `network.wifiConfigChanged`, `network.wifiStateChanged`
+- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `OUT_OF_RANGE`, `INVALID_STATE`, `BUSY`, `PERMISSION_DENIED`
+
+#### Request Fields
+
+Type: `NetworkSetWifiConfigParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?interfaceId | String | 0x01 | Wi-Fi station interface identifier. | maxLength=64 | Omit if not used. |
+| profile | NetworkWifiProfile | 0x02 | Profile to create or update. | None | N/A |
+| ?replaceExisting | Boolean | 0x03 | Whether an existing matching profile may be replaced. | None | Omit if not used. |
+| ?makeDefault | Boolean | 0x04 | Whether to make this the default profile. | None | Omit if not used. |
+| ?connectAfterSave | Boolean | 0x05 | Whether to start connection after saving. | None | Omit if not used. |
+
+#### Response Fields
+
+Type: `NetworkSetWifiConfigResult`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| profileId | String | 0x01 | Accepted or assigned profile identifier. | maxLength=128 | N/A |
+| ?config | NetworkWifiConfig | 0x02 | Updated profile summary. | None | Omit if not used. |
+| ?connectStarted | Boolean | 0x03 | Whether connection was started after saving. | None | Omit if not used. |
+
+---
+
+### network.scanWifi
+
+Scan visible Wi-Fi access points.
+
+- Method ID: `0x0E06`
+- Domain: `network`
+- bitOffset: `7`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `network.wifi`
+- Possible Events: `network.wifiScanResultReported`
+- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `BUSY`, `TIMEOUT`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `NetworkScanWifiParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?interfaceId | String | 0x01 | Wi-Fi station interface identifier. | maxLength=64 | Omit if not used. |
+| ?ssidFilter | String | 0x02 | Optional SSID filter. | maxLength=64 | Omit if not used. |
+| ?timeoutMs | UInt32 | 0x03 | Scan timeout in milliseconds. | None | Omit if not used. |
+
+#### Response Fields
+
+Type: `NetworkScanWifiResult`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?scanId | String | 0x01 | Asynchronous scan identifier. | maxLength=128 | Omit if not used. |
+| ?results | Bytes | 0x02 | JSON array of NetworkWifiScanResult objects. | maxLength=16384 | Omit if not used. |
+| ?complete | Boolean | 0x03 | Whether returned results are complete. | None | Omit if not used. |
+
+---
+
+### network.connectWifi
+
+Connect to a saved Wi-Fi profile or an inline profile.
+
+- Method ID: `0x0E07`
+- Domain: `network`
+- bitOffset: `8`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `network.wifi`
+- Possible Events: `network.wifiStateChanged`
+- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `NOT_FOUND`, `INVALID_STATE`, `BUSY`, `TIMEOUT`, `PERMISSION_DENIED`
+
+#### Request Fields
+
+Type: `NetworkConnectWifiParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?interfaceId | String | 0x01 | Wi-Fi station interface identifier. | maxLength=64 | Omit if not used. |
+| ?profileId | String | 0x02 | Saved profile identifier. | maxLength=128 | Omit if not used. |
+| ?profile | NetworkWifiProfile | 0x03 | Inline profile to connect with. | None | Omit if not used. |
+| ?timeoutMs | UInt32 | 0x04 | Connection timeout in milliseconds. | None | Omit if not used. |
+
+#### Response Fields
+
+Type: `NetworkWifiActionResult`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| accepted | Boolean | 0x01 | Whether the action was accepted. | None | N/A |
+| state | NetworkWifiState | 0x02 | Current or target Wi-Fi state after accepting the action. | None | N/A |
+
+---
+
+### network.disconnectWifi
+
+Disconnect the current Wi-Fi station connection.
+
+- Method ID: `0x0E08`
+- Domain: `network`
+- bitOffset: `9`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `network.wifi`
+- Possible Events: `network.wifiStateChanged`
+- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `INVALID_STATE`, `BUSY`, `PERMISSION_DENIED`
+
+#### Request Fields
+
+Type: `NetworkDisconnectWifiParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?interfaceId | String | 0x01 | Wi-Fi station interface identifier. | maxLength=64 | Omit if not used. |
+| ?reason | Enum | 0x02 | Disconnect reason; candidate values include user_request, profile_changed, shutdown, and unknown. | None | Omit if not used. |
+
+#### Response Fields
+
+Type: `NetworkWifiActionResult`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| accepted | Boolean | 0x01 | Whether the action was accepted. | None | N/A |
+| state | NetworkWifiState | 0x02 | Current or target Wi-Fi state after accepting the action. | None | N/A |
+
+---
+
+### network.getWifiState
+
+Return current Wi-Fi station association, authentication, and connection state.
+
+- Method ID: `0x0E09`
+- Domain: `network`
+- bitOffset: `10`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `network.wifi`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `NOT_FOUND`, `PERMISSION_DENIED`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `NetworkGetWifiStateParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?interfaceId | String | 0x01 | Wi-Fi station interface identifier. | maxLength=64 | Omit if not used. |
+
+#### Response Fields
+
+Type: `NetworkWifiState`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?interfaceId | String | 0x01 | Wi-Fi station interface identifier. | maxLength=64 | Omit if not used. |
+| state | Enum | 0x02 | State; candidate values include disabled, disconnected, scanning, authenticating, associating, connected, failed, and unknown. | None | N/A |
+| ?profileId | String | 0x03 | Active profile identifier. | maxLength=128 | Omit if not used. |
+| ?ssid | String | 0x04 | Active SSID. | maxLength=64 | Omit if not used. |
+| ?rssi | Int32 | 0x05 | Received signal strength indicator in dBm. | None | Omit if not used. |
+| ?ipReady | Boolean | 0x06 | Whether IP configuration is ready. | None | Omit if not used. |
+| ?failureReason | Enum | 0x07 | Failure reason, if state is failed. | None | Omit if not used. |
+
+---
+
+### network.getApConfig
+
+Return Wi-Fi AP configuration without exposing plaintext credentials unless explicitly allowed by policy.
+
+- Method ID: `0x0E0A`
+- Domain: `network`
+- bitOffset: `12`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `network.ap`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `PERMISSION_DENIED`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `NetworkGetApConfigParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?interfaceId | String | 0x01 | Wi-Fi AP interface identifier. | maxLength=64 | Omit if not used. |
+
+#### Response Fields
+
+Type: `NetworkApConfig`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?interfaceId | String | 0x01 | Wi-Fi AP interface identifier. | maxLength=64 | Omit if not used. |
+| ?enabled | Boolean | 0x02 | Whether AP should be enabled by configuration. | None | Omit if not used. |
+| ssid | String | 0x03 | AP SSID. | maxLength=64 | N/A |
+| ?hidden | Boolean | 0x04 | Whether SSID broadcast is hidden. | None | Omit if not used. |
+| ?band | Enum | 0x05 | AP band. | None | Omit if not used. |
+| ?channel | UInt16 | 0x06 | AP channel. | None | Omit if not used. |
+| securityType | Enum | 0x07 | AP security type. | None | N/A |
+| ?credential | NetworkCredential | 0x08 | Credential descriptor; plaintext must not be returned unless policy explicitly allows it. | None | Omit if not used. |
+| ?maxClients | UInt16 | 0x09 | Maximum client count. | None | Omit if not used. |
+
+---
+
+### network.setApConfig
+
+Partially update Wi-Fi AP configuration.
+
+- Method ID: `0x0E0B`
+- Domain: `network`
+- bitOffset: `13`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `network.ap`
+- Possible Events: `network.apConfigChanged`
+- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `OUT_OF_RANGE`, `INVALID_STATE`, `BUSY`, `PERMISSION_DENIED`
+
+#### Request Fields
+
+Type: `NetworkSetApConfigParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?interfaceId | String | 0x01 | Wi-Fi AP interface identifier. | maxLength=64 | Omit if not used. |
+| config | NetworkApConfig | 0x02 | AP configuration patch or target configuration. | None | N/A |
+
+#### Response Fields
+
+Type: `NetworkSetApConfigResult`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| config | NetworkApConfig | 0x01 | Applied or pending AP configuration. | None | N/A |
+| applyState | Enum | 0x02 | Apply state; candidate values include applied, pending_restart, and failed. | None | N/A |
+
+---
+
+### network.startAp
+
+Start the Wi-Fi AP role.
+
+- Method ID: `0x0E0C`
+- Domain: `network`
+- bitOffset: `15`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `network.ap`
+- Possible Events: `network.apStateChanged`
+- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `INVALID_STATE`, `BUSY`, `PERMISSION_DENIED`
+
+#### Request Fields
+
+Type: `NetworkApActionParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?interfaceId | String | 0x01 | Wi-Fi AP interface identifier. | maxLength=64 | Omit if not used. |
+| ?reason | Enum | 0x02 | Action reason. | None | Omit if not used. |
+
+#### Response Fields
+
+Type: `NetworkApActionResult`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| accepted | Boolean | 0x01 | Whether the action was accepted. | None | N/A |
+| state | NetworkApState | 0x02 | Current or target AP state. | None | N/A |
+
+---
+
+### network.stopAp
+
+Stop the Wi-Fi AP role.
+
+- Method ID: `0x0E0D`
+- Domain: `network`
+- bitOffset: `16`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `network.ap`
+- Possible Events: `network.apStateChanged`
+- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `INVALID_STATE`, `BUSY`, `PERMISSION_DENIED`
+
+#### Request Fields
+
+Type: `NetworkApActionParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?interfaceId | String | 0x01 | Wi-Fi AP interface identifier. | maxLength=64 | Omit if not used. |
+| ?reason | Enum | 0x02 | Action reason. | None | Omit if not used. |
+
+#### Response Fields
+
+Type: `NetworkApActionResult`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| accepted | Boolean | 0x01 | Whether the action was accepted. | None | N/A |
+| state | NetworkApState | 0x02 | Current or target AP state. | None | N/A |
+
+---
+
+### network.getApState
+
+Return runtime state for the device Wi-Fi AP role.
+
+- Method ID: `0x0E0E`
+- Domain: `network`
+- bitOffset: `14`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `network.ap`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `PERMISSION_DENIED`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `NetworkGetApConfigParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?interfaceId | String | 0x01 | Wi-Fi AP interface identifier. | maxLength=64 | Omit if not used. |
+
+#### Response Fields
+
+Type: `NetworkApState`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?interfaceId | String | 0x01 | Wi-Fi AP interface identifier. | maxLength=64 | Omit if not used. |
+| enabled | Boolean | 0x02 | Whether AP is currently enabled. | None | N/A |
+| state | Enum | 0x03 | AP state; candidate values include disabled, starting, enabled, stopping, failed, and unknown. | None | N/A |
+| ?ssid | String | 0x04 | Active AP SSID. | maxLength=64 | Omit if not used. |
+| ?clientCount | UInt16 | 0x05 | Current associated client count. | None | Omit if not used. |
+| ?failureReason | Enum | 0x06 | Failure reason when state is failed. | None | Omit if not used. |
+
+---
+
+### network.getInterfaces
+
+Return visible network interfaces and default interface identifiers.
+
+- Method ID: `0x0E10`
+- Domain: `network`
+- bitOffset: `0`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `network.interface`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `PERMISSION_DENIED`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `NetworkGetInterfacesParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?includeDisabled | Boolean | 0x01 | Whether disabled interfaces should be included. | None | Omit if not used. |
+
+#### Response Fields
+
+Type: `NetworkInterfaces`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| interfaces | Bytes | 0x01 | JSON array of NetworkInterfaceSummary objects. | maxLength=8192 | N/A |
+| ?defaults | NetworkDefaultInterfaceIds | 0x02 | Default interface identifiers for common roles. | None | Omit if not used. |
+
+---
+
+### network.getInterfaceInfo
+
+Return detailed information for one network interface.
+
+- Method ID: `0x0E11`
+- Domain: `network`
+- bitOffset: `1`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `network.interface`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `NOT_FOUND`, `PERMISSION_DENIED`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `NetworkGetInterfaceInfoParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| interfaceId | String | 0x01 | Interface identifier. | maxLength=64 | N/A |
+
+#### Response Fields
+
+Type: `NetworkInterfaceInfo`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| interfaceId | String | 0x01 | Interface identifier. | maxLength=64 | N/A |
+| type | Enum | 0x02 | Interface type. | None | N/A |
+| ?macAddress | String | 0x03 | Interface MAC address, if available and permitted. | maxLength=32 | Omit if not used. |
+| ?state | NetworkInterfaceState | 0x04 | Current interface state. | None | Omit if not used. |
+| ?supportsIpConfig | Boolean | 0x05 | Whether this interface can be used with network.ip. | None | Omit if not used. |
+
+---
+
+### network.getWifiCapabilities
+
+Return Wi-Fi station capability, including security types, bands, scanning, and credential import modes.
+
+- Method ID: `0x0E12`
+- Domain: `network`
+- bitOffset: `4`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `network.wifi`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `NOT_FOUND`, `PERMISSION_DENIED`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `NetworkGetWifiCapabilitiesParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?interfaceId | String | 0x01 | Wi-Fi station interface identifier. | maxLength=64 | Omit if not used. |
+
+#### Response Fields
+
+Type: `NetworkWifiCapabilities`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| capability | String | 0x01 | Fixed capability name network.wifi. | maxLength=32 | N/A |
+| securityTypes | Bytes | 0x02 | JSON array of supported security type strings. | maxLength=1024 | N/A |
+| ?bands | Bytes | 0x03 | JSON array of supported Wi-Fi bands. | maxLength=512 | Omit if not used. |
+| credentialImportModes | Bytes | 0x04 | JSON array of supported credential import modes such as passphrase, pairing_token, and opaque_ref. | maxLength=512 | N/A |
+| savedProfilesSupported | Boolean | 0x05 | Whether saved profiles are supported. | None | N/A |
+| scanSupported | Boolean | 0x06 | Whether Wi-Fi scanning is supported. | None | N/A |
+| ?autoConnectSupported | Boolean | 0x07 | Whether profiles can auto-connect. | None | Omit if not used. |
+
+---
+
+### network.getApCapabilities
+
+Return Wi-Fi AP capability, including supported bands, security types, channel ranges, and credential export policy.
+
+- Method ID: `0x0E13`
+- Domain: `network`
+- bitOffset: `11`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `network.ap`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `PERMISSION_DENIED`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `NetworkGetApCapabilitiesParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?interfaceId | String | 0x01 | Wi-Fi AP interface identifier. | maxLength=64 | Omit if not used. |
+
+#### Response Fields
+
+Type: `NetworkApCapabilities`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| capability | String | 0x01 | Fixed capability name network.ap. | maxLength=32 | N/A |
+| securityTypes | Bytes | 0x02 | JSON array of supported security types. | maxLength=1024 | N/A |
+| ?bands | Bytes | 0x03 | JSON array of supported bands. | maxLength=512 | Omit if not used. |
+| ?credentialExportModes | Bytes | 0x04 | JSON array of credential export modes. | maxLength=512 | Omit if not used. |
+| ?clientsSupported | Boolean | 0x05 | Whether client list query and client change events are supported. | None | Omit if not used. |
+
+---
+
+### network.getApClients
+
+Return clients currently associated with the Wi-Fi AP.
+
+- Method ID: `0x0E14`
+- Domain: `network`
+- bitOffset: `17`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `network.ap`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `PERMISSION_DENIED`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `NetworkGetApConfigParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?interfaceId | String | 0x01 | Wi-Fi AP interface identifier. | maxLength=64 | Omit if not used. |
+
+#### Response Fields
+
+Type: `NetworkApClients`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| clients | Bytes | 0x01 | JSON array of NetworkApClientInfo objects. | maxLength=16384 | N/A |
+
+---
+
+## video Methods
+
+### Methods in this domain
+
+- [video.openStream](#videoopenstream)
+- [video.closeStream](#videoclosestream)
+- [video.getStreamState](#videogetstreamstate)
+- [video.getStreamCapabilities](#videogetstreamcapabilities)
+- [video.getStreamSourceState](#videogetstreamsourcestate)
+- [video.requestKeyFrame](#videorequestkeyframe)
+
+---
+
+### video.openStream
+
+Open a real-time video STREAM and return the negotiated streamId and media metadata.
+
+- Method ID: `0x080B`
+- Domain: `video`
+- bitOffset: `1`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `video.stream`
+- Possible Events: `video.streamStateChanged`, `video.streamSourceStateChanged`
+- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `BUSY`, `RESOURCE_EXHAUSTED`, `MEDIA_SOURCE_NOT_FOUND`, `MEDIA_SOURCE_UNAVAILABLE`, `MEDIA_CODEC_UNSUPPORTED`, `MEDIA_RESOLUTION_UNSUPPORTED`, `MEDIA_FRAMERATE_UNSUPPORTED`, `MEDIA_STREAM_START_FAILED`
+
+#### Request Fields
+
+Type: `VideoOpenStreamParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| source | String | 0x01 | Video source identifier. | maxLength=128 | N/A |
+| peerRole | Enum | 0x02 | Requested peer media role; values include receiver and transmitter. | None | N/A |
+| codec | Enum | 0x03 | Requested video codec, such as h264, h265, mjpeg, or raw. | None | N/A |
+| ?width | UInt32 | 0x04 | Requested frame width in pixels. | None | Omit if not used. |
+| ?height | UInt32 | 0x05 | Requested frame height in pixels. | None | Omit if not used. |
+| ?frameRate | UInt32 | 0x06 | Requested frame rate. | None | Omit if not used. |
+| ?bitrateKbps | UInt32 | 0x07 | Requested bitrate in kbps. | None | Omit if not used. |
+| ?streamProfile | String | 0x08 | STREAM profile name. | maxLength=64 | Omit if not used. |
+| ?cursorUnit | Enum | 0x09 | STREAM cursor unit, such as timestampUs or frameIndex. | None | Omit if not used. |
+| ?syncGroupId | String | 0x0A | Optional synchronization group identifier. | maxLength=128 | Omit if not used. |
+| ?castSessionId | String | 0x0B | Optional cast session identifier. | maxLength=128 | Omit if not used. |
+| ?clockDomain | String | 0x0C | Source media clock domain. | maxLength=128 | Omit if not used. |
+| ?maxDataSize | UInt32 | 0x0D | Preferred maximum STREAM payload data size. | None | Omit if not used. |
+
+#### Response Fields
+
+Type: `VideoOpenStreamResult`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| streamId | UInt32 | 0x01 | STREAM data plane stream identifier. | None | N/A |
+| state | Enum | 0x02 | Initial state, normally opening or streaming. | None | N/A |
+| source | String | 0x03 | Bound source identifier. | maxLength=128 | N/A |
+| peerRole | Enum | 0x04 | Confirmed peer media role. | None | N/A |
+| codec | Enum | 0x05 | Negotiated codec. | None | N/A |
+| ?width | UInt32 | 0x06 | Negotiated frame width. | None | Omit if not used. |
+| ?height | UInt32 | 0x07 | Negotiated frame height. | None | Omit if not used. |
+| ?frameRate | UInt32 | 0x08 | Negotiated frame rate. | None | Omit if not used. |
+| ?bitrateKbps | UInt32 | 0x09 | Negotiated bitrate in kbps. | None | Omit if not used. |
+| streamProfile | String | 0x0A | Normalized stream profile. | maxLength=64 | N/A |
+| cursorUnit | Enum | 0x0B | STREAM cursor unit. | None | N/A |
+| ?syncGroupId | String | 0x0C | Synchronization group identifier. | maxLength=128 | Omit if not used. |
+| ?maxDataSize | UInt32 | 0x0D | Negotiated maximum STREAM payload data size. | None | Omit if not used. |
+
+---
+
+### video.closeStream
+
+Close a previously opened video STREAM.
+
+- Method ID: `0x080C`
+- Domain: `video`
+- bitOffset: `2`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `video.stream`
+- Possible Events: `video.streamStateChanged`
+- Possible Errors: `SUCCESS`, `STREAM_NOT_FOUND`, `STREAM_CLOSED`, `INVALID_STATE`, `MEDIA_STREAM_STOP_FAILED`
+
+#### Request Fields
+
+Type: `VideoCloseStreamParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| streamId | UInt32 | 0x01 | STREAM data plane stream identifier. | None | N/A |
+| ?peerRole | Enum | 0x02 | Peer role in this stream. | None | Omit if not used. |
+| ?reason | Enum | 0x03 | Close reason. | None | Omit if not used. |
+| ?finalCursor | UInt64 | 0x04 | Last processed cursor value. | None | Omit if not used. |
+
+#### Response Fields
+
+Type: `VideoCloseStreamResult`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| streamId | UInt32 | 0x01 | Closed stream identifier. | None | N/A |
+| state | Enum | 0x02 | Close state, such as closing, closed, or failed. | None | N/A |
+| ?reason | Enum | 0x03 | Final close reason. | None | Omit if not used. |
+| ?alreadyClosed | Boolean | 0x04 | Whether the stream was already terminal before this request. | None | Omit if not used. |
+
+---
+
+### video.getStreamState
+
+Return runtime state for an opened video stream.
+
+- Method ID: `0x080D`
+- Domain: `video`
+- bitOffset: `3`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `video.stream`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `STREAM_NOT_FOUND`, `PERMISSION_DENIED`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `VideoGetStreamStateParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| streamId | UInt32 | 0x01 | STREAM data plane stream identifier. | None | N/A |
+
+#### Response Fields
+
+Type: `VideoStreamState`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| streamId | UInt32 | 0x01 | STREAM data plane stream identifier. | None | N/A |
+| state | Enum | 0x02 | Stream state, such as opening, streaming, closing, closed, or failed. | None | N/A |
+| source | String | 0x03 | Bound video source. | maxLength=128 | N/A |
+| ?peerRole | Enum | 0x04 | Peer media role. | None | Omit if not used. |
+| ?codec | Enum | 0x05 | Negotiated video codec. | None | Omit if not used. |
+| ?streamProfile | String | 0x06 | Stream profile. | maxLength=64 | Omit if not used. |
+| ?syncGroupId | String | 0x07 | Synchronization group identifier. | maxLength=128 | Omit if not used. |
+| ?cursorUnit | Enum | 0x08 | STREAM cursor unit. | None | Omit if not used. |
+| ?lastCursor | UInt64 | 0x09 | Last known cursor value. | None | Omit if not used. |
+| ?keyFrameRequested | Boolean | 0x0A | Whether a key frame has been requested and is pending. | None | Omit if not used. |
+| ?failureReason | Enum | 0x0B | Failure reason when state is failed. | None | Omit if not used. |
+
+---
+
+### video.getStreamCapabilities
+
+Return video stream sources, codecs, profiles, and open-mode support.
+
+- Method ID: `0x0812`
+- Domain: `video`
+- bitOffset: `0`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `video.stream`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `PERMISSION_DENIED`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `VideoGetStreamCapabilitiesParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?source | String | 0x01 | Optional video source identifier; omit to query all visible sources. | maxLength=128 | Omit if not used. |
+| ?includeRuntimeState | Boolean | 0x02 | Whether to include current source runtime state. | None | Omit if not used. |
+
+#### Response Fields
+
+Type: `VideoStreamCapabilities`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| capability | String | 0x01 | Fixed capability name video.stream. | maxLength=32 | N/A |
+| sources | Bytes | 0x02 | JSON array of VideoStreamSource objects. | maxLength=8192 | N/A |
+| streamProfiles | Bytes | 0x03 | JSON array of supported stream profiles, normally media.video. | maxLength=512 | N/A |
+| openModes | Bytes | 0x04 | JSON array of supported open modes, such as producer_open and receiver_pull. | maxLength=512 | N/A |
+| peerRoles | Bytes | 0x05 | JSON array of peer roles, such as receiver and transmitter. | maxLength=512 | N/A |
+| supportsSourceStateEvent | Boolean | 0x06 | Whether video.streamSourceStateChanged is supported. | None | N/A |
+| supportsSyncGroup | Boolean | 0x07 | Whether video streams can share a synchronization group with audio streams. | None | N/A |
+| flowControlManagedByRuntime | Boolean | 0x08 | Whether normal applications can rely on runtime-managed STREAM flow control. | None | N/A |
+
+---
+
+### video.getStreamSourceState
+
+Return availability and receiving state for a video stream source.
+
+- Method ID: `0x0813`
+- Domain: `video`
+- bitOffset: `4`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `video.stream`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `MEDIA_SOURCE_NOT_FOUND`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `VideoGetStreamSourceStateParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| source | String | 0x01 | Video source identifier. | maxLength=128 | N/A |
+
+#### Response Fields
+
+Type: `VideoStreamSourceState`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| source | String | 0x01 | Video source identifier. | maxLength=128 | N/A |
+| ?mediaKind | Enum | 0x02 | Media kind, normally video. | None | Omit if not used. |
+| state | Enum | 0x03 | Source state, such as unavailable, available, receiving, stopped, or failed. | None | N/A |
+| ?available | Boolean | 0x04 | Whether the source is available for openStream. | None | Omit if not used. |
+| ?activeStreamId | UInt32 | 0x05 | Active downstream stream id, if any. | None | Omit if not used. |
+
+---
+
+### video.requestKeyFrame
+
+Request an encoder key frame for an active video stream.
+
+- Method ID: `0x0814`
+- Domain: `video`
+- bitOffset: `5`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `video.stream`
+- Possible Events: `video.streamStateChanged`
+- Possible Errors: `SUCCESS`, `STREAM_NOT_FOUND`, `INVALID_STATE`, `MEDIA_STREAM_START_FAILED`, `PERMISSION_DENIED`
+
+#### Request Fields
+
+Type: `VideoRequestKeyFrameParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| streamId | UInt32 | 0x01 | STREAM data plane stream identifier. | None | N/A |
+| ?reason | Enum | 0x02 | Request reason. | None | Omit if not used. |
+
+#### Response Fields
+
+Type: `VideoRequestKeyFrameResult`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| accepted | Boolean | 0x01 | Whether the request was accepted. | None | N/A |
+| ?state | VideoStreamState | 0x02 | Current or updated stream state. | None | Omit if not used. |
+
+---
+
 # Events
 
 ## audio Events
@@ -323,6 +1692,9 @@ Type: `AudioSetAlgorithmConfigResponse`
 ### Events in this domain
 
 - [audio.algorithmConfigChanged](#audioalgorithmconfigchanged)
+- [audio.streamStateChanged](#audiostreamstatechanged)
+- [audio.streamSourceStateChanged](#audiostreamsourcestatechanged)
+- [audio.streamStatsReported](#audiostreamstatsreported)
 
 ---
 
@@ -350,6 +1722,452 @@ Type: `AudioAlgorithmConfigChangedEvent`
 | requiresAudioRestart | Boolean | 0x03 | Whether the change requires restarting the audio link or rebuilding the audio pipeline. | None | N/A |
 | config | AudioAlgorithmConfig | 0x04 | Changed or affected algorithm configuration values. | None | N/A |
 | ?changedFields | Bytes | 0x05 | Optional JSON array of changed field paths such as noiseSuppression.level. | maxLength=256 | Omit if not used. |
+
+---
+
+### audio.streamStateChanged
+
+Emitted when an audio stream enters opening, streaming, closed, or failed state.
+
+- Event ID: `0x0902`
+- Domain: `audio`
+- bitOffset: `1`
+- Status: `draft`
+- Severity: `info`
+- Added in v1.0.0
+- Trigger: `audio.openStream`, `audio.closeStream`, `source disconnected`, `stream failure`
+- Required Capabilities: `audio.stream`
+
+#### Payload Fields
+
+Type: `AudioStreamStateChangedEvent`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| streamId | UInt32 | 0x01 | STREAM data plane stream identifier. | None | N/A |
+| state | Enum | 0x02 | New stream state. | None | N/A |
+| source | String | 0x03 | Bound audio source. | maxLength=128 | N/A |
+| ?reason | Enum | 0x04 | State change reason. | None | Omit if not used. |
+| ?stats | AudioStreamStats | 0x05 | Optional bounded stream statistics. | None | Omit if not used. |
+
+---
+
+### audio.streamSourceStateChanged
+
+Emitted when an audio stream source availability or receiving state changes.
+
+- Event ID: `0x0903`
+- Domain: `audio`
+- bitOffset: `2`
+- Status: `draft`
+- Severity: `info`
+- Added in v1.0.0
+- Trigger: `upstream source available`, `upstream source receiving`, `upstream source stopped`
+- Required Capabilities: `audio.stream`
+
+#### Payload Fields
+
+Type: `AudioStreamSourceStateChangedEvent`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| source | String | 0x01 | Audio source identifier. | maxLength=128 | N/A |
+| ?mediaKind | Enum | 0x02 | Media kind, normally audio. | None | Omit if not used. |
+| state | Enum | 0x03 | New source state. | None | N/A |
+| ?reason | Enum | 0x04 | Source state change reason. | None | Omit if not used. |
+| ?activeStreamId | UInt32 | 0x05 | Active downstream stream id, if any. | None | Omit if not used. |
+
+---
+
+### audio.streamStatsReported
+
+Emitted with bounded runtime statistics for an audio stream.
+
+- Event ID: `0x0904`
+- Domain: `audio`
+- bitOffset: `3`
+- Status: `draft`
+- Severity: `info`
+- Added in v1.0.0
+- Trigger: `stream statistics interval`, `diagnostic sampling`
+- Required Capabilities: `audio.stream`
+
+#### Payload Fields
+
+Type: `AudioStreamStatsReportedEvent`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| streamId | UInt32 | 0x01 | STREAM data plane stream identifier. | None | N/A |
+| stats | AudioStreamStats | 0x02 | Bounded stream statistics. | None | N/A |
+
+---
+
+## firmware Events
+
+### Events in this domain
+
+- [firmware.updateProgressReported](#firmwareupdateprogressreported)
+- [firmware.updateStateChanged](#firmwareupdatestatechanged)
+
+---
+
+### firmware.updateProgressReported
+
+Emitted when firmware receiving, verification, or install progress changes.
+
+- Event ID: `0x0402`
+- Domain: `firmware`
+- bitOffset: `0`
+- Status: `draft`
+- Severity: `info`
+- Added in v1.0.0
+- Trigger: `STREAM upload progress`, `firmware.finishUpdate`, `internal verify`, `internal install`
+- Required Capabilities: `firmware.update`
+
+#### Payload Fields
+
+Type: `FirmwareUpdateProgressEvent`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| updateSessionId | String | 0x01 | Firmware update session identifier. | maxLength=128 | N/A |
+| state | Enum | 0x02 | Current firmware update state. | None | N/A |
+| ?progress | UInt8 | 0x03 | Overall progress percentage. | min=0, max=100 | Omit if not used. |
+| ?fileId | String | 0x04 | Current file identifier. | maxLength=128 | Omit if not used. |
+
+---
+
+### firmware.updateStateChanged
+
+Emitted when firmware update state changes or fails.
+
+- Event ID: `0x0403`
+- Domain: `firmware`
+- bitOffset: `1`
+- Status: `draft`
+- Severity: `info`
+- Added in v1.0.0
+- Trigger: `firmware.beginUpdate`, `firmware.finishUpdate`, `verify complete`, `install complete`, `rebooting`, `failure`
+- Required Capabilities: `firmware.update`
+
+#### Payload Fields
+
+Type: `FirmwareUpdateStateChangedEvent`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| updateSessionId | String | 0x01 | Firmware update session identifier. | maxLength=128 | N/A |
+| state | Enum | 0x02 | New firmware update state. | None | N/A |
+| ?error | FirmwareUpdateErrorInfo | 0x03 | Error details when state is failed. | None | Omit if not used. |
+
+---
+
+## network Events
+
+### Events in this domain
+
+- [network.interfaceStateChanged](#networkinterfacestatechanged)
+- [network.ipConfigChanged](#networkipconfigchanged)
+- [network.wifiConfigChanged](#networkwificonfigchanged)
+- [network.wifiStateChanged](#networkwifistatechanged)
+- [network.wifiScanResultReported](#networkwifiscanresultreported)
+- [network.apConfigChanged](#networkapconfigchanged)
+- [network.apStateChanged](#networkapstatechanged)
+- [network.apClientChanged](#networkapclientchanged)
+
+---
+
+### network.interfaceStateChanged
+
+Emitted when network interface administrative or link state changes.
+
+- Event ID: `0x0E01`
+- Domain: `network`
+- bitOffset: `0`
+- Status: `draft`
+- Severity: `info`
+- Added in v1.0.0
+- Trigger: `link state change`, `admin state change`, `interface availability change`
+- Required Capabilities: `network.interface`
+
+#### Payload Fields
+
+Type: `NetworkInterfaceStateChangedEvent`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| interfaceId | String | 0x01 | Interface identifier. | maxLength=64 | N/A |
+| state | NetworkInterfaceState | 0x02 | New interface state. | None | N/A |
+| ?previousState | NetworkInterfaceState | 0x03 | Previous interface state. | None | Omit if not used. |
+| ?reason | Enum | 0x04 | Change reason. | None | Omit if not used. |
+
+---
+
+### network.ipConfigChanged
+
+Emitted when IP configuration changes for an interface.
+
+- Event ID: `0x0E02`
+- Domain: `network`
+- bitOffset: `1`
+- Status: `draft`
+- Severity: `info`
+- Added in v1.0.0
+- Trigger: `network.setIpConfig`, `DHCP renew`, `device policy`
+- Required Capabilities: `network.ip`
+
+#### Payload Fields
+
+Type: `NetworkIpConfigChangedEvent`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| interfaceId | String | 0x01 | Interface identifier. | maxLength=64 | N/A |
+| ?family | Enum | 0x02 | IP family. | None | Omit if not used. |
+| config | NetworkIpConfig | 0x03 | New IP configuration. | None | N/A |
+| ?previousConfig | NetworkIpConfig | 0x04 | Previous IP configuration. | None | Omit if not used. |
+| ?reason | Enum | 0x05 | Change reason. | None | Omit if not used. |
+
+---
+
+### network.wifiConfigChanged
+
+Emitted when saved Wi-Fi profile configuration changes.
+
+- Event ID: `0x0E03`
+- Domain: `network`
+- bitOffset: `2`
+- Status: `draft`
+- Severity: `info`
+- Added in v1.0.0
+- Trigger: `network.setWifiConfig`, `device policy`
+- Required Capabilities: `network.wifi`
+
+#### Payload Fields
+
+Type: `NetworkWifiConfigChangedEvent`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?interfaceId | String | 0x01 | Wi-Fi station interface identifier. | maxLength=64 | Omit if not used. |
+| config | NetworkWifiConfig | 0x02 | New Wi-Fi configuration summary. | None | N/A |
+| ?changedFields | Bytes | 0x03 | JSON array of changed field paths. | maxLength=1024 | Omit if not used. |
+| ?reason | Enum | 0x04 | Change reason. | None | Omit if not used. |
+
+---
+
+### network.wifiStateChanged
+
+Emitted when Wi-Fi station association, authentication, connection, or failure state changes.
+
+- Event ID: `0x0E04`
+- Domain: `network`
+- bitOffset: `3`
+- Status: `draft`
+- Severity: `info`
+- Added in v1.0.0
+- Trigger: `network.setWifiConfig`, `network.connectWifi`, `network.disconnectWifi`, `local Wi-Fi state change`
+- Required Capabilities: `network.wifi`
+
+#### Payload Fields
+
+Type: `NetworkWifiStateChangedEvent`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| state | NetworkWifiState | 0x01 | New Wi-Fi station state. | None | N/A |
+| ?previousState | NetworkWifiState | 0x02 | Previous state. | None | Omit if not used. |
+| ?reason | Enum | 0x03 | Change reason. | None | Omit if not used. |
+
+---
+
+### network.wifiScanResultReported
+
+Emitted for asynchronous Wi-Fi scan results or scan completion.
+
+- Event ID: `0x0E05`
+- Domain: `network`
+- bitOffset: `4`
+- Status: `draft`
+- Severity: `info`
+- Added in v1.0.0
+- Trigger: `network.scanWifi`
+- Required Capabilities: `network.wifi`
+
+#### Payload Fields
+
+Type: `NetworkWifiScanResultReportedEvent`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?scanId | String | 0x01 | Scan identifier. | maxLength=128 | Omit if not used. |
+| ?results | Bytes | 0x02 | JSON array of NetworkWifiScanResult objects. | maxLength=16384 | Omit if not used. |
+| complete | Boolean | 0x03 | Whether this event completes the scan. | None | N/A |
+
+---
+
+### network.apConfigChanged
+
+Emitted when Wi-Fi AP configuration changes.
+
+- Event ID: `0x0E06`
+- Domain: `network`
+- bitOffset: `5`
+- Status: `draft`
+- Severity: `info`
+- Added in v1.0.0
+- Trigger: `network.setApConfig`, `device policy`
+- Required Capabilities: `network.ap`
+
+#### Payload Fields
+
+Type: `NetworkApConfigChangedEvent`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?interfaceId | String | 0x01 | Wi-Fi AP interface identifier. | maxLength=64 | Omit if not used. |
+| config | NetworkApConfig | 0x02 | New AP configuration. | None | N/A |
+| ?changedFields | Bytes | 0x03 | JSON array of changed field paths. | maxLength=1024 | Omit if not used. |
+| ?reason | Enum | 0x04 | Change reason. | None | Omit if not used. |
+
+---
+
+### network.apStateChanged
+
+Emitted when Wi-Fi AP runtime state changes.
+
+- Event ID: `0x0E07`
+- Domain: `network`
+- bitOffset: `6`
+- Status: `draft`
+- Severity: `info`
+- Added in v1.0.0
+- Trigger: `network.startAp`, `network.stopAp`, `local AP state change`
+- Required Capabilities: `network.ap`
+
+#### Payload Fields
+
+Type: `NetworkApStateChangedEvent`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| state | NetworkApState | 0x01 | New AP state. | None | N/A |
+| ?previousState | NetworkApState | 0x02 | Previous AP state. | None | Omit if not used. |
+| ?reason | Enum | 0x03 | Change reason. | None | Omit if not used. |
+
+---
+
+### network.apClientChanged
+
+Emitted when a client joins or leaves the Wi-Fi AP.
+
+- Event ID: `0x0E08`
+- Domain: `network`
+- bitOffset: `7`
+- Status: `draft`
+- Severity: `info`
+- Added in v1.0.0
+- Trigger: `AP client join`, `AP client leave`
+- Required Capabilities: `network.ap`
+
+#### Payload Fields
+
+Type: `NetworkApClientChangedEvent`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| change | Enum | 0x01 | Client change type; candidate values include joined, left, and updated. | None | N/A |
+| client | NetworkApClientInfo | 0x02 | Client summary. | None | N/A |
+| ?reason | Enum | 0x03 | Change reason. | None | Omit if not used. |
+
+---
+
+## video Events
+
+### Events in this domain
+
+- [video.streamStateChanged](#videostreamstatechanged)
+- [video.streamSourceStateChanged](#videostreamsourcestatechanged)
+- [video.streamStatsReported](#videostreamstatsreported)
+
+---
+
+### video.streamStateChanged
+
+Emitted when a video stream enters opening, streaming, closed, failed, or keyframe-related state.
+
+- Event ID: `0x0806`
+- Domain: `video`
+- bitOffset: `0`
+- Status: `draft`
+- Severity: `info`
+- Added in v1.0.0
+- Trigger: `video.openStream`, `video.closeStream`, `video.requestKeyFrame`, `source disconnected`, `stream failure`
+- Required Capabilities: `video.stream`
+
+#### Payload Fields
+
+Type: `VideoStreamStateChangedEvent`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| streamId | UInt32 | 0x01 | STREAM data plane stream identifier. | None | N/A |
+| state | Enum | 0x02 | New stream state. | None | N/A |
+| source | String | 0x03 | Bound video source. | maxLength=128 | N/A |
+| ?reason | Enum | 0x04 | State change reason. | None | Omit if not used. |
+| ?stats | VideoStreamStats | 0x05 | Optional bounded stream statistics. | None | Omit if not used. |
+
+---
+
+### video.streamSourceStateChanged
+
+Emitted when a video stream source availability or receiving state changes.
+
+- Event ID: `0x0807`
+- Domain: `video`
+- bitOffset: `1`
+- Status: `draft`
+- Severity: `info`
+- Added in v1.0.0
+- Trigger: `source available`, `source receiving`, `source stopped`
+- Required Capabilities: `video.stream`
+
+#### Payload Fields
+
+Type: `VideoStreamSourceStateChangedEvent`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| source | String | 0x01 | Video source identifier. | maxLength=128 | N/A |
+| ?mediaKind | Enum | 0x02 | Media kind, normally video. | None | Omit if not used. |
+| state | Enum | 0x03 | New source state. | None | N/A |
+| ?reason | Enum | 0x04 | Source state change reason. | None | Omit if not used. |
+| ?activeStreamId | UInt32 | 0x05 | Active downstream stream id, if any. | None | Omit if not used. |
+
+---
+
+### video.streamStatsReported
+
+Emitted with bounded runtime statistics for a video stream.
+
+- Event ID: `0x0808`
+- Domain: `video`
+- bitOffset: `2`
+- Status: `draft`
+- Severity: `info`
+- Added in v1.0.0
+- Trigger: `stream statistics interval`, `diagnostic sampling`
+- Required Capabilities: `video.stream`
+
+#### Payload Fields
+
+Type: `VideoStreamStatsReportedEvent`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| streamId | UInt32 | 0x01 | STREAM data plane stream identifier. | None | N/A |
+| stats | VideoStreamStats | 0x02 | Bounded stream statistics. | None | N/A |
 
 ---
 
@@ -597,6 +2415,34 @@ Noise suppression configuration object.
 
 ---
 
+## AudioStreamSource
+
+One real-time audio stream source.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| source | String | 0x01 | Source identifier such as wireless_cast_audio. | maxLength=128 | N/A |
+| ?displayName | String | 0x02 | User-visible source name. | maxLength=128 | Omit if not used. |
+| codecs | Bytes | 0x03 | JSON array of supported audio codecs. | maxLength=512 | N/A |
+| ?sampleRates | Bytes | 0x04 | JSON array of supported sample rates in Hz. | maxLength=512 | Omit if not used. |
+| ?channels | Bytes | 0x05 | JSON array of supported channel counts. | maxLength=256 | Omit if not used. |
+| ?state | Enum | 0x06 | Runtime source state, such as available, receiving, stopped, or unavailable. | None | Omit if not used. |
+
+---
+
+## AudioStreamStats
+
+Bounded runtime statistics for an audio stream.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?packets | UInt64 | 0x01 | Number of STREAM packets observed. | None | Omit if not used. |
+| ?bytes | UInt64 | 0x02 | Number of STREAM payload bytes observed. | None | Omit if not used. |
+| ?droppedPackets | UInt64 | 0x03 | Number of dropped packets. | None | Omit if not used. |
+| ?jitterMs | UInt32 | 0x04 | Estimated jitter in milliseconds. | None | Omit if not used. |
+
+---
+
 ## AudioVoiceActivityDetectionCapabilities
 
 Voice activity detection supported fields.
@@ -658,11 +2504,307 @@ Kind: `object`
 
 ---
 
-## Empty
+## DeviceAxtpRuntime
 
-Kind: `object`
+AXTP runtime summary.
 
-No fields.
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?axtpRuntime | String | 0x01 | AXTP runtime implementation name. | maxLength=128 | Omit if not used. |
+| ?axtpRuntimeVersion | String | 0x02 | AXTP runtime implementation version. | maxLength=64 | Omit if not used. |
+| ?hostAppId | String | 0x03 | Host application identifier. | maxLength=64 | Omit if not used. |
+
+---
+
+## DeviceCapabilitySummary
+
+Lightweight capability modeling summary returned by device.getInfo.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?domains | Bytes | 0x01 | JSON array of domain names represented by the device. | maxLength=1024 | Omit if not used. |
+| ?features | Bytes | 0x02 | JSON array of domain.feature names represented by the device. | maxLength=4096 | Omit if not used. |
+| ?profiles | Bytes | 0x03 | JSON array of profile names or product profile hints. | maxLength=1024 | Omit if not used. |
+
+---
+
+## DeviceHardware
+
+Hardware summary.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?revision | String | 0x01 | Hardware revision. | maxLength=32 | Omit if not used. |
+| ?cpuArch | Enum | 0x02 | CPU architecture; candidate values include x86_64, arm64, armv7, riscv64, and unknown. | None | Omit if not used. |
+| ?memoryBytes | UInt64 | 0x03 | Physical memory capacity in bytes. | None | Omit if not used. |
+
+---
+
+## DeviceIdentity
+
+Stable identity fields for the current main device.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| deviceId | String | 0x01 | Stable AXTP or business device identifier. | maxLength=128 | N/A |
+| ?serialNumber | String | 0x02 | Vendor serial number; may be omitted by permission policy. | maxLength=128 | Omit if not used. |
+| ?vendorId | String | 0x03 | Vendor identifier. | maxLength=64 | Omit if not used. |
+| ?productId | String | 0x04 | Product identifier. | maxLength=64 | Omit if not used. |
+
+---
+
+## DeviceInfoCapability
+
+Capability descriptor for device.info.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| readOnly | Boolean | 0x01 | device.info currently exposes only read-only information. | None | N/A |
+| ?supportsCapabilitySummary | Boolean | 0x02 | Whether device.getInfo can include DeviceCapabilitySummary. | None | Omit if not used. |
+| ?identityMerged | Boolean | 0x03 | Whether device.identity has been merged into device.info. | None | Omit if not used. |
+
+---
+
+## DeviceOs
+
+Operating system summary.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| type | Enum | 0x01 | OS type; candidate values include windows, android, linux, rtos, and unknown. | None | N/A |
+| ?name | String | 0x02 | OS display name. | maxLength=128 | Omit if not used. |
+| ?version | String | 0x03 | OS version string. | maxLength=64 | Omit if not used. |
+| ?arch | Enum | 0x04 | OS architecture; candidate values include x86_64, arm64, armv7, riscv64, and unknown. | None | Omit if not used. |
+
+---
+
+## DeviceProduct
+
+Product and user-visible model information.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?brand | String | 0x01 | Product brand. | maxLength=64 | Omit if not used. |
+| productType | Enum | 0x02 | Product type; candidate values include windowsDevice, androidDevice, embeddedDevice, rtosDevice, cameraDevice, displayDevice, and unknown. | None | N/A |
+| model | String | 0x03 | Hardware or whole-product model. | maxLength=128 | N/A |
+| ?displayName | String | 0x04 | User-visible display name; this feature exposes it as read-only. | maxLength=128 | Omit if not used. |
+
+---
+
+## DeviceSoftware
+
+Software component summary.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?components | Bytes | 0x01 | JSON array of SoftwareComponent objects. | maxLength=4096 | Omit if not used. |
+
+---
+
+## FirmwareUpdateErrorInfo
+
+Firmware update error details.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| error | Enum | 0x01 | Candidate or adopted error name. | None | N/A |
+| ?message | String | 0x02 | Developer-facing error message. | maxLength=256 | Omit if not used. |
+| ?fileId | String | 0x03 | Related file identifier, if applicable. | maxLength=128 | Omit if not used. |
+
+---
+
+## FirmwareUpdateFile
+
+One file in the firmware update manifest.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| fileId | String | 0x01 | Manifest-scoped file identifier. | maxLength=128 | N/A |
+| ?target | String | 0x02 | Device-defined target component or partition. | maxLength=128 | Omit if not used. |
+| size | UInt64 | 0x03 | File size in bytes. | None | N/A |
+| md5 | String | 0x04 | File md5 digest as lowercase hexadecimal. | maxLength=32 | N/A |
+
+---
+
+## FirmwareUpdateManifest
+
+Minimal firmware update manifest.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?packageId | String | 0x01 | Firmware package identifier. | maxLength=128 | Omit if not used. |
+| ?version | String | 0x02 | Target firmware version string. | maxLength=64 | Omit if not used. |
+| files | Bytes | 0x03 | JSON array of FirmwareUpdateFile objects. | maxLength=16384 | N/A |
+| ?devicePolicyVersion | String | 0x04 | Optional policy version used to interpret the package. | maxLength=64 | Omit if not used. |
+
+---
+
+## FirmwareUpdateStreamBinding
+
+Binding between a manifest file and a STREAM streamId.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| fileId | String | 0x01 | Manifest-scoped file identifier. | maxLength=128 | N/A |
+| streamId | UInt32 | 0x02 | STREAM data plane stream identifier. | None | N/A |
+
+---
+
+## NetworkApClientInfo
+
+One AP client summary.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| clientId | String | 0x01 | Client identifier. | maxLength=128 | N/A |
+| ?macAddress | String | 0x02 | Client MAC address, if available and permitted. | maxLength=32 | Omit if not used. |
+| ?displayName | String | 0x03 | Client display name. | maxLength=128 | Omit if not used. |
+| ?rssi | Int32 | 0x04 | Client RSSI in dBm. | None | Omit if not used. |
+| ?connectedSeconds | UInt32 | 0x05 | Connection age in seconds. | None | Omit if not used. |
+
+---
+
+## NetworkCredential
+
+Credential descriptor or secret reference.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| type | Enum | 0x01 | Credential type; candidate values include passphrase, pairing_token, opaque_ref, and none. | None | N/A |
+| ?secretRef | String | 0x02 | Opaque reference to sensitive credential material. | maxLength=256 | Omit if not used. |
+| ?expiresInSeconds | UInt32 | 0x03 | Relative validity lifetime for ephemeral credentials. | None | Omit if not used. |
+
+---
+
+## NetworkDefaultInterfaceIds
+
+Default network interface identifiers by role.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?primary | String | 0x01 | Primary interface. | maxLength=64 | Omit if not used. |
+| ?wifiSta | String | 0x02 | Default Wi-Fi station interface. | maxLength=64 | Omit if not used. |
+| ?wifiAp | String | 0x03 | Default Wi-Fi AP interface. | maxLength=64 | Omit if not used. |
+
+---
+
+## NetworkInterfaceCapability
+
+Capability descriptor for network.interface.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?interfaceTypes | Bytes | 0x01 | JSON array of supported interface type strings. | maxLength=512 | Omit if not used. |
+| ?supportsStateEvent | Boolean | 0x02 | Whether network.interfaceStateChanged is supported. | None | Omit if not used. |
+
+---
+
+## NetworkInterfaceState
+
+Network interface administrative and link state.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?admin | Enum | 0x01 | Administrative state; candidate values include up, down, disabled, and unknown. | None | Omit if not used. |
+| ?link | Enum | 0x02 | Link state; candidate values include up, down, dormant, unknown. | None | Omit if not used. |
+| ?speedMbps | UInt32 | 0x03 | Link speed in Mbps. | None | Omit if not used. |
+
+---
+
+## NetworkInterfaceSummary
+
+Summary of one network interface.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| interfaceId | String | 0x01 | Interface identifier. | maxLength=64 | N/A |
+| type | Enum | 0x02 | Interface type; candidate values include ethernet, wifi, cellular, usb, virtual, and unknown. | None | N/A |
+| ?displayName | String | 0x03 | User-visible interface name. | maxLength=128 | Omit if not used. |
+| ?state | NetworkInterfaceState | 0x04 | Current interface state. | None | Omit if not used. |
+
+---
+
+## NetworkIpCapability
+
+Capability descriptor for network.ip.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?families | Bytes | 0x01 | JSON array of supported IP families. | maxLength=256 | Omit if not used. |
+| ?modes | Bytes | 0x02 | JSON array of supported IP modes. | maxLength=512 | Omit if not used. |
+| ?applyPolicies | Bytes | 0x03 | JSON array of supported apply policies. | maxLength=512 | Omit if not used. |
+
+---
+
+## NetworkWifiProfile
+
+Wi-Fi profile object used for station connection.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?profileId | String | 0x01 | Profile identifier. | maxLength=128 | Omit if not used. |
+| ssid | String | 0x02 | Wi-Fi SSID. | maxLength=64 | N/A |
+| ?bssid | String | 0x03 | Optional AP BSSID. | maxLength=32 | Omit if not used. |
+| securityType | Enum | 0x04 | Security type, such as open, wpa2_psk, or wpa3_sae. | None | N/A |
+| ?credential | NetworkCredential | 0x05 | Credential descriptor or secret reference. Responses must not expose plaintext secrets. | None | Omit if not used. |
+| ?source | Enum | 0x06 | Profile source; candidate values include manual, pairing, migrated, and device_policy. | None | Omit if not used. |
+| ?persist | Boolean | 0x07 | Whether the profile should be persisted. This remains policy-controlled. | None | Omit if not used. |
+
+---
+
+## NetworkWifiScanResult
+
+One Wi-Fi scan result.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ssid | String | 0x01 | SSID. | maxLength=64 | N/A |
+| ?bssid | String | 0x02 | BSSID. | maxLength=32 | Omit if not used. |
+| ?band | Enum | 0x03 | Wi-Fi band. | None | Omit if not used. |
+| ?channel | UInt16 | 0x04 | Channel number. | None | Omit if not used. |
+| ?rssi | Int32 | 0x05 | RSSI in dBm. | None | Omit if not used. |
+| ?securityType | Enum | 0x06 | Security type. | None | Omit if not used. |
+
+---
+
+## SoftwareComponent
+
+One software component running on or hosted by the device.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| id | String | 0x01 | Component identifier. | maxLength=64 | N/A |
+| ?name | String | 0x02 | Component display name. | maxLength=128 | Omit if not used. |
+| ?version | String | 0x03 | Component version. | maxLength=64 | Omit if not used. |
+| ?role | Enum | 0x04 | Component role, such as axtpHost, launcher, signagePlayer, agent, or unknown. | None | Omit if not used. |
+
+---
+
+## VideoStreamSource
+
+One real-time video stream source.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| source | String | 0x01 | Source identifier such as wireless_cast_video. | maxLength=128 | N/A |
+| ?displayName | String | 0x02 | User-visible source name. | maxLength=128 | Omit if not used. |
+| codecs | Bytes | 0x03 | JSON array of supported video codecs. | maxLength=512 | N/A |
+| ?resolutions | Bytes | 0x04 | JSON array of supported resolution descriptors. | maxLength=1024 | Omit if not used. |
+| ?frameRates | Bytes | 0x05 | JSON array of supported frame rates. | maxLength=512 | Omit if not used. |
+| ?state | Enum | 0x06 | Runtime source state, such as available, receiving, stopped, or unavailable. | None | Omit if not used. |
+
+---
+
+## VideoStreamStats
+
+Bounded runtime statistics for a video stream.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?frames | UInt64 | 0x01 | Number of frames observed. | None | Omit if not used. |
+| ?bytes | UInt64 | 0x02 | Number of STREAM payload bytes observed. | None | Omit if not used. |
+| ?droppedFrames | UInt64 | 0x03 | Number of dropped frames. | None | Omit if not used. |
+| ?bitrateKbps | UInt32 | 0x04 | Estimated bitrate in kbps. | None | Omit if not used. |
 
 ---
 

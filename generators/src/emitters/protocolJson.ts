@@ -9,6 +9,7 @@ export function toProtocolJson(model: ProtocolModel): Record<string, unknown> {
     overview: model.overview,
     architecture: model.architecture,
     guide: model.guide,
+    wire: model.wire,
     frameProfiles: model.frameProfiles,
     transports: model.transports,
     payloadTypes: model.payloadTypes,
