@@ -1,10 +1,146 @@
 #include <cassert>
 #include <memory>
 #include <string>
+#include <utility>
+#include <vector>
 
 #include "testing/mock_transport.hpp"
 
 #include "axtp_sdk_all.hpp"
+
+namespace {
+
+struct CapturingByteWriter : axtp::IByteWriter {
+    axtp::Bytes bytes;
+
+    void writeBytes(const axtp::Byte* data, std::size_t size) override {
+        bytes.insert(bytes.end(), data, data + size);
+    }
+};
+
+struct CapturingPayloadSink : axtp::IPayloadSink {
+    std::vector<axtp::ControlPayload> controls;
+    std::vector<axtp::RpcPayload> rpcs;
+    std::vector<axtp::StreamPayload> streams;
+
+    void onControl(axtp::ControlPayload payload) override {
+        controls.push_back(std::move(payload));
+    }
+
+    void onRpc(axtp::RpcPayload payload) override {
+        rpcs.push_back(std::move(payload));
+    }
+
+    void onStream(axtp::StreamPayload payload) override {
+        streams.push_back(std::move(payload));
+    }
+};
+
+axtp::Bytes encodeControl(axtp::ControlPayload payload) {
+    CapturingByteWriter writer;
+    axtp::OutboundProcessor outbound(writer);
+    outbound.sendControl(std::move(payload));
+    return writer.bytes;
+}
+
+axtp::Bytes encodeRpc(axtp::RpcPayload payload) {
+    CapturingByteWriter writer;
+    axtp::OutboundProcessor outbound(writer);
+    outbound.sendRpc(std::move(payload));
+    return writer.bytes;
+}
+
+class ScriptedHandshakeTransport : public axtp::ITransport {
+public:
+    void bind(axtp::IByteSink& sink) override {
+        _sink = &sink;
+    }
+
+    void open() override {
+        _open = true;
+    }
+
+    void close() override {
+        _open = false;
+    }
+
+    void sendBytes(const axtp::Byte* data, std::size_t size) override {
+        CapturingPayloadSink sink;
+        axtp::InboundProcessor inbound(sink);
+        inbound.onBytes(data, size);
+
+        for (const auto& control : sink.controls) {
+            if (control.opcode != axtp::ControlOpcode::Open) {
+                continue;
+            }
+            sawOpen = true;
+            axtp::ControlPayload accept;
+            accept.opcode = axtp::ControlOpcode::Accept;
+            accept.controlId = control.controlId;
+            accept.statusCode = axtp::ErrorCode::Success;
+            inject(encodeControl(accept));
+            inject(encodeRpc(axtp::JsonRpcEncoder::makeHello()));
+        }
+
+        for (const auto& rpc : sink.rpcs) {
+            if (rpc.op == axtp::RpcOp::Identify) {
+                sawIdentify = true;
+                assert(rpc.meta.jsonSid.empty());
+                const std::string body(rpc.body.begin(), rpc.body.end());
+                assert(body.find(R"("clientSeed":305419896)") != std::string::npos);
+                inject(encodeRpc(axtp::JsonRpcEncoder::makeIdentified("12345678")));
+                continue;
+            }
+            if (rpc.op == axtp::RpcOp::Request) {
+                sawBusinessRequest = true;
+                assert(rpc.meta.jsonSid == "12345678");
+                axtp::RpcPayload response;
+                response.encoding = axtp::RpcEncoding::Json;
+                response.op = axtp::RpcOp::RequestResponse;
+                response.requestId = rpc.requestId;
+                response.methodOrEventId = rpc.methodOrEventId;
+                response.statusCode = axtp::ErrorCode::Success;
+                response.bodyEncoding = axtp::RpcBodyEncoding::None;
+                response.meta.sourceProtocol = axtp::SourceProtocol::JsonRpc;
+                response.meta.jsonSid = rpc.meta.jsonSid;
+                response.body = {'{', '}'};
+                inject(encodeRpc(response));
+            }
+        }
+    }
+
+    axtp::TransportProfile profile() const override {
+        return axtp::TransportProfile{
+            axtp::TransportKind::Mock,
+            axtp::AxtpWireMode::FramedBinary,
+            axtp::RpcEncoding::Json,
+            false,
+            false,
+            true,
+            4096,
+        };
+    }
+
+    bool isOpen() const {
+        return _open;
+    }
+
+    bool sawOpen = false;
+    bool sawIdentify = false;
+    bool sawBusinessRequest = false;
+
+private:
+    void inject(const axtp::Bytes& bytes) {
+        if (_sink != nullptr) {
+            _sink->onBytes(bytes.data(), bytes.size());
+        }
+    }
+
+    axtp::IByteSink* _sink = nullptr;
+    bool _open = false;
+};
+
+}  // namespace
 
 int main() {
     axtp::sdk::AxtpClient client;
@@ -76,4 +212,40 @@ int main() {
 
     client.close();
     assert(!client.isConnected());
+
+    {
+        axtp::sdk::AxtpClient handshakeClient;
+        auto transport = std::make_unique<ScriptedHandshakeTransport>();
+        auto* transportPtr = transport.get();
+        handshakeClient.attachTransport(std::move(transport));
+        assert(transportPtr->isOpen());
+
+        axtp::sdk::AppReadyOptions options;
+        options.clientSeed = 0x12345678;
+        const auto appReady = handshakeClient.ensureAppReady(options);
+        assert(appReady.ok);
+        assert(appReady.sid == "12345678");
+        assert(appReady.clientSeed == 0x12345678);
+        assert(handshakeClient.isAppReady());
+        assert(handshakeClient.sessionSid() == "12345678");
+        assert(transportPtr->sawOpen);
+        assert(transportPtr->sawIdentify);
+
+        axtp::RpcPayload request;
+        request.encoding = axtp::RpcEncoding::Json;
+        request.op = axtp::RpcOp::Request;
+        request.methodOrEventId =
+            static_cast<std::uint16_t>(axtp::MethodId::AudioGetAlgorithmConfig);
+        request.bodyEncoding = axtp::RpcBodyEncoding::None;
+        request.meta.sourceProtocol = axtp::SourceProtocol::JsonRpc;
+        request.meta.jsonMethodOrEventName = "audio.getAlgorithmConfig";
+        request.body = {'{', '}'};
+
+        axtp::sdk::CallOptions callOptions;
+        callOptions.acceptAnyResponse = true;
+        auto response = handshakeClient.callRaw(std::move(request), callOptions);
+        assert(response.statusCode == axtp::ErrorCode::Success);
+        assert(response.requestId == 1);
+        assert(transportPtr->sawBusinessRequest);
+    }
 }

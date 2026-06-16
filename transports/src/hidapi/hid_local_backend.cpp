@@ -58,7 +58,8 @@ bool LocalHidBackend::writeReport(const Byte*, std::size_t) {
     return false;
 }
 
-std::optional<std::size_t> LocalHidBackend::readReport(Byte*, std::size_t) {
+std::optional<std::size_t>
+LocalHidBackend::readReport(Byte*, std::size_t, std::uint32_t) {
     return std::nullopt;
 }
 
@@ -169,7 +170,7 @@ bool LocalHidBackend::writeReport(const Byte* data, std::size_t size) {
         return false;
     }
     if (_mode == Mode::Server && _impl->peerFd < 0) {
-        readReport(nullptr, 0);
+        readReport(nullptr, 0, 0);
     }
     if (_impl->peerFd < 0) {
         return false;
@@ -200,52 +201,62 @@ bool LocalHidBackend::writeReport(const Byte* data, std::size_t size) {
     return true;
 }
 
-std::optional<std::size_t> LocalHidBackend::readReport(Byte* data, std::size_t size) {
+std::optional<std::size_t>
+LocalHidBackend::readReport(Byte* data, std::size_t size, std::uint32_t timeoutMs) {
     if (!_impl->open) {
         return std::nullopt;
     }
 
-    if (_mode == Mode::Server && _impl->peerFd < 0) {
-        const auto fd = accept(_impl->listenFd, nullptr, nullptr);
-        if (fd >= 0) {
-            _impl->peerFd = fd;
-            suppressSigPipe(_impl->peerFd);
-            setNonBlocking(_impl->peerFd);
-        } else if (errno != EAGAIN && errno != EWOULDBLOCK && errno != EINTR) {
-            return std::nullopt;
-        }
-    }
-    if (_impl->peerFd < 0) {
-        return 0;
-    }
+    const auto deadline =
+        std::chrono::steady_clock::now() + std::chrono::milliseconds(timeoutMs);
 
-    Byte buffer[4096];
     while (true) {
-        const auto received = recv(_impl->peerFd, buffer, sizeof(buffer), 0);
-        if (received > 0) {
-            _impl->pending.insert(_impl->pending.end(), buffer, buffer + received);
-            continue;
+        if (_mode == Mode::Server && _impl->peerFd < 0) {
+            const auto fd = accept(_impl->listenFd, nullptr, nullptr);
+            if (fd >= 0) {
+                _impl->peerFd = fd;
+                suppressSigPipe(_impl->peerFd);
+                setNonBlocking(_impl->peerFd);
+            } else if (errno != EAGAIN && errno != EWOULDBLOCK && errno != EINTR) {
+                return std::nullopt;
+            }
         }
-        if (received == 0) {
-            closeFd(&_impl->peerFd);
-            break;
-        }
-        if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR) {
-            break;
-        }
-        closeFd(&_impl->peerFd);
-        return std::nullopt;
-    }
 
-    if (data == nullptr || size == 0 || _impl->pending.size() < size) {
-        return 0;
-    }
+        if (_impl->peerFd >= 0) {
+            Byte buffer[4096];
+            while (true) {
+                const auto received = recv(_impl->peerFd, buffer, sizeof(buffer), 0);
+                if (received > 0) {
+                    _impl->pending.insert(_impl->pending.end(), buffer, buffer + received);
+                    continue;
+                }
+                if (received == 0) {
+                    closeFd(&_impl->peerFd);
+                    break;
+                }
+                if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR) {
+                    break;
+                }
+                closeFd(&_impl->peerFd);
+                return std::nullopt;
+            }
+        }
 
-    std::copy(
-        _impl->pending.begin(), _impl->pending.begin() + static_cast<std::ptrdiff_t>(size), data);
-    _impl->pending.erase(_impl->pending.begin(),
-                         _impl->pending.begin() + static_cast<std::ptrdiff_t>(size));
-    return size;
+        if (data != nullptr && size > 0 && _impl->pending.size() >= size) {
+            std::copy(_impl->pending.begin(),
+                      _impl->pending.begin() + static_cast<std::ptrdiff_t>(size),
+                      data);
+            _impl->pending.erase(_impl->pending.begin(),
+                                 _impl->pending.begin() + static_cast<std::ptrdiff_t>(size));
+            return size;
+        }
+
+        if (data == nullptr || size == 0 || timeoutMs == 0 ||
+            std::chrono::steady_clock::now() >= deadline) {
+            return 0;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
 }
 
 #endif

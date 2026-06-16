@@ -10,6 +10,7 @@ struct CallOptions {
     std::chrono::milliseconds timeout{5000};
     RpcEncoding encoding = RpcEncoding::Json;
     bool validateSchema = false;
+    bool acceptAnyResponse = false;
 };
 
 }  // namespace axtp::sdk

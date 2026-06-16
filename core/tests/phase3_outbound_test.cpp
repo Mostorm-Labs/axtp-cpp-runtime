@@ -1,5 +1,6 @@
 #include <cassert>
 #include <cstdint>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -81,6 +82,54 @@ int main() {
         assert(sink.rpcs.size() == 1);
         assert(sink.rpcs[0].requestId == 43);
         assert(sink.rpcs[0].body == rpc.body);
+    }
+
+    {
+        CapturingByteWriter writer;
+        axtp::OutboundProcessor outbound(writer);
+        axtp::RpcPayload rpc;
+        rpc.encoding = axtp::RpcEncoding::Json;
+        rpc.op = axtp::RpcOp::Request;
+        rpc.requestId = 44;
+        rpc.methodOrEventId = 0x0901;
+        rpc.bodyEncoding = axtp::RpcBodyEncoding::None;
+        rpc.meta.sourceProtocol = axtp::SourceProtocol::JsonRpc;
+        rpc.meta.jsonSid = "00000000";
+        rpc.meta.jsonMethodOrEventName = "audio.getAlgorithmConfig";
+        const std::string body = "{}";
+        rpc.body.assign(body.begin(), body.end());
+        outbound.sendRpcRequest(rpc);
+
+        CapturingPayloadSink sink;
+        axtp::InboundProcessor inbound(sink);
+        inbound.onBytes(writer.bytes.data(), writer.bytes.size());
+        assert(sink.rpcs.size() == 1);
+        assert(sink.rpcs[0].encoding == axtp::RpcEncoding::Json);
+        assert(sink.rpcs[0].op == axtp::RpcOp::Request);
+        assert(sink.rpcs[0].requestId == 44);
+        assert(sink.rpcs[0].methodOrEventId == 0x0901);
+        assert(sink.rpcs[0].meta.jsonSid == "00000000");
+        assert((sink.rpcs[0].body == axtp::Bytes{'{', '}'}));
+    }
+
+    {
+        CapturingByteWriter writer;
+        axtp::OutboundProcessor outbound(writer);
+        axtp::RpcPayload rpc =
+            axtp::JsonRpcEncoder::makeIdentify(0x12345678, "");
+        outbound.sendRpc(rpc);
+
+        CapturingPayloadSink sink;
+        axtp::InboundProcessor inbound(sink);
+        inbound.onBytes(writer.bytes.data(), writer.bytes.size());
+        assert(sink.rpcs.size() == 1);
+        assert(sink.rpcs[0].encoding == axtp::RpcEncoding::Json);
+        assert(sink.rpcs[0].op == axtp::RpcOp::Identify);
+        assert(sink.rpcs[0].meta.jsonSid.empty());
+        const std::string body(sink.rpcs[0].body.begin(), sink.rpcs[0].body.end());
+        assert(body.find(R"("rpcVersion":1)") != std::string::npos);
+        assert(body.find(R"("eventMasks":"")") != std::string::npos);
+        assert(body.find(R"("clientSeed":305419896)") != std::string::npos);
     }
 
     {

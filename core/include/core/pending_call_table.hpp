@@ -33,6 +33,16 @@ public:
         return payload;
     }
 
+    std::optional<RpcPayload> tryTakeAnyResolved() {
+        if (_resolved.empty()) {
+            return std::nullopt;
+        }
+        auto it = _resolved.begin();
+        auto payload = std::move(it->second);
+        _resolved.erase(it);
+        return payload;
+    }
+
 private:
     std::map<std::uint32_t, RpcPayload> _pending;
     std::map<std::uint32_t, RpcPayload> _resolved;

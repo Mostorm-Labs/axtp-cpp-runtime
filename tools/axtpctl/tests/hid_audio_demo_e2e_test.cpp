@@ -41,7 +41,9 @@ int main() {
         }
     });
 
-    axtp::sdk::AxtpClient client;
+    axtp::sdk::ClientOptions clientOptions;
+    clientOptions.autoIdentify = false;
+    axtp::sdk::AxtpClient client(clientOptions);
     client.attachTransport(
         std::make_unique<axtp::HidTransport>(options, axtp::LocalHidBackend::client(path)));
 

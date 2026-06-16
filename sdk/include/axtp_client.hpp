@@ -1,20 +1,30 @@
 #pragma once
 
+#include <atomic>
 #include <chrono>
 #include <cstdint>
+#include <exception>
 #include <functional>
 #include <map>
 #include <memory>
 #include <optional>
+#include <random>
 #include <string>
 #include <string_view>
 #include <thread>
 #include <utility>
 
+#if defined(_WIN32)
+#    include <process.h>
+#else
+#    include <unistd.h>
+#endif
+
 #include "axtp.hpp"
 #include "generated/method_traits.h"
 #include "generated/schema_codec.h"
 
+#include "app_ready_options.hpp"
 #include "call_options.hpp"
 #include "client_options.hpp"
 #include "endpoints.hpp"
@@ -39,6 +49,8 @@ public:
         close();
         _transport = std::move(transport);
         _endpoint = std::make_unique<AxtpEndpoint<BasicBroker<>>>(_broker);
+        _appReady = false;
+        _sessionSid.clear();
         if (_transport != nullptr) {
             _endpoint->attachTransport(*_transport);
             if (_options.autoOpen) {
@@ -87,6 +99,8 @@ public:
             _transport->close();
         }
         _connected = false;
+        _appReady = false;
+        _sessionSid.clear();
     }
 
     bool isConnected() const {
@@ -109,6 +123,124 @@ public:
         if (_endpoint != nullptr) {
             _endpoint->poll();
         }
+    }
+
+    AppReadyResult ensureAppReady(AppReadyOptions options = {}) {
+        AppReadyResult result;
+        result.clientSeed = options.clientSeed.value_or(generateClientSeed());
+
+        if (_appReady && !_sessionSid.empty()) {
+            result.ok = true;
+            result.stage = "app-ready";
+            result.sid = _sessionSid;
+            result.clientSeed = _lastAppReady.clientSeed != 0 ? _lastAppReady.clientSeed
+                                                              : result.clientSeed;
+            _lastAppReady = result;
+            _lastError = SdkError::success();
+            return result;
+        }
+
+        if (_transport == nullptr || _endpoint == nullptr) {
+            result.statusCode = ErrorCode::Unavailable;
+            result.stage = "transport";
+            _lastAppReady = result;
+            _lastError = SdkError::failure(result.statusCode, "transport unavailable");
+            return result;
+        }
+
+        const auto profile = _transport->profile();
+        _endpoint->core().configure(profile);
+        const auto deadline = std::chrono::steady_clock::now() + options.timeout;
+
+        if (profile.wireMode == AxtpWireMode::FramedBinary && !options.skipControlOpen) {
+            result.stage = "control-open";
+            const auto controlId = _nextControlId++;
+            _endpoint->sendControlOpen(controlId);
+            while (std::chrono::steady_clock::now() < deadline) {
+                poll();
+                if (auto accept = _endpoint->tryTakeControlNotice(ControlOpcode::Accept)) {
+                    if (accept->controlId == controlId &&
+                        accept->statusCode == ErrorCode::Success &&
+                        _endpoint->core().controlSessionOpen()) {
+                        break;
+                    }
+                    result.statusCode = accept->statusCode == ErrorCode::Success
+                                            ? ErrorCode::ControlOpenRejected
+                                            : accept->statusCode;
+                    _lastAppReady = result;
+                    _lastError = SdkError::failure(result.statusCode, "control open rejected");
+                    return result;
+                }
+                std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            }
+            if (!_endpoint->core().controlSessionOpen()) {
+                result.statusCode = ErrorCode::RpcResponseTimeout;
+                _lastAppReady = result;
+                _lastError = SdkError::failure(result.statusCode, "control accept timeout");
+                return result;
+            }
+        }
+
+        result.stage = "hello";
+        bool gotHello = false;
+        while (std::chrono::steady_clock::now() < deadline) {
+            poll();
+            if (_endpoint->tryTakeSessionRpc(RpcOp::Hello).has_value()) {
+                gotHello = true;
+                break;
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        }
+
+        if (!gotHello) {
+            result.statusCode = ErrorCode::RpcResponseTimeout;
+            _lastAppReady = result;
+            _lastError = SdkError::failure(result.statusCode, "hello timeout");
+            return result;
+        }
+
+        result.stage = "identify";
+        _endpoint->sendRpcSession(
+            JsonRpcEncoder::makeIdentify(result.clientSeed, options.eventMasks));
+
+        while (std::chrono::steady_clock::now() < deadline) {
+            poll();
+            if (auto identified = _endpoint->tryTakeSessionRpc(RpcOp::Identified)) {
+                if (!identified->meta.jsonSid.empty()) {
+                    _sessionSid = identified->meta.jsonSid;
+                    _appReady = true;
+                    result.ok = true;
+                    result.statusCode = ErrorCode::Success;
+                    result.stage = "app-ready";
+                    result.sid = _sessionSid;
+                    _lastAppReady = result;
+                    _lastError = SdkError::success();
+                    return result;
+                }
+                result.statusCode = ErrorCode::RpcPayloadInvalid;
+                _lastAppReady = result;
+                _lastError = SdkError::failure(result.statusCode, "identified sid missing");
+                return result;
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        }
+
+        result.statusCode = ErrorCode::RpcResponseTimeout;
+        _lastAppReady = result;
+        _lastError = SdkError::failure(result.statusCode, "identified timeout");
+        return result;
+    }
+
+    bool isAppReady() const {
+        return _appReady;
+    }
+
+    const std::string& sessionSid() const {
+        return _sessionSid;
+    }
+
+    const AppReadyResult& lastAppReadyResult() const {
+        return _lastAppReady;
     }
 
     void registerMethod(std::uint32_t methodId, RawMethodHandler handler) {
@@ -142,6 +274,18 @@ public:
 
         const auto profile = _transport->profile();
         _endpoint->core().configure(profile);
+        if (_options.autoIdentify && !_appReady) {
+            AppReadyOptions appOptions;
+            appOptions.timeout = options.timeout;
+            const auto ready = ensureAppReady(appOptions);
+            if (!ready.ok) {
+                return makeErrorResponse(request, ready.statusCode);
+            }
+            if (request.meta.sourceProtocol == SourceProtocol::JsonRpc &&
+                request.meta.jsonSid.empty() && !_sessionSid.empty()) {
+                request.meta.jsonSid = _sessionSid;
+            }
+        }
         _endpoint->sendRpcRequest(request);
 
         const auto deadline = std::chrono::steady_clock::now() + options.timeout;
@@ -149,6 +293,11 @@ public:
             poll();
             if (auto response = _endpoint->tryTakeRpcResponse(request.requestId)) {
                 return *response;
+            }
+            if (options.acceptAnyResponse) {
+                if (auto response = _endpoint->tryTakeAnyRpcResponse()) {
+                    return *response;
+                }
             }
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
@@ -228,7 +377,7 @@ public:
         payload.methodOrEventId = MethodTraits<Id>::id;
         payload.bodyEncoding = SchemaCodec::bodyEncodingFor(options.encoding);
         payload.body = SchemaCodec::encodeRequest<Id>(request, options.encoding);
-        payload.meta.sourceProtocol = _options.wireMode == AxtpWireMode::WebSocketJsonRpc
+        payload.meta.sourceProtocol = options.encoding == RpcEncoding::Json
                                           ? SourceProtocol::JsonRpc
                                           : SourceProtocol::AxtpV1;
         payload.meta.jsonMethodOrEventName = MethodTraits<Id>::name;
@@ -257,9 +406,8 @@ private:
         payload.methodOrEventId = methodId;
         payload.bodyEncoding = bodyEncodingFor(encoding);
         payload.body = std::move(body);
-        payload.meta.sourceProtocol = _options.wireMode == AxtpWireMode::WebSocketJsonRpc
-                                          ? SourceProtocol::JsonRpc
-                                          : SourceProtocol::AxtpV1;
+        payload.meta.sourceProtocol = encoding == RpcEncoding::Json ? SourceProtocol::JsonRpc
+                                                                     : SourceProtocol::AxtpV1;
         if (const auto methodName = _registry.findMethodName(methodId)) {
             payload.meta.jsonMethodOrEventName = std::string(*methodName);
         }
@@ -276,6 +424,10 @@ private:
         }
         request.op = RpcOp::Request;
         request.meta.requestId = request.requestId;
+        if (request.meta.sourceProtocol == SourceProtocol::JsonRpc && request.meta.jsonSid.empty() &&
+            _appReady && !_sessionSid.empty()) {
+            request.meta.jsonSid = _sessionSid;
+        }
     }
 
     static RpcPayload makeErrorResponse(const RpcPayload& request, ErrorCode code) {
@@ -290,6 +442,42 @@ private:
         return response;
     }
 
+    static std::uint32_t processId() {
+#if defined(_WIN32)
+        return static_cast<std::uint32_t>(_getpid());
+#else
+        return static_cast<std::uint32_t>(getpid());
+#endif
+    }
+
+    static std::uint32_t generateClientSeed() {
+        try {
+            std::random_device random;
+            const auto first = static_cast<std::uint32_t>(random());
+            const auto second = static_cast<std::uint32_t>(random());
+            const auto mixed = first ^ (second << 1U) ^ (second >> 1U);
+            if (mixed != 0) {
+                return mixed;
+            }
+        } catch (const std::exception&) {
+        }
+
+        static std::atomic<std::uint32_t> counter{0};
+        const auto now = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+        const auto steady = std::chrono::steady_clock::now().time_since_epoch().count();
+        const auto threadHash =
+            static_cast<std::uint32_t>(std::hash<std::thread::id>{}(std::this_thread::get_id()));
+        auto seed = static_cast<std::uint32_t>(now) ^
+                    static_cast<std::uint32_t>(static_cast<std::uint64_t>(now) >> 32U) ^
+                    static_cast<std::uint32_t>(steady) ^
+                    static_cast<std::uint32_t>(static_cast<std::uint64_t>(steady) >> 32U) ^
+                    processId() ^ threadHash ^ (++counter * 0x9E3779B9U);
+        if (seed == 0) {
+            seed = 0xA5A5A5A5U ^ counter.load();
+        }
+        return seed;
+    }
+
     ClientOptions _options;
     std::unique_ptr<ITransport> _transport;
     BasicBroker<> _broker;
@@ -298,7 +486,11 @@ private:
     std::map<std::uint32_t, RawMethodHandler> _localHandlers;
     std::map<std::uint32_t, RawEventHandler> _eventHandlers;
     std::uint32_t _nextRequestId = 1;
+    std::uint16_t _nextControlId = 1;
+    bool _appReady = false;
     bool _connected = false;
+    std::string _sessionSid;
+    AppReadyResult _lastAppReady;
     SdkError _lastError;
 };
 

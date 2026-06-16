@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <optional>
 #include <utility>
 
@@ -65,8 +66,30 @@ public:
         flushOutbound();
     }
 
+    void sendControlOpen(std::uint16_t controlId) {
+        _core.sendControlOpen(controlId);
+        flushOutbound();
+    }
+
+    void sendRpcSession(RpcPayload payload) {
+        _core.sendRpcSession(std::move(payload));
+        flushOutbound();
+    }
+
     std::optional<RpcPayload> tryTakeRpcResponse(std::uint32_t requestId) {
         return _core.tryTakeRpcResponse(requestId);
+    }
+
+    std::optional<RpcPayload> tryTakeAnyRpcResponse() {
+        return _core.tryTakeAnyRpcResponse();
+    }
+
+    std::optional<RpcPayload> tryTakeSessionRpc(RpcOp op) {
+        return _core.tryTakeSessionRpc(op);
+    }
+
+    std::optional<ControlPayload> tryTakeControlNotice(ControlOpcode opcode) {
+        return _core.tryTakeControlNotice(opcode);
     }
 
     void flushOutbound() {

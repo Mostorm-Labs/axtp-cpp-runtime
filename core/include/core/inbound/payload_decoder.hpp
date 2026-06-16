@@ -3,19 +3,12 @@
 #include <cstdint>
 #include <utility>
 
+#include "core/inbound/json_rpc_payload_decoder.hpp"
 #include "core/inbound/message_reassembler.hpp"
+#include "core/inbound/payload_sink.hpp"
 #include "io/byte_reader.hpp"
-#include "model/payload.hpp"
 
 namespace axtp {
-
-class IPayloadSink {
-public:
-    virtual ~IPayloadSink() = default;
-    virtual void onControl(ControlPayload payload) = 0;
-    virtual void onRpc(RpcPayload payload) = 0;
-    virtual void onStream(StreamPayload payload) = 0;
-};
 
 class PayloadDecoder : public IMessageSink {
 public:
@@ -60,6 +53,22 @@ private:
 
     void decodeRpc(Message message) {
         if (message.body.size() < kBinaryRpcHeaderSize) {
+            if (message.body.size() >= 2 &&
+                message.body[0] == static_cast<Byte>(RpcEncoding::Json) &&
+                (message.body[1] == static_cast<Byte>('{') ||
+                 message.body[1] == static_cast<Byte>('['))) {
+                JsonRpcPayloadDecoder::decode(message.body.data() + 1,
+                                              message.body.size() - 1,
+                                              _next,
+                                              SourceProtocol::AxtpV1);
+            }
+            return;
+        }
+        if (message.body[0] == static_cast<Byte>(RpcEncoding::Json) &&
+            (message.body[1] == static_cast<Byte>('{') ||
+             message.body[1] == static_cast<Byte>('['))) {
+            JsonRpcPayloadDecoder::decode(
+                message.body.data() + 1, message.body.size() - 1, _next, SourceProtocol::AxtpV1);
             return;
         }
         ByteReader reader(message.body);

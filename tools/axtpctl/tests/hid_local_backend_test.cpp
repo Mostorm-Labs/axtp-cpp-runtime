@@ -1,9 +1,7 @@
 #include <cassert>
-#include <chrono>
 #include <cstdint>
 #include <optional>
 #include <string>
-#include <thread>
 
 #include "hidapi/hid_local_backend.hpp"
 
@@ -15,15 +13,7 @@ namespace {
 
 std::optional<std::size_t>
 readWithTimeout(axtp::IHidBackend& backend, axtp::Byte* data, std::size_t size) {
-    const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(1);
-    while (std::chrono::steady_clock::now() < deadline) {
-        const auto read = backend.readReport(data, size);
-        if (!read.has_value() || *read == size) {
-            return read;
-        }
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
-    }
-    return 0;
+    return backend.readReport(data, size, 1000);
 }
 
 }  // namespace

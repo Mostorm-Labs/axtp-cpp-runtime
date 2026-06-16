@@ -1,4 +1,5 @@
 #include <cassert>
+#include <cstring>
 #include <cstdint>
 #include <utility>
 #include <vector>
@@ -8,6 +9,7 @@
 #include "core/inbound/inbound_processor.hpp"
 #include "core/outbound/outbound_processor.hpp"
 #include "io/byte_writer_sink.hpp"
+#include "io/crc16.hpp"
 #include "runtime/axtp_endpoint.hpp"
 
 namespace {
@@ -50,6 +52,33 @@ axtp::Bytes encodeControl(axtp::ControlPayload payload) {
     axtp::OutboundProcessor outbound(writer);
     outbound.sendControl(std::move(payload));
     return writer.bytes;
+}
+
+axtp::Bytes makeFrame(axtp::PayloadType payloadType,
+                      std::uint16_t messageId,
+                      const axtp::Bytes& payload) {
+    axtp::ByteWriter writer;
+    writer.writeU8(axtp::kAxtpStandardMagic0);
+    writer.writeU8(axtp::kAxtpStandardMagic1);
+    writer.writeU8(axtp::kAxtpVersion1);
+    writer.writeU8(static_cast<std::uint8_t>(payloadType));
+    writer.writeU16(static_cast<std::uint16_t>(payload.size()));
+    writer.writeU8(1);
+    writer.writeU8(2);
+    writer.writeU16(messageId);
+    writer.writeU8(0);
+    writer.writeU8(1);
+    writer.writeBytes(payload);
+    writer.writeU16(axtp::crc16CcittFalse(writer.bytes()));
+    return writer.takeBytes();
+}
+
+axtp::Bytes makeJsonEnvelopePayload(const char* json) {
+    axtp::ByteWriter writer;
+    writer.writeU8(static_cast<std::uint8_t>(axtp::RpcEncoding::Json));
+    const auto* bytes = reinterpret_cast<const axtp::Byte*>(json);
+    writer.writeBytes(bytes, std::strlen(json));
+    return writer.takeBytes();
 }
 
 }  // namespace
@@ -118,6 +147,52 @@ int main() {
 
     {
         axtp::AxtpCore core;
+        core.sendControlOpen(9);
+        auto openBytes = core.tryPopOutboundBytes();
+        assert(openBytes.has_value());
+
+        CapturingPayloadSink openSink;
+        axtp::InboundProcessor openInbound(openSink);
+        openInbound.onBytes(openBytes->data(), openBytes->size());
+        assert(openSink.controls.size() == 1);
+        assert(openSink.controls[0].opcode == axtp::ControlOpcode::Open);
+        assert(openSink.controls[0].controlId == 9);
+        assert(!core.controlSessionOpen());
+
+        axtp::ControlPayload accept;
+        accept.opcode = axtp::ControlOpcode::Accept;
+        accept.controlId = 9;
+        accept.statusCode = axtp::ErrorCode::Success;
+        auto acceptBytes = encodeControl(accept);
+        core.byteSink().onBytes(acceptBytes.data(), acceptBytes.size());
+        assert(core.controlSessionOpen());
+
+        auto notice = core.tryTakeControlNotice(axtp::ControlOpcode::Accept);
+        assert(notice.has_value());
+        assert(notice->controlId == 9);
+        assert(notice->statusCode == axtp::ErrorCode::Success);
+    }
+
+    {
+        axtp::AxtpCore core;
+        core.sendControlOpen(10);
+        (void)core.tryPopOutboundBytes();
+
+        axtp::ControlPayload accept;
+        accept.opcode = axtp::ControlOpcode::Accept;
+        accept.controlId = 11;
+        accept.statusCode = axtp::ErrorCode::Success;
+        auto acceptBytes = encodeControl(accept);
+        core.byteSink().onBytes(acceptBytes.data(), acceptBytes.size());
+        assert(!core.controlSessionOpen());
+
+        auto notice = core.tryTakeControlNotice(axtp::ControlOpcode::Accept);
+        assert(notice.has_value());
+        assert(notice->controlId == 11);
+    }
+
+    {
+        axtp::AxtpCore core;
         core.expectRpcResponse(55);
 
         axtp::RpcPayload response;
@@ -135,6 +210,23 @@ int main() {
         auto matched = core.tryTakeRpcResponse(55);
         assert(matched.has_value());
         assert((matched->body == axtp::Bytes{0x01}));
+    }
+
+    {
+        axtp::AxtpCore core;
+        core.expectRpcResponse(55);
+        const auto bytes = makeFrame(
+            axtp::PayloadType::Rpc,
+            20,
+            makeJsonEnvelopePayload(
+                R"({"d":{"id":0,"status":{"code":51,"msg":"RPC_PAYLOAD_INVALID","ok":false}},"op":8,"sid":"12345678"})"));
+        core.byteSink().onBytes(bytes.data(), bytes.size());
+        assert(!core.tryTakeRpcResponse(55).has_value());
+        auto any = core.tryTakeAnyRpcResponse();
+        assert(any.has_value());
+        assert(any->op == axtp::RpcOp::RequestResponse);
+        assert(any->requestId == 0);
+        assert(any->statusCode == axtp::ErrorCode::RpcPayloadInvalid);
     }
 
     return 0;

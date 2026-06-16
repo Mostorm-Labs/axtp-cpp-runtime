@@ -1,5 +1,6 @@
 #include <cassert>
 #include <cstdint>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -62,6 +63,13 @@ makeRpcPayload(std::uint32_t requestId, std::uint16_t methodId, const axtp::Byte
     return writer.takeBytes();
 }
 
+axtp::Bytes makeJsonEnvelopePayload(const std::string& json) {
+    axtp::ByteWriter writer;
+    writer.writeU8(static_cast<std::uint8_t>(axtp::RpcEncoding::Json));
+    writer.writeBytes(reinterpret_cast<const axtp::Byte*>(json.data()), json.size());
+    return writer.takeBytes();
+}
+
 }  // namespace
 
 int main() {
@@ -119,6 +127,27 @@ int main() {
         inbound.onBytes(noise.data(), noise.size());
         assert(sink.rpcs.size() == 1);
         assert(sink.rpcs[0].requestId == 11);
+    }
+
+    {
+        CapturingPayloadSink sink;
+        axtp::InboundProcessor inbound(sink);
+        const auto frame = makeFrame(
+            axtp::PayloadType::Rpc,
+            6,
+            0,
+            1,
+            makeJsonEnvelopePayload(
+                R"({"d":{"id":0,"status":{"code":51,"msg":"RPC_PAYLOAD_INVALID","ok":false}},"op":8,"sid":"12345678"})"));
+        inbound.onBytes(frame.data(), frame.size());
+        assert(sink.rpcs.size() == 1);
+        assert(sink.rpcs[0].encoding == axtp::RpcEncoding::Json);
+        assert(sink.rpcs[0].op == axtp::RpcOp::RequestResponse);
+        assert(sink.rpcs[0].requestId == 0);
+        assert(sink.rpcs[0].statusCode == axtp::ErrorCode::RpcPayloadInvalid);
+        assert(sink.rpcs[0].meta.sourceProtocol == axtp::SourceProtocol::AxtpV1);
+        assert(sink.rpcs[0].meta.jsonSid == "12345678");
+        assert(!sink.rpcs[0].body.empty());
     }
 
     return 0;

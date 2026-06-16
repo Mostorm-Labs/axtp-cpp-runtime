@@ -34,10 +34,12 @@ public:
         return true;
     }
 
-    std::optional<std::size_t> readReport(axtp::Byte* data, std::size_t size) override {
+    std::optional<std::size_t>
+    readReport(axtp::Byte* data, std::size_t size, std::uint32_t) override {
         if (!_open) {
             return std::nullopt;
         }
+        readSizes.push_back(size);
         if (reads.empty()) {
             return 0;
         }
@@ -56,6 +58,7 @@ public:
     int openCount = 0;
     int closeCount = 0;
     std::vector<axtp::Bytes> writes;
+    std::vector<std::size_t> readSizes;
     std::queue<axtp::Bytes> reads;
 };
 
@@ -76,6 +79,30 @@ int main() {
     options.inputReportSize = 5;
     options.outputReportSize = 5;
     options.maxReportsPerPoll = 8;
+    int readTraceCount = 0;
+    int frameTraceCount = 0;
+    int writeTraceCount = 0;
+    int acceptedTraceCount = 0;
+    int droppedTraceCount = 0;
+    int timeoutTraceCount = 0;
+    options.reportTrace = [&](const axtp::HidReportTrace& trace) {
+        if (trace.kind == axtp::HidReportTraceKind::ReadReport) {
+            ++readTraceCount;
+        } else if (trace.kind == axtp::HidReportTraceKind::WriteFrame) {
+            ++frameTraceCount;
+            assert(trace.size > 0);
+        } else if (trace.kind == axtp::HidReportTraceKind::WriteReport) {
+            ++writeTraceCount;
+            assert(trace.size == options.outputReportSize);
+            assert(trace.reportId == options.reportId);
+        } else if (trace.kind == axtp::HidReportTraceKind::AcceptedReport) {
+            ++acceptedTraceCount;
+        } else if (trace.kind == axtp::HidReportTraceKind::DroppedReportId) {
+            ++droppedTraceCount;
+        } else if (trace.kind == axtp::HidReportTraceKind::ReadTimeout) {
+            ++timeoutTraceCount;
+        }
+    };
 
     auto backend = std::make_unique<MockHidBackend>();
     auto* backendPtr = backend.get();
@@ -105,6 +132,8 @@ int main() {
     assert((backendPtr->writes[0] == axtp::Bytes{0x05, 0x01, 0x02, 0x03, 0x04}));
     assert((backendPtr->writes[1] == axtp::Bytes{0x05, 0x05, 0x06, 0x07, 0x08}));
     assert((backendPtr->writes[2] == axtp::Bytes{0x05, 0x09, 0x0A, 0x00, 0x00}));
+    assert(frameTraceCount == 1);
+    assert(writeTraceCount == 3);
 
     backendPtr->writes.clear();
     const axtp::Bytes exact{0xA0, 0xA1, 0xA2, 0xA3, 0xB0, 0xB1, 0xB2, 0xB3};
@@ -112,6 +141,8 @@ int main() {
     assert(backendPtr->writes.size() == 2);
     assert((backendPtr->writes[0] == axtp::Bytes{0x05, 0xA0, 0xA1, 0xA2, 0xA3}));
     assert((backendPtr->writes[1] == axtp::Bytes{0x05, 0xB0, 0xB1, 0xB2, 0xB3}));
+    assert(frameTraceCount == 2);
+    assert(writeTraceCount == 5);
 
     backendPtr->enqueueRead(axtp::Bytes{0x05, 0xC0, 0xC1, 0x00, 0x00});
     backendPtr->enqueueRead(axtp::Bytes{0x07, 0xDE, 0xAD, 0xBE, 0xEF});
@@ -120,6 +151,14 @@ int main() {
     assert(sink.chunks.size() == 2);
     assert((sink.chunks[0] == axtp::Bytes{0xC0, 0xC1, 0x00, 0x00}));
     assert((sink.chunks[1] == axtp::Bytes{0xD0, 0xD1, 0xD2, 0xD3}));
+    assert(readTraceCount == 3);
+    assert(acceptedTraceCount == 2);
+    assert(droppedTraceCount == 1);
+    assert(timeoutTraceCount == 1);
+    assert(backendPtr->readSizes.size() == 4);
+    assert(std::all_of(backendPtr->readSizes.begin(),
+                       backendPtr->readSizes.end(),
+                       [](std::size_t size) { return size == 4096; }));
 
     backendPtr->writes.clear();
     sink.chunks.clear();

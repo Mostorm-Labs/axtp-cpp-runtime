@@ -1,5 +1,6 @@
 #pragma once
 
+#include "app_ready_options.hpp"
 #include "axtp_client.hpp"
 #include "axtp_device.hpp"
 #include "axtp_server.hpp"

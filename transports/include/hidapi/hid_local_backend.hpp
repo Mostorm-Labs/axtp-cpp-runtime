@@ -17,7 +17,8 @@ public:
     bool open(const HidTransportOptions& options) override;
     void close() override;
     bool writeReport(const Byte* data, std::size_t size) override;
-    std::optional<std::size_t> readReport(Byte* data, std::size_t size) override;
+    std::optional<std::size_t>
+    readReport(Byte* data, std::size_t size, std::uint32_t timeoutMs) override;
 
 private:
     enum class Mode {

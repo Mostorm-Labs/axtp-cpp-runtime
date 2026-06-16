@@ -19,11 +19,17 @@ public:
         case RpcOp::Hello:
             text = serializeHello();
             break;
+        case RpcOp::Identify:
+            text = serializeIdentify(payload);
+            break;
         case RpcOp::Identified:
             text = serializeIdentified(payload);
             break;
         case RpcOp::Event:
             text = serializeEvent(payload);
+            break;
+        case RpcOp::Request:
+            text = serializeRequest(payload);
             break;
         case RpcOp::RequestBatchResponse:
             text = serializeBatchResponse(payload);
@@ -51,6 +57,18 @@ public:
         payload.bodyEncoding = RpcBodyEncoding::None;
         payload.meta.sourceProtocol = SourceProtocol::JsonRpc;
         payload.meta.jsonSid = std::move(sid);
+        return payload;
+    }
+
+    static RpcPayload makeIdentify(std::uint32_t clientSeed, std::string eventMasks = "") {
+        RpcPayload payload;
+        payload.encoding = RpcEncoding::Json;
+        payload.op = RpcOp::Identify;
+        payload.bodyEncoding = RpcBodyEncoding::None;
+        payload.meta.sourceProtocol = SourceProtocol::JsonRpc;
+        payload.meta.jsonSid = "";
+        payload.meta.clientSeed = clientSeed;
+        payload.meta.jsonEventMasks = std::move(eventMasks);
         return payload;
     }
 
@@ -98,6 +116,19 @@ private:
         return object.dump();
     }
 
+    static std::string serializeIdentify(const RpcPayload& payload) {
+        auto d = nlohmann::json::object();
+        d["rpcVersion"] = 1;
+        d["eventMasks"] = payload.meta.jsonEventMasks;
+        d["clientSeed"] = payload.meta.clientSeed;
+
+        auto object = nlohmann::json::object();
+        object["sid"] = "";
+        object["op"] = static_cast<std::uint8_t>(RpcOp::Identify);
+        object["d"] = std::move(d);
+        return object.dump();
+    }
+
     static std::string serializeIdentified(const RpcPayload& payload) {
         auto d = nlohmann::json::object();
         d["negotiatedRpcVersion"] = 1;
@@ -126,6 +157,28 @@ private:
         auto object = nlohmann::json::object();
         object["sid"] = responseSid(payload.meta);
         object["op"] = static_cast<std::uint8_t>(RpcOp::RequestResponse);
+        object["d"] = std::move(d);
+        return object.dump();
+    }
+
+    static std::string serializeRequest(const RpcPayload& payload) {
+        auto d = nlohmann::json::object();
+        d["id"] = payload.requestId;
+
+        std::string methodName = payload.meta.jsonMethodOrEventName;
+        if (methodName.empty()) {
+            const auto* method =
+                RegistryLookup::methodById(static_cast<std::uint16_t>(payload.methodOrEventId));
+            methodName = method != nullptr ? method->name : std::to_string(payload.methodOrEventId);
+        }
+        d["method"] = methodName;
+        if (auto params = bytesToJson(payload.body)) {
+            d["params"] = std::move(*params);
+        }
+
+        auto object = nlohmann::json::object();
+        object["sid"] = responseSid(payload.meta);
+        object["op"] = static_cast<std::uint8_t>(RpcOp::Request);
         object["d"] = std::move(d);
         return object.dump();
     }

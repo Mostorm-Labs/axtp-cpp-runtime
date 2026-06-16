@@ -2,6 +2,7 @@
 
 #include <cstdint>
 
+#include "core/outbound/json_rpc_encoder.hpp"
 #include "io/byte_writer.hpp"
 #include "model/message.hpp"
 #include "model/payload.hpp"
@@ -21,6 +22,14 @@ public:
 
     Message encodeRpc(const RpcPayload& payload) {
         ByteWriter writer;
+        if (payload.meta.sourceProtocol == SourceProtocol::JsonRpc &&
+            payload.encoding == RpcEncoding::Json) {
+            writer.writeU8(static_cast<std::uint8_t>(payload.encoding));
+            const auto json = _jsonRpcEncoder.encode(payload);
+            writer.writeBytes(json);
+            return Message{0, PayloadType::Rpc, writer.takeBytes()};
+        }
+
         writer.writeU8(static_cast<std::uint8_t>(payload.encoding));
         writer.writeU8(static_cast<std::uint8_t>(payload.op));
         writer.writeU32(payload.requestId);
@@ -39,6 +48,9 @@ public:
         writer.writeBytes(payload.data);
         return Message{0, PayloadType::Stream, writer.takeBytes()};
     }
+
+private:
+    JsonRpcEncoder _jsonRpcEncoder;
 };
 
 }  // namespace axtp

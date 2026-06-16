@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <optional>
 #include <queue>
 #include <utility>
@@ -78,6 +79,36 @@ public:
         return _pendingCalls.tryTakeResolved(requestId);
     }
 
+    std::optional<RpcPayload> tryTakeAnyRpcResponse() {
+        return _pendingCalls.tryTakeAnyResolved();
+    }
+
+    std::optional<RpcPayload> tryTakeSessionRpc(RpcOp op) {
+        const auto count = _sessionRpcs.size();
+        for (std::size_t index = 0; index < count; ++index) {
+            auto payload = std::move(_sessionRpcs.front());
+            _sessionRpcs.pop();
+            if (payload.op == op) {
+                return payload;
+            }
+            _sessionRpcs.push(std::move(payload));
+        }
+        return std::nullopt;
+    }
+
+    std::optional<ControlPayload> tryTakeControlNotice(ControlOpcode opcode) {
+        const auto count = _controlNotices.size();
+        for (std::size_t index = 0; index < count; ++index) {
+            auto payload = std::move(_controlNotices.front());
+            _controlNotices.pop();
+            if (payload.opcode == opcode) {
+                return payload;
+            }
+            _controlNotices.push(std::move(payload));
+        }
+        return std::nullopt;
+    }
+
     std::optional<Bytes> tryPopOutboundBytes() {
         if (_outboundBytes.empty()) {
             return std::nullopt;
@@ -91,8 +122,16 @@ public:
         return _controlSession.isOpen();
     }
 
+    void sendControlOpen(std::uint16_t controlId) {
+        _outbound.sendControl(_controlSession.makeOpen(controlId));
+    }
+
     void sendRpcRequest(RpcPayload payload) {
         _outbound.sendRpcRequest(std::move(payload));
+    }
+
+    void sendRpcSession(RpcPayload payload) {
+        _outbound.sendRpc(std::move(payload));
     }
 
 private:
@@ -152,13 +191,20 @@ private:
     }
 
     void handleControl(ControlPayload payload) {
+        const auto notice = payload;
         auto response = _controlSession.handle(std::move(payload));
+        _controlNotices.push(notice);
         if (response.has_value()) {
             _outbound.sendControl(std::move(*response));
         }
     }
 
     void handleRpc(RpcPayload payload) {
+        if (payload.op == RpcOp::Hello || payload.op == RpcOp::Identify ||
+            payload.op == RpcOp::Identified || payload.op == RpcOp::Reidentify) {
+            _sessionRpcs.push(std::move(payload));
+            return;
+        }
         if (payload.op == RpcOp::Request) {
             _events.push(CoreEvent::rpcRequest(std::move(payload)));
             return;
@@ -197,6 +243,8 @@ private:
     PendingCallTable _pendingCalls;
     TransportProfile _transportProfile;
     std::queue<CoreEvent> _events;
+    std::queue<RpcPayload> _sessionRpcs;
+    std::queue<ControlPayload> _controlNotices;
     std::queue<Bytes> _outboundBytes;
 };
 
