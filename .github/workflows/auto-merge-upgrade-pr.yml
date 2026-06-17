@@ -175,7 +175,7 @@ jobs:
             ctest --test-dir build --output-on-failure
           elif [[ -f core/CMakeLists.txt ]]; then
             sudo apt-get update
-            sudo apt-get install -y libboost-json-dev libudev-dev libusb-1.0-0-dev
+            sudo apt-get install -y libboost-json-dev nlohmann-json3-dev libudev-dev libusb-1.0-0-dev
             cmake -S core -B build/core
             cmake --build build/core
             ctest --test-dir build/core --output-on-failure
@@ -215,7 +215,7 @@ jobs:
           fi
           if [[ -f generated/cpp-mock-server/CMakeLists.txt && -d ../axtp-cpp-runtime ]]; then
             sudo apt-get update
-            sudo apt-get install -y libboost-json-dev libudev-dev libusb-1.0-0-dev
+            sudo apt-get install -y libboost-json-dev nlohmann-json3-dev libudev-dev libusb-1.0-0-dev
             cmake -S generated/cpp-mock-server -B build/generated-cpp-mock-server
             cmake --build build/generated-cpp-mock-server
             ctest --test-dir build/generated-cpp-mock-server --output-on-failure
