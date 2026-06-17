@@ -357,12 +357,18 @@ struct H264AccessUnit {
     Bytes bytes;
     bool keyframe = false;
     std::optional<VideoSize> spsSize;
+    std::uint32_t nalCount = 0;
 };
 
 class H264AccessUnitAssembler {
 public:
     void reset() {
-        _parameterSets.clear();
+        _buffer.clear();
+        _currentAu.clear();
+        _currentHasVcl = false;
+        _currentKeyframe = false;
+        _currentSpsSize.reset();
+        _currentNalCount = 0;
     }
 
     std::vector<H264AccessUnit> pushChunk(const Bytes& chunk) {
@@ -371,50 +377,167 @@ public:
             return units;
         }
 
-        bool hasVcl = false;
-        bool keyframe = false;
-        std::optional<VideoSize> parsedSize;
-        auto start = findStartCode(chunk, 0);
-        while (start.has_value()) {
-            const auto nalStart = start->first + start->second;
-            const auto next = findStartCode(chunk, nalStart);
-            const auto nalEnd = next.has_value() ? next->first : chunk.size();
-            if (nalStart < nalEnd) {
-                const auto nalType = chunk[nalStart] & 0x1FU;
-                if (nalType >= 1 && nalType <= 5) {
-                    hasVcl = true;
-                    keyframe = keyframe || nalType == 5;
-                } else if (nalType == 7) {
-                    parsedSize = parseSps(chunk.data() + nalStart, nalEnd - nalStart);
-                }
-            }
-            if (!next.has_value()) {
-                break;
-            }
-            start = next;
-        }
+        _buffer.insert(_buffer.end(), chunk.begin(), chunk.end());
+        discardBeforeFirstStartCode();
 
-        if (!hasVcl) {
-            _parameterSets.insert(_parameterSets.end(), chunk.begin(), chunk.end());
-            if (_parameterSets.size() > 1024 * 1024) {
-                _parameterSets.erase(_parameterSets.begin(), _parameterSets.end() - (256 * 1024));
-            }
+        const auto starts = startCodes();
+        if (starts.size() < 2) {
+            trimIfHopeless();
             return units;
         }
 
-        H264AccessUnit unit;
-        unit.bytes.reserve(_parameterSets.size() + chunk.size());
-        unit.bytes.insert(unit.bytes.end(), _parameterSets.begin(), _parameterSets.end());
-        unit.bytes.insert(unit.bytes.end(), chunk.begin(), chunk.end());
-        unit.keyframe = keyframe;
-        unit.spsSize = parsedSize;
-        _parameterSets.clear();
-        units.push_back(std::move(unit));
+        for (std::size_t i = 0; i + 1 < starts.size(); ++i) {
+            appendCompleteNal(starts[i].first, starts[i].second, starts[i + 1].first, &units);
+        }
+
+        _buffer.erase(_buffer.begin(),
+                      _buffer.begin() + static_cast<std::ptrdiff_t>(starts.back().first));
+        flushBeforePendingNalIfBoundary(&units);
+        trimIfHopeless();
         return units;
     }
 
+    std::size_t pendingBytes() const {
+        return _buffer.size() + _currentAu.size();
+    }
+
 private:
-    Bytes _parameterSets;
+    static bool isVclNal(Byte nalType) {
+        return nalType >= 1 && nalType <= 5;
+    }
+
+    static bool isBoundaryNonVcl(Byte nalType) {
+        return nalType == 6 || nalType == 7 || nalType == 8 || nalType == 9;
+    }
+
+    static std::optional<std::uint32_t> firstMbInSlice(const Byte* nal, std::size_t size) {
+        if (size < 2) {
+            return std::nullopt;
+        }
+        auto rbsp = rbspFromNal(nal + 1, size - 1);
+        BitReader reader(rbsp);
+        std::uint32_t firstMb = 0;
+        if (!reader.readUE(&firstMb)) {
+            return std::nullopt;
+        }
+        return firstMb;
+    }
+
+    std::vector<std::pair<std::size_t, std::size_t>> startCodes() const {
+        std::vector<std::pair<std::size_t, std::size_t>> result;
+        std::size_t offset = 0;
+        while (auto start = findStartCode(_buffer, offset)) {
+            result.push_back(*start);
+            offset = start->first + start->second;
+        }
+        return result;
+    }
+
+    void discardBeforeFirstStartCode() {
+        const auto first = findStartCode(_buffer, 0);
+        if (!first.has_value()) {
+            trimIfHopeless();
+            return;
+        }
+        if (first->first != 0) {
+            _buffer.erase(_buffer.begin(),
+                          _buffer.begin() + static_cast<std::ptrdiff_t>(first->first));
+        }
+    }
+
+    bool nalStartsNewAccessUnit(Byte nalType, const Byte* nal, std::size_t size) const {
+        if (!_currentHasVcl) {
+            return false;
+        }
+        if (isBoundaryNonVcl(nalType)) {
+            return true;
+        }
+        if (!isVclNal(nalType)) {
+            return false;
+        }
+        const auto firstMb = firstMbInSlice(nal, size);
+        return firstMb.has_value() && *firstMb == 0;
+    }
+
+    void appendCompleteNal(std::size_t startCodeOffset,
+                           std::size_t startCodeSize,
+                           std::size_t nalEnd,
+                           std::vector<H264AccessUnit>* units) {
+        const auto nalStart = startCodeOffset + startCodeSize;
+        if (nalStart >= nalEnd || nalEnd > _buffer.size()) {
+            return;
+        }
+
+        const auto nalType = static_cast<Byte>(_buffer[nalStart] & 0x1FU);
+        if (nalStartsNewAccessUnit(nalType, _buffer.data() + nalStart, nalEnd - nalStart)) {
+            flushCurrent(units);
+        }
+
+        _currentAu.insert(_currentAu.end(),
+                          _buffer.begin() + static_cast<std::ptrdiff_t>(startCodeOffset),
+                          _buffer.begin() + static_cast<std::ptrdiff_t>(nalEnd));
+        ++_currentNalCount;
+
+        if (isVclNal(nalType)) {
+            _currentHasVcl = true;
+            _currentKeyframe = _currentKeyframe || nalType == 5;
+        } else if (nalType == 7) {
+            if (auto size = parseSps(_buffer.data() + nalStart, nalEnd - nalStart)) {
+                _currentSpsSize = size;
+            }
+        }
+    }
+
+    void flushBeforePendingNalIfBoundary(std::vector<H264AccessUnit>* units) {
+        const auto pendingStart = findStartCode(_buffer, 0);
+        if (!pendingStart.has_value() || pendingStart->first != 0) {
+            return;
+        }
+        const auto nalStart = pendingStart->first + pendingStart->second;
+        if (nalStart >= _buffer.size()) {
+            return;
+        }
+        const auto nalType = static_cast<Byte>(_buffer[nalStart] & 0x1FU);
+        if (nalStartsNewAccessUnit(nalType, _buffer.data() + nalStart, _buffer.size() - nalStart)) {
+            flushCurrent(units);
+        }
+    }
+
+    void flushCurrent(std::vector<H264AccessUnit>* units) {
+        if (!_currentHasVcl || _currentAu.empty()) {
+            return;
+        }
+        H264AccessUnit unit;
+        unit.bytes = std::move(_currentAu);
+        unit.keyframe = _currentKeyframe;
+        unit.spsSize = _currentSpsSize;
+        unit.nalCount = _currentNalCount;
+        units->push_back(std::move(unit));
+
+        _currentAu.clear();
+        _currentHasVcl = false;
+        _currentKeyframe = false;
+        _currentSpsSize.reset();
+        _currentNalCount = 0;
+    }
+
+    void trimIfHopeless() {
+        constexpr std::size_t kMaxBufferedBytes = 4 * 1024 * 1024;
+        if (_buffer.size() <= kMaxBufferedBytes) {
+            return;
+        }
+        const auto keep = std::min<std::size_t>(_buffer.size(), 256 * 1024);
+        _buffer.erase(_buffer.begin(),
+                      _buffer.end() - static_cast<std::ptrdiff_t>(keep));
+        discardBeforeFirstStartCode();
+    }
+
+    Bytes _buffer;
+    Bytes _currentAu;
+    bool _currentHasVcl = false;
+    bool _currentKeyframe = false;
+    std::optional<VideoSize> _currentSpsSize;
+    std::uint32_t _currentNalCount = 0;
 };
 
 struct AdtsConfig {
@@ -863,6 +986,10 @@ public:
         }
 
         hr = _decoder->ProcessInput(0, sample.Get(), 0);
+        if (hr == MF_E_NOTACCEPTING) {
+            drainOutput(onSample);
+            hr = _decoder->ProcessInput(0, sample.Get(), 0);
+        }
         if (FAILED(hr)) {
             logLine(_log, "H264 decoder ProcessInput failed: " + hresultToString(hr));
             return;
@@ -1214,6 +1341,10 @@ public:
             _streamingStarted = true;
         }
         hr = _decoder->ProcessInput(0, sample.Get(), 0);
+        if (hr == MF_E_NOTACCEPTING) {
+            drainOutput(onPcm);
+            hr = _decoder->ProcessInput(0, sample.Get(), 0);
+        }
         if (FAILED(hr)) {
             logLine(_log, "AAC decoder ProcessInput failed: " + hresultToString(hr));
             return;
@@ -1473,6 +1604,10 @@ public:
         _firstDecodedLogged = false;
         _firstPresentLogged = false;
         _waitingLogged = false;
+        _videoChunkCount = 0;
+        _accessUnitCount = 0;
+        _decodedSampleCount = 0;
+        _presentCount = 0;
         std::ostringstream out;
         out << "renderer init: video stream opened streamId=" << toHexU32(info.streamId)
             << " codec=" << info.codec << " size=" << _width << "x" << _height;
@@ -1494,7 +1629,19 @@ public:
                     "first video chunk streamId=" + toHexU32(stream.streamId) +
                         " bytes=" + std::to_string(stream.data.size()));
         }
+        ++_videoChunkCount;
         auto units = _assembler.pushChunk(stream.data);
+        {
+            std::ostringstream out;
+            out << "renderer video chunk streamId=" << toHexU32(stream.streamId)
+                << " seq=" << stream.seqId
+                << " chunkIndex=" << _videoChunkCount
+                << " bytes=" << stream.data.size()
+                << " accessUnits=" << units.size()
+                << " pendingBytes=" << _assembler.pendingBytes()
+                << " cursor=" << stream.cursor;
+            logLine(_log, out.str());
+        }
         if (units.empty()) {
             if (!_waitingLogged) {
                 _waitingLogged = true;
@@ -1503,6 +1650,15 @@ public:
             return;
         }
         for (const auto& unit : units) {
+            ++_accessUnitCount;
+            if (_accessUnitCount <= 20 || (_accessUnitCount % 100) == 0) {
+                std::ostringstream out;
+                out << "renderer video AU index=" << _accessUnitCount
+                    << " bytes=" << unit.bytes.size()
+                    << " nalCount=" << unit.nalCount
+                    << " keyframe=" << (unit.keyframe ? "true" : "false");
+                logLine(_log, out.str());
+            }
             if (unit.spsSize.has_value()) {
                 _width = unit.spsSize->width;
                 _height = unit.spsSize->height;
@@ -1521,9 +1677,13 @@ public:
                 return;
             }
             _decoder.processAccessUnit(unit.bytes, stream.cursor, [this](IMFSample* sample) {
+                ++_decodedSampleCount;
                 if (!_firstDecodedLogged) {
                     _firstDecodedLogged = true;
                     logLine(_log, "first decoded video sample");
+                } else if ((_decodedSampleCount % 100) == 0) {
+                    logLine(_log,
+                            "decoded video samples=" + std::to_string(_decodedSampleCount));
                 }
                 if (!isDxgiBackedSample(sample)) {
                     logLine(_log,
@@ -1532,9 +1692,14 @@ public:
                             "requires DXVA/NV12");
                     return;
                 }
-                if (_presenter.present(sample) && !_firstPresentLogged) {
-                    _firstPresentLogged = true;
-                    logLine(_log, "first present");
+                if (_presenter.present(sample)) {
+                    ++_presentCount;
+                    if (!_firstPresentLogged) {
+                        _firstPresentLogged = true;
+                        logLine(_log, "first present");
+                    } else if ((_presentCount % 100) == 0) {
+                        logLine(_log, "presented video frames=" + std::to_string(_presentCount));
+                    }
                 }
             });
         }
@@ -1778,6 +1943,10 @@ private:
     bool _firstDecodedLogged = false;
     bool _firstPresentLogged = false;
     bool _waitingLogged = false;
+    std::uint64_t _videoChunkCount = 0;
+    std::uint64_t _accessUnitCount = 0;
+    std::uint64_t _decodedSampleCount = 0;
+    std::uint64_t _presentCount = 0;
     H264AccessUnitAssembler _assembler;
     D3DVideoPresenter _presenter;
     H264MftDecoder _decoder;

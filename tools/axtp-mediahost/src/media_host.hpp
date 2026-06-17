@@ -443,10 +443,14 @@ public:
                                    static_cast<std::streamsize>(stream.data.size()));
             }
 
-            if (context.chunks == 1 || (context.chunks % 100) == 0) {
+            if (context.kind == MediaKind::Video || context.chunks == 1 ||
+                (context.chunks % 100) == 0) {
                 logLine(kindName(context.kind) + " STREAM streamId=" + toHexU32(stream.streamId) +
-                        " chunks=" + std::to_string(context.chunks) + " bytes=" +
-                        std::to_string(context.bytes) + " cursor=" + std::to_string(stream.cursor));
+                        " seq=" + std::to_string(stream.seqId) +
+                        " chunkBytes=" + std::to_string(stream.data.size()) +
+                        " chunks=" + std::to_string(context.chunks) +
+                        " totalBytes=" + std::to_string(context.bytes) +
+                        " cursor=" + std::to_string(stream.cursor));
             }
         }
         if (knownStream && _options.streamSink != nullptr) {
