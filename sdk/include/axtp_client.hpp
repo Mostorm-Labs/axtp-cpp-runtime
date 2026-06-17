@@ -128,6 +128,29 @@ public:
     AppReadyResult ensureAppReady(AppReadyOptions options = {}) {
         AppReadyResult result;
         result.clientSeed = options.clientSeed.value_or(generateClientSeed());
+        auto emitTrace = [&](std::string stage,
+                             std::string action,
+                             ErrorCode statusCode = ErrorCode::Success,
+                             std::uint16_t controlId = 0,
+                             std::string sid = {},
+                             std::string bodyText = {},
+                             std::string detail = {}) {
+            if (!options.trace) {
+                return;
+            }
+            AppReadyTraceEvent event;
+            event.stage = std::move(stage);
+            event.action = std::move(action);
+            event.statusCode = statusCode;
+            event.controlId = controlId;
+            event.clientSeed = result.clientSeed;
+            event.sid = std::move(sid);
+            event.bodyText = std::move(bodyText);
+            event.detail = std::move(detail);
+            options.trace(event);
+        };
+
+        emitTrace("start", "begin", ErrorCode::Success, 0, "", "", "ensureAppReady entered");
 
         if (_appReady && !_sessionSid.empty()) {
             result.ok = true;
@@ -135,6 +158,7 @@ public:
             result.sid = _sessionSid;
             result.clientSeed = _lastAppReady.clientSeed != 0 ? _lastAppReady.clientSeed
                                                               : result.clientSeed;
+            emitTrace("app-ready", "already-ready", ErrorCode::Success, 0, result.sid);
             _lastAppReady = result;
             _lastError = SdkError::success();
             return result;
@@ -143,6 +167,7 @@ public:
         if (_transport == nullptr || _endpoint == nullptr) {
             result.statusCode = ErrorCode::Unavailable;
             result.stage = "transport";
+            emitTrace("transport", "error", result.statusCode, 0, "", "", "transport unavailable");
             _lastAppReady = result;
             _lastError = SdkError::failure(result.statusCode, "transport unavailable");
             return result;
@@ -155,18 +180,31 @@ public:
         if (profile.wireMode == AxtpWireMode::FramedBinary && !options.skipControlOpen) {
             result.stage = "control-open";
             const auto controlId = _nextControlId++;
+            emitTrace("control-open", "send", ErrorCode::Success, controlId);
             _endpoint->sendControlOpen(controlId);
+            emitTrace("control-accept", "wait", ErrorCode::Success, controlId);
             while (std::chrono::steady_clock::now() < deadline) {
                 poll();
                 if (auto accept = _endpoint->tryTakeControlNotice(ControlOpcode::Accept)) {
+                    emitTrace("control-accept",
+                              "receive",
+                              accept->statusCode,
+                              accept->controlId,
+                              "",
+                              "",
+                              accept->controlId == controlId ? "controlId matched"
+                                                             : "controlId mismatch");
                     if (accept->controlId == controlId &&
                         accept->statusCode == ErrorCode::Success &&
                         _endpoint->core().controlSessionOpen()) {
+                        emitTrace(
+                            "framing-ready", "ready", ErrorCode::Success, accept->controlId);
                         break;
                     }
                     result.statusCode = accept->statusCode == ErrorCode::Success
                                             ? ErrorCode::ControlOpenRejected
                                             : accept->statusCode;
+                    emitTrace("control-open", "error", result.statusCode, accept->controlId);
                     _lastAppReady = result;
                     _lastError = SdkError::failure(result.statusCode, "control open rejected");
                     return result;
@@ -175,18 +213,35 @@ public:
             }
             if (!_endpoint->core().controlSessionOpen()) {
                 result.statusCode = ErrorCode::RpcResponseTimeout;
+                emitTrace("control-accept", "timeout", result.statusCode, controlId);
                 _lastAppReady = result;
                 _lastError = SdkError::failure(result.statusCode, "control accept timeout");
                 return result;
             }
+        } else {
+            emitTrace("control-open",
+                      "skip",
+                      ErrorCode::Success,
+                      0,
+                      "",
+                      "",
+                      profile.wireMode == AxtpWireMode::WebSocketJsonRpc ? "websocket-json-rpc"
+                                                                          : "skipControlOpen");
         }
 
         result.stage = "hello";
         bool gotHello = false;
+        emitTrace("hello", "wait");
         while (std::chrono::steady_clock::now() < deadline) {
             poll();
-            if (_endpoint->tryTakeSessionRpc(RpcOp::Hello).has_value()) {
+            if (auto hello = _endpoint->tryTakeSessionRpc(RpcOp::Hello)) {
                 gotHello = true;
+                emitTrace("hello",
+                          "receive",
+                          ErrorCode::Success,
+                          0,
+                          hello->meta.jsonSid,
+                          std::string(hello->body.begin(), hello->body.end()));
                 break;
             }
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
@@ -194,18 +249,34 @@ public:
 
         if (!gotHello) {
             result.statusCode = ErrorCode::RpcResponseTimeout;
+            emitTrace("hello", "timeout", result.statusCode);
             _lastAppReady = result;
             _lastError = SdkError::failure(result.statusCode, "hello timeout");
             return result;
         }
 
         result.stage = "identify";
+        emitTrace("identify",
+                  "send",
+                  ErrorCode::Success,
+                  0,
+                  "",
+                  "",
+                  std::string("rpcVersion=1 eventMasks=") + options.eventMasks);
         _endpoint->sendRpcSession(
             JsonRpcEncoder::makeIdentify(result.clientSeed, options.eventMasks));
 
+        emitTrace("identified", "wait");
         while (std::chrono::steady_clock::now() < deadline) {
             poll();
             if (auto identified = _endpoint->tryTakeSessionRpc(RpcOp::Identified)) {
+                const std::string bodyText(identified->body.begin(), identified->body.end());
+                emitTrace("identified",
+                          "receive",
+                          ErrorCode::Success,
+                          0,
+                          identified->meta.jsonSid,
+                          bodyText);
                 if (!identified->meta.jsonSid.empty()) {
                     _sessionSid = identified->meta.jsonSid;
                     _appReady = true;
@@ -213,11 +284,13 @@ public:
                     result.statusCode = ErrorCode::Success;
                     result.stage = "app-ready";
                     result.sid = _sessionSid;
+                    emitTrace("app-ready", "ready", ErrorCode::Success, 0, result.sid);
                     _lastAppReady = result;
                     _lastError = SdkError::success();
                     return result;
                 }
                 result.statusCode = ErrorCode::RpcPayloadInvalid;
+                emitTrace("identified", "error", result.statusCode, 0, "", bodyText);
                 _lastAppReady = result;
                 _lastError = SdkError::failure(result.statusCode, "identified sid missing");
                 return result;
@@ -226,6 +299,7 @@ public:
         }
 
         result.statusCode = ErrorCode::RpcResponseTimeout;
+        emitTrace("identified", "timeout", result.statusCode);
         _lastAppReady = result;
         _lastError = SdkError::failure(result.statusCode, "identified timeout");
         return result;

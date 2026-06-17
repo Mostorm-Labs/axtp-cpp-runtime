@@ -130,6 +130,11 @@ int main() {
         assert(sink.controls.size() == 1);
         assert(sink.controls[0].opcode == axtp::ControlOpcode::Accept);
         assert(sink.controls[0].controlId == 1);
+        assert(!sink.controls[0].body.empty());
+        assert(sink.controls[0].tlv.valid);
+        assert(sink.controls[0].tlv.hasSelectedRpcEncoding);
+        assert(sink.controls[0].tlv.selectedRpcEncoding ==
+               static_cast<std::uint8_t>(axtp::RpcEncoding::Json));
 
         axtp::ControlPayload ping;
         ping.opcode = axtp::ControlOpcode::Ping;
@@ -157,7 +162,49 @@ int main() {
         assert(openSink.controls.size() == 1);
         assert(openSink.controls[0].opcode == axtp::ControlOpcode::Open);
         assert(openSink.controls[0].controlId == 9);
+        assert(!openSink.controls[0].body.empty());
+        assert(openSink.controls[0].tlv.valid);
+        assert(openSink.controls[0].tlv.hasProtocolVersion);
+        assert(openSink.controls[0].tlv.hasMaxFrameSize);
+        assert(openSink.controls[0].tlv.hasSupportedPayloadTypes);
+        assert(openSink.controls[0].tlv.hasSupportedRpcEncodings);
+        assert(openSink.controls[0].tlv.supportedRpcEncodings == 0x09);
         assert(!core.controlSessionOpen());
+
+        {
+            axtp::ControlPayload accept;
+            accept.opcode = axtp::ControlOpcode::Accept;
+            accept.controlId = 9;
+            accept.statusCode = axtp::ErrorCode::Success;
+            accept.body = {
+                0x01, 0x04, 0x12, 0x34, 0x56, 0x78,
+                0x02, 0x01, 0x01,
+                0x04, 0x02, 0x10, 0x00,
+                0x06, 0x02, 0x09, 0xc4,
+                0x07, 0x01, 0x07,
+                0x1e, 0x01, 0x01,
+                0x0a, 0x02, 0x0b, 0xb8,
+                0x0b, 0x01, 0x00,
+            };
+            auto acceptBytes = encodeControl(accept);
+            core.byteSink().onBytes(acceptBytes.data(), acceptBytes.size());
+            assert(core.controlSessionOpen());
+
+            auto notice = core.tryTakeControlNotice(axtp::ControlOpcode::Accept);
+            assert(notice.has_value());
+            assert(notice->controlId == 9);
+            assert(notice->statusCode == axtp::ErrorCode::Success);
+            assert(notice->tlv.valid);
+            assert(notice->tlv.hasMaxFrameSize);
+            assert(notice->tlv.maxFrameSize == 4096);
+            assert(notice->tlv.hasMtu);
+            assert(notice->tlv.mtu == 2500);
+            assert(notice->tlv.hasHeartbeatIntervalMs);
+            assert(notice->tlv.heartbeatIntervalMs == 3000);
+        }
+
+        core.sendControlOpen(9);
+        (void)core.tryPopOutboundBytes();
 
         axtp::ControlPayload accept;
         accept.opcode = axtp::ControlOpcode::Accept;

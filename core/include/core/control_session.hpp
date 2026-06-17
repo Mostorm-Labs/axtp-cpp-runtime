@@ -4,6 +4,7 @@
 #include <optional>
 #include <utility>
 
+#include "core/control_tlv_codec.hpp"
 #include "model/payload.hpp"
 
 namespace axtp {
@@ -17,19 +18,31 @@ public:
         payload.opcode = ControlOpcode::Open;
         payload.controlId = controlId;
         payload.statusCode = ErrorCode::Success;
+        payload.tlv = ControlTlvCodec::defaultsForOpen();
+        payload.body = ControlTlvCodec::encode(payload.tlv, false);
         return payload;
     }
 
     std::optional<ControlPayload> handle(ControlPayload payload) {
         _lastOpcode = payload.opcode;
         if (payload.opcode == ControlOpcode::Open) {
-            _open = true;
-            return makeResponse(ControlOpcode::Accept, payload);
+            auto response = makeResponse(ControlOpcode::Accept, payload);
+            response.tlv = ControlTlvCodec::defaultsForAccept(payload.tlv);
+            if (!payload.tlv.valid || !response.tlv.valid) {
+                _open = false;
+                response.statusCode = payload.tlv.valid ? ErrorCode::ControlNegotiationFailed
+                                                        : ErrorCode::ControlPayloadInvalid;
+            } else {
+                _open = true;
+            }
+            response.body = ControlTlvCodec::encode(response.tlv, true);
+            return response;
         }
         if (payload.opcode == ControlOpcode::Accept) {
             if (_pendingOpenId.has_value() && payload.controlId == *_pendingOpenId &&
-                payload.statusCode == ErrorCode::Success) {
+                payload.statusCode == ErrorCode::Success && payload.tlv.valid) {
                 _open = true;
+                _acceptedOptions = payload.tlv;
                 _pendingOpenId.reset();
             }
             return std::nullopt;
@@ -56,6 +69,10 @@ public:
         return _pendingOpenId;
     }
 
+    const ControlTlvOptions& acceptedOptions() const {
+        return _acceptedOptions;
+    }
+
 private:
     static ControlPayload makeResponse(ControlOpcode opcode, const ControlPayload& request) {
         ControlPayload response;
@@ -68,6 +85,7 @@ private:
 
     bool _open = false;
     std::optional<std::uint16_t> _pendingOpenId;
+    ControlTlvOptions _acceptedOptions;
     ControlOpcode _lastOpcode = ControlOpcode::Open;
 };
 

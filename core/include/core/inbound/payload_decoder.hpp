@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <utility>
 
+#include "core/control_tlv_codec.hpp"
 #include "core/inbound/json_rpc_payload_decoder.hpp"
 #include "core/inbound/message_reassembler.hpp"
 #include "core/inbound/payload_sink.hpp"
@@ -48,6 +49,7 @@ private:
         payload.controlId = controlId.value;
         payload.statusCode = static_cast<ErrorCode>(statusCode.value);
         payload.body = std::move(body.value);
+        payload.tlv = ControlTlvCodec::decode(payload.body);
         _next.onControl(std::move(payload));
     }
 

@@ -495,6 +495,45 @@ const char* rpcOpName(std::uint8_t value) {
     }
 }
 
+const char* controlOpcodeName(std::uint8_t value) {
+    switch (static_cast<axtp::ControlOpcode>(value)) {
+    case axtp::ControlOpcode::Open:
+        return "open";
+    case axtp::ControlOpcode::Accept:
+        return "accept";
+    case axtp::ControlOpcode::Ready:
+        return "ready";
+    case axtp::ControlOpcode::Heartbeat:
+        return "heartbeat";
+    case axtp::ControlOpcode::HeartbeatAck:
+        return "heartbeat-ack";
+    case axtp::ControlOpcode::Ack:
+        return "ack";
+    case axtp::ControlOpcode::Nack:
+        return "nack";
+    case axtp::ControlOpcode::Resume:
+        return "resume";
+    case axtp::ControlOpcode::ResumeAck:
+        return "resume-ack";
+    case axtp::ControlOpcode::SessionReset:
+        return "session-reset";
+    case axtp::ControlOpcode::WindowUpdate:
+        return "window-update";
+    case axtp::ControlOpcode::Ping:
+        return "ping";
+    case axtp::ControlOpcode::Pong:
+        return "pong";
+    case axtp::ControlOpcode::Close:
+        return "close";
+    case axtp::ControlOpcode::CloseAck:
+        return "close-ack";
+    case axtp::ControlOpcode::Goaway:
+        return "goaway";
+    default:
+        return "unknown";
+    }
+}
+
 const char* bodyEncodingName(std::uint8_t value) {
     switch (static_cast<axtp::RpcBodyEncoding>(value)) {
     case axtp::RpcBodyEncoding::None:
@@ -509,6 +548,43 @@ const char* bodyEncodingName(std::uint8_t value) {
 
 bool isJsonStart(axtp::Byte value) {
     return value == static_cast<axtp::Byte>('{') || value == static_cast<axtp::Byte>('[');
+}
+
+void appendControlTlvForLog(std::ostringstream& out,
+                            const axtp::Bytes& bytes,
+                            bool includeBody) {
+    const auto tlv = axtp::ControlTlvCodec::decode(bytes);
+    out << " control.tlv.valid=" << (tlv.valid ? "true" : "false");
+    if (tlv.hasSessionId) {
+        out << " control.tlv.sessionId=" << toHexU32(tlv.sessionId);
+    }
+    if (tlv.hasProtocolVersion) {
+        out << " control.tlv.protocolVersion=" << static_cast<unsigned>(tlv.protocolVersion);
+    }
+    if (tlv.hasMaxFrameSize) {
+        out << " control.tlv.maxFrameSize=" << tlv.maxFrameSize;
+    }
+    if (tlv.hasMtu) {
+        out << " control.tlv.mtu=" << tlv.mtu;
+    }
+    if (tlv.hasSupportedPayloadTypes) {
+        out << " control.tlv.supportedPayloadTypes=" << toHexByte(tlv.supportedPayloadTypes);
+    }
+    if (tlv.hasSupportedRpcEncodings) {
+        out << " control.tlv.supportedRpcEncodings=" << toHexByte(tlv.supportedRpcEncodings);
+    }
+    if (tlv.hasSelectedRpcEncoding) {
+        out << " control.tlv.selectedRpcEncoding=" << toHexByte(tlv.selectedRpcEncoding);
+    }
+    if (tlv.hasHeartbeatIntervalMs) {
+        out << " control.tlv.heartbeatIntervalMs=" << tlv.heartbeatIntervalMs;
+    }
+    if (tlv.hasAckMode) {
+        out << " control.tlv.ackMode=" << static_cast<unsigned>(tlv.ackMode);
+    }
+    if (includeBody && !bytes.empty()) {
+        out << " control.tlv.hex=" << toHex(bytes);
+    }
 }
 
 void appendFrameForLog(std::ostringstream& out,
@@ -557,6 +633,26 @@ void appendFrameForLog(std::ostringstream& out,
         out << " frame.crc16=" << toHexId(readBe16(data + totalSize - axtp::kStandardFrameCrcSize));
     } else {
         out << " frame.crc16=<incomplete>";
+    }
+
+    if (payloadType == static_cast<std::uint8_t>(axtp::PayloadType::Control)) {
+        if (size < totalSize || payloadLength < axtp::kControlPayloadHeaderSize) {
+            out << " control.header=<incomplete>";
+            return;
+        }
+        const auto* control = data + axtp::kStandardFrameHeaderSize;
+        const auto opcode = control[0];
+        const auto controlId = readBe16(control + 1);
+        const auto statusCode = readBe16(control + 3);
+        out << " control.opcode=" << controlOpcodeName(opcode) << "("
+            << static_cast<unsigned>(opcode) << ")"
+            << " control.controlId=" << controlId
+            << " control.statusCode=" << statusCode;
+        const auto* tlvBody = control + axtp::kControlPayloadHeaderSize;
+        const auto tlvSize =
+            static_cast<std::size_t>(payloadLength - axtp::kControlPayloadHeaderSize);
+        appendControlTlvForLog(out, axtp::Bytes(tlvBody, tlvBody + tlvSize), includeBody);
+        return;
     }
 
     if (payloadType != static_cast<std::uint8_t>(axtp::PayloadType::Rpc) ||
@@ -851,6 +947,36 @@ void printCallTrace(const axtp::HidReportTrace& trace,
 
     std::lock_guard<std::mutex> lock(*outputMutex);
     std::cerr << hidTraceForLog(trace, includeBody) << "\n";
+}
+
+std::string appReadyTraceForLog(const axtp::sdk::AppReadyTraceEvent& event, bool includeBody) {
+    std::ostringstream out;
+    out << "app-ready trace"
+        << " stage=" << event.stage
+        << " action=" << event.action
+        << " status=" << errorName(event.statusCode) << "("
+        << static_cast<std::uint16_t>(event.statusCode) << ")"
+        << " clientSeed=" << toHexU32(event.clientSeed);
+    if (event.controlId != 0) {
+        out << " controlId=" << event.controlId;
+    }
+    if (!event.sid.empty()) {
+        out << " sid=" << event.sid;
+    }
+    if (!event.detail.empty()) {
+        out << " detail=" << event.detail;
+    }
+    if (includeBody && !event.bodyText.empty()) {
+        out << " body=" << event.bodyText;
+    }
+    return out.str();
+}
+
+void printAppReadyTrace(const axtp::sdk::AppReadyTraceEvent& event,
+                        bool includeBody,
+                        std::mutex* outputMutex) {
+    std::lock_guard<std::mutex> lock(*outputMutex);
+    std::cerr << appReadyTraceForLog(event, includeBody) << "\n";
 }
 
 bool parseArgs(int argc, char** argv, CliOptions* options) {
@@ -1459,6 +1585,10 @@ int handshakeHid(const CliOptions& options, LocalLogger& logger) {
     axtp::sdk::AppReadyOptions appOptions;
     appOptions.timeout = std::chrono::milliseconds(options.timeoutMs);
     appOptions.clientSeed = options.clientSeed;
+    appOptions.trace = [&logger, &outputMutex](const axtp::sdk::AppReadyTraceEvent& event) {
+        logger.write(appReadyTraceForLog(event, true));
+        printAppReadyTrace(event, true, &outputMutex);
+    };
 
     const auto started = std::chrono::steady_clock::now();
     const auto result = client.ensureAppReady(appOptions);
@@ -1638,6 +1768,10 @@ int callMethod(const CliOptions& options, LocalLogger& logger) {
         axtp::sdk::AppReadyOptions appOptions;
         appOptions.timeout = std::chrono::milliseconds(options.timeoutMs);
         appOptions.clientSeed = options.clientSeed;
+        appOptions.trace = [&logger, &outputMutex](const axtp::sdk::AppReadyTraceEvent& event) {
+            logger.write(appReadyTraceForLog(event, true));
+            printAppReadyTrace(event, true, &outputMutex);
+        };
 
         const auto started = std::chrono::steady_clock::now();
         appReadyResult = client.ensureAppReady(appOptions);

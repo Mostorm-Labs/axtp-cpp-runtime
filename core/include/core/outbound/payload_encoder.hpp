@@ -2,6 +2,7 @@
 
 #include <cstdint>
 
+#include "core/control_tlv_codec.hpp"
 #include "core/outbound/json_rpc_encoder.hpp"
 #include "io/byte_writer.hpp"
 #include "model/message.hpp"
@@ -16,7 +17,13 @@ public:
         writer.writeU8(static_cast<std::uint8_t>(payload.opcode));
         writer.writeU16(payload.controlId);
         writer.writeU16(static_cast<std::uint16_t>(payload.statusCode));
-        writer.writeBytes(payload.body);
+        if (!payload.body.empty()) {
+            writer.writeBytes(payload.body);
+        } else if (payload.opcode == ControlOpcode::Open) {
+            writer.writeBytes(ControlTlvCodec::encode(payload.tlv, false));
+        } else if (payload.opcode == ControlOpcode::Accept) {
+            writer.writeBytes(ControlTlvCodec::encode(payload.tlv, true));
+        }
         return Message{0, PayloadType::Control, writer.takeBytes()};
     }
 

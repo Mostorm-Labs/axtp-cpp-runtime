@@ -2,6 +2,7 @@
 
 #include <chrono>
 #include <cstdint>
+#include <functional>
 #include <optional>
 #include <string>
 
@@ -9,10 +10,22 @@
 
 namespace axtp::sdk {
 
+struct AppReadyTraceEvent {
+    std::string stage;
+    std::string action;
+    ErrorCode statusCode = ErrorCode::Success;
+    std::uint16_t controlId = 0;
+    std::uint32_t clientSeed = 0;
+    std::string sid;
+    std::string bodyText;
+    std::string detail;
+};
+
 struct AppReadyOptions {
     std::chrono::milliseconds timeout{5000};
     std::string eventMasks;
     std::optional<std::uint32_t> clientSeed;
+    std::function<void(const AppReadyTraceEvent&)> trace;
     bool skipControlOpen = false;
 };
 

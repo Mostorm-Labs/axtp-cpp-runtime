@@ -10,6 +10,7 @@
 #include "broker/middleware_chain.hpp"
 #include "core/axtp_core.hpp"
 #include "core/control_session.hpp"
+#include "core/control_tlv_codec.hpp"
 #include "core/core_event.hpp"
 #include "core/inbound/frame_decoder.hpp"
 #include "core/inbound/inbound_processor.hpp"

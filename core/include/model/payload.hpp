@@ -18,11 +18,34 @@ struct PayloadMeta {
     std::string jsonEventMasks;
 };
 
+struct ControlTlvOptions {
+    bool valid = true;
+    bool hasSessionId = false;
+    bool hasProtocolVersion = false;
+    bool hasMaxFrameSize = false;
+    bool hasMtu = false;
+    bool hasSupportedPayloadTypes = false;
+    bool hasSupportedRpcEncodings = false;
+    bool hasSelectedRpcEncoding = false;
+    bool hasHeartbeatIntervalMs = false;
+    bool hasAckMode = false;
+    std::uint32_t sessionId = 0;
+    std::uint8_t protocolVersion = 1;
+    std::uint32_t maxFrameSize = 4096;
+    std::uint32_t mtu = 4096;
+    std::uint8_t supportedPayloadTypes = 0x07;
+    std::uint8_t supportedRpcEncodings = 0x09;
+    std::uint8_t selectedRpcEncoding = static_cast<std::uint8_t>(RpcEncoding::Json);
+    std::uint32_t heartbeatIntervalMs = 1000;
+    std::uint8_t ackMode = 0;
+};
+
 struct ControlPayload {
     ControlOpcode opcode = ControlOpcode::Open;
     std::uint16_t controlId = 0;
     ErrorCode statusCode = ErrorCode::Success;
     PayloadMeta meta;
+    ControlTlvOptions tlv;
     Bytes body;
 };
 

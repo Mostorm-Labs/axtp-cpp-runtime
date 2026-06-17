@@ -1,4 +1,5 @@
 #include <cassert>
+#include <algorithm>
 #include <memory>
 #include <string>
 #include <utility>
@@ -222,6 +223,10 @@ int main() {
 
         axtp::sdk::AppReadyOptions options;
         options.clientSeed = 0x12345678;
+        std::vector<std::string> appReadyTrace;
+        options.trace = [&appReadyTrace](const axtp::sdk::AppReadyTraceEvent& event) {
+            appReadyTrace.push_back(event.stage + ":" + event.action);
+        };
         const auto appReady = handshakeClient.ensureAppReady(options);
         assert(appReady.ok);
         assert(appReady.sid == "12345678");
@@ -230,6 +235,18 @@ int main() {
         assert(handshakeClient.sessionSid() == "12345678");
         assert(transportPtr->sawOpen);
         assert(transportPtr->sawIdentify);
+        assert(!appReadyTrace.empty());
+        assert(std::find(appReadyTrace.begin(),
+                         appReadyTrace.end(),
+                         "control-open:send") != appReadyTrace.end());
+        assert(std::find(appReadyTrace.begin(), appReadyTrace.end(), "hello:receive") !=
+               appReadyTrace.end());
+        assert(std::find(appReadyTrace.begin(), appReadyTrace.end(), "identify:send") !=
+               appReadyTrace.end());
+        assert(std::find(appReadyTrace.begin(), appReadyTrace.end(), "identified:receive") !=
+               appReadyTrace.end());
+        assert(std::find(appReadyTrace.begin(), appReadyTrace.end(), "app-ready:ready") !=
+               appReadyTrace.end());
 
         axtp::RpcPayload request;
         request.encoding = axtp::RpcEncoding::Json;
