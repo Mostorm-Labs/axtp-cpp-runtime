@@ -53,6 +53,7 @@ struct CliOptions {
     bool logBody = false;
     bool logEnabled = true;
     bool pullOnSourceEvent = false;
+    axtp::mediahost::OpenMode openMode = axtp::mediahost::OpenMode::ReceiverPull;
     bool help = false;
     std::filesystem::path dumpDir;
     std::string source = "wireless_cast";
@@ -312,9 +313,10 @@ void printUsage() {
         << "  --dump-dir <dir>         Dump received video/audio bytes to .h264/.aac files\n"
         << "  --no-video               Reject video.openStream\n"
         << "  --no-audio               Reject audio.openStream\n"
+        << "  --open-mode <mode>       receiver-pull (default), producer-open, or both\n"
         << "  --source <source>        Default source, default wireless_cast\n"
         << "  --audio-format <fmt>     AAC format accepted by MVP, default adts\n"
-        << "  --pull-on-source-event   Log source events as pull candidates (pull is not sent in MVP)\n"
+        << "  --pull-on-source-event   Deprecated alias for --open-mode receiver-pull\n"
         << "\n"
         << "Logging options:\n"
         << "  --log                    Write log beside exe under axtp-mediahost-logs (default)\n"
@@ -336,6 +338,19 @@ std::optional<std::uint32_t> parseU32(const std::string& text) {
     } catch (const std::exception&) {
         return std::nullopt;
     }
+}
+
+std::optional<axtp::mediahost::OpenMode> parseOpenMode(const std::string& text) {
+    if (text == "receiver-pull") {
+        return axtp::mediahost::OpenMode::ReceiverPull;
+    }
+    if (text == "producer-open") {
+        return axtp::mediahost::OpenMode::ProducerOpen;
+    }
+    if (text == "both") {
+        return axtp::mediahost::OpenMode::Both;
+    }
+    return std::nullopt;
 }
 
 bool parseOptions(int argc, char** argv, CliOptions* options) {
@@ -473,8 +488,22 @@ bool parseOptions(int argc, char** argv, CliOptions* options) {
             options->audioFormat = value;
             continue;
         }
+        if (arg == "--open-mode") {
+            const auto* value = requireValue(arg.c_str());
+            if (value == nullptr) {
+                return false;
+            }
+            const auto parsed = parseOpenMode(value);
+            if (!parsed.has_value()) {
+                std::cerr << "invalid --open-mode, expected receiver-pull, producer-open, or both\n";
+                return false;
+            }
+            options->openMode = *parsed;
+            continue;
+        }
         if (arg == "--pull-on-source-event") {
             options->pullOnSourceEvent = true;
+            options->openMode = axtp::mediahost::OpenMode::ReceiverPull;
             continue;
         }
         if (arg == "--log") {
@@ -651,13 +680,14 @@ int main(int argc, char** argv) {
     LocalLogger logger(options.logEnabled, options.logBody);
     logger.write("AXTP MediaHost starting");
     if (options.pullOnSourceEvent) {
-        logger.write("--pull-on-source-event is diagnostic in this MVP; source events are logged");
+        logger.write("--pull-on-source-event is deprecated; using --open-mode receiver-pull");
     }
 
     axtp::mediahost::MediaHostOptions mediaOptions;
     mediaOptions.acceptVideo = !options.noVideo;
     mediaOptions.acceptAudio = !options.noAudio;
     mediaOptions.logBody = options.logBody;
+    mediaOptions.openMode = options.openMode;
     mediaOptions.dumpDir = options.dumpDir;
     mediaOptions.source = options.source;
     mediaOptions.audioFormat = options.audioFormat;
@@ -669,9 +699,15 @@ int main(int argc, char** argv) {
     axtp::BasicBroker<> broker;
     axtp::mediahost::MediaStreamRegistry registry(
         mediaOptions, [&logger](std::string_view line) { logger.write(line); });
+    axtp::mediahost::MediaPullCoordinator pullCoordinator(
+        registry,
+        "",
+        std::chrono::milliseconds(options.timeoutMs),
+        [&logger](std::string_view line) { logger.write(line); });
     axtp::mediahost::installMediaHostHandlers(broker, registry);
-    broker.registerEventHandler([&logger, &options](const axtp::BrokerContext&,
-                                                    const axtp::RpcPayload& event) {
+    broker.registerEventHandler([&logger, &options, &pullCoordinator](
+                                    const axtp::BrokerContext&,
+                                    const axtp::RpcPayload& event) {
         std::ostringstream out;
         out << "event id=0x" << std::hex << std::uppercase << event.methodOrEventId;
         if (!event.meta.jsonMethodOrEventName.empty()) {
@@ -681,7 +717,20 @@ int main(int argc, char** argv) {
             out << " body=" << std::string(event.body.begin(), event.body.end());
         }
         logger.write(out.str());
+        pullCoordinator.handleEvent(event);
     });
+
+    std::ostringstream modeLog;
+    modeLog << "MediaHost openMode=" << axtp::mediahost::openModeName(options.openMode)
+            << " video=" << (mediaOptions.acceptVideo ? "enabled" : "disabled")
+            << " audio=" << (mediaOptions.acceptAudio ? "enabled" : "disabled");
+    if (axtp::mediahost::receiverPullEnabled(options.openMode)) {
+        modeLog << " receiver-pull=wait source-state events then send openStream";
+    }
+    if (axtp::mediahost::producerOpenEnabled(options.openMode)) {
+        modeLog << " producer-open=accept device-initiated openStream";
+    }
+    logger.write(modeLog.str());
 
     axtp::HidTransportOptions hidOptions;
     hidOptions.vendorId = static_cast<std::uint16_t>(options.vid.value_or(0));
@@ -743,17 +792,28 @@ int main(int argc, char** argv) {
     logger.write("APP_READY ok sid=" + ready.sid + " randomSeed=" +
                  axtp::mediahost::toHexU32(ready.randomSeed) +
                  " elapsedMs=" + std::to_string(readyMs));
+    pullCoordinator.setSid(ready.sid);
 
-    logger.write("MediaHost ready; waiting for device-initiated audio/video.openStream");
+    if (axtp::mediahost::receiverPullEnabled(options.openMode) &&
+        axtp::mediahost::producerOpenEnabled(options.openMode)) {
+        logger.write("MediaHost ready; waiting for source events and device openStream");
+    } else if (axtp::mediahost::receiverPullEnabled(options.openMode)) {
+        logger.write("MediaHost ready; waiting for audio/video source events to pull streams");
+    } else {
+        logger.write("MediaHost ready; waiting for device-initiated audio/video.openStream");
+    }
     auto nextUiUpdate = std::chrono::steady_clock::now();
     while (g_running != 0) {
         endpoint.poll(64);
+        pullCoordinator.poll(endpoint);
         if (options.render && std::chrono::steady_clock::now() >= nextUiUpdate) {
             const auto stats = registry.stats();
             std::ostringstream status;
             status << "AXTP MediaHost\n"
                    << "sid: " << ready.sid << "\n"
+                   << "open mode: " << axtp::mediahost::openModeName(options.openMode) << "\n"
                    << "active streams: " << registry.activeStreamCount() << "\n"
+                   << "pending pulls: " << pullCoordinator.pendingCount() << "\n"
                    << "video: " << stats.videoChunks << " chunks, " << stats.videoBytes
                    << " bytes\n"
                    << "audio: " << stats.audioChunks << " chunks, " << stats.audioBytes
