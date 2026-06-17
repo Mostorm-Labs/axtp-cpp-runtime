@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <functional>
 #include <optional>
 #include <queue>
 #include <string_view>
@@ -18,6 +19,9 @@ namespace axtp {
 template <std::size_t QueueSize = 32>
 class BasicBroker {
 public:
+    using EventHandler = std::function<void(const BrokerContext&, const RpcPayload&)>;
+    using StreamHandler = std::function<void(const BrokerContext&, const StreamPayload&)>;
+
     MethodRegistry& registry() {
         return _router.registry();
     }
@@ -49,15 +53,21 @@ public:
                 continue;
             }
             if (task.type == BrokerTaskType::RpcEvent) {
-                _results.push(BrokerResult::event(std::move(task.rpc)));
+                if (_eventHandler) {
+                    _eventHandler(task.context, task.rpc);
+                }
                 continue;
             }
             if (task.type == BrokerTaskType::StreamData) {
-                _results.push(BrokerResult::streamData(std::move(task.stream)));
+                if (_streamHandler) {
+                    _streamHandler(task.context, task.stream);
+                }
                 continue;
             }
             if (task.type == BrokerTaskType::StreamClose) {
-                _results.push(BrokerResult::streamClose(std::move(task.stream)));
+                if (_streamHandler) {
+                    _streamHandler(task.context, task.stream);
+                }
             }
         }
     }
@@ -96,6 +106,14 @@ public:
         _router.registerTlvMethod(methodName, std::move(handler));
     }
 
+    void registerEventHandler(EventHandler handler) {
+        _eventHandler = std::move(handler);
+    }
+
+    void registerStreamHandler(StreamHandler handler) {
+        _streamHandler = std::move(handler);
+    }
+
     std::size_t queuedTaskCount() const {
         return _tasks.size();
     }
@@ -111,6 +129,8 @@ private:
     BrokerFlowControl _flowControl;
     BusinessRouter _router;
     BusinessExecutor _executor;
+    EventHandler _eventHandler;
+    StreamHandler _streamHandler;
 };
 
 }  // namespace axtp

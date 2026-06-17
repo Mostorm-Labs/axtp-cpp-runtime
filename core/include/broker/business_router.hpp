@@ -32,6 +32,8 @@ struct RpcResponseData {
     RpcEncoding encoding = RpcEncoding::Json;
     Bytes body;
     bool overrideEncoding = false;
+    ErrorCode statusCode = ErrorCode::Success;
+    bool overrideStatus = false;
 };
 
 using RawRpcHandler = std::function<RpcResponseData(const RpcContext&, const RpcRequestView&)>;
@@ -152,6 +154,9 @@ public:
         if (data.overrideEncoding) {
             response.encoding = data.encoding;
             response.bodyEncoding = bodyEncodingForRpcEncoding(data.encoding);
+        }
+        if (data.overrideStatus) {
+            response.statusCode = data.statusCode;
         }
         response.body = data.body;
         return response;
