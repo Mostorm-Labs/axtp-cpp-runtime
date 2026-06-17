@@ -26,6 +26,7 @@ if(NOT TARGET axtp_sdk)
 endif()
 
 add_executable(axtp-mediahost
+    src/media/render/media_render_host.cpp
     src/main.cpp
 )
 
@@ -37,8 +38,18 @@ target_link_libraries(axtp-mediahost
     PRIVATE
         axtp_sdk
         axtp_transport_hidapi
+        avrt
+        d3d11
+        dxgi
         user32
         gdi32
+        mf
+        mfplat
+        mfreadwrite
+        mfuuid
+        mmdevapi
+        ole32
+        wmcodecdspuuid
 )
 
 enable_testing()
@@ -46,6 +57,8 @@ enable_testing()
 add_test(NAME axtp_mediahost_help COMMAND axtp-mediahost --help)
 add_test(NAME axtp_mediahost_missing_hid COMMAND axtp-mediahost --timeout 1)
 set_tests_properties(axtp_mediahost_missing_hid PROPERTIES WILL_FAIL TRUE)
+add_test(NAME axtp_mediahost_render_missing_hid COMMAND axtp-mediahost --render --timeout 1)
+set_tests_properties(axtp_mediahost_render_missing_hid PROPERTIES WILL_FAIL TRUE)
 
 add_executable(axtp_mediahost_protocol_test
     tests/mediahost_protocol_test.cpp

@@ -30,6 +30,8 @@ enum class MediaKind {
     Audio,
 };
 
+class IMediaStreamSink;
+
 enum class OpenMode {
     ReceiverPull,
     ProducerOpen,
@@ -64,6 +66,7 @@ struct MediaHostOptions {
     std::filesystem::path dumpDir;
     std::string source = "wireless_cast";
     std::string audioFormat = "adts";
+    IMediaStreamSink* streamSink = nullptr;
 };
 
 struct MediaStreamStats {
@@ -74,6 +77,28 @@ struct MediaStreamStats {
     std::uint64_t unknownChunks = 0;
     std::uint64_t seqGaps = 0;
     std::uint64_t duplicateSeq = 0;
+};
+
+struct MediaStreamInfo {
+    MediaKind kind = MediaKind::Video;
+    std::uint32_t streamId = 0;
+    std::string source;
+    std::string codec;
+    std::string streamProfile;
+    std::string cursorUnit;
+    std::uint32_t width = 0;
+    std::uint32_t height = 0;
+    std::uint32_t sampleRate = 0;
+    std::uint32_t channels = 0;
+    nlohmann::json metadata = nlohmann::json::object();
+};
+
+class IMediaStreamSink {
+public:
+    virtual ~IMediaStreamSink() = default;
+    virtual void onStreamOpened(const MediaStreamInfo& info) = 0;
+    virtual void onStreamChunk(MediaKind kind, const StreamPayload& stream) = 0;
+    virtual void onStreamClosed(MediaKind kind, std::uint32_t streamId) = 0;
 };
 
 struct OpenStreamResult {
@@ -96,9 +121,8 @@ inline const char* errorName(ErrorCode code) {
     return descriptor != nullptr ? descriptor->name : "UNKNOWN_ERROR";
 }
 
-inline std::string jsonStringOr(const nlohmann::json& object,
-                                const char* name,
-                                std::string fallback) {
+inline std::string
+jsonStringOr(const nlohmann::json& object, const char* name, std::string fallback) {
     const auto it = object.find(name);
     if (it != object.end() && it->is_string()) {
         return it->get<std::string>();
@@ -106,9 +130,8 @@ inline std::string jsonStringOr(const nlohmann::json& object,
     return fallback;
 }
 
-inline std::uint32_t jsonU32Or(const nlohmann::json& object,
-                               const char* name,
-                               std::uint32_t fallback) {
+inline std::uint32_t
+jsonU32Or(const nlohmann::json& object, const char* name, std::uint32_t fallback) {
     const auto it = object.find(name);
     if (it == object.end()) {
         return fallback;
@@ -122,9 +145,8 @@ inline std::uint32_t jsonU32Or(const nlohmann::json& object,
         }
         if (it->is_number_integer()) {
             const auto value = it->get<std::int64_t>();
-            return value >= 0 &&
-                           static_cast<std::uint64_t>(value) <=
-                               std::numeric_limits<std::uint32_t>::max()
+            return value >= 0 && static_cast<std::uint64_t>(value) <=
+                                     std::numeric_limits<std::uint32_t>::max()
                        ? static_cast<std::uint32_t>(value)
                        : fallback;
         }
@@ -136,8 +158,7 @@ inline std::uint32_t jsonU32Or(const nlohmann::json& object,
 class MediaStreamRegistry {
 public:
     explicit MediaStreamRegistry(MediaHostOptions options = {}, LogFn log = {})
-        : _options(std::move(options))
-        , _log(std::move(log)) {}
+        : _options(std::move(options)), _log(std::move(log)) {}
 
     OpenMode openMode() const {
         return _options.openMode;
@@ -215,19 +236,19 @@ public:
             if (codec != "h264") {
                 return error(ErrorCode::MediaCodecUnsupported, "video codec must be h264");
             }
-            return openAccepted(kind,
-                                allocateStreamId(kind),
-                                source,
-                                peerRole,
-                                "h264",
-                                "media.video",
-                                "timestampUs",
-                                syncGroupId,
-                                castSessionId,
-                                requestedMaxDataSize,
-                                nlohmann::json{{"codecFormat", "annexb"},
-                                               {"parameterSetsInKeyFrame", true}},
-                                "device open accepted");
+            return openAccepted(
+                kind,
+                allocateStreamId(kind),
+                source,
+                peerRole,
+                "h264",
+                "media.video",
+                "timestampUs",
+                syncGroupId,
+                castSessionId,
+                requestedMaxDataSize,
+                nlohmann::json{{"codecFormat", "annexb"}, {"parameterSetsInKeyFrame", true}},
+                "device open accepted");
         }
 
         const auto codec = jsonStringOr(params, "codec", "aac");
@@ -235,9 +256,9 @@ public:
             return error(ErrorCode::MediaCodecUnsupported, "audio codec must be aac");
         }
         const auto transportFormat =
-            jsonStringOr(params, "transportFormat", _options.audioFormat.empty()
-                                                           ? std::string("adts")
-                                                           : _options.audioFormat);
+            jsonStringOr(params,
+                         "transportFormat",
+                         _options.audioFormat.empty() ? std::string("adts") : _options.audioFormat);
         if (transportFormat != "adts") {
             return error(ErrorCode::MediaCodecUnsupported,
                          "axtp-mediahost MVP accepts AAC ADTS only");
@@ -293,8 +314,7 @@ public:
         if (kind == MediaKind::Video) {
             const auto codec = jsonStringOr(result, "codec", "h264");
             if (codec != "h264") {
-                return error(ErrorCode::MediaCodecUnsupported,
-                             "pulled video codec must be h264");
+                return error(ErrorCode::MediaCodecUnsupported, "pulled video codec must be h264");
             }
             return openAccepted(kind,
                                 streamId,
@@ -370,56 +390,67 @@ public:
         };
         logLine(kindName(kind) + " closeStream streamId=" + toHexU32(streamId) +
                 (alreadyClosed ? " alreadyClosed=true" : " closed"));
+        if (!alreadyClosed && _options.streamSink != nullptr) {
+            _options.streamSink->onStreamClosed(kind, streamId);
+        }
         return {ErrorCode::Success, std::move(body)};
     }
 
     void handleStream(const StreamPayload& stream) {
-        std::lock_guard<std::mutex> lock(_mutex);
-        auto it = _streams.find(stream.streamId);
-        if (it == _streams.end()) {
-            ++_stats.unknownChunks;
-            logLine("STREAM unknown streamId=" + toHexU32(stream.streamId) +
-                    " seq=" + std::to_string(stream.seqId) +
-                    " bytes=" + std::to_string(stream.data.size()));
-            return;
-        }
+        MediaKind kind = MediaKind::Video;
+        bool knownStream = false;
+        {
+            std::lock_guard<std::mutex> lock(_mutex);
+            auto it = _streams.find(stream.streamId);
+            if (it == _streams.end()) {
+                ++_stats.unknownChunks;
+                logLine("STREAM unknown streamId=" + toHexU32(stream.streamId) +
+                        " seq=" + std::to_string(stream.seqId) +
+                        " bytes=" + std::to_string(stream.data.size()));
+                return;
+            }
 
-        auto& context = it->second;
-        if (context.hasSeq) {
-            if (stream.seqId == context.expectedSeq - 1U) {
-                ++_stats.duplicateSeq;
-            } else if (stream.seqId != context.expectedSeq) {
-                ++_stats.seqGaps;
-                logLine(kindName(context.kind) + " seq gap streamId=" +
-                        toHexU32(stream.streamId) + " expected=" +
-                        std::to_string(context.expectedSeq) + " got=" +
-                        std::to_string(stream.seqId));
+            auto& context = it->second;
+            kind = context.kind;
+            knownStream = true;
+            if (context.hasSeq) {
+                if (stream.seqId == context.expectedSeq - 1U) {
+                    ++_stats.duplicateSeq;
+                } else if (stream.seqId != context.expectedSeq) {
+                    ++_stats.seqGaps;
+                    logLine(kindName(context.kind) +
+                            " seq gap streamId=" + toHexU32(stream.streamId) +
+                            " expected=" + std::to_string(context.expectedSeq) +
+                            " got=" + std::to_string(stream.seqId));
+                }
+            }
+            context.hasSeq = true;
+            context.expectedSeq = stream.seqId + 1U;
+            context.lastCursor = stream.cursor;
+            context.chunks += 1;
+            context.bytes += stream.data.size();
+
+            if (context.kind == MediaKind::Video) {
+                ++_stats.videoChunks;
+                _stats.videoBytes += stream.data.size();
+            } else {
+                ++_stats.audioChunks;
+                _stats.audioBytes += stream.data.size();
+            }
+
+            if (context.dump.is_open() && !stream.data.empty()) {
+                context.dump.write(reinterpret_cast<const char*>(stream.data.data()),
+                                   static_cast<std::streamsize>(stream.data.size()));
+            }
+
+            if (context.chunks == 1 || (context.chunks % 100) == 0) {
+                logLine(kindName(context.kind) + " STREAM streamId=" + toHexU32(stream.streamId) +
+                        " chunks=" + std::to_string(context.chunks) + " bytes=" +
+                        std::to_string(context.bytes) + " cursor=" + std::to_string(stream.cursor));
             }
         }
-        context.hasSeq = true;
-        context.expectedSeq = stream.seqId + 1U;
-        context.lastCursor = stream.cursor;
-        context.chunks += 1;
-        context.bytes += stream.data.size();
-
-        if (context.kind == MediaKind::Video) {
-            ++_stats.videoChunks;
-            _stats.videoBytes += stream.data.size();
-        } else {
-            ++_stats.audioChunks;
-            _stats.audioBytes += stream.data.size();
-        }
-
-        if (context.dump.is_open() && !stream.data.empty()) {
-            context.dump.write(reinterpret_cast<const char*>(stream.data.data()),
-                               static_cast<std::streamsize>(stream.data.size()));
-        }
-
-        if (context.chunks == 1 || (context.chunks % 100) == 0) {
-            logLine(kindName(context.kind) + " STREAM streamId=" + toHexU32(stream.streamId) +
-                    " chunks=" + std::to_string(context.chunks) +
-                    " bytes=" + std::to_string(context.bytes) +
-                    " cursor=" + std::to_string(stream.cursor));
+        if (knownStream && _options.streamSink != nullptr) {
+            _options.streamSink->onStreamChunk(kind, stream);
         }
     }
 
@@ -489,9 +520,9 @@ private:
         if (!_options.dumpDir.empty()) {
             std::error_code ec;
             std::filesystem::create_directories(_options.dumpDir, ec);
-            const auto path = _options.dumpDir /
-                              (kindName(kind) + "-" + toHexU32(context.streamId) +
-                               (kind == MediaKind::Video ? ".h264" : ".aac"));
+            const auto path =
+                _options.dumpDir / (kindName(kind) + "-" + toHexU32(context.streamId) +
+                                    (kind == MediaKind::Video ? ".h264" : ".aac"));
             context.dump.open(path, std::ios::binary);
             if (context.dump.is_open()) {
                 logLine(kindName(kind) + " dump=" + path.string());
@@ -522,6 +553,19 @@ private:
             body[it.key()] = it.value();
         }
 
+        MediaStreamInfo info;
+        info.kind = kind;
+        info.streamId = context.streamId;
+        info.source = body.value("source", std::string());
+        info.codec = body.value("codec", std::string());
+        info.streamProfile = body.value("streamProfile", std::string());
+        info.cursorUnit = body.value("cursorUnit", std::string());
+        info.width = jsonU32Or(body, "width", jsonU32Or(body, "codedWidth", 0));
+        info.height = jsonU32Or(body, "height", jsonU32Or(body, "codedHeight", 0));
+        info.sampleRate = jsonU32Or(body, "sampleRate", 0);
+        info.channels = jsonU32Or(body, "channels", 0);
+        info.metadata = body;
+
         const auto logName = kindName(kind);
         {
             std::lock_guard<std::mutex> lock(_mutex);
@@ -530,16 +574,18 @@ private:
         logLine(logName + " " + logAction + " streamId=" + toHexU32(streamId) +
                 " source=" + body.value("source", std::string()) +
                 " codec=" + body.value("codec", std::string()) +
-                " streamProfile=" + body.value("streamProfile", std::string()) +
-                " cursorUnit=" + body.value("cursorUnit", std::string()) +
-                " result=" + body.dump());
+                " streamProfile=" + body.value("streamProfile", std::string()) + " cursorUnit=" +
+                body.value("cursorUnit", std::string()) + " result=" + body.dump());
+        if (_options.streamSink != nullptr) {
+            _options.streamSink->onStreamOpened(info);
+        }
         return {ErrorCode::Success, std::move(body)};
     }
 
     OpenStreamResult error(ErrorCode status, std::string detail) const {
         if (!detail.empty()) {
-            logLine("open/close rejected status=" + std::to_string(static_cast<std::uint16_t>(status)) +
-                    " detail=" + detail);
+            logLine("open/close rejected status=" +
+                    std::to_string(static_cast<std::uint16_t>(status)) + " detail=" + detail);
         }
         return {status, nlohmann::json::object()};
     }
@@ -572,10 +618,8 @@ public:
                          std::string sid,
                          std::chrono::milliseconds requestTimeout,
                          LogFn log = {})
-        : _registry(registry)
-        , _sid(std::move(sid))
-        , _requestTimeout(requestTimeout)
-        , _log(std::move(log)) {}
+        : _registry(registry), _sid(std::move(sid)), _requestTimeout(requestTimeout),
+          _log(std::move(log)) {}
 
     void setSid(std::string sid) {
         _sid = std::move(sid);
@@ -614,8 +658,7 @@ public:
         const auto activeStreamId = jsonU32Or(body, "activeStreamId", 0);
 
         std::ostringstream eventLog;
-        eventLog << "source event " << MediaStreamRegistry::kindName(*kind)
-                 << " source=" << source
+        eventLog << "source event " << MediaStreamRegistry::kindName(*kind) << " source=" << source
                  << " state=" << (state.empty() ? "<missing>" : state)
                  << " reason=" << (reason.empty() ? "<none>" : reason);
         if (activeStreamId != 0) {
@@ -629,9 +672,8 @@ public:
         }
         if (state == "stopped" || state == "unavailable" || state == "failed") {
             const auto erased = _pulls.erase(keyFor(*kind, source));
-            logLine("pull state cleared for " + MediaStreamRegistry::kindName(*kind) +
-                    " source=" + source + " state=" + state +
-                    (erased != 0 ? "" : " (nothing pending)"));
+            logLine("pull state cleared for " + MediaStreamRegistry::kindName(*kind) + " source=" +
+                    source + " state=" + state + (erased != 0 ? "" : " (nothing pending)"));
             return true;
         }
         if (state != "available" && state != "receiving") {
@@ -647,8 +689,7 @@ public:
         const auto key = keyFor(*kind, source);
         auto it = _pulls.find(key);
         if (it != _pulls.end()) {
-            if (it->second.stage == PullStage::Open &&
-                !_registry.hasOpenStream(*kind, source)) {
+            if (it->second.stage == PullStage::Open && !_registry.hasOpenStream(*kind, source)) {
                 _pulls.erase(it);
             } else {
                 logLine("pull skipped: " + MediaStreamRegistry::kindName(*kind) +
@@ -668,13 +709,12 @@ public:
         pull.source = std::move(source);
         pull.stage = PullStage::Queued;
         _pulls.emplace(key, std::move(pull));
-        logLine("pull queued: " + MediaStreamRegistry::kindName(*kind) + " source=" +
-                _pulls.at(key).source);
+        logLine("pull queued: " + MediaStreamRegistry::kindName(*kind) +
+                " source=" + _pulls.at(key).source);
         return true;
     }
 
-    template <typename Endpoint>
-    void poll(Endpoint& endpoint) {
+    template <typename Endpoint> void poll(Endpoint& endpoint) {
         const auto now = std::chrono::steady_clock::now();
         std::vector<std::string> eraseKeys;
         for (auto& entry : _pulls) {
@@ -688,8 +728,7 @@ public:
             }
             if (now - pull.sentAt >= _requestTimeout) {
                 logLine("pull timeout: " + MediaStreamRegistry::kindName(pull.kind) +
-                        " source=" + pull.source +
-                        " requestId=" + std::to_string(pull.requestId));
+                        " source=" + pull.source + " requestId=" + std::to_string(pull.requestId));
                 eraseKeys.push_back(entry.first);
             }
         }
@@ -775,9 +814,8 @@ private:
     }
 
     static std::uint16_t methodIdFor(MediaKind kind) {
-        return static_cast<std::uint16_t>(kind == MediaKind::Video
-                                             ? MethodId::VideoOpenStream
-                                             : MethodId::AudioOpenStream);
+        return static_cast<std::uint16_t>(kind == MediaKind::Video ? MethodId::VideoOpenStream
+                                                                   : MethodId::AudioOpenStream);
     }
 
     static const char* methodNameFor(MediaKind kind) {
@@ -802,8 +840,7 @@ private:
                               {"cursorUnit", "timestampUs"}};
     }
 
-    template <typename Endpoint>
-    void sendOpen(Endpoint& endpoint, PullRequest& pull) {
+    template <typename Endpoint> void sendOpen(Endpoint& endpoint, PullRequest& pull) {
         auto params = openParamsFor(pull);
         const auto paramsText = params.dump();
 
@@ -825,10 +862,8 @@ private:
         pull.requestId = request.requestId;
         pull.sentAt = std::chrono::steady_clock::now();
         pull.stage = PullStage::Pending;
-        logLine("pull send: requestId=" + std::to_string(pull.requestId) +
-                " method=" + methodNameFor(pull.kind) +
-                " source=" + pull.source +
-                " payload=" + paramsText);
+        logLine("pull send: requestId=" + std::to_string(pull.requestId) + " method=" +
+                methodNameFor(pull.kind) + " source=" + pull.source + " payload=" + paramsText);
         endpoint.sendRpcRequest(std::move(request));
     }
 
@@ -838,28 +873,23 @@ private:
         const auto bodyText = std::string(response.body.begin(), response.body.end());
         if (response.statusCode != ErrorCode::Success) {
             logLine("pull failed: requestId=" + std::to_string(pull.requestId) +
-                    " method=" + methodNameFor(pull.kind) +
-                    " source=" + pull.source +
-                    " status=" + errorName(response.statusCode) +
-                    (bodyText.empty() ? "" : " body=" + bodyText));
+                    " method=" + methodNameFor(pull.kind) + " source=" + pull.source + " status=" +
+                    errorName(response.statusCode) + (bodyText.empty() ? "" : " body=" + bodyText));
             eraseKeys->push_back(keyFor(pull.kind, pull.source));
             return;
         }
 
         const auto registered = _registry.registerPulledOpen(pull.kind, bodyText);
         if (registered.status != ErrorCode::Success) {
-            logLine("pull response rejected locally: requestId=" +
-                    std::to_string(pull.requestId) +
-                    " method=" + methodNameFor(pull.kind) +
-                    " source=" + pull.source +
+            logLine("pull response rejected locally: requestId=" + std::to_string(pull.requestId) +
+                    " method=" + methodNameFor(pull.kind) + " source=" + pull.source +
                     " status=" + errorName(registered.status));
             eraseKeys->push_back(keyFor(pull.kind, pull.source));
             return;
         }
         pull.stage = PullStage::Open;
         logLine("pull success: requestId=" + std::to_string(pull.requestId) +
-                " method=" + methodNameFor(pull.kind) +
-                " source=" + pull.source +
+                " method=" + methodNameFor(pull.kind) + " source=" + pull.source +
                 (bodyText.empty() ? "" : " result=" + bodyText));
     }
 
@@ -894,29 +924,25 @@ inline void installMediaHostHandlers(BasicBroker<>& broker, MediaStreamRegistry&
         return response;
     };
 
-    broker.registerRawMethod(
-        static_cast<std::uint16_t>(MethodId::VideoOpenStream),
-        [jsonHandler](const RpcContext&, const RpcRequestView& request) {
-            return jsonHandler(MediaKind::Video, true, request);
-        });
-    broker.registerRawMethod(
-        static_cast<std::uint16_t>(MethodId::AudioOpenStream),
-        [jsonHandler](const RpcContext&, const RpcRequestView& request) {
-            return jsonHandler(MediaKind::Audio, true, request);
-        });
-    broker.registerRawMethod(
-        static_cast<std::uint16_t>(MethodId::VideoCloseStream),
-        [jsonHandler](const RpcContext&, const RpcRequestView& request) {
-            return jsonHandler(MediaKind::Video, false, request);
-        });
-    broker.registerRawMethod(
-        static_cast<std::uint16_t>(MethodId::AudioCloseStream),
-        [jsonHandler](const RpcContext&, const RpcRequestView& request) {
-            return jsonHandler(MediaKind::Audio, false, request);
-        });
+    broker.registerRawMethod(static_cast<std::uint16_t>(MethodId::VideoOpenStream),
+                             [jsonHandler](const RpcContext&, const RpcRequestView& request) {
+                                 return jsonHandler(MediaKind::Video, true, request);
+                             });
+    broker.registerRawMethod(static_cast<std::uint16_t>(MethodId::AudioOpenStream),
+                             [jsonHandler](const RpcContext&, const RpcRequestView& request) {
+                                 return jsonHandler(MediaKind::Audio, true, request);
+                             });
+    broker.registerRawMethod(static_cast<std::uint16_t>(MethodId::VideoCloseStream),
+                             [jsonHandler](const RpcContext&, const RpcRequestView& request) {
+                                 return jsonHandler(MediaKind::Video, false, request);
+                             });
+    broker.registerRawMethod(static_cast<std::uint16_t>(MethodId::AudioCloseStream),
+                             [jsonHandler](const RpcContext&, const RpcRequestView& request) {
+                                 return jsonHandler(MediaKind::Audio, false, request);
+                             });
     broker.registerStreamHandler([&registry](const BrokerContext&, const StreamPayload& stream) {
         registry.handleStream(stream);
     });
 }
 
-}  // namespace axtp::mediahost
+} // namespace axtp::mediahost

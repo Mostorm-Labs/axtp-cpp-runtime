@@ -37,6 +37,24 @@ struct CapturingPayloadSink : axtp::IPayloadSink {
     }
 };
 
+struct CountingMediaSink : axtp::mediahost::IMediaStreamSink {
+    std::vector<axtp::mediahost::MediaStreamInfo> opened;
+    std::vector<axtp::StreamPayload> chunks;
+    std::vector<std::uint32_t> closed;
+
+    void onStreamOpened(const axtp::mediahost::MediaStreamInfo& info) override {
+        opened.push_back(info);
+    }
+
+    void onStreamChunk(axtp::mediahost::MediaKind, const axtp::StreamPayload& stream) override {
+        chunks.push_back(stream);
+    }
+
+    void onStreamClosed(axtp::mediahost::MediaKind, std::uint32_t streamId) override {
+        closed.push_back(streamId);
+    }
+};
+
 axtp::Bytes encodeRpc(axtp::RpcPayload payload) {
     CapturingByteWriter writer;
     axtp::OutboundProcessor outbound(writer);
@@ -68,9 +86,8 @@ axtp::RpcPayload makeJsonRequest(std::uint32_t requestId,
     return request;
 }
 
-axtp::RpcPayload makeJsonResponse(std::uint32_t requestId,
-                                  axtp::ErrorCode status,
-                                  std::string body) {
+axtp::RpcPayload
+makeJsonResponse(std::uint32_t requestId, axtp::ErrorCode status, std::string body) {
     axtp::RpcPayload response;
     response.encoding = axtp::RpcEncoding::Json;
     response.op = axtp::RpcOp::RequestResponse;
@@ -83,9 +100,7 @@ axtp::RpcPayload makeJsonResponse(std::uint32_t requestId,
     return response;
 }
 
-axtp::RpcPayload makeJsonEvent(axtp::EventId eventId,
-                               std::string eventName,
-                               std::string body) {
+axtp::RpcPayload makeJsonEvent(axtp::EventId eventId, std::string eventName, std::string body) {
     axtp::RpcPayload event;
     event.encoding = axtp::RpcEncoding::Json;
     event.op = axtp::RpcOp::Event;
@@ -106,7 +121,7 @@ axtp::RpcPayload decodeSingleRpc(const axtp::Bytes& bytes) {
     return sink.rpcs.front();
 }
 
-}  // namespace
+} // namespace
 
 int main() {
     {
@@ -143,6 +158,8 @@ int main() {
         axtp::mediahost::MediaHostOptions options;
         options.dumpDir = dumpDir;
         options.openMode = axtp::mediahost::OpenMode::ProducerOpen;
+        CountingMediaSink mediaSink;
+        options.streamSink = &mediaSink;
         axtp::BasicBroker<> broker;
         axtp::mediahost::MediaStreamRegistry registry(options);
         axtp::mediahost::installMediaHostHandlers(broker, registry);
@@ -154,10 +171,8 @@ int main() {
 
         const std::string openParams =
             R"({"source":"wireless_cast_video","peerRole":"receiver","codec":"h264"})";
-        transport.injectIncoming(encodeRpc(makeJsonRequest(77,
-                                                           axtp::MethodId::VideoOpenStream,
-                                                           "video.openStream",
-                                                           openParams)));
+        transport.injectIncoming(encodeRpc(
+            makeJsonRequest(77, axtp::MethodId::VideoOpenStream, "video.openStream", openParams)));
         endpoint.poll(8);
         auto outgoing = transport.tryPopOutgoing();
         assert(outgoing.has_value());
@@ -170,6 +185,9 @@ int main() {
         assert(parsed.at("streamId").get<std::uint32_t>() == 0x1001);
         assert(parsed.at("codec").get<std::string>() == "h264");
         assert(parsed.at("codecFormat").get<std::string>() == "annexb");
+        assert(mediaSink.opened.size() == 1);
+        assert(mediaSink.opened.front().streamId == 0x1001);
+        assert(mediaSink.opened.front().kind == axtp::mediahost::MediaKind::Video);
 
         axtp::StreamPayload stream;
         stream.streamId = 0x1001;
@@ -182,17 +200,19 @@ int main() {
         auto stats = registry.stats();
         assert(stats.videoChunks == 1);
         assert(stats.videoBytes == 5);
+        assert(mediaSink.chunks.size() == 1);
+        assert(mediaSink.chunks.front().streamId == 0x1001);
 
         const std::string closeParams = R"({"streamId":4097,"peerRole":"transmitter"})";
-        transport.injectIncoming(encodeRpc(makeJsonRequest(78,
-                                                           axtp::MethodId::VideoCloseStream,
-                                                           "video.closeStream",
-                                                           closeParams)));
+        transport.injectIncoming(encodeRpc(makeJsonRequest(
+            78, axtp::MethodId::VideoCloseStream, "video.closeStream", closeParams)));
         endpoint.poll(8);
         outgoing = transport.tryPopOutgoing();
         assert(outgoing.has_value());
         auto closeResponse = decodeSingleRpc(*outgoing);
         assert(closeResponse.statusCode == axtp::ErrorCode::Success);
+        assert(mediaSink.closed.size() == 1);
+        assert(mediaSink.closed.front() == 0x1001);
 
         const auto dumpPath = dumpDir / "video-0x00001001.h264";
         assert(std::filesystem::exists(dumpPath));
@@ -207,6 +227,7 @@ int main() {
         endpoint.poll(8);
         stats = registry.stats();
         assert(stats.unknownChunks == 1);
+        assert(mediaSink.chunks.size() == 1);
     }
 
     {
@@ -227,12 +248,11 @@ int main() {
         endpoint.attachTransport(transport);
         transport.open();
 
-        const std::string videoEvent =
-            R"({"source":"wireless_cast_video","state":"receiving"})";
-        transport.injectIncoming(encodeRpc(makeJsonEvent(
-            axtp::EventId::VideoStreamSourceStateChanged,
-            "video.streamSourceStateChanged",
-            videoEvent)));
+        const std::string videoEvent = R"({"source":"wireless_cast_video","state":"receiving"})";
+        transport.injectIncoming(
+            encodeRpc(makeJsonEvent(axtp::EventId::VideoStreamSourceStateChanged,
+                                    "video.streamSourceStateChanged",
+                                    videoEvent)));
         endpoint.poll(8);
         pullCoordinator.poll(endpoint);
         auto outgoing = transport.tryPopOutgoing();
@@ -241,24 +261,24 @@ int main() {
         assert(videoOpen.op == axtp::RpcOp::Request);
         assert(videoOpen.methodOrEventId ==
                static_cast<std::uint16_t>(axtp::MethodId::VideoOpenStream));
-        const auto videoParams = nlohmann::json::parse(
-            std::string(videoOpen.body.begin(), videoOpen.body.end()));
+        const auto videoParams =
+            nlohmann::json::parse(std::string(videoOpen.body.begin(), videoOpen.body.end()));
         assert(videoParams.at("source").get<std::string>() == "wireless_cast_video");
         assert(videoParams.at("peerRole").get<std::string>() == "transmitter");
         assert(videoParams.at("codec").get<std::string>() == "h264");
 
-        transport.injectIncoming(encodeRpc(makeJsonEvent(
-            axtp::EventId::VideoStreamSourceStateChanged,
-            "video.streamSourceStateChanged",
-            videoEvent)));
+        transport.injectIncoming(
+            encodeRpc(makeJsonEvent(axtp::EventId::VideoStreamSourceStateChanged,
+                                    "video.streamSourceStateChanged",
+                                    videoEvent)));
         endpoint.poll(8);
         pullCoordinator.poll(endpoint);
         assert(!transport.tryPopOutgoing().has_value());
 
         const std::string videoResult =
             R"({"streamId":13107,"state":"streaming","source":"wireless_cast_video","peerRole":"transmitter","codec":"h264","streamProfile":"media.video","cursorUnit":"timestampUs"})";
-        transport.injectIncoming(encodeRpc(makeJsonResponse(
-            videoOpen.requestId, axtp::ErrorCode::Success, videoResult)));
+        transport.injectIncoming(encodeRpc(
+            makeJsonResponse(videoOpen.requestId, axtp::ErrorCode::Success, videoResult)));
         endpoint.poll(8);
         pullCoordinator.poll(endpoint);
         assert(!transport.tryPopOutgoing().has_value());
@@ -274,12 +294,11 @@ int main() {
         assert(stats.videoChunks == 1);
         assert(stats.videoBytes == 4);
 
-        const std::string audioEvent =
-            R"({"source":"wireless_cast_audio","state":"available"})";
-        transport.injectIncoming(encodeRpc(makeJsonEvent(
-            axtp::EventId::AudioStreamSourceStateChanged,
-            "audio.streamSourceStateChanged",
-            audioEvent)));
+        const std::string audioEvent = R"({"source":"wireless_cast_audio","state":"available"})";
+        transport.injectIncoming(
+            encodeRpc(makeJsonEvent(axtp::EventId::AudioStreamSourceStateChanged,
+                                    "audio.streamSourceStateChanged",
+                                    audioEvent)));
         endpoint.poll(8);
         pullCoordinator.poll(endpoint);
         outgoing = transport.tryPopOutgoing();
@@ -288,8 +307,8 @@ int main() {
         assert(audioOpen.op == axtp::RpcOp::Request);
         assert(audioOpen.methodOrEventId ==
                static_cast<std::uint16_t>(axtp::MethodId::AudioOpenStream));
-        const auto audioParams = nlohmann::json::parse(
-            std::string(audioOpen.body.begin(), audioOpen.body.end()));
+        const auto audioParams =
+            nlohmann::json::parse(std::string(audioOpen.body.begin(), audioOpen.body.end()));
         assert(audioParams.at("source").get<std::string>() == "wireless_cast_audio");
         assert(audioParams.at("peerRole").get<std::string>() == "transmitter");
         assert(audioParams.at("codec").get<std::string>() == "aac");
@@ -297,8 +316,8 @@ int main() {
 
         const std::string audioResult =
             R"({"streamId":17476,"state":"streaming","source":"wireless_cast_audio","peerRole":"transmitter","codec":"aac","transportFormat":"adts","sampleRate":48000,"channels":2,"streamProfile":"media.audio","cursorUnit":"timestampUs"})";
-        transport.injectIncoming(encodeRpc(makeJsonResponse(
-            audioOpen.requestId, axtp::ErrorCode::Success, audioResult)));
+        transport.injectIncoming(encodeRpc(
+            makeJsonResponse(audioOpen.requestId, axtp::ErrorCode::Success, audioResult)));
         endpoint.poll(8);
         pullCoordinator.poll(endpoint);
 
@@ -332,10 +351,10 @@ int main() {
         endpoint.attachTransport(transport);
         transport.open();
 
-        transport.injectIncoming(encodeRpc(makeJsonEvent(
-            axtp::EventId::AudioStreamSourceStateChanged,
-            "audio.streamSourceStateChanged",
-            R"({"source":"wireless_cast_audio","state":"receiving"})")));
+        transport.injectIncoming(
+            encodeRpc(makeJsonEvent(axtp::EventId::AudioStreamSourceStateChanged,
+                                    "audio.streamSourceStateChanged",
+                                    R"({"source":"wireless_cast_audio","state":"receiving"})")));
         endpoint.poll(8);
         pullCoordinator.poll(endpoint);
         assert(!transport.tryPopOutgoing().has_value());
@@ -355,10 +374,8 @@ int main() {
 
         const std::string openParams =
             R"({"source":"wireless_cast_video","peerRole":"receiver","codec":"h264"})";
-        transport.injectIncoming(encodeRpc(makeJsonRequest(79,
-                                                           axtp::MethodId::VideoOpenStream,
-                                                           "video.openStream",
-                                                           openParams)));
+        transport.injectIncoming(encodeRpc(
+            makeJsonRequest(79, axtp::MethodId::VideoOpenStream, "video.openStream", openParams)));
         endpoint.poll(8);
         const auto outgoing = transport.tryPopOutgoing();
         assert(outgoing.has_value());
@@ -388,20 +405,18 @@ int main() {
 
         const std::string openParams =
             R"({"source":"wireless_cast_video","peerRole":"receiver","codec":"h264"})";
-        transport.injectIncoming(encodeRpc(makeJsonRequest(80,
-                                                           axtp::MethodId::VideoOpenStream,
-                                                           "video.openStream",
-                                                           openParams)));
+        transport.injectIncoming(encodeRpc(
+            makeJsonRequest(80, axtp::MethodId::VideoOpenStream, "video.openStream", openParams)));
         endpoint.poll(8);
         auto outgoing = transport.tryPopOutgoing();
         assert(outgoing.has_value());
         const auto response = decodeSingleRpc(*outgoing);
         assert(response.statusCode == axtp::ErrorCode::Success);
 
-        transport.injectIncoming(encodeRpc(makeJsonEvent(
-            axtp::EventId::VideoStreamSourceStateChanged,
-            "video.streamSourceStateChanged",
-            R"({"source":"wireless_cast_video","state":"receiving"})")));
+        transport.injectIncoming(
+            encodeRpc(makeJsonEvent(axtp::EventId::VideoStreamSourceStateChanged,
+                                    "video.streamSourceStateChanged",
+                                    R"({"source":"wireless_cast_video","state":"receiving"})")));
         endpoint.poll(8);
         pullCoordinator.poll(endpoint);
         assert(!transport.tryPopOutgoing().has_value());

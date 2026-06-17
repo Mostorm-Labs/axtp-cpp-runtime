@@ -26,6 +26,7 @@
 #include <vector>
 
 #include "hidapi/hid_transport.hpp"
+#include "media/render/media_render_host.hpp"
 
 namespace {
 
@@ -48,6 +49,8 @@ struct CliOptions {
     std::uint32_t maxReportsPerPoll = 32;
     std::uint32_t timeoutMs = 5000;
     bool render = false;
+    bool renderBackendSpecified = false;
+    axtp::mediahost::RenderBackend renderBackend = axtp::mediahost::RenderBackend::None;
     bool noVideo = false;
     bool noAudio = false;
     bool logBody = false;
@@ -309,7 +312,8 @@ void printUsage() {
         << "  --timeout <ms>           App-ready timeout, default 5000\n"
         << "\n"
         << "Media options:\n"
-        << "  --render                 Show a Windows status window while receiving streams\n"
+        << "  --render                 Show a Windows video window and play received streams\n"
+        << "  --render-backend <name>  none, self-test, or mf-d3d11; default mf-d3d11 with --render\n"
         << "  --dump-dir <dir>         Dump received video/audio bytes to .h264/.aac files\n"
         << "  --no-video               Reject video.openStream\n"
         << "  --no-audio               Reject audio.openStream\n"
@@ -454,6 +458,23 @@ bool parseOptions(int argc, char** argv, CliOptions* options) {
         }
         if (arg == "--render") {
             options->render = true;
+            continue;
+        }
+        if (arg == "--render-backend") {
+            const auto* value = requireValue(arg.c_str());
+            if (value == nullptr) {
+                return false;
+            }
+            bool ok = false;
+            const auto backend = axtp::mediahost::parseRenderBackendOrNone(value, &ok);
+            if (!ok) {
+                std::cerr << "invalid --render-backend, expected none, self-test, or "
+                             "mf-d3d11\n";
+                return false;
+            }
+            options->renderBackend = backend;
+            options->renderBackendSpecified = true;
+            options->render = backend != axtp::mediahost::RenderBackend::None;
             continue;
         }
         if (arg == "--no-video") {
@@ -669,10 +690,6 @@ int main(int argc, char** argv) {
         printUsage();
         return 0;
     }
-    if (!hasHidTarget(options)) {
-        std::cerr << "axtp-mediahost requires --path/--hid-path or both --vid and --pid\n";
-        return 2;
-    }
 
     std::signal(SIGINT, handleSignal);
     std::signal(SIGTERM, handleSignal);
@@ -683,6 +700,38 @@ int main(int argc, char** argv) {
         logger.write("--pull-on-source-event is deprecated; using --open-mode receiver-pull");
     }
 
+    const auto effectiveRenderBackend =
+        options.render ? (options.renderBackendSpecified ? options.renderBackend
+                                                         : axtp::mediahost::RenderBackend::MfD3d11)
+                       : axtp::mediahost::RenderBackend::None;
+    axtp::mediahost::MediaRenderHost renderer(
+        [&logger](std::string_view line) { logger.write(line); });
+    if (options.renderBackendSpecified &&
+        effectiveRenderBackend == axtp::mediahost::RenderBackend::SelfTest &&
+        !hasHidTarget(options)) {
+        if (options.noVideo) {
+            std::cerr << "--render-backend self-test requires video; remove --no-video\n";
+            return 2;
+        }
+        axtp::mediahost::MediaRenderHostOptions renderOptions;
+        renderOptions.backend = effectiveRenderBackend;
+        renderOptions.enableVideo = !options.noVideo;
+        renderOptions.enableAudio = false;
+        if (!renderer.start(renderOptions)) {
+            return 5;
+        }
+        logger.write("renderer self-test running without HID target");
+        while (g_running != 0 && renderer.running()) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(30));
+        }
+        renderer.stop();
+        return 0;
+    }
+    if (!hasHidTarget(options)) {
+        std::cerr << "axtp-mediahost requires --path/--hid-path or both --vid and --pid\n";
+        return 2;
+    }
+
     axtp::mediahost::MediaHostOptions mediaOptions;
     mediaOptions.acceptVideo = !options.noVideo;
     mediaOptions.acceptAudio = !options.noAudio;
@@ -691,6 +740,8 @@ int main(int argc, char** argv) {
     mediaOptions.dumpDir = options.dumpDir;
     mediaOptions.source = options.source;
     mediaOptions.audioFormat = options.audioFormat;
+    mediaOptions.streamSink =
+        effectiveRenderBackend == axtp::mediahost::RenderBackend::None ? nullptr : &renderer;
 
     if (!mediaOptions.dumpDir.empty() && mediaOptions.dumpDir.is_relative()) {
         mediaOptions.dumpDir = exePath().parent_path() / mediaOptions.dumpDir;
@@ -723,7 +774,8 @@ int main(int argc, char** argv) {
     std::ostringstream modeLog;
     modeLog << "MediaHost openMode=" << axtp::mediahost::openModeName(options.openMode)
             << " video=" << (mediaOptions.acceptVideo ? "enabled" : "disabled")
-            << " audio=" << (mediaOptions.acceptAudio ? "enabled" : "disabled");
+            << " audio=" << (mediaOptions.acceptAudio ? "enabled" : "disabled")
+            << " renderBackend=" << axtp::mediahost::renderBackendName(effectiveRenderBackend);
     if (axtp::mediahost::receiverPullEnabled(options.openMode)) {
         modeLog << " receiver-pull=wait source-state events then send openStream";
     }
@@ -768,10 +820,16 @@ int main(int argc, char** argv) {
     }
     logger.write("HID device opened");
 
-    StatusWindow window;
-    if (options.render) {
-        window.start();
-        window.setText("AXTP MediaHost connected. Waiting for app-ready...");
+    if (effectiveRenderBackend != axtp::mediahost::RenderBackend::None) {
+        axtp::mediahost::MediaRenderHostOptions renderOptions;
+        renderOptions.backend = effectiveRenderBackend;
+        renderOptions.enableVideo = !options.noVideo;
+        renderOptions.enableAudio = !options.noAudio;
+        if (!renderer.start(renderOptions)) {
+            transport->close();
+            return 5;
+        }
+        renderer.setStatusText("AXTP MediaHost connected. Waiting for app-ready...");
     }
 
     const auto started = std::chrono::steady_clock::now();
@@ -787,6 +845,7 @@ int main(int argc, char** argv) {
         logger.write("APP_READY failed stage=" + ready.stage + " status=" +
                      errorName(ready.status));
         transport->close();
+        renderer.stop();
         return 4;
     }
     logger.write("APP_READY ok sid=" + ready.sid + " randomSeed=" +
@@ -806,7 +865,8 @@ int main(int argc, char** argv) {
     while (g_running != 0) {
         endpoint.poll(64);
         pullCoordinator.poll(endpoint);
-        if (options.render && std::chrono::steady_clock::now() >= nextUiUpdate) {
+        if (effectiveRenderBackend != axtp::mediahost::RenderBackend::None &&
+            std::chrono::steady_clock::now() >= nextUiUpdate) {
             const auto stats = registry.stats();
             std::ostringstream status;
             status << "AXTP MediaHost\n"
@@ -820,8 +880,9 @@ int main(int argc, char** argv) {
                    << " bytes\n"
                    << "unknown: " << stats.unknownChunks << " seqGaps: " << stats.seqGaps
                    << " duplicateSeq: " << stats.duplicateSeq << "\n"
-                   << "decode/render: not enabled in this MVP; raw media is received and dumped";
-            window.setText(status.str());
+                   << "render backend: "
+                   << axtp::mediahost::renderBackendName(effectiveRenderBackend);
+            renderer.setStatusText(status.str());
             nextUiUpdate = std::chrono::steady_clock::now() + std::chrono::milliseconds(250);
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
@@ -831,10 +892,9 @@ int main(int argc, char** argv) {
     logger.write("MediaHost stopping videoChunks=" + std::to_string(stats.videoChunks) +
                  " videoBytes=" + std::to_string(stats.videoBytes) +
                  " audioChunks=" + std::to_string(stats.audioChunks) +
-                 " audioBytes=" + std::to_string(stats.audioBytes) +
-                 " unknownChunks=" + std::to_string(stats.unknownChunks) +
-                 " seqGaps=" + std::to_string(stats.seqGaps));
+                 " audioBytes=" + std::to_string(stats.audioBytes) + " unknownChunks=" +
+                 std::to_string(stats.unknownChunks) + " seqGaps=" + std::to_string(stats.seqGaps));
     transport->close();
-    window.stop();
+    renderer.stop();
     return 0;
 }
