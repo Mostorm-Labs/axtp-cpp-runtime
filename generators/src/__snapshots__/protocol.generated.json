@@ -63,13 +63,13 @@
         "step": "Hello",
         "from": "Server",
         "to": "Client",
-        "description": "Announce RPC session rules, protocol version and authentication requirements."
+        "description": "Announce RPC session rules, AXTP version and authentication requirements."
       },
       {
         "step": "Identify",
         "from": "Client",
         "to": "Server",
-        "description": "Submit client identity and optional authentication data."
+        "description": "Submit client identity, randomSeed uint32 and optional authentication data."
       },
       {
         "step": "Identified",
@@ -319,9 +319,10 @@
           "fieldId": 2,
           "name": "protocolVersion",
           "type": "uint8",
-          "required": true,
+          "required": false,
           "min": 1,
-          "max": 15
+          "max": 15,
+          "deprecated": true
         },
         {
           "fieldId": 3,
@@ -337,14 +338,14 @@
           "name": "maxFrameSize",
           "type": "uint16",
           "required": true,
-          "min": 1,
+          "min": 19,
           "max": 65535
         },
         {
           "fieldId": 6,
           "name": "mtu",
           "type": "uint16",
-          "required": true,
+          "required": false,
           "min": 1,
           "max": 65535
         },
@@ -392,9 +393,10 @@
           "fieldId": 2,
           "name": "protocolVersion",
           "type": "uint8",
-          "required": true,
+          "required": false,
           "min": 1,
-          "max": 15
+          "max": 15,
+          "deprecated": true
         },
         {
           "fieldId": 3,
@@ -410,14 +412,14 @@
           "name": "maxFrameSize",
           "type": "uint16",
           "required": true,
-          "min": 1,
+          "min": 19,
           "max": 65535
         },
         {
           "fieldId": 6,
           "name": "mtu",
           "type": "uint16",
-          "required": true,
+          "required": false,
           "min": 1,
           "max": 65535
         },

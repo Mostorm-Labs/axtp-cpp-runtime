@@ -60,14 +60,14 @@ public:
         return payload;
     }
 
-    static RpcPayload makeIdentify(std::uint32_t clientSeed, std::string eventMasks = "") {
+    static RpcPayload makeIdentify(std::uint32_t randomSeed, std::string eventMasks = "") {
         RpcPayload payload;
         payload.encoding = RpcEncoding::Json;
         payload.op = RpcOp::Identify;
         payload.bodyEncoding = RpcBodyEncoding::None;
         payload.meta.sourceProtocol = SourceProtocol::JsonRpc;
         payload.meta.jsonSid = "";
-        payload.meta.clientSeed = clientSeed;
+        payload.meta.randomSeed = randomSeed;
         payload.meta.jsonEventMasks = std::move(eventMasks);
         return payload;
     }
@@ -120,7 +120,7 @@ private:
         auto d = nlohmann::json::object();
         d["rpcVersion"] = 1;
         d["eventMasks"] = payload.meta.jsonEventMasks;
-        d["clientSeed"] = payload.meta.clientSeed;
+        d["randomSeed"] = payload.meta.randomSeed;
 
         auto object = nlohmann::json::object();
         object["sid"] = "";

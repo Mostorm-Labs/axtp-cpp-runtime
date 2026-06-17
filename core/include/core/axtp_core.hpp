@@ -2,14 +2,17 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <iomanip>
 #include <optional>
 #include <queue>
+#include <sstream>
 #include <utility>
 
 #include "broker/broker_result.hpp"
 #include "core/control_session.hpp"
 #include "core/core_event.hpp"
 #include "core/inbound/inbound_processor.hpp"
+#include "core/outbound/json_rpc_encoder.hpp"
 #include "core/outbound/outbound_processor.hpp"
 #include "core/pending_call_table.hpp"
 #include "core/session_context.hpp"
@@ -191,17 +194,26 @@ private:
     }
 
     void handleControl(ControlPayload payload) {
+        const auto opcode = payload.opcode;
         const auto notice = payload;
         auto response = _controlSession.handle(std::move(payload));
         _controlNotices.push(notice);
         if (response.has_value()) {
             _outbound.sendControl(std::move(*response));
+            if (opcode == ControlOpcode::Open && _controlSession.isOpen()) {
+                _outbound.sendRpc(JsonRpcEncoder::makeHello());
+            }
         }
     }
 
     void handleRpc(RpcPayload payload) {
-        if (payload.op == RpcOp::Hello || payload.op == RpcOp::Identify ||
-            payload.op == RpcOp::Identified || payload.op == RpcOp::Reidentify) {
+        if (payload.op == RpcOp::Identify || payload.op == RpcOp::Reidentify) {
+            const auto sid = makeSessionId(payload.meta.randomSeed);
+            _sessionRpcs.push(std::move(payload));
+            _outbound.sendRpc(JsonRpcEncoder::makeIdentified(sid));
+            return;
+        }
+        if (payload.op == RpcOp::Hello || payload.op == RpcOp::Identified) {
             _sessionRpcs.push(std::move(payload));
             return;
         }
@@ -246,6 +258,17 @@ private:
     std::queue<RpcPayload> _sessionRpcs;
     std::queue<ControlPayload> _controlNotices;
     std::queue<Bytes> _outboundBytes;
+    std::uint32_t _nextSessionId = 1;
+
+    std::string makeSessionId(std::uint32_t randomSeed) {
+        auto mixed = randomSeed ^ (_nextSessionId++ * 0x9E3779B9U);
+        if (mixed == 0) {
+            mixed = _nextSessionId;
+        }
+        std::ostringstream out;
+        out << std::hex << std::setw(8) << std::setfill('0') << mixed;
+        return out.str();
+    }
 };
 
 }  // namespace axtp

@@ -56,7 +56,7 @@ struct CliOptions {
     std::optional<std::uint32_t> methodId;
     std::optional<std::uint32_t> vid;
     std::optional<std::uint32_t> pid;
-    std::optional<std::uint32_t> clientSeed;
+    std::optional<std::uint32_t> randomSeed;
     std::uint32_t timeoutMs = 5000;
     std::uint32_t reportId = 0x05;
     std::uint32_t inputReportSize = 255;
@@ -93,7 +93,7 @@ void printUsage() {
         << "      --method-id <hex|dec>    Call an AXTP method by numeric id\n"
         << "      --sid <value>            JSON envelope sid, default 00000000\n"
         << "      --no-app-ready           Skip CONTROL/Hello/Identify and use --sid directly\n"
-        << "      --client-seed <hex|dec>  Override Identify clientSeed for app-ready\n"
+        << "      --random-seed <hex|dec>  Override Identify randomSeed for app-ready\n"
         << "  -j, --json <json>            JSON request body, default {}\n"
         << "  -f, --json-file <path>       Read JSON request body from file\n"
         << "      --raw-hex <hex>          Send raw binary body as JSON-binary RPC\n"
@@ -121,7 +121,7 @@ void printUsage() {
         << "  axtpctl list-hid --vid 0x1234 --pid 0x5678\n"
         << "  axtpctl read-hid --path \"<path from list-hid>\" --timeout 10000 --log-body\n"
         << "  axtpctl --path \"<path from list-hid>\" -c network.getInterfaces -o json\n"
-        << "  axtpctl --path \"<path from list-hid>\" handshake --client-seed 0x12345678\n"
+        << "  axtpctl --path \"<path from list-hid>\" handshake --random-seed 0x12345678\n"
         << "  axtpctl --path \"<path from list-hid>\" -c network.getInterfaces --no-app-ready --sid 00000000\n"
         << "  axtpctl --vid 0x1234 --pid 0x5678 -c audio.getAlgorithmConfig\n"
         << "  axtpctl --vid 0x1234 --pid 0x5678 -c audio.setAlgorithmConfig --json \"{}\"\n"
@@ -956,7 +956,7 @@ std::string appReadyTraceForLog(const axtp::sdk::AppReadyTraceEvent& event, bool
         << " action=" << event.action
         << " status=" << errorName(event.statusCode) << "("
         << static_cast<std::uint16_t>(event.statusCode) << ")"
-        << " clientSeed=" << toHexU32(event.clientSeed);
+        << " randomSeed=" << toHexU32(event.randomSeed);
     if (event.controlId != 0) {
         out << " controlId=" << event.controlId;
     }
@@ -1089,12 +1089,12 @@ bool parseArgs(int argc, char** argv, CliOptions* options) {
             options->sid = *value;
             continue;
         }
-        if (arg == "--client-seed") {
+        if (arg == "--random-seed") {
             const auto value = parseNumberOption(arg.c_str());
             if (!value.has_value()) {
                 return false;
             }
-            options->clientSeed = *value;
+            options->randomSeed = *value;
             continue;
         }
         if (arg == "--raw-hex") {
@@ -1584,7 +1584,7 @@ int handshakeHid(const CliOptions& options, LocalLogger& logger) {
 
     axtp::sdk::AppReadyOptions appOptions;
     appOptions.timeout = std::chrono::milliseconds(options.timeoutMs);
-    appOptions.clientSeed = options.clientSeed;
+    appOptions.randomSeed = options.randomSeed;
     appOptions.trace = [&logger, &outputMutex](const axtp::sdk::AppReadyTraceEvent& event) {
         logger.write(appReadyTraceForLog(event, true));
         printAppReadyTrace(event, true, &outputMutex);
@@ -1602,7 +1602,7 @@ int handshakeHid(const CliOptions& options, LocalLogger& logger) {
            << " status=" << errorName(result.statusCode) << "("
            << static_cast<std::uint16_t>(result.statusCode) << ")"
            << " sid=" << (result.sid.empty() ? "<none>" : result.sid)
-           << " clientSeed=" << toHexU32(result.clientSeed)
+           << " randomSeed=" << toHexU32(result.randomSeed)
            << " elapsedMs=" << elapsedMs;
     logger.write(appLog.str());
 
@@ -1628,8 +1628,8 @@ int handshakeHid(const CliOptions& options, LocalLogger& logger) {
                   << "\",\"statusCode\":" << static_cast<std::uint16_t>(result.statusCode)
                   << ",\"status\":\"" << jsonEscape(errorName(result.statusCode))
                   << "\",\"sid\":\"" << jsonEscape(result.sid)
-                  << "\",\"clientSeed\":" << result.clientSeed
-                  << ",\"clientSeedHex\":\"" << toHexU32(result.clientSeed)
+                  << "\",\"randomSeed\":" << result.randomSeed
+                  << ",\"randomSeedHex\":\"" << toHexU32(result.randomSeed)
                   << "\",\"elapsedMs\":" << elapsedMs << "}\n";
         return result.ok ? 0 : 4;
     }
@@ -1642,7 +1642,7 @@ int handshakeHid(const CliOptions& options, LocalLogger& logger) {
     }
 
     std::cout << "APP_READY sid=" << result.sid
-              << " clientSeed=" << toHexU32(result.clientSeed)
+              << " randomSeed=" << toHexU32(result.randomSeed)
               << " elapsedMs=" << elapsedMs << "\n";
     return 0;
 }
@@ -1698,8 +1698,8 @@ int callMethod(const CliOptions& options, LocalLogger& logger) {
                << (encoding == axtp::RpcEncoding::Json
                        ? (options.noAppReady ? options.sid : "<app-ready>")
                        : "<binary>")
-               << " clientSeed="
-               << (options.clientSeed.has_value() ? toHexU32(*options.clientSeed) : "<auto>")
+               << " randomSeed="
+               << (options.randomSeed.has_value() ? toHexU32(*options.randomSeed) : "<auto>")
                << " body=" << bytesForLog(body, encoding, logger.includeBody());
     logger.write(requestLog.str());
 
@@ -1767,7 +1767,7 @@ int callMethod(const CliOptions& options, LocalLogger& logger) {
     if (!options.noAppReady) {
         axtp::sdk::AppReadyOptions appOptions;
         appOptions.timeout = std::chrono::milliseconds(options.timeoutMs);
-        appOptions.clientSeed = options.clientSeed;
+        appOptions.randomSeed = options.randomSeed;
         appOptions.trace = [&logger, &outputMutex](const axtp::sdk::AppReadyTraceEvent& event) {
             logger.write(appReadyTraceForLog(event, true));
             printAppReadyTrace(event, true, &outputMutex);
@@ -1785,7 +1785,7 @@ int callMethod(const CliOptions& options, LocalLogger& logger) {
                << " status=" << errorName(appReadyResult.statusCode) << "("
                << static_cast<std::uint16_t>(appReadyResult.statusCode) << ")"
                << " sid=" << (appReadyResult.sid.empty() ? "<none>" : appReadyResult.sid)
-               << " clientSeed=" << toHexU32(appReadyResult.clientSeed)
+               << " randomSeed=" << toHexU32(appReadyResult.randomSeed)
                << " elapsedMs=" << elapsedMs;
         logger.write(appLog.str());
 
@@ -1819,8 +1819,8 @@ int callMethod(const CliOptions& options, LocalLogger& logger) {
                           << static_cast<std::uint16_t>(appReadyResult.statusCode)
                           << ",\"status\":\"" << jsonEscape(errorName(appReadyResult.statusCode))
                           << "\",\"sid\":\"" << jsonEscape(appReadyResult.sid)
-                          << "\",\"clientSeed\":" << appReadyResult.clientSeed
-                          << ",\"clientSeedHex\":\"" << toHexU32(appReadyResult.clientSeed)
+                          << "\",\"randomSeed\":" << appReadyResult.randomSeed
+                          << ",\"randomSeedHex\":\"" << toHexU32(appReadyResult.randomSeed)
                           << "\"}\n";
                 return 4;
             }
@@ -1897,8 +1897,8 @@ int callMethod(const CliOptions& options, LocalLogger& logger) {
                   << encodingName(response.encoding) << "\",\"sid\":\""
                   << jsonEscape(effectiveSid) << "\"";
         if (!options.noAppReady) {
-            std::cout << ",\"clientSeed\":" << appReadyResult.clientSeed
-                      << ",\"clientSeedHex\":\"" << toHexU32(appReadyResult.clientSeed) << "\"";
+            std::cout << ",\"randomSeed\":" << appReadyResult.randomSeed
+                      << ",\"randomSeedHex\":\"" << toHexU32(appReadyResult.randomSeed) << "\"";
         }
         std::cout << ",\"bodyText\":\""
                   << jsonEscape(bodyText) << "\",\"bodyHex\":\"" << toHex(response.body)

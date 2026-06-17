@@ -51,10 +51,10 @@ inline constexpr FieldDescriptor kCommonEmptyResponseFields[] = {
 };
 
 inline constexpr FieldDescriptor kControlOpenBodyFields[] = {
-    { 0x02, "protocolVersion", FieldType::Uint8, true, 1, 15 },
+    { 0x02, "protocolVersion", FieldType::Uint8, false, 1, 15 },
     { 0x03, "reservedHeaderProfile", FieldType::Uint8, false, 1, 2 },
-    { 0x04, "maxFrameSize", FieldType::Uint16, true, 1, 65535 },
-    { 0x06, "mtu", FieldType::Uint16, true, 1, 65535 },
+    { 0x04, "maxFrameSize", FieldType::Uint16, true, 19, 65535 },
+    { 0x06, "mtu", FieldType::Uint16, false, 1, 65535 },
     { 0x07, "supportedPayloadTypes", FieldType::Bitmap, true, 0, 0 },
     { 0x08, "supportedRpcEncodings", FieldType::Bitmap, true, 0, 0 },
     { 0x0A, "heartbeatIntervalMs", FieldType::Uint32, true, 500, 60000 },
@@ -63,10 +63,10 @@ inline constexpr FieldDescriptor kControlOpenBodyFields[] = {
 
 inline constexpr FieldDescriptor kControlAcceptBodyFields[] = {
     { 0x01, "sessionId", FieldType::Uint32, true, 0, 0 },
-    { 0x02, "protocolVersion", FieldType::Uint8, true, 1, 15 },
+    { 0x02, "protocolVersion", FieldType::Uint8, false, 1, 15 },
     { 0x03, "reservedHeaderProfile", FieldType::Uint8, false, 1, 2 },
-    { 0x04, "maxFrameSize", FieldType::Uint16, true, 1, 65535 },
-    { 0x06, "mtu", FieldType::Uint16, true, 1, 65535 },
+    { 0x04, "maxFrameSize", FieldType::Uint16, true, 19, 65535 },
+    { 0x06, "mtu", FieldType::Uint16, false, 1, 65535 },
     { 0x07, "supportedPayloadTypes", FieldType::Bitmap, true, 0, 0 },
     { 0x0A, "heartbeatIntervalMs", FieldType::Uint32, true, 500, 60000 },
     { 0x0B, "ackMode", FieldType::Uint8, true, 0, 4 },

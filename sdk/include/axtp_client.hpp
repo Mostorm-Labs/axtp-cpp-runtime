@@ -127,7 +127,7 @@ public:
 
     AppReadyResult ensureAppReady(AppReadyOptions options = {}) {
         AppReadyResult result;
-        result.clientSeed = options.clientSeed.value_or(generateClientSeed());
+        result.randomSeed = options.randomSeed.value_or(generateRandomSeed());
         auto emitTrace = [&](std::string stage,
                              std::string action,
                              ErrorCode statusCode = ErrorCode::Success,
@@ -143,7 +143,7 @@ public:
             event.action = std::move(action);
             event.statusCode = statusCode;
             event.controlId = controlId;
-            event.clientSeed = result.clientSeed;
+            event.randomSeed = result.randomSeed;
             event.sid = std::move(sid);
             event.bodyText = std::move(bodyText);
             event.detail = std::move(detail);
@@ -156,8 +156,8 @@ public:
             result.ok = true;
             result.stage = "app-ready";
             result.sid = _sessionSid;
-            result.clientSeed = _lastAppReady.clientSeed != 0 ? _lastAppReady.clientSeed
-                                                              : result.clientSeed;
+            result.randomSeed = _lastAppReady.randomSeed != 0 ? _lastAppReady.randomSeed
+                                                              : result.randomSeed;
             emitTrace("app-ready", "already-ready", ErrorCode::Success, 0, result.sid);
             _lastAppReady = result;
             _lastError = SdkError::success();
@@ -264,7 +264,7 @@ public:
                   "",
                   std::string("rpcVersion=1 eventMasks=") + options.eventMasks);
         _endpoint->sendRpcSession(
-            JsonRpcEncoder::makeIdentify(result.clientSeed, options.eventMasks));
+            JsonRpcEncoder::makeIdentify(result.randomSeed, options.eventMasks));
 
         emitTrace("identified", "wait");
         while (std::chrono::steady_clock::now() < deadline) {
@@ -524,7 +524,7 @@ private:
 #endif
     }
 
-    static std::uint32_t generateClientSeed() {
+    static std::uint32_t generateRandomSeed() {
         try {
             std::random_device random;
             const auto first = static_cast<std::uint32_t>(random());

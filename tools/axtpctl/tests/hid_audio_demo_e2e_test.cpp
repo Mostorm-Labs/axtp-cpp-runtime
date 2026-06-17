@@ -1,6 +1,7 @@
 #include <atomic>
 #include <cassert>
 #include <chrono>
+#include <iostream>
 #include <memory>
 #include <nlohmann/json.hpp>
 #include <string>
@@ -41,16 +42,27 @@ int main() {
         }
     });
 
-    axtp::sdk::ClientOptions clientOptions;
-    clientOptions.autoIdentify = false;
-    axtp::sdk::AxtpClient client(clientOptions);
+    axtp::sdk::AxtpClient client;
     client.attachTransport(
         std::make_unique<axtp::HidTransport>(options, axtp::LocalHidBackend::client(path)));
 
     axtp::sdk::CallOptions callOptions;
-    callOptions.timeout = std::chrono::seconds(1);
+    callOptions.timeout = std::chrono::seconds(5);
+
+    axtp::sdk::AppReadyOptions appReadyOptions;
+    appReadyOptions.timeout = callOptions.timeout;
+    const auto appReady = client.ensureAppReady(appReadyOptions);
+    if (!appReady.ok) {
+        std::cerr << "app-ready failed stage=" << appReady.stage
+                  << " status=" << static_cast<int>(appReady.statusCode) << "\n";
+    }
+    assert(appReady.ok);
 
     const auto before = client.callJson("audio.getAlgorithmConfig", "{}", callOptions);
+    if (before.find("noiseSuppression") == std::string::npos) {
+        std::cerr << "before response=" << before
+                  << " lastError=" << static_cast<int>(client.lastError().code) << "\n";
+    }
     assert(before.find("noiseSuppression") != std::string::npos);
 
     const auto setResponse =

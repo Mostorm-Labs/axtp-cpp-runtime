@@ -136,6 +136,14 @@ int main() {
         assert(sink.controls[0].tlv.selectedRpcEncoding ==
                static_cast<std::uint8_t>(axtp::RpcEncoding::Json));
 
+        responseBytes = core.tryPopOutboundBytes();
+        assert(responseBytes.has_value());
+        CapturingPayloadSink helloSink;
+        axtp::InboundProcessor helloInbound(helloSink);
+        helloInbound.onBytes(responseBytes->data(), responseBytes->size());
+        assert(helloSink.rpcs.size() == 1);
+        assert(helloSink.rpcs[0].op == axtp::RpcOp::Hello);
+
         axtp::ControlPayload ping;
         ping.opcode = axtp::ControlOpcode::Ping;
         ping.controlId = 2;

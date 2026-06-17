@@ -15,7 +15,7 @@ struct AppReadyTraceEvent {
     std::string action;
     ErrorCode statusCode = ErrorCode::Success;
     std::uint16_t controlId = 0;
-    std::uint32_t clientSeed = 0;
+    std::uint32_t randomSeed = 0;
     std::string sid;
     std::string bodyText;
     std::string detail;
@@ -24,7 +24,7 @@ struct AppReadyTraceEvent {
 struct AppReadyOptions {
     std::chrono::milliseconds timeout{5000};
     std::string eventMasks;
-    std::optional<std::uint32_t> clientSeed;
+    std::optional<std::uint32_t> randomSeed;
     std::function<void(const AppReadyTraceEvent&)> trace;
     bool skipControlOpen = false;
 };
@@ -34,7 +34,7 @@ struct AppReadyResult {
     ErrorCode statusCode = ErrorCode::Success;
     std::string stage;
     std::string sid;
-    std::uint32_t clientSeed = 0;
+    std::uint32_t randomSeed = 0;
 };
 
 }  // namespace axtp::sdk

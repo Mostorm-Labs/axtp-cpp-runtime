@@ -86,8 +86,8 @@ Compact/HID-64/BLE/UART framing is a low-bandwidth degradation path, not an AXTP
 | ---- | ---- | ---- | ---- | ---- |
 | OPEN | Client | Server | - | Open an AXTP logical session and declare runtime limits. |
 | ACCEPT | Server | Client | - | Accept the session and return final runtime parameters. |
-| Hello | Server | Client | - | Announce RPC session rules, protocol version and authentication requirements. |
-| Identify | Client | Server | - | Submit client identity and optional authentication data. |
+| Hello | Server | Client | - | Announce RPC session rules, AXTP version and authentication requirements. |
+| Identify | Client | Server | - | Submit client identity, randomSeed uint32 and optional authentication data. |
 | Identified | Server | Client | - | Confirm that the RPC session is ready. |
 | Load Adopted Registry | Client | Server | - | Use the generated protocol registry to select adopted business methods for the current product. |
 
@@ -2476,10 +2476,10 @@ Kind: `object`
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
 | sessionId | UInt32 | 0x01 | - | None | N/A |
-| protocolVersion | UInt8 | 0x02 | - | min=1, max=15 | N/A |
+| ?protocolVersion | UInt8 | 0x02 | - | min=1, max=15, deprecated | Omit if not used. |
 | ?reservedHeaderProfile | UInt8 | 0x03 | - | min=1, max=2, deprecated | Omit if not used. |
-| maxFrameSize | UInt16 | 0x04 | - | min=1, max=65535 | N/A |
-| mtu | UInt16 | 0x06 | - | min=1, max=65535 | N/A |
+| maxFrameSize | UInt16 | 0x04 | - | min=19, max=65535 | N/A |
+| ?mtu | UInt16 | 0x06 | - | min=1, max=65535 | Omit if not used. |
 | supportedPayloadTypes | Bitmap | 0x07 | - | None | N/A |
 | heartbeatIntervalMs | UInt32 | 0x0A | - | min=500, max=60000 | N/A |
 | ackMode | UInt8 | 0x0B | - | min=0, max=4 | N/A |
@@ -2493,10 +2493,10 @@ Kind: `object`
 
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
-| protocolVersion | UInt8 | 0x02 | - | min=1, max=15 | N/A |
+| ?protocolVersion | UInt8 | 0x02 | - | min=1, max=15, deprecated | Omit if not used. |
 | ?reservedHeaderProfile | UInt8 | 0x03 | - | min=1, max=2, deprecated | Omit if not used. |
-| maxFrameSize | UInt16 | 0x04 | - | min=1, max=65535 | N/A |
-| mtu | UInt16 | 0x06 | - | min=1, max=65535 | N/A |
+| maxFrameSize | UInt16 | 0x04 | - | min=19, max=65535 | N/A |
+| ?mtu | UInt16 | 0x06 | - | min=1, max=65535 | Omit if not used. |
 | supportedPayloadTypes | Bitmap | 0x07 | - | None | N/A |
 | supportedRpcEncodings | Bitmap | 0x08 | - | None | N/A |
 | heartbeatIntervalMs | UInt32 | 0x0A | - | min=500, max=60000 | N/A |

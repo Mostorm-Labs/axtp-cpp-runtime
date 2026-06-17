@@ -110,6 +110,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          AXTP_SPEC_PATH="$GITHUB_WORKSPACE/third_party/axtp-spec" pnpm --dir generators exec vitest run --update
           AXTP_SPEC_PATH="$GITHUB_WORKSPACE/third_party/axtp-spec" pnpm --dir generators test
           AXTP_SPEC_PATH="$GITHUB_WORKSPACE/third_party/axtp-spec" pnpm --dir generators generate:runtime
 

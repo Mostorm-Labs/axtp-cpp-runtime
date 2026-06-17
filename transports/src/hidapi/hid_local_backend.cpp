@@ -23,6 +23,7 @@ struct LocalHidBackend::Impl {
     int peerFd = -1;
 #endif
     bool open = false;
+    std::size_t reportSize = 0;
     std::vector<Byte> pending;
 };
 
@@ -111,8 +112,9 @@ void closeFd(int* fd) {
 
 }  // namespace
 
-bool LocalHidBackend::open(const HidTransportOptions&) {
+bool LocalHidBackend::open(const HidTransportOptions& options) {
     close();
+    _impl->reportSize = options.inputReportSize;
 
     sockaddr_un address{};
     if (!fillAddress(_path, &address)) {
@@ -242,13 +244,14 @@ LocalHidBackend::readReport(Byte* data, std::size_t size, std::uint32_t timeoutM
             }
         }
 
-        if (data != nullptr && size > 0 && _impl->pending.size() >= size) {
+        const auto reportSize = _impl->reportSize > 0 ? std::min(_impl->reportSize, size) : size;
+        if (data != nullptr && reportSize > 0 && _impl->pending.size() >= reportSize) {
             std::copy(_impl->pending.begin(),
-                      _impl->pending.begin() + static_cast<std::ptrdiff_t>(size),
+                      _impl->pending.begin() + static_cast<std::ptrdiff_t>(reportSize),
                       data);
             _impl->pending.erase(_impl->pending.begin(),
-                                 _impl->pending.begin() + static_cast<std::ptrdiff_t>(size));
-            return size;
+                                 _impl->pending.begin() + static_cast<std::ptrdiff_t>(reportSize));
+            return reportSize;
         }
 
         if (data == nullptr || size == 0 || timeoutMs == 0 ||

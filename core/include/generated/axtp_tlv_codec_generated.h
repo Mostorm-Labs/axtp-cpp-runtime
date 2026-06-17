@@ -984,10 +984,12 @@ struct CommonEmptyResponse {
 
 struct ControlOpenBody {
     std::uint8_t protocolVersion = 0;
+    bool has_protocolVersion = false;
     std::uint8_t reservedHeaderProfile = 0;
     bool has_reservedHeaderProfile = false;
     std::uint16_t maxFrameSize = 0;
     std::uint16_t mtu = 0;
+    bool has_mtu = false;
     std::uint32_t supportedPayloadTypes = 0;
     std::uint32_t supportedRpcEncodings = 0;
     std::uint32_t heartbeatIntervalMs = 0;
@@ -997,10 +999,12 @@ struct ControlOpenBody {
 struct ControlAcceptBody {
     std::uint32_t sessionId = 0;
     std::uint8_t protocolVersion = 0;
+    bool has_protocolVersion = false;
     std::uint8_t reservedHeaderProfile = 0;
     bool has_reservedHeaderProfile = false;
     std::uint16_t maxFrameSize = 0;
     std::uint16_t mtu = 0;
+    bool has_mtu = false;
     std::uint32_t supportedPayloadTypes = 0;
     std::uint32_t heartbeatIntervalMs = 0;
     std::uint8_t ackMode = 0;

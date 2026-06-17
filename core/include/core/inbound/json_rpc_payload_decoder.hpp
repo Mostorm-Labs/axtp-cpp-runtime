@@ -228,6 +228,15 @@ private:
         payload.op = op;
         payload.bodyEncoding = RpcBodyEncoding::None;
         fillJsonMeta(payload, object, sourceProtocol);
+        if (op == RpcOp::Identify || op == RpcOp::Reidentify) {
+            if (const auto randomSeed = d.find("randomSeed");
+                randomSeed != d.end() && randomSeed->is_number_unsigned()) {
+                const auto raw = randomSeed->get<std::uint64_t>();
+                if (raw <= std::numeric_limits<std::uint32_t>::max()) {
+                    payload.meta.randomSeed = static_cast<std::uint32_t>(raw);
+                }
+            }
+        }
         payload.body = jsonToBytes(d);
         sink.onRpc(std::move(payload));
     }

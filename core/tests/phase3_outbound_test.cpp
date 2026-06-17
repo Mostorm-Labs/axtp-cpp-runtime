@@ -129,7 +129,7 @@ int main() {
         const std::string body(sink.rpcs[0].body.begin(), sink.rpcs[0].body.end());
         assert(body.find(R"("rpcVersion":1)") != std::string::npos);
         assert(body.find(R"("eventMasks":"")") != std::string::npos);
-        assert(body.find(R"("clientSeed":305419896)") != std::string::npos);
+        assert(body.find(R"("randomSeed":305419896)") != std::string::npos);
     }
 
     {

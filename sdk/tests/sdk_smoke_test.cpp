@@ -88,7 +88,7 @@ public:
                 sawIdentify = true;
                 assert(rpc.meta.jsonSid.empty());
                 const std::string body(rpc.body.begin(), rpc.body.end());
-                assert(body.find(R"("clientSeed":305419896)") != std::string::npos);
+                assert(body.find(R"("randomSeed":305419896)") != std::string::npos);
                 inject(encodeRpc(axtp::JsonRpcEncoder::makeIdentified("12345678")));
                 continue;
             }
@@ -222,7 +222,7 @@ int main() {
         assert(transportPtr->isOpen());
 
         axtp::sdk::AppReadyOptions options;
-        options.clientSeed = 0x12345678;
+        options.randomSeed = 0x12345678;
         std::vector<std::string> appReadyTrace;
         options.trace = [&appReadyTrace](const axtp::sdk::AppReadyTraceEvent& event) {
             appReadyTrace.push_back(event.stage + ":" + event.action);
@@ -230,7 +230,7 @@ int main() {
         const auto appReady = handshakeClient.ensureAppReady(options);
         assert(appReady.ok);
         assert(appReady.sid == "12345678");
-        assert(appReady.clientSeed == 0x12345678);
+        assert(appReady.randomSeed == 0x12345678);
         assert(handshakeClient.isAppReady());
         assert(handshakeClient.sessionSid() == "12345678");
         assert(transportPtr->sawOpen);
