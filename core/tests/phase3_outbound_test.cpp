@@ -115,6 +115,21 @@ int main() {
     {
         CapturingByteWriter writer;
         axtp::OutboundProcessor outbound(writer);
+        outbound.sendRpc(axtp::JsonRpcEncoder::makeHello());
+
+        CapturingPayloadSink sink;
+        axtp::InboundProcessor inbound(sink);
+        inbound.onBytes(writer.bytes.data(), writer.bytes.size());
+        assert(sink.rpcs.size() == 1);
+        assert(sink.rpcs[0].op == axtp::RpcOp::Hello);
+        const std::string body(sink.rpcs[0].body.begin(), sink.rpcs[0].body.end());
+        assert(body.find("axtpVersion") != std::string::npos);
+        assert(body.find("rpcVersion") == std::string::npos);
+    }
+
+    {
+        CapturingByteWriter writer;
+        axtp::OutboundProcessor outbound(writer);
         axtp::RpcPayload rpc =
             axtp::JsonRpcEncoder::makeIdentify(0x12345678, "");
         outbound.sendRpc(rpc);
@@ -127,9 +142,25 @@ int main() {
         assert(sink.rpcs[0].op == axtp::RpcOp::Identify);
         assert(sink.rpcs[0].meta.jsonSid.empty());
         const std::string body(sink.rpcs[0].body.begin(), sink.rpcs[0].body.end());
-        assert(body.find(R"("rpcVersion":1)") != std::string::npos);
+        assert(body.find("rpcVersion") == std::string::npos);
         assert(body.find(R"("eventMasks":"")") != std::string::npos);
         assert(body.find(R"("randomSeed":305419896)") != std::string::npos);
+    }
+
+    {
+        CapturingByteWriter writer;
+        axtp::OutboundProcessor outbound(writer);
+        outbound.sendRpc(axtp::JsonRpcEncoder::makeIdentified("12345678"));
+
+        CapturingPayloadSink sink;
+        axtp::InboundProcessor inbound(sink);
+        inbound.onBytes(writer.bytes.data(), writer.bytes.size());
+        assert(sink.rpcs.size() == 1);
+        assert(sink.rpcs[0].op == axtp::RpcOp::Identified);
+        assert(sink.rpcs[0].meta.jsonSid == "12345678");
+        const std::string body(sink.rpcs[0].body.begin(), sink.rpcs[0].body.end());
+        assert(body == "{}");
+        assert(body.find("negotiatedRpcVersion") == std::string::npos);
     }
 
     {

@@ -127,14 +127,14 @@ public:
 
     AppReadyResult ensureAppReady(AppReadyOptions options = {}) {
         AppReadyResult result;
-        result.randomSeed = options.randomSeed.value_or(generateRandomSeed());
         auto emitTrace = [&](std::string stage,
                              std::string action,
                              ErrorCode statusCode = ErrorCode::Success,
                              std::uint16_t controlId = 0,
                              std::string sid = {},
                              std::string bodyText = {},
-                             std::string detail = {}) {
+                             std::string detail = {},
+                             bool includeRandomSeed = false) {
             if (!options.trace) {
                 return;
             }
@@ -143,7 +143,8 @@ public:
             event.action = std::move(action);
             event.statusCode = statusCode;
             event.controlId = controlId;
-            event.randomSeed = result.randomSeed;
+            event.hasRandomSeed = includeRandomSeed && result.hasRandomSeed;
+            event.randomSeed = event.hasRandomSeed ? result.randomSeed : 0;
             event.sid = std::move(sid);
             event.bodyText = std::move(bodyText);
             event.detail = std::move(detail);
@@ -156,9 +157,9 @@ public:
             result.ok = true;
             result.stage = "app-ready";
             result.sid = _sessionSid;
-            result.randomSeed = _lastAppReady.randomSeed != 0 ? _lastAppReady.randomSeed
-                                                              : result.randomSeed;
-            emitTrace("app-ready", "already-ready", ErrorCode::Success, 0, result.sid);
+            result.hasRandomSeed = _lastAppReady.hasRandomSeed;
+            result.randomSeed = _lastAppReady.randomSeed;
+            emitTrace("app-ready", "already-ready", ErrorCode::Success, 0, result.sid, "", "", true);
             _lastAppReady = result;
             _lastError = SdkError::success();
             return result;
@@ -256,13 +257,17 @@ public:
         }
 
         result.stage = "identify";
+        result.hasRandomSeed = true;
+        result.randomSeed = options.randomSeed.value_or(generateRandomSeed());
         emitTrace("identify",
                   "send",
                   ErrorCode::Success,
                   0,
                   "",
                   "",
-                  std::string("rpcVersion=1 eventMasks=") + options.eventMasks);
+                  std::string("randomSeed=") + std::to_string(result.randomSeed) +
+                      " eventMasks=" + options.eventMasks,
+                  true);
         _endpoint->sendRpcSession(
             JsonRpcEncoder::makeIdentify(result.randomSeed, options.eventMasks));
 
@@ -276,7 +281,9 @@ public:
                           ErrorCode::Success,
                           0,
                           identified->meta.jsonSid,
-                          bodyText);
+                          bodyText,
+                          "",
+                          true);
                 if (!identified->meta.jsonSid.empty()) {
                     _sessionSid = identified->meta.jsonSid;
                     _appReady = true;
@@ -284,13 +291,13 @@ public:
                     result.statusCode = ErrorCode::Success;
                     result.stage = "app-ready";
                     result.sid = _sessionSid;
-                    emitTrace("app-ready", "ready", ErrorCode::Success, 0, result.sid);
+                    emitTrace("app-ready", "ready", ErrorCode::Success, 0, result.sid, "", "", true);
                     _lastAppReady = result;
                     _lastError = SdkError::success();
                     return result;
                 }
                 result.statusCode = ErrorCode::RpcPayloadInvalid;
-                emitTrace("identified", "error", result.statusCode, 0, "", bodyText);
+                emitTrace("identified", "error", result.statusCode, 0, "", bodyText, "", true);
                 _lastAppReady = result;
                 _lastError = SdkError::failure(result.statusCode, "identified sid missing");
                 return result;
@@ -299,7 +306,7 @@ public:
         }
 
         result.statusCode = ErrorCode::RpcResponseTimeout;
-        emitTrace("identified", "timeout", result.statusCode);
+        emitTrace("identified", "timeout", result.statusCode, 0, "", "", "", true);
         _lastAppReady = result;
         _lastError = SdkError::failure(result.statusCode, "identified timeout");
         return result;

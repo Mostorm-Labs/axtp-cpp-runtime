@@ -172,8 +172,9 @@ int main() {
         assert(openSink.controls[0].controlId == 9);
         assert(!openSink.controls[0].body.empty());
         assert(openSink.controls[0].tlv.valid);
-        assert(openSink.controls[0].tlv.hasProtocolVersion);
+        assert(!openSink.controls[0].tlv.hasProtocolVersion);
         assert(openSink.controls[0].tlv.hasMaxFrameSize);
+        assert(!openSink.controls[0].tlv.hasMtu);
         assert(openSink.controls[0].tlv.hasSupportedPayloadTypes);
         assert(openSink.controls[0].tlv.hasSupportedRpcEncodings);
         assert(openSink.controls[0].tlv.supportedRpcEncodings == 0x09);
@@ -282,6 +283,19 @@ int main() {
         assert(any->op == axtp::RpcOp::RequestResponse);
         assert(any->requestId == 0);
         assert(any->statusCode == axtp::ErrorCode::RpcPayloadInvalid);
+    }
+
+    {
+        axtp::AxtpCore core;
+        const auto bytes = makeFrame(axtp::PayloadType::Rpc,
+                                     21,
+                                     makeJsonEnvelopePayload(
+                                         R"({"sid":"","op":2,"d":{"eventMasks":""}})"));
+        core.byteSink().onBytes(bytes.data(), bytes.size());
+        auto identify = core.tryTakeSessionRpc(axtp::RpcOp::Identify);
+        assert(identify.has_value());
+        assert(!identify->meta.hasRandomSeed);
+        assert(!core.tryPopOutboundBytes().has_value());
     }
 
     return 0;

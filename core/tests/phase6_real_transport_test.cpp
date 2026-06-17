@@ -162,7 +162,8 @@ int main() {
         assert(beforeIdentify.at("d").at("status").at("code").get<int>() ==
                static_cast<int>(axtp::ErrorCode::ControlOpenRequired));
 
-        injectJson(transport, R"({"sid":"","op":2,"d":{"rpcVersion":1,"eventMasks":"850101"}})");
+        injectJson(transport,
+                   R"({"sid":"","op":2,"d":{"randomSeed":305419896,"eventMasks":"850101"}})");
         auto identified = popJson(transport, "identified");
         assert(identified.at("op").get<int>() == static_cast<int>(axtp::RpcOp::Identified));
         const auto sid = jsonString(identified, "sid");
@@ -294,7 +295,7 @@ int main() {
             };
 
             helloText = waitMessage();
-            ws.sendText(R"({"sid":"","op":2,"d":{"rpcVersion":1}})");
+            ws.sendText(R"({"sid":"","op":2,"d":{"randomSeed":305419896}})");
             identifiedText = waitMessage();
             const auto identified = nlohmann::json::parse(identifiedText);
             const auto sid = identified.at("sid").get<std::string>();

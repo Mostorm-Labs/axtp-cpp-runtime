@@ -12,6 +12,7 @@ struct PayloadMeta {
     SourceProtocol sourceProtocol = SourceProtocol::AxtpV1;
     std::uint32_t sessionId = 0;
     std::uint32_t requestId = 0;
+    bool hasRandomSeed = false;
     std::uint32_t randomSeed = 0;
     std::string jsonSid;
     std::string jsonMethodOrEventName;

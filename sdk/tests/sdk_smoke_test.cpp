@@ -88,6 +88,7 @@ public:
                 sawIdentify = true;
                 assert(rpc.meta.jsonSid.empty());
                 const std::string body(rpc.body.begin(), rpc.body.end());
+                assert(body.find("rpcVersion") == std::string::npos);
                 assert(body.find(R"("randomSeed":305419896)") != std::string::npos);
                 inject(encodeRpc(axtp::JsonRpcEncoder::makeIdentified("12345678")));
                 continue;
@@ -225,11 +226,20 @@ int main() {
         options.randomSeed = 0x12345678;
         std::vector<std::string> appReadyTrace;
         options.trace = [&appReadyTrace](const axtp::sdk::AppReadyTraceEvent& event) {
+            if (event.stage == "control-open" || event.stage == "control-accept" ||
+                event.stage == "framing-ready") {
+                assert(!event.hasRandomSeed);
+            }
+            if (event.stage == "identify") {
+                assert(event.hasRandomSeed);
+                assert(event.randomSeed == 0x12345678);
+            }
             appReadyTrace.push_back(event.stage + ":" + event.action);
         };
         const auto appReady = handshakeClient.ensureAppReady(options);
         assert(appReady.ok);
         assert(appReady.sid == "12345678");
+        assert(appReady.hasRandomSeed);
         assert(appReady.randomSeed == 0x12345678);
         assert(handshakeClient.isAppReady());
         assert(handshakeClient.sessionSid() == "12345678");

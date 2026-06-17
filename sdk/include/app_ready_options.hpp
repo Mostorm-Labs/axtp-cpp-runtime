@@ -15,6 +15,7 @@ struct AppReadyTraceEvent {
     std::string action;
     ErrorCode statusCode = ErrorCode::Success;
     std::uint16_t controlId = 0;
+    bool hasRandomSeed = false;
     std::uint32_t randomSeed = 0;
     std::string sid;
     std::string bodyText;
@@ -34,6 +35,7 @@ struct AppReadyResult {
     ErrorCode statusCode = ErrorCode::Success;
     std::string stage;
     std::string sid;
+    bool hasRandomSeed = false;
     std::uint32_t randomSeed = 0;
 };
 

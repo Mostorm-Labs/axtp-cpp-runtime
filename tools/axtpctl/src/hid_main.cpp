@@ -20,6 +20,8 @@
 #include <utility>
 #include <vector>
 
+#include <nlohmann/json.hpp>
+
 #if defined(_WIN32)
 #    include <process.h>
 #    include <stdlib.h>
@@ -546,8 +548,331 @@ const char* bodyEncodingName(std::uint8_t value) {
     return "unknown";
 }
 
+std::string payloadTypeBitmapName(std::uint8_t bitmap) {
+    std::vector<std::string> names;
+    if ((bitmap & 0x01U) != 0) {
+        names.push_back("control");
+    }
+    if ((bitmap & 0x02U) != 0) {
+        names.push_back("rpc");
+    }
+    if ((bitmap & 0x04U) != 0) {
+        names.push_back("stream");
+    }
+    if (names.empty()) {
+        return "none";
+    }
+
+    std::ostringstream out;
+    for (std::size_t index = 0; index < names.size(); ++index) {
+        if (index > 0) {
+            out << ",";
+        }
+        out << names[index];
+    }
+    return out.str();
+}
+
+std::string rpcEncodingBitmapName(std::uint8_t bitmap) {
+    std::vector<std::string> names;
+    if ((bitmap & 0x01U) != 0) {
+        names.push_back("json");
+    }
+    if ((bitmap & 0x02U) != 0) {
+        names.push_back("cbor");
+    }
+    if ((bitmap & 0x04U) != 0) {
+        names.push_back("msgpack");
+    }
+    if ((bitmap & 0x08U) != 0) {
+        names.push_back("json-binary");
+    }
+    if (names.empty()) {
+        return "none";
+    }
+
+    std::ostringstream out;
+    for (std::size_t index = 0; index < names.size(); ++index) {
+        if (index > 0) {
+            out << ",";
+        }
+        out << names[index];
+    }
+    return out.str();
+}
+
+std::string rpcEncodingValueName(std::uint8_t value) {
+    return encodingName(static_cast<axtp::RpcEncoding>(value));
+}
+
+std::string methodNameForLog(std::uint16_t methodId) {
+    if (const auto* descriptor = axtp::RegistryLookup::methodById(methodId)) {
+        return descriptor->name;
+    }
+    return toHexId(methodId);
+}
+
+std::string statusNameForLog(std::uint16_t statusCode) {
+    return errorName(static_cast<axtp::ErrorCode>(statusCode));
+}
+
+std::string controlTlvHumanSummary(const axtp::ControlTlvOptions& tlv,
+                                   std::uint8_t opcode) {
+    std::ostringstream out;
+    if (!tlv.valid) {
+        out << "invalid control options";
+        return out.str();
+    }
+    if (opcode == static_cast<std::uint8_t>(axtp::ControlOpcode::Open)) {
+        out << "options:";
+        if (tlv.hasMaxFrameSize) {
+            out << " maxFrame=" << tlv.maxFrameSize;
+        }
+        if (tlv.hasMtu) {
+            out << " mtu=" << tlv.mtu;
+        }
+        if (tlv.hasSupportedPayloadTypes) {
+            out << " payloads=" << payloadTypeBitmapName(tlv.supportedPayloadTypes);
+        }
+        if (tlv.hasSupportedRpcEncodings) {
+            out << " rpcEncodings=" << rpcEncodingBitmapName(tlv.supportedRpcEncodings);
+        }
+        if (tlv.hasHeartbeatIntervalMs) {
+            out << " heartbeat=" << tlv.heartbeatIntervalMs << "ms";
+        }
+        if (tlv.hasAckMode) {
+            out << " ackMode=" << static_cast<unsigned>(tlv.ackMode);
+        }
+        return out.str();
+    }
+
+    if (opcode == static_cast<std::uint8_t>(axtp::ControlOpcode::Accept)) {
+        out << "accepted:";
+        if (tlv.hasSessionId) {
+            out << " linkSession=" << toHexU32(tlv.sessionId);
+        }
+        if (tlv.hasSelectedRpcEncoding) {
+            out << " selectedRpc=" << rpcEncodingValueName(tlv.selectedRpcEncoding);
+        }
+        if (tlv.hasMaxFrameSize) {
+            out << " maxFrame=" << tlv.maxFrameSize;
+        }
+        if (tlv.hasMtu) {
+            out << " mtu=" << tlv.mtu;
+        }
+        if (tlv.hasHeartbeatIntervalMs) {
+            out << " heartbeat=" << tlv.heartbeatIntervalMs << "ms";
+        }
+        if (tlv.hasAckMode) {
+            out << " ackMode=" << static_cast<unsigned>(tlv.ackMode);
+        }
+        return out.str();
+    }
+
+    if (tlv.hasHeartbeatIntervalMs) {
+        out << "heartbeat=" << tlv.heartbeatIntervalMs << "ms";
+    }
+    return out.str();
+}
+
 bool isJsonStart(axtp::Byte value) {
     return value == static_cast<axtp::Byte>('{') || value == static_cast<axtp::Byte>('[');
+}
+
+std::string jsonEnvelopeHumanSummary(const char* direction, const axtp::Bytes& jsonBytes) {
+    try {
+        const std::string text(jsonBytes.begin(), jsonBytes.end());
+        const auto object = nlohmann::json::parse(text);
+        const auto op = static_cast<std::uint8_t>(object.at("op").get<int>());
+        const auto sid = object.contains("sid") && object.at("sid").is_string()
+                             ? object.at("sid").get<std::string>()
+                             : std::string{};
+        const auto& d = object.at("d");
+
+        std::ostringstream out;
+        if (op == static_cast<std::uint8_t>(axtp::RpcOp::Hello)) {
+            out << direction << " RPC HELLO: device says RPC session can start";
+            if (d.is_object() && d.contains("axtpVersion")) {
+                out << " (axtpVersion=" << d.at("axtpVersion").get<std::string>() << ")";
+            }
+            return out.str();
+        }
+        if (op == static_cast<std::uint8_t>(axtp::RpcOp::Identify)) {
+            out << direction << " RPC IDENTIFY: send client randomSeed and event subscription";
+            if (d.is_object() && d.contains("randomSeed")) {
+                out << " (randomSeed=" << d.at("randomSeed").get<std::uint32_t>() << ")";
+            }
+            return out.str();
+        }
+        if (op == static_cast<std::uint8_t>(axtp::RpcOp::Identified)) {
+            out << direction << " RPC IDENTIFIED: RPC session is ready";
+            if (!sid.empty()) {
+                out << " (sid=" << sid << ")";
+            }
+            return out.str();
+        }
+        if (op == static_cast<std::uint8_t>(axtp::RpcOp::Request)) {
+            out << direction << " RPC REQUEST";
+            if (d.is_object()) {
+                if (d.contains("method") && d.at("method").is_string()) {
+                    out << ": call " << d.at("method").get<std::string>();
+                }
+                if (d.contains("id")) {
+                    out << " (requestId=" << d.at("id").get<std::uint32_t>() << ")";
+                }
+            }
+            if (!sid.empty()) {
+                out << " sid=" << sid;
+            }
+            return out.str();
+        }
+        if (op == static_cast<std::uint8_t>(axtp::RpcOp::RequestResponse)) {
+            out << direction << " RPC RESPONSE";
+            if (d.is_object()) {
+                if (d.contains("id")) {
+                    out << " requestId=" << d.at("id").get<std::uint32_t>();
+                }
+                if (d.contains("status") && d.at("status").is_object()) {
+                    const auto status = d.at("status");
+                    const bool ok = status.contains("ok") && status.at("ok").is_boolean()
+                                        ? status.at("ok").get<bool>()
+                                        : false;
+                    out << " status=" << (ok ? "ok" : "error");
+                    if (status.contains("code")) {
+                        const auto code = static_cast<std::uint16_t>(
+                            status.at("code").get<std::uint32_t>());
+                        out << "(" << statusNameForLog(code) << ")";
+                    }
+                }
+            }
+            if (!sid.empty()) {
+                out << " sid=" << sid;
+            }
+            return out.str();
+        }
+        if (op == static_cast<std::uint8_t>(axtp::RpcOp::Event)) {
+            out << direction << " RPC EVENT";
+            if (d.is_object() && d.contains("event") && d.at("event").is_string()) {
+                out << ": " << d.at("event").get<std::string>();
+            }
+            if (!sid.empty()) {
+                out << " sid=" << sid;
+            }
+            return out.str();
+        }
+
+        out << direction << " RPC " << rpcOpName(op);
+        if (!sid.empty()) {
+            out << " sid=" << sid;
+        }
+        return out.str();
+    } catch (const std::exception&) {
+        std::ostringstream out;
+        out << direction << " RPC JSON: could not summarize envelope";
+        return out.str();
+    }
+}
+
+std::string frameHumanSummary(const char* direction,
+                              const axtp::Byte* data,
+                              std::size_t size) {
+    std::ostringstream out;
+    if (data == nullptr || size < axtp::kStandardFrameHeaderSize) {
+        out << direction << " AXTP FRAME: incomplete header";
+        return out.str();
+    }
+    if (data[0] != axtp::kAxtpStandardMagic0 || data[1] != axtp::kAxtpStandardMagic1) {
+        out << direction << " AXTP FRAME: unexpected magic";
+        return out.str();
+    }
+
+    const auto payloadType = data[3];
+    const auto payloadLength = readBe16(data + 4);
+    const auto messageId = readBe16(data + 8);
+    const std::size_t totalSize = axtp::kStandardFrameHeaderSize +
+                                  static_cast<std::size_t>(payloadLength) +
+                                  axtp::kStandardFrameCrcSize;
+    if (size < totalSize) {
+        out << direction << " AXTP " << payloadTypeName(payloadType)
+            << ": incomplete frame (messageId=" << toHexId(messageId) << ")";
+        return out.str();
+    }
+
+    if (payloadType == static_cast<std::uint8_t>(axtp::PayloadType::Control)) {
+        if (payloadLength < axtp::kControlPayloadHeaderSize) {
+            out << direction << " CONTROL: incomplete control payload";
+            return out.str();
+        }
+        const auto* control = data + axtp::kStandardFrameHeaderSize;
+        const auto opcode = control[0];
+        const auto controlId = readBe16(control + 1);
+        const auto statusCode = readBe16(control + 3);
+        const auto* tlvBody = control + axtp::kControlPayloadHeaderSize;
+        const auto tlvSize =
+            static_cast<std::size_t>(payloadLength - axtp::kControlPayloadHeaderSize);
+        const auto tlv = axtp::ControlTlvCodec::decode(
+            axtp::Bytes(tlvBody, tlvBody + tlvSize));
+
+        if (opcode == static_cast<std::uint8_t>(axtp::ControlOpcode::Open)) {
+            out << direction
+                << " CONTROL OPEN: request AXTP framed link negotiation";
+        } else if (opcode == static_cast<std::uint8_t>(axtp::ControlOpcode::Accept)) {
+            out << direction << " CONTROL ACCEPT: device answered link negotiation";
+        } else if (opcode == static_cast<std::uint8_t>(axtp::ControlOpcode::Ping)) {
+            out << direction << " CONTROL PING: link keepalive";
+        } else if (opcode == static_cast<std::uint8_t>(axtp::ControlOpcode::Pong)) {
+            out << direction << " CONTROL PONG: keepalive reply";
+        } else {
+            out << direction << " CONTROL " << controlOpcodeName(opcode);
+        }
+        out << " (controlId=" << controlId
+            << ", status=" << statusNameForLog(statusCode) << ")";
+        const auto tlvSummary = controlTlvHumanSummary(tlv, opcode);
+        if (!tlvSummary.empty()) {
+            out << " " << tlvSummary;
+        }
+        return out.str();
+    }
+
+    if (payloadType != static_cast<std::uint8_t>(axtp::PayloadType::Rpc) || payloadLength == 0) {
+        out << direction << " AXTP " << payloadTypeName(payloadType)
+            << " frame (messageId=" << toHexId(messageId) << ")";
+        return out.str();
+    }
+
+    const auto* rpc = data + axtp::kStandardFrameHeaderSize;
+    const auto encoding = static_cast<axtp::RpcEncoding>(rpc[0]);
+    if (payloadLength >= 2 && encoding == axtp::RpcEncoding::Json && isJsonStart(rpc[1])) {
+        const auto* json = rpc + 1;
+        const auto jsonSize = static_cast<std::size_t>(payloadLength - 1);
+        return jsonEnvelopeHumanSummary(direction, axtp::Bytes(json, json + jsonSize));
+    }
+
+    if (payloadLength < axtp::kBinaryRpcHeaderSize) {
+        out << direction << " RPC: incomplete binary RPC header";
+        return out.str();
+    }
+
+    const auto op = rpc[1];
+    const auto requestId = readBe32(rpc + 2);
+    const auto methodId = readBe16(rpc + 6);
+    const auto statusCode = readBe16(rpc + 8);
+    if (op == static_cast<std::uint8_t>(axtp::RpcOp::Request)) {
+        out << direction << " RPC REQUEST: call " << methodNameForLog(methodId)
+            << " (requestId=" << requestId << ", encoding=" << encodingName(encoding) << ")";
+        return out.str();
+    }
+    if (op == static_cast<std::uint8_t>(axtp::RpcOp::RequestResponse)) {
+        out << direction << " RPC RESPONSE: requestId=" << requestId
+            << " status=" << statusNameForLog(statusCode)
+            << " encoding=" << encodingName(encoding);
+        return out.str();
+    }
+
+    out << direction << " RPC " << rpcOpName(op)
+        << " (requestId=" << requestId << ", method=" << methodNameForLog(methodId)
+        << ", encoding=" << encodingName(encoding) << ")";
+    return out.str();
 }
 
 void appendControlTlvForLog(std::ostringstream& out,
@@ -710,13 +1035,16 @@ void appendFrameForLog(std::ostringstream& out,
 
 std::string txFrameForLog(const axtp::HidReportTrace& trace, bool includeBody) {
     std::ostringstream out;
-    out << "hid tx frame";
+    out << frameHumanSummary("TX", trace.data, trace.size) << " | hid tx frame";
     appendFrameForLog(out, trace.data, trace.size, includeBody);
     return out.str();
 }
 
 std::string rxFrameForLog(const axtp::HidReportTrace& trace, bool includeBody) {
     std::ostringstream out;
+    if (trace.data != nullptr && trace.size > 1) {
+        out << frameHumanSummary("RX", trace.data + 1, trace.size - 1) << " | ";
+    }
     out << "hid rx frame reportSize=" << trace.size
         << " reportId=" << toHexByte(trace.reportId)
         << " expectedReportId=" << toHexByte(trace.expectedReportId);
@@ -949,14 +1277,80 @@ void printCallTrace(const axtp::HidReportTrace& trace,
     std::cerr << hidTraceForLog(trace, includeBody) << "\n";
 }
 
+std::string appReadyHumanSummary(const axtp::sdk::AppReadyTraceEvent& event) {
+    const auto& stage = event.stage;
+    const auto& action = event.action;
+    if (stage == "start") {
+        return "APP_READY START: begin connection handshake";
+    }
+    if (stage == "transport") {
+        return "APP_READY TRANSPORT: HID transport is not available";
+    }
+    if (stage == "control-open" && action == "send") {
+        return "APP_READY CONTROL: send CONTROL OPEN to negotiate the framed link";
+    }
+    if (stage == "control-open" && action == "skip") {
+        return "APP_READY CONTROL: skip CONTROL OPEN for this transport/profile";
+    }
+    if (stage == "control-open" && action == "error") {
+        return "APP_READY CONTROL: CONTROL OPEN failed";
+    }
+    if (stage == "control-accept" && action == "wait") {
+        return "APP_READY CONTROL: wait for CONTROL ACCEPT from device";
+    }
+    if (stage == "control-accept" && action == "receive") {
+        return "APP_READY CONTROL: received CONTROL ACCEPT";
+    }
+    if (stage == "control-accept" && action == "timeout") {
+        return "APP_READY CONTROL: timed out waiting for CONTROL ACCEPT";
+    }
+    if (stage == "framing-ready") {
+        return "APP_READY CONTROL: framed link is ready; RPC session can start";
+    }
+    if (stage == "hello" && action == "wait") {
+        return "APP_READY RPC: wait for device Hello";
+    }
+    if (stage == "hello" && action == "receive") {
+        return "APP_READY RPC: received device Hello";
+    }
+    if (stage == "hello" && action == "timeout") {
+        return "APP_READY RPC: timed out waiting for device Hello";
+    }
+    if (stage == "identify" && action == "send") {
+        return "APP_READY RPC: send Identify with randomSeed";
+    }
+    if (stage == "identified" && action == "wait") {
+        return "APP_READY RPC: wait for Identified and assigned sid";
+    }
+    if (stage == "identified" && action == "receive") {
+        return "APP_READY RPC: received Identified";
+    }
+    if (stage == "identified" && action == "timeout") {
+        return "APP_READY RPC: timed out waiting for Identified";
+    }
+    if (stage == "identified" && action == "error") {
+        return "APP_READY RPC: Identified payload is invalid";
+    }
+    if (stage == "app-ready" && action == "ready") {
+        return "APP_READY DONE: session is ready for business RPC calls";
+    }
+    if (stage == "app-ready" && action == "already-ready") {
+        return "APP_READY DONE: session was already ready";
+    }
+    return "APP_READY TRACE: handshake state changed";
+}
+
 std::string appReadyTraceForLog(const axtp::sdk::AppReadyTraceEvent& event, bool includeBody) {
     std::ostringstream out;
-    out << "app-ready trace"
+    out << appReadyHumanSummary(event)
+        << " | app-ready trace"
         << " stage=" << event.stage
         << " action=" << event.action
         << " status=" << errorName(event.statusCode) << "("
-        << static_cast<std::uint16_t>(event.statusCode) << ")"
-        << " randomSeed=" << toHexU32(event.randomSeed);
+        << static_cast<std::uint16_t>(event.statusCode) << ")";
+    if (event.hasRandomSeed) {
+        out << " randomSeed=" << toHexU32(event.randomSeed);
+    }
     if (event.controlId != 0) {
         out << " controlId=" << event.controlId;
     }
@@ -1601,9 +1995,11 @@ int handshakeHid(const CliOptions& options, LocalLogger& logger) {
            << " stage=" << result.stage
            << " status=" << errorName(result.statusCode) << "("
            << static_cast<std::uint16_t>(result.statusCode) << ")"
-           << " sid=" << (result.sid.empty() ? "<none>" : result.sid)
-           << " randomSeed=" << toHexU32(result.randomSeed)
-           << " elapsedMs=" << elapsedMs;
+           << " sid=" << (result.sid.empty() ? "<none>" : result.sid);
+    if (result.hasRandomSeed) {
+        appLog << " randomSeed=" << toHexU32(result.randomSeed);
+    }
+    appLog << " elapsedMs=" << elapsedMs;
     logger.write(appLog.str());
 
     const auto hidStats = hidTransport != nullptr ? hidTransport->stats() : axtp::HidTransportStats{};
@@ -1627,10 +2023,12 @@ int handshakeHid(const CliOptions& options, LocalLogger& logger) {
                   << ",\"stage\":\"" << jsonEscape(result.stage)
                   << "\",\"statusCode\":" << static_cast<std::uint16_t>(result.statusCode)
                   << ",\"status\":\"" << jsonEscape(errorName(result.statusCode))
-                  << "\",\"sid\":\"" << jsonEscape(result.sid)
-                  << "\",\"randomSeed\":" << result.randomSeed
-                  << ",\"randomSeedHex\":\"" << toHexU32(result.randomSeed)
-                  << "\",\"elapsedMs\":" << elapsedMs << "}\n";
+                  << "\",\"sid\":\"" << jsonEscape(result.sid) << "\"";
+        if (result.hasRandomSeed) {
+            std::cout << ",\"randomSeed\":" << result.randomSeed
+                      << ",\"randomSeedHex\":\"" << toHexU32(result.randomSeed) << "\"";
+        }
+        std::cout << ",\"elapsedMs\":" << elapsedMs << "}\n";
         return result.ok ? 0 : 4;
     }
 
@@ -1784,9 +2182,11 @@ int callMethod(const CliOptions& options, LocalLogger& logger) {
                << " stage=" << appReadyResult.stage
                << " status=" << errorName(appReadyResult.statusCode) << "("
                << static_cast<std::uint16_t>(appReadyResult.statusCode) << ")"
-               << " sid=" << (appReadyResult.sid.empty() ? "<none>" : appReadyResult.sid)
-               << " randomSeed=" << toHexU32(appReadyResult.randomSeed)
-               << " elapsedMs=" << elapsedMs;
+               << " sid=" << (appReadyResult.sid.empty() ? "<none>" : appReadyResult.sid);
+        if (appReadyResult.hasRandomSeed) {
+            appLog << " randomSeed=" << toHexU32(appReadyResult.randomSeed);
+        }
+        appLog << " elapsedMs=" << elapsedMs;
         logger.write(appLog.str());
 
         if (!appReadyResult.ok) {
@@ -1818,10 +2218,13 @@ int callMethod(const CliOptions& options, LocalLogger& logger) {
                           << "\",\"statusCode\":"
                           << static_cast<std::uint16_t>(appReadyResult.statusCode)
                           << ",\"status\":\"" << jsonEscape(errorName(appReadyResult.statusCode))
-                          << "\",\"sid\":\"" << jsonEscape(appReadyResult.sid)
-                          << "\",\"randomSeed\":" << appReadyResult.randomSeed
-                          << ",\"randomSeedHex\":\"" << toHexU32(appReadyResult.randomSeed)
-                          << "\"}\n";
+                          << "\",\"sid\":\"" << jsonEscape(appReadyResult.sid) << "\"";
+                if (appReadyResult.hasRandomSeed) {
+                    std::cout << ",\"randomSeed\":" << appReadyResult.randomSeed
+                              << ",\"randomSeedHex\":\""
+                              << toHexU32(appReadyResult.randomSeed) << "\"";
+                }
+                std::cout << "}\n";
                 return 4;
             }
 
@@ -1896,7 +2299,7 @@ int callMethod(const CliOptions& options, LocalLogger& logger) {
                   << jsonEscape(errorName(response.statusCode)) << "\",\"encoding\":\""
                   << encodingName(response.encoding) << "\",\"sid\":\""
                   << jsonEscape(effectiveSid) << "\"";
-        if (!options.noAppReady) {
+        if (!options.noAppReady && appReadyResult.hasRandomSeed) {
             std::cout << ",\"randomSeed\":" << appReadyResult.randomSeed
                       << ",\"randomSeedHex\":\"" << toHexU32(appReadyResult.randomSeed) << "\"";
         }

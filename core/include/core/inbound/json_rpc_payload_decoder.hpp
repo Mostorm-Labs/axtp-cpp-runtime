@@ -128,6 +128,18 @@ private:
         return Bytes(text.begin(), text.end());
     }
 
+    static bool hasUnsupportedTransitionRpcVersion(const nlohmann::json& d,
+                                                   const char* fieldName) {
+        const auto field = d.find(fieldName);
+        if (field == d.end()) {
+            return false;
+        }
+        if (!field->is_number_integer() && !field->is_number_unsigned()) {
+            return true;
+        }
+        return field->get<std::int64_t>() != 1;
+    }
+
     static void fillJsonMeta(RpcPayload& payload,
                              const nlohmann::json& object,
                              SourceProtocol sourceProtocol) {
@@ -228,12 +240,29 @@ private:
         payload.op = op;
         payload.bodyEncoding = RpcBodyEncoding::None;
         fillJsonMeta(payload, object, sourceProtocol);
+        if (hasUnsupportedTransitionRpcVersion(d, "rpcVersion") ||
+            hasUnsupportedTransitionRpcVersion(d, "negotiatedRpcVersion")) {
+            return;
+        }
         if (op == RpcOp::Identify || op == RpcOp::Reidentify) {
             if (const auto randomSeed = d.find("randomSeed");
-                randomSeed != d.end() && randomSeed->is_number_unsigned()) {
-                const auto raw = randomSeed->get<std::uint64_t>();
+                randomSeed != d.end() &&
+                (randomSeed->is_number_unsigned() || randomSeed->is_number_integer())) {
+                std::uint64_t raw = 0;
+                if (randomSeed->is_number_integer()) {
+                    const auto signedSeed = randomSeed->get<std::int64_t>();
+                    if (signedSeed < 0) {
+                        return;
+                    }
+                    raw = static_cast<std::uint64_t>(signedSeed);
+                } else {
+                    raw = randomSeed->get<std::uint64_t>();
+                }
                 if (raw <= std::numeric_limits<std::uint32_t>::max()) {
+                    payload.meta.hasRandomSeed = true;
                     payload.meta.randomSeed = static_cast<std::uint32_t>(raw);
+                } else {
+                    return;
                 }
             }
         }

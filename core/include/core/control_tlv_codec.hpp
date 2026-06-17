@@ -23,16 +23,12 @@ public:
 
     static ControlTlvOptions defaultsForOpen() {
         ControlTlvOptions options;
-        options.hasProtocolVersion = true;
         options.hasMaxFrameSize = true;
-        options.hasMtu = true;
         options.hasSupportedPayloadTypes = true;
         options.hasSupportedRpcEncodings = true;
         options.hasHeartbeatIntervalMs = true;
         options.hasAckMode = true;
-        options.protocolVersion = 1;
         options.maxFrameSize = 4096;
-        options.mtu = 4096;
         options.supportedPayloadTypes = 0x07;
         options.supportedRpcEncodings = 0x09;
         options.heartbeatIntervalMs = 1000;
@@ -43,15 +39,13 @@ public:
     static ControlTlvOptions defaultsForAccept(const ControlTlvOptions& requested) {
         ControlTlvOptions options;
         options.hasSessionId = true;
-        options.hasProtocolVersion = true;
         options.hasMaxFrameSize = true;
-        options.hasMtu = true;
+        options.hasMtu = requested.hasMtu;
         options.hasSupportedPayloadTypes = true;
         options.hasSelectedRpcEncoding = true;
         options.hasHeartbeatIntervalMs = true;
         options.hasAckMode = true;
         options.sessionId = requested.hasSessionId ? requested.sessionId : 0;
-        options.protocolVersion = requested.hasProtocolVersion ? requested.protocolVersion : 1;
         options.maxFrameSize = requested.hasMaxFrameSize ? requested.maxFrameSize : 4096;
         options.mtu = requested.hasMtu ? requested.mtu : 4096;
         options.supportedPayloadTypes =
@@ -214,6 +208,8 @@ private:
             break;
         case kProtocolVersion:
             options.hasProtocolVersion = readU8(value, &options.protocolVersion);
+            options.hasProtocolVersion =
+                options.hasProtocolVersion && options.protocolVersion == 1;
             options.valid = options.valid && options.hasProtocolVersion;
             break;
         case kMaxFrameSize:

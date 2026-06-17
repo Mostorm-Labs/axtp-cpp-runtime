@@ -6,6 +6,7 @@
 #include <string>
 #include <utility>
 
+#include "generated/axtp_generated_version.hpp"
 #include "generated/registry_lookup.h"
 #include "model/payload.hpp"
 
@@ -67,6 +68,7 @@ public:
         payload.bodyEncoding = RpcBodyEncoding::None;
         payload.meta.sourceProtocol = SourceProtocol::JsonRpc;
         payload.meta.jsonSid = "";
+        payload.meta.hasRandomSeed = true;
         payload.meta.randomSeed = randomSeed;
         payload.meta.jsonEventMasks = std::move(eventMasks);
         return payload;
@@ -106,8 +108,7 @@ private:
 
     static std::string serializeHello() {
         auto d = nlohmann::json::object();
-        d["axtpVersion"] = "1.0.0";
-        d["rpcVersion"] = 1;
+        d["axtpVersion"] = generated::kSpecVersion;
 
         auto object = nlohmann::json::object();
         object["sid"] = "";
@@ -118,7 +119,6 @@ private:
 
     static std::string serializeIdentify(const RpcPayload& payload) {
         auto d = nlohmann::json::object();
-        d["rpcVersion"] = 1;
         d["eventMasks"] = payload.meta.jsonEventMasks;
         d["randomSeed"] = payload.meta.randomSeed;
 
@@ -131,7 +131,6 @@ private:
 
     static std::string serializeIdentified(const RpcPayload& payload) {
         auto d = nlohmann::json::object();
-        d["negotiatedRpcVersion"] = 1;
 
         auto object = nlohmann::json::object();
         object["sid"] = responseSid(payload.meta);
