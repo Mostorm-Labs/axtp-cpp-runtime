@@ -66,6 +66,8 @@ struct MediaHostOptions {
     std::filesystem::path dumpDir;
     std::string source = "wireless_cast";
     std::string audioFormat = "adts";
+    std::uint32_t audioSampleRate = 48000;
+    std::uint32_t audioChannels = 1;
     IMediaStreamSink* streamSink = nullptr;
 };
 
@@ -91,6 +93,12 @@ struct MediaStreamInfo {
     std::uint32_t sampleRate = 0;
     std::uint32_t channels = 0;
     nlohmann::json metadata = nlohmann::json::object();
+};
+
+struct ActiveMediaStream {
+    MediaKind kind = MediaKind::Video;
+    std::uint32_t streamId = 0;
+    std::string source;
 };
 
 class IMediaStreamSink {
@@ -183,6 +191,14 @@ public:
         return _options.source;
     }
 
+    std::uint32_t audioSampleRate() const {
+        return _options.audioSampleRate == 0 ? 48000 : _options.audioSampleRate;
+    }
+
+    std::uint32_t audioChannels() const {
+        return _options.audioChannels == 0 ? 1 : _options.audioChannels;
+    }
+
     static std::string kindName(MediaKind kind) {
         return kind == MediaKind::Video ? "video" : "audio";
     }
@@ -263,8 +279,8 @@ public:
             return error(ErrorCode::MediaCodecUnsupported,
                          "axtp-mediahost MVP accepts AAC ADTS only");
         }
-        const auto sampleRate = jsonU32Or(params, "sampleRate", 48000);
-        const auto channels = jsonU32Or(params, "channels", 2);
+        const auto sampleRate = jsonU32Or(params, "sampleRate", audioSampleRate());
+        const auto channels = jsonU32Or(params, "channels", audioChannels());
         return openAccepted(kind,
                             allocateStreamId(kind),
                             source,
@@ -338,6 +354,12 @@ public:
         if (transportFormat != "adts") {
             return error(ErrorCode::MediaCodecUnsupported,
                          "pulled audio must use AAC ADTS in this MVP");
+        }
+        if (!result.contains("sampleRate")) {
+            result["sampleRate"] = audioSampleRate();
+        }
+        if (!result.contains("channels")) {
+            result["channels"] = audioChannels();
         }
         return openAccepted(kind,
                             streamId,
@@ -466,6 +488,25 @@ public:
     std::size_t activeStreamCount() const {
         std::lock_guard<std::mutex> lock(_mutex);
         return _streams.size();
+    }
+
+    std::vector<ActiveMediaStream> activeStreamsSnapshot() const {
+        std::vector<ActiveMediaStream> snapshot;
+        std::lock_guard<std::mutex> lock(_mutex);
+        snapshot.reserve(_streams.size());
+        for (const auto& entry : _streams) {
+            snapshot.push_back(
+                ActiveMediaStream{entry.second.kind, entry.second.streamId, entry.second.source});
+        }
+        return snapshot;
+    }
+
+    OpenStreamResult closeLocal(MediaKind kind, std::uint32_t streamId) {
+        const nlohmann::json params = {
+            {"streamId", streamId},
+            {"peerRole", "transmitter"},
+        };
+        return close(kind, params.dump());
     }
 
 private:
@@ -740,26 +781,38 @@ public:
             _pulls.erase(key);
         }
 
-        for (auto& entry : _pulls) {
-            auto& pull = entry.second;
-            if (pull.stage != PullStage::Queued) {
-                continue;
-            }
-            if (_sid.empty()) {
-                if (!pull.waitingSidLogged) {
-                    pull.waitingSidLogged = true;
-                    logLine("pull waiting for session sid: " +
-                            MediaStreamRegistry::kindName(pull.kind) + " source=" + pull.source);
+        for (const auto kind : {MediaKind::Video, MediaKind::Audio}) {
+            for (auto& entry : _pulls) {
+                auto& pull = entry.second;
+                if (pull.stage != PullStage::Queued || pull.kind != kind) {
+                    continue;
                 }
-                continue;
+                if (pull.kind == MediaKind::Audio && hasUnfinishedVideoPull()) {
+                    if (!pull.waitingVideoLogged) {
+                        pull.waitingVideoLogged = true;
+                        logLine("pull waiting: audio source=" + pull.source +
+                                " waits for video open first");
+                    }
+                    continue;
+                }
+                if (_sid.empty()) {
+                    if (!pull.waitingSidLogged) {
+                        pull.waitingSidLogged = true;
+                        logLine("pull waiting for session sid: " +
+                                MediaStreamRegistry::kindName(pull.kind) +
+                                " source=" + pull.source);
+                    }
+                    continue;
+                }
+                if (_registry.hasOpenStream(pull.kind, pull.source)) {
+                    pull.stage = PullStage::Open;
+                    logLine("pull marked open: stream already registered for " +
+                            MediaStreamRegistry::kindName(pull.kind) +
+                            " source=" + pull.source);
+                    continue;
+                }
+                sendOpen(endpoint, pull);
             }
-            if (_registry.hasOpenStream(pull.kind, pull.source)) {
-                pull.stage = PullStage::Open;
-                logLine("pull marked open: stream already registered for " +
-                        MediaStreamRegistry::kindName(pull.kind) + " source=" + pull.source);
-                continue;
-            }
-            sendOpen(endpoint, pull);
         }
     }
 
@@ -771,6 +824,13 @@ public:
             }
         }
         return count;
+    }
+
+    void clearAll(std::string_view reason) {
+        const auto count = _pulls.size();
+        _pulls.clear();
+        logLine("pull state cleared: reason=" + std::string(reason) +
+                " entries=" + std::to_string(count));
     }
 
 private:
@@ -786,6 +846,7 @@ private:
         PullStage stage = PullStage::Queued;
         std::uint32_t requestId = 0;
         bool waitingSidLogged = false;
+        bool waitingVideoLogged = false;
         std::chrono::steady_clock::time_point sentAt{};
     };
 
@@ -838,8 +899,8 @@ private:
                               {"peerRole", "transmitter"},
                               {"codec", "aac"},
                               {"transportFormat", "adts"},
-                              {"sampleRate", 48000},
-                              {"channels", 2},
+                              {"sampleRate", _registry.audioSampleRate()},
+                              {"channels", _registry.audioChannels()},
                               {"streamProfile", "media.audio"},
                               {"cursorUnit", "timestampUs"}};
     }
@@ -897,6 +958,16 @@ private:
                 (bodyText.empty() ? "" : " result=" + bodyText));
     }
 
+    bool hasUnfinishedVideoPull() const {
+        for (const auto& entry : _pulls) {
+            const auto& pull = entry.second;
+            if (pull.kind == MediaKind::Video && pull.stage != PullStage::Open) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     void logLine(const std::string& line) const {
         if (_log) {
             _log(line);
@@ -909,6 +980,126 @@ private:
     LogFn _log;
     std::map<std::string, PullRequest> _pulls;
     std::uint32_t _nextRequestId = 1;
+};
+
+class MediaCloseCoordinator {
+public:
+    MediaCloseCoordinator(std::string sid,
+                          std::chrono::milliseconds requestTimeout,
+                          LogFn log = {})
+        : _sid(std::move(sid)), _requestTimeout(requestTimeout), _log(std::move(log)) {}
+
+    void setSid(std::string sid) {
+        _sid = std::move(sid);
+    }
+
+    template <typename Endpoint> void sendClose(Endpoint& endpoint, const ActiveMediaStream& stream) {
+        if (_sid.empty()) {
+            logLine("closeStream skipped: session sid is empty");
+            return;
+        }
+        if (stream.streamId == 0) {
+            return;
+        }
+
+        const auto params = closeParamsFor(stream.streamId);
+        const auto paramsText = params.dump();
+
+        RpcPayload request;
+        request.encoding = RpcEncoding::Json;
+        request.op = RpcOp::Request;
+        request.requestId = _nextRequestId++;
+        if (_nextRequestId == 0) {
+            _nextRequestId = 0x40000000U;
+        }
+        request.methodOrEventId = methodIdFor(stream.kind);
+        request.statusCode = ErrorCode::Success;
+        request.bodyEncoding = RpcBodyEncoding::None;
+        request.meta.sourceProtocol = SourceProtocol::JsonRpc;
+        request.meta.jsonSid = _sid;
+        request.meta.jsonMethodOrEventName = methodNameFor(stream.kind);
+        request.body.assign(paramsText.begin(), paramsText.end());
+
+        PendingClose pending;
+        pending.kind = stream.kind;
+        pending.streamId = stream.streamId;
+        pending.source = stream.source;
+        pending.requestId = request.requestId;
+        pending.sentAt = std::chrono::steady_clock::now();
+        _pending.emplace(pending.requestId, pending);
+
+        logLine("closeStream send: requestId=" + std::to_string(pending.requestId) +
+                " method=" + methodNameFor(stream.kind) +
+                " streamId=" + toHexU32(stream.streamId) +
+                (stream.source.empty() ? "" : " source=" + stream.source) +
+                " payload=" + paramsText);
+        endpoint.sendRpcRequest(std::move(request));
+    }
+
+    template <typename Endpoint> void poll(Endpoint& endpoint) {
+        const auto now = std::chrono::steady_clock::now();
+        std::vector<std::uint32_t> eraseIds;
+        for (auto& entry : _pending) {
+            auto& pending = entry.second;
+            if (auto response = endpoint.tryTakeRpcResponse(pending.requestId)) {
+                const auto bodyText = std::string(response->body.begin(), response->body.end());
+                logLine("closeStream response: requestId=" + std::to_string(pending.requestId) +
+                        " method=" + methodNameFor(pending.kind) +
+                        " streamId=" + toHexU32(pending.streamId) +
+                        " status=" + errorName(response->statusCode) +
+                        (bodyText.empty() ? "" : " body=" + bodyText));
+                eraseIds.push_back(entry.first);
+                continue;
+            }
+            if (now - pending.sentAt >= _requestTimeout) {
+                logLine("closeStream timeout: requestId=" + std::to_string(pending.requestId) +
+                        " method=" + methodNameFor(pending.kind) +
+                        " streamId=" + toHexU32(pending.streamId));
+                eraseIds.push_back(entry.first);
+            }
+        }
+        for (const auto requestId : eraseIds) {
+            _pending.erase(requestId);
+        }
+    }
+
+    std::size_t pendingCount() const {
+        return _pending.size();
+    }
+
+    static nlohmann::json closeParamsFor(std::uint32_t streamId) {
+        return nlohmann::json{{"streamId", streamId}, {"peerRole", "transmitter"}};
+    }
+
+private:
+    struct PendingClose {
+        MediaKind kind = MediaKind::Video;
+        std::uint32_t streamId = 0;
+        std::string source;
+        std::uint32_t requestId = 0;
+        std::chrono::steady_clock::time_point sentAt{};
+    };
+
+    static std::uint16_t methodIdFor(MediaKind kind) {
+        return static_cast<std::uint16_t>(kind == MediaKind::Video ? MethodId::VideoCloseStream
+                                                                   : MethodId::AudioCloseStream);
+    }
+
+    static const char* methodNameFor(MediaKind kind) {
+        return kind == MediaKind::Video ? "video.closeStream" : "audio.closeStream";
+    }
+
+    void logLine(const std::string& line) const {
+        if (_log) {
+            _log(line);
+        }
+    }
+
+    std::string _sid;
+    std::chrono::milliseconds _requestTimeout;
+    LogFn _log;
+    std::map<std::uint32_t, PendingClose> _pending;
+    std::uint32_t _nextRequestId = 0x40000000U;
 };
 
 inline void installMediaHostHandlers(BasicBroker<>& broker, MediaStreamRegistry& registry) {

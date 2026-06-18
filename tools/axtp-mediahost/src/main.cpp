@@ -54,6 +54,8 @@ struct CliOptions {
     axtp::mediahost::H264FeedMode h264FeedMode = axtp::mediahost::H264FeedMode::StreamChunk;
     bool noVideo = false;
     bool noAudio = false;
+    bool startMuted = false;
+    bool overlayEnabled = true;
     bool logBody = false;
     bool logEnabled = true;
     bool pullOnSourceEvent = false;
@@ -62,6 +64,8 @@ struct CliOptions {
     std::filesystem::path dumpDir;
     std::string source = "wireless_cast";
     std::string audioFormat = "adts";
+    std::uint32_t audioSampleRate = 48000;
+    std::uint32_t audioChannels = 1;
 };
 
 std::filesystem::path exePath() {
@@ -319,9 +323,13 @@ void printUsage() {
         << "  --dump-dir <dir>         Dump received video/audio bytes to .h264/.aac files\n"
         << "  --no-video               Reject video.openStream\n"
         << "  --no-audio               Reject audio.openStream\n"
+        << "  --start-muted            Start audio renderer muted\n"
+        << "  --no-overlay             Disable FPS overlay and floating window controls\n"
         << "  --open-mode <mode>       receiver-pull (default), producer-open, or both\n"
         << "  --source <source>        Default source, default wireless_cast\n"
         << "  --audio-format <fmt>     AAC format accepted by MVP, default adts\n"
+        << "  --audio-sample-rate <n>  AAC sample rate hint/override, default 48000\n"
+        << "  --audio-channels <n>     AAC channel hint/override, default 1\n"
         << "  --pull-on-source-event   Deprecated alias for --open-mode receiver-pull\n"
         << "\n"
         << "Logging options:\n"
@@ -501,6 +509,14 @@ bool parseOptions(int argc, char** argv, CliOptions* options) {
             options->noAudio = true;
             continue;
         }
+        if (arg == "--start-muted") {
+            options->startMuted = true;
+            continue;
+        }
+        if (arg == "--no-overlay") {
+            options->overlayEnabled = false;
+            continue;
+        }
         if (arg == "--dump-dir") {
             const auto* value = requireValue(arg.c_str());
             if (value == nullptr) {
@@ -523,6 +539,20 @@ bool parseOptions(int argc, char** argv, CliOptions* options) {
                 return false;
             }
             options->audioFormat = value;
+            continue;
+        }
+        if (arg == "--audio-sample-rate") {
+            if (!parseOptionU32(arg.c_str(), &options->audioSampleRate) ||
+                options->audioSampleRate == 0) {
+                return false;
+            }
+            continue;
+        }
+        if (arg == "--audio-channels") {
+            if (!parseOptionU32(arg.c_str(), &options->audioChannels) ||
+                options->audioChannels == 0 || options->audioChannels > 8) {
+                return false;
+            }
             continue;
         }
         if (arg == "--open-mode") {
@@ -734,6 +764,8 @@ int main(int argc, char** argv) {
         renderOptions.h264FeedMode = options.h264FeedMode;
         renderOptions.enableVideo = !options.noVideo;
         renderOptions.enableAudio = false;
+        renderOptions.startMuted = options.startMuted;
+        renderOptions.overlayEnabled = options.overlayEnabled;
         if (!renderer.start(renderOptions)) {
             return 5;
         }
@@ -757,6 +789,8 @@ int main(int argc, char** argv) {
     mediaOptions.dumpDir = options.dumpDir;
     mediaOptions.source = options.source;
     mediaOptions.audioFormat = options.audioFormat;
+    mediaOptions.audioSampleRate = options.audioSampleRate;
+    mediaOptions.audioChannels = options.audioChannels;
     mediaOptions.streamSink =
         effectiveRenderBackend == axtp::mediahost::RenderBackend::None ? nullptr : &renderer;
 
@@ -769,6 +803,10 @@ int main(int argc, char** argv) {
         mediaOptions, [&logger](std::string_view line) { logger.write(line); });
     axtp::mediahost::MediaPullCoordinator pullCoordinator(
         registry,
+        "",
+        std::chrono::milliseconds(options.timeoutMs),
+        [&logger](std::string_view line) { logger.write(line); });
+    axtp::mediahost::MediaCloseCoordinator closeCoordinator(
         "",
         std::chrono::milliseconds(options.timeoutMs),
         [&logger](std::string_view line) { logger.write(line); });
@@ -793,7 +831,11 @@ int main(int argc, char** argv) {
             << " video=" << (mediaOptions.acceptVideo ? "enabled" : "disabled")
             << " audio=" << (mediaOptions.acceptAudio ? "enabled" : "disabled")
             << " renderBackend=" << axtp::mediahost::renderBackendName(effectiveRenderBackend)
-            << " h264FeedMode=" << axtp::mediahost::h264FeedModeName(options.h264FeedMode);
+            << " h264FeedMode=" << axtp::mediahost::h264FeedModeName(options.h264FeedMode)
+            << " overlay=" << (options.overlayEnabled ? "enabled" : "disabled")
+            << " startMuted=" << (options.startMuted ? "true" : "false")
+            << " audioSampleRate=" << mediaOptions.audioSampleRate
+            << " audioChannels=" << mediaOptions.audioChannels;
     if (axtp::mediahost::receiverPullEnabled(options.openMode)) {
         modeLog << " receiver-pull=wait source-state events then send openStream";
     }
@@ -844,6 +886,8 @@ int main(int argc, char** argv) {
         renderOptions.h264FeedMode = options.h264FeedMode;
         renderOptions.enableVideo = !options.noVideo;
         renderOptions.enableAudio = !options.noAudio;
+        renderOptions.startMuted = options.startMuted;
+        renderOptions.overlayEnabled = options.overlayEnabled;
         if (!renderer.start(renderOptions)) {
             transport->close();
             return 5;
@@ -871,6 +915,7 @@ int main(int argc, char** argv) {
                  axtp::mediahost::toHexU32(ready.randomSeed) +
                  " elapsedMs=" + std::to_string(readyMs));
     pullCoordinator.setSid(ready.sid);
+    closeCoordinator.setSid(ready.sid);
 
     if (axtp::mediahost::receiverPullEnabled(options.openMode) &&
         axtp::mediahost::producerOpenEnabled(options.openMode)) {
@@ -884,6 +929,34 @@ int main(int argc, char** argv) {
     while (g_running != 0) {
         endpoint.poll(64);
         pullCoordinator.poll(endpoint);
+        closeCoordinator.poll(endpoint);
+        if (effectiveRenderBackend != axtp::mediahost::RenderBackend::None &&
+            !renderer.running()) {
+            logger.write("renderer window closed; exiting MediaHost");
+            break;
+        }
+        if (effectiveRenderBackend != axtp::mediahost::RenderBackend::None &&
+            renderer.consumeStopCastingRequested()) {
+            const auto activeStreams = registry.activeStreamsSnapshot();
+            if (activeStreams.empty()) {
+                logger.write("stop casting requested: no active streams to close");
+            } else {
+                logger.write("stop casting requested: closing " +
+                             std::to_string(activeStreams.size()) +
+                             " active stream(s), keeping AXTP session open");
+            }
+            for (const auto& stream : activeStreams) {
+                closeCoordinator.sendClose(endpoint, stream);
+                const auto result = registry.closeLocal(stream.kind, stream.streamId);
+                if (result.status != axtp::ErrorCode::Success) {
+                    logger.write("local close failed streamId=" +
+                                 axtp::mediahost::toHexU32(stream.streamId) +
+                                 " status=" + errorName(result.status));
+                }
+            }
+            pullCoordinator.clearAll("stop casting");
+            renderer.setStatusText("Casting stopped. AXTP session is still connected.");
+        }
         if (effectiveRenderBackend != axtp::mediahost::RenderBackend::None &&
             std::chrono::steady_clock::now() >= nextUiUpdate) {
             const auto stats = registry.stats();
@@ -893,6 +966,8 @@ int main(int argc, char** argv) {
                    << "open mode: " << axtp::mediahost::openModeName(options.openMode) << "\n"
                    << "active streams: " << registry.activeStreamCount() << "\n"
                    << "pending pulls: " << pullCoordinator.pendingCount() << "\n"
+                   << "pending closes: " << closeCoordinator.pendingCount() << "\n"
+                   << "muted: " << (renderer.isMuted() ? "true" : "false") << "\n"
                    << "video: " << stats.videoChunks << " chunks, " << stats.videoBytes
                    << " bytes\n"
                    << "audio: " << stats.audioChunks << " chunks, " << stats.audioBytes

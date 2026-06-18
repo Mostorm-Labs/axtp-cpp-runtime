@@ -32,6 +32,7 @@ struct MediaRenderHostOptions {
     bool enableVideo = true;
     bool enableAudio = true;
     bool startMuted = false;
+    bool overlayEnabled = true;
 };
 
 class AxtpVideoRenderer;
@@ -50,6 +51,9 @@ public:
     bool running() const;
     void setStatusText(std::string text);
     void setMuted(bool muted);
+    bool isMuted() const;
+    bool toggleMuted();
+    bool consumeStopCastingRequested();
 
     void onStreamOpened(const MediaStreamInfo& info) override;
     void onStreamChunk(MediaKind kind, const StreamPayload& stream) override;
@@ -61,6 +65,7 @@ private:
     MediaRenderHostOptions _options;
     LogFn _log;
     std::atomic_bool _running{false};
+    std::atomic_bool _muted{false};
     bool _comInitialized = false;
     bool _mfStarted = false;
     std::unique_ptr<AxtpVideoRenderer> _video;

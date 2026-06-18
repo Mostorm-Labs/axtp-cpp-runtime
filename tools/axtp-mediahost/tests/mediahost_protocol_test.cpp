@@ -313,6 +313,8 @@ int main() {
         assert(audioParams.at("peerRole").get<std::string>() == "transmitter");
         assert(audioParams.at("codec").get<std::string>() == "aac");
         assert(audioParams.at("transportFormat").get<std::string>() == "adts");
+        assert(audioParams.at("sampleRate").get<std::uint32_t>() == 48000);
+        assert(audioParams.at("channels").get<std::uint32_t>() == 1);
 
         const std::string audioResult =
             R"({"streamId":17476,"state":"streaming","source":"wireless_cast_audio","peerRole":"transmitter","codec":"aac","transportFormat":"adts","sampleRate":48000,"channels":2,"streamProfile":"media.audio","cursorUnit":"timestampUs"})";
@@ -331,6 +333,54 @@ int main() {
         stats = registry.stats();
         assert(stats.audioChunks == 1);
         assert(stats.audioBytes == 3);
+    }
+
+    {
+        axtp::mediahost::MediaHostOptions options;
+        options.openMode = axtp::mediahost::OpenMode::ReceiverPull;
+        axtp::BasicBroker<> broker;
+        axtp::mediahost::MediaStreamRegistry registry(options);
+        axtp::mediahost::MediaPullCoordinator pullCoordinator(
+            registry, "12345678", std::chrono::milliseconds(1000));
+        axtp::mediahost::installMediaHostHandlers(broker, registry);
+        broker.registerEventHandler(
+            [&pullCoordinator](const axtp::BrokerContext&, const axtp::RpcPayload& event) {
+                pullCoordinator.handleEvent(event);
+            });
+
+        axtp::AxtpEndpoint endpoint(broker);
+        axtp::MockTransport transport;
+        endpoint.attachTransport(transport);
+        transport.open();
+
+        transport.injectIncoming(
+            encodeRpc(makeJsonEvent(axtp::EventId::VideoStreamSourceStateChanged,
+                                    "video.streamSourceStateChanged",
+                                    R"({"source":"wireless_cast","state":"receiving"})")));
+        transport.injectIncoming(
+            encodeRpc(makeJsonEvent(axtp::EventId::AudioStreamSourceStateChanged,
+                                    "audio.streamSourceStateChanged",
+                                    R"({"source":"wireless_cast_audio","state":"receiving"})")));
+        endpoint.poll(8);
+        pullCoordinator.poll(endpoint);
+        auto outgoing = transport.tryPopOutgoing();
+        assert(outgoing.has_value());
+        auto videoOpen = decodeSingleRpc(*outgoing);
+        assert(videoOpen.methodOrEventId ==
+               static_cast<std::uint16_t>(axtp::MethodId::VideoOpenStream));
+        assert(!transport.tryPopOutgoing().has_value());
+
+        const std::string videoResult =
+            R"({"streamId":13107,"state":"streaming","source":"wireless_cast","peerRole":"transmitter","codec":"h264","streamProfile":"media.video","cursorUnit":"timestampUs"})";
+        transport.injectIncoming(encodeRpc(
+            makeJsonResponse(videoOpen.requestId, axtp::ErrorCode::Success, videoResult)));
+        endpoint.poll(8);
+        pullCoordinator.poll(endpoint);
+        outgoing = transport.tryPopOutgoing();
+        assert(outgoing.has_value());
+        auto audioOpen = decodeSingleRpc(*outgoing);
+        assert(audioOpen.methodOrEventId ==
+               static_cast<std::uint16_t>(axtp::MethodId::AudioOpenStream));
     }
 
     {
@@ -420,6 +470,67 @@ int main() {
         endpoint.poll(8);
         pullCoordinator.poll(endpoint);
         assert(!transport.tryPopOutgoing().has_value());
+    }
+
+    {
+        axtp::mediahost::MediaHostOptions options;
+        options.openMode = axtp::mediahost::OpenMode::ProducerOpen;
+        CountingMediaSink mediaSink;
+        options.streamSink = &mediaSink;
+        axtp::mediahost::MediaStreamRegistry registry(options);
+
+        const auto opened = registry.acceptProducerOpen(
+            axtp::mediahost::MediaKind::Video,
+            R"({"source":"wireless_cast_video","peerRole":"receiver","codec":"h264"})");
+        assert(opened.status == axtp::ErrorCode::Success);
+        auto snapshot = registry.activeStreamsSnapshot();
+        assert(snapshot.size() == 1);
+        assert(snapshot.front().kind == axtp::mediahost::MediaKind::Video);
+        assert(snapshot.front().streamId == 0x1001);
+        assert(snapshot.front().source == "wireless_cast_video");
+
+        const auto closed =
+            registry.closeLocal(snapshot.front().kind, snapshot.front().streamId);
+        assert(closed.status == axtp::ErrorCode::Success);
+        assert(registry.activeStreamCount() == 0);
+        assert(mediaSink.closed.size() == 1);
+        assert(mediaSink.closed.front() == 0x1001);
+    }
+
+    {
+        axtp::BasicBroker<> broker;
+        axtp::AxtpEndpoint endpoint(broker);
+        axtp::MockTransport transport;
+        endpoint.attachTransport(transport);
+        transport.open();
+
+        axtp::mediahost::MediaCloseCoordinator closeCoordinator(
+            "12345678", std::chrono::milliseconds(1000));
+        closeCoordinator.sendClose(endpoint,
+                                   axtp::mediahost::ActiveMediaStream{
+                                       axtp::mediahost::MediaKind::Video,
+                                       0x3333,
+                                       "wireless_cast_video"});
+        auto outgoing = transport.tryPopOutgoing();
+        assert(outgoing.has_value());
+        auto closeRequest = decodeSingleRpc(*outgoing);
+        assert(closeRequest.op == axtp::RpcOp::Request);
+        assert(closeRequest.methodOrEventId ==
+               static_cast<std::uint16_t>(axtp::MethodId::VideoCloseStream));
+        assert(closeRequest.meta.jsonSid == "12345678");
+        const auto params =
+            nlohmann::json::parse(std::string(closeRequest.body.begin(), closeRequest.body.end()));
+        assert(params.at("streamId").get<std::uint32_t>() == 0x3333);
+        assert(params.at("peerRole").get<std::string>() == "transmitter");
+        assert(closeCoordinator.pendingCount() == 1);
+
+        transport.injectIncoming(encodeRpc(
+            makeJsonResponse(closeRequest.requestId,
+                             axtp::ErrorCode::Success,
+                             R"({"streamId":13107,"state":"closed"})")));
+        endpoint.poll(8);
+        closeCoordinator.poll(endpoint);
+        assert(closeCoordinator.pendingCount() == 0);
     }
 
     return 0;
