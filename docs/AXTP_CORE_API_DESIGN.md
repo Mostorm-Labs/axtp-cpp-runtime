@@ -61,15 +61,15 @@ Core public headers 按职责分组：
 
 | 区域 | 作用 |
 |---|---|
-| `model/*` | Bytes、status/result、frame、message、payload、协议常量和枚举 |
-| `io/*` | byte sink/writer、可选 text writer、transport packet 边界类型 |
-| `core/inbound/*` | FramedBinary 和 WebSocketJsonRpc inbound processor |
-| `core/outbound/*` | FramedBinary 和 WebSocketJsonRpc outbound processor |
-| `core/*` | `AxtpCore`、`CoreEvent`、session helper、pending call |
-| `transport/*` | transport interface 和 profile |
-| `broker/*` | `BasicBroker<>`、task dispatch、business routing、result queue |
-| `runtime/*` | `AxtpEndpoint` glue 和 endpoint ports |
-| `generated/*` | 生成的 ID、dynamic registry、lookup helper |
+| `support/io/*` | byte sink/writer、可选 text writer、transport packet 边界类型 |
+| `protocol/model/*` | Bytes、status/result、frame、message、payload、协议常量和枚举 |
+| `protocol/generated/*` | 生成的 ID、dynamic registry、lookup helper |
+| `protocol/wire/*` | FramedBinary 和 WebSocketJsonRpc inbound/outbound processor |
+| `protocol/session/*` | session helper、pending call、stream session |
+| `runtime/core/*` | `AxtpCore`、`CoreEvent`、RPC dispatcher |
+| `runtime/transport/*` | transport interface 和 profile |
+| `runtime/broker/*` | `BasicBroker<>`、task dispatch、business routing、result queue |
+| `runtime/endpoint/*` | `AxtpEndpoint` glue 和 endpoint ports |
 
 ## Core API 契约
 
@@ -162,7 +162,7 @@ Core 把 RPC body 当作 bytes 处理，`RpcEncoding` 描述这些 bytes 的语�
 - `Raw`：不解释的业务 bytes。
 - `Binary`：兼容期旧名，新代码应避免继续使用。
 
-`MethodRegistry` 是运行时数据，可以来自 generated defaults，也可以在运行时扩展。可选 `axtp_json_rpc` 通过 `method_registry_json.hpp` 提供 JSON 文件加载。
+`MethodRegistry` 是运行时数据，可以来自 generated defaults，也可以在运行时扩展。可选 `axtp_json_rpc` 通过 `json_rpc/method_registry_json.hpp` 提供 JSON 文件加载。
 
 Generated typed traits 和 schema codecs 只是可选便利头，不包含在 `<axtp.hpp>` 中，也不能成为 core routing 的前提。
 

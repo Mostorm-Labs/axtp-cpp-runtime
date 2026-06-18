@@ -133,13 +133,13 @@ hid_transport.cpp
 目录也使用 lower_snake_case。如果目录已经表达模块，不要在文件名里重复模块名：
 
 ```text
-core/axtp_core.hpp
-core/inbound/frame_decoder.hpp
-core/outbound/frame_encoder.hpp
-broker/basic_broker.hpp
-transport/transport.hpp
-transport/transport_profile.hpp
-testing/mock_transport.hpp
+runtime/core/axtp_core.hpp
+protocol/wire/framed_binary/inbound/frame_decoder.hpp
+protocol/wire/framed_binary/outbound/frame_encoder.hpp
+runtime/broker/basic_broker.hpp
+runtime/transport/transport.hpp
+runtime/transport/transport_profile.hpp
+runtime/testing/mock_transport.hpp
 ```
 
 Generated files 可以继续使用当前 `.h` 文件名，直到 generator 单独负责迁移。Third-party code 不由 AXTP 脚本改名或格式化。
@@ -150,11 +150,11 @@ Generated files 可以继续使用当前 `.h` 文件名，直到 generator 单�
 
 ```cpp
 #include <axtp.hpp>
-#include <core/axtp_core.hpp>
-#include <broker/basic_broker.hpp>
-#include <core/inbound/frame_decoder.hpp>
-#include <core/outbound/frame_encoder.hpp>
-#include <transport/transport.hpp>
+#include <runtime/core/axtp_core.hpp>
+#include <runtime/broker/basic_broker.hpp>
+#include <protocol/wire/framed_binary/inbound/frame_decoder.hpp>
+#include <protocol/wire/framed_binary/outbound/frame_encoder.hpp>
+#include <runtime/transport/transport.hpp>
 ```
 
 不要包含旧的 top-level pipeline path：

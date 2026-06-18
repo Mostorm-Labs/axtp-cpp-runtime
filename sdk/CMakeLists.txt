@@ -26,7 +26,7 @@ target_include_directories(axtp_sdk
 
 target_link_libraries(axtp_sdk
     INTERFACE
-        axtp_core
+        axtp_runtime
 )
 target_compile_features(axtp_sdk INTERFACE cxx_std_17)
 

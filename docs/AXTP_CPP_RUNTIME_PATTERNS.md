@@ -90,14 +90,14 @@ flowchart TB
 
 | 模式 | 代码位置 | 作用 |
 |---|---|---|
-| Endpoint glue | `runtime/axtp_endpoint.hpp` | 唯一连接 transport、core、broker 的对象 |
-| Protocol-only core | `core/axtp_core.hpp` | 解码 payload、维护 session/pending calls、输出 `CoreEvent` 和 bytes |
-| Task/result broker | `broker/basic_broker.hpp` | 接收 `BrokerTask`，分发 handler，输出 `BrokerResult` |
+| Endpoint glue | `runtime/endpoint/axtp_endpoint.hpp` | 唯一连接 transport、core、broker 的对象 |
+| Protocol-only core | `runtime/core/axtp_core.hpp` | 解码 payload、维护 session/pending calls、输出 `CoreEvent` 和 bytes |
+| Task/result broker | `runtime/broker/basic_broker.hpp` | 接收 `BrokerTask`，分发 handler，输出 `BrokerResult` |
 | Port adapter | `AxtpCore` 内部 sink/writer port | 把内部 processor 适配成队列输出，避免 core 暴露可变实现细节 |
-| Pipeline processor | `core/inbound/*`、`core/outbound/*` | 把 wire mode 的解析和编码分成小组件 |
+| Pipeline processor | `protocol/wire/*` | 把 wire mode 的解析和编码分成小组件 |
 | Dynamic RPC first | `MethodRegistry` + broker dynamic handlers | 默认按 method id/name + body bytes 调用业务 |
 | Optional platform adapter | `transports/*` | HID/TCP/WebSocket 作为可选 transport target，不污染 core |
-| Generated facts boundary | `generated/*` | ID、registry、schema 是事实源产物；runtime 不手写业务常量 |
+| Generated facts boundary | `protocol/generated/*` | ID、registry、schema 是事实源产物；runtime 不手写业务常量 |
 
 ## Endpoint Glue 模式
 

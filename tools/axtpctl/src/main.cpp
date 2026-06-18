@@ -13,14 +13,14 @@
 #include <vector>
 
 #include "axtp.hpp"
-#include "method_registry_json.hpp"
-#include "testing/mock_transport.hpp"
-#include "hidapi/hid_local_backend.hpp"
-#include "hidapi/hid_transport.hpp"
-#include "tcp_boost/tcp_transport.hpp"
-#include "websocket_ix/websocket_transport.hpp"
+#include "json_rpc/method_registry_json.hpp"
+#include "runtime/testing/mock_transport.hpp"
+#include "transports/hidapi/hid_local_backend.hpp"
+#include "transports/hidapi/hid_transport.hpp"
+#include "transports/tcp/boost/tcp_transport.hpp"
+#include "transports/websocket/ix/websocket_transport.hpp"
 
-#include "axtp_sdk_all.hpp"
+#include "sdk/axtp_sdk_all.hpp"
 
 namespace {
 

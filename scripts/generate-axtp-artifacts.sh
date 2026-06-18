@@ -29,7 +29,7 @@ const { emitCppFiles } = await import(pathToFileURL(path.join(root, "generators/
 const spec = await loadProtocolSources(specRoot);
 for (const message of validateSpec(spec)) console.log(message);
 
-const outDir = path.join(root, "core/include/generated");
+const outDir = path.join(root, "core/include/protocol/generated");
 await emitCppFiles(spec, outDir);
 console.log(`[OK] generated C++ artifacts: ${outDir}`);
 NODE

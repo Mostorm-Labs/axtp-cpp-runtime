@@ -5,9 +5,9 @@
 #include <utility>
 #include <vector>
 
-#include "testing/mock_transport.hpp"
+#include "runtime/testing/mock_transport.hpp"
 
-#include "axtp_sdk_all.hpp"
+#include "sdk/axtp_sdk_all.hpp"
 
 namespace {
 

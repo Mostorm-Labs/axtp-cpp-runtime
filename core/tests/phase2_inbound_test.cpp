@@ -4,9 +4,9 @@
 #include <utility>
 #include <vector>
 
-#include "core/inbound/inbound_processor.hpp"
-#include "io/byte_writer.hpp"
-#include "io/crc16.hpp"
+#include "protocol/wire/inbound_processor.hpp"
+#include "support/io/byte_writer.hpp"
+#include "support/io/crc16.hpp"
 
 namespace {
 

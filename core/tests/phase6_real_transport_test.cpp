@@ -16,17 +16,17 @@
 #include <ixwebsocket/IXWebSocketMessage.h>
 #include <ixwebsocket/IXWebSocketMessageType.h>
 
-#include "broker/basic_broker.hpp"
-#include "core/axtp_core.hpp"
-#include "core/inbound/inbound_processor.hpp"
-#include "core/inbound/json_rpc_decoder.hpp"
-#include "core/outbound/outbound_processor.hpp"
-#include "io/byte_writer_sink.hpp"
-#include "websocket_json_rpc_adapter.hpp"
-#include "runtime/axtp_endpoint.hpp"
-#include "testing/mock_transport.hpp"
-#include "tcp_boost/tcp_transport.hpp"
-#include "websocket_ix/websocket_transport.hpp"
+#include "runtime/broker/basic_broker.hpp"
+#include "runtime/core/axtp_core.hpp"
+#include "protocol/wire/inbound_processor.hpp"
+#include "protocol/wire/websocket_json_rpc/inbound/json_rpc_decoder.hpp"
+#include "protocol/wire/outbound_processor.hpp"
+#include "support/io/byte_writer_sink.hpp"
+#include "json_rpc/websocket_json_rpc_adapter.hpp"
+#include "runtime/endpoint/axtp_endpoint.hpp"
+#include "runtime/testing/mock_transport.hpp"
+#include "transports/tcp/boost/tcp_transport.hpp"
+#include "transports/websocket/ix/websocket_transport.hpp"
 
 namespace {
 

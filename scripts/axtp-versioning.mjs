@@ -159,7 +159,7 @@ function constantTargets(runtimeName) {
     return [{ kind: "c", file: path.join(root, "include/generated/axtp_generated_version.h") }];
   }
   if (runtimeName === "axtp-cpp-runtime") {
-    return [{ kind: "cpp", file: path.join(root, "core/include/generated/axtp_generated_version.hpp") }];
+    return [{ kind: "cpp", file: path.join(root, "core/include/protocol/generated/axtp_generated_version.hpp") }];
   }
   if (runtimeName === "axtp-flutter-runtime") {
     return [{ kind: "dart", file: path.join(root, "lib/src/generated/axtp_generated_version.dart") }];

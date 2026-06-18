@@ -156,7 +156,7 @@ describe("emitters", () => {
     try {
       await mkdir(dir, { recursive: true });
       await emitAll(baseSpec(), dir);
-      await expect(await readFile(path.join(dir, "cpp", "axtp_ids_generated.h"), "utf8")).toMatchFileSnapshot("./__snapshots__/axtp_ids_generated.h");
+      await expect(await readFile(path.join(dir, "cpp", "protocol", "generated", "axtp_ids_generated.h"), "utf8")).toMatchFileSnapshot("./__snapshots__/axtp_ids_generated.h");
       await expect(await readFile(path.join(dir, "docs", "method_registry.generated.md"), "utf8")).toMatchFileSnapshot("./__snapshots__/method_registry.generated.md");
       await expect(await readFile(path.join(dir, "json", "method_registry.generated.json"), "utf8")).toMatchFileSnapshot("./__snapshots__/method_registry.generated.json");
       await expect(await readFile(path.join(dir, "test_vectors", "manifest.json"), "utf8")).toMatchFileSnapshot("./__snapshots__/manifest.json");

@@ -29,10 +29,10 @@
 #    include <unistd.h>
 #endif
 
-#include "axtp_client.hpp"
-#include "generated/axtp_method_registry_generated.h"
-#include "generated/registry_lookup.h"
-#include "hidapi/hid_transport.hpp"
+#include "sdk/axtp_client.hpp"
+#include "protocol/generated/axtp_method_registry_generated.h"
+#include "protocol/generated/registry_lookup.h"
+#include "transports/hidapi/hid_transport.hpp"
 
 namespace {
 

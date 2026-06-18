@@ -29,7 +29,7 @@
 
 不要手写：
 
-- `core/include/generated/**`
+- `core/include/protocol/generated/**`
 - `generated/axtp_generated_manifest.json`
 
 刷新方式：
@@ -41,7 +41,7 @@ AXTP_SPEC_PATH=/path/to/axtp pnpm --dir generators generate:runtime
 scripts/check-generated-version.sh
 ```
 
-`scripts/generate-axtp-artifacts.sh` 会调用 C++ emitter 写 `core/include/generated/` 并更新 generated manifest。
+`scripts/generate-axtp-artifacts.sh` 会调用 C++ emitter 写 `core/include/protocol/generated/` 并更新 generated manifest。
 
 ## Runtime 实现边界
 

@@ -8,7 +8,7 @@ input:
 
 output:
   markdown_dir: out/generated/docs
-  cpp_dir: out/generated/cpp
+  cpp_dir: out/generated/cpp/protocol/generated
   json_dir: out/generated/json
   test_vector_dir: out/generated/test_vectors
 

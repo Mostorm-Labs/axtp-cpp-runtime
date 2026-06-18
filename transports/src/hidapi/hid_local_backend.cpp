@@ -1,4 +1,4 @@
-#include "hidapi/hid_local_backend.hpp"
+#include "transports/hidapi/hid_local_backend.hpp"
 
 #include <algorithm>
 #include <cerrno>
