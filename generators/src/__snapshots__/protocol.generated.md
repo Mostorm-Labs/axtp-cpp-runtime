@@ -168,6 +168,26 @@ Every Standard Framed AXTP Frame carries exactly one payload. WebSocket Unframed
 | `RPC` | 0x02 | 1B | RPC payload starts with rpcEncoding; JSON_BINARY then carries the fixed binary envelope. |
 | `STREAM` | 0x03 | 16B | Chunk-oriented data plane payload. |
 
+## Capability Discovery
+
+Generated capabilities are the feature-level switches that runtimes and devices use to declare support before invoking optional business methods or subscribing to events.
+
+| Capability ID | Name | Domain | Status | Type | Schema | Description |
+| :---: | ---- | ---- | :---: | :---: | ---- | ---- |
+| 0x0001 | protocol.payload.control | protocol | stable | bool | - | Device supports CONTROL payload. |
+| 0x0002 | protocol.payload.rpc | protocol | stable | bool | - | Device supports RPC payload. |
+| 0x0003 | protocol.payload.stream | protocol | stable | bool | - | Device supports STREAM data-plane payloads. |
+| 0x0009 | protocol.reservedRequestIdWidth | protocol | reserved | reserved | - | Historical requestId width negotiation bit; AXTP v1 fixes requestId as uint32. |
+| 0x0101 | device.info | device | draft | object | DeviceInfoCapability | Device supports read-only device information discovery. |
+| 0x0401 | firmware.update | firmware | draft | object | FirmwareUpdateCapabilities | Device supports P0 STREAM-based firmware update sessions. |
+| 0x0801 | video.stream | video | draft | object | VideoStreamCapabilities | Device supports real-time video STREAM setup, close, state, source state, key frame requests, and stats events. |
+| 0x0901 | audio.algorithm | audio | stable | object | AudioAlgorithmCapability | Device supports runtime audio algorithm capability discovery, configuration, reset, and change notification. |
+| 0x0902 | audio.stream | audio | draft | object | AudioStreamCapabilities | Device supports real-time audio STREAM setup, close, state, source state, and stats events. |
+| 0x0E01 | network.interface | network | draft | object | NetworkInterfaceCapability | Device supports network interface enumeration and state observation. |
+| 0x0E02 | network.ip | network | draft | object | NetworkIpCapability | Device supports IP configuration query, update, and change notification. |
+| 0x0E03 | network.wifi | network | draft | object | NetworkWifiCapabilities | Device supports Wi-Fi station profile, scan, connection, and state operations. |
+| 0x0E04 | network.ap | network | draft | object | NetworkApCapabilities | Device supports Wi-Fi AP configuration, runtime state, and client observation. |
+
 ## Generated Method Index
 
 The generated registry groups methods by domain. Each method keeps a stable `bitOffset` within its domain for generated indexes, test vectors, and any adopted runtime discovery method.
@@ -218,7 +238,7 @@ Type: `AudioGetAlgorithmConfigRequest`
 
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
-| ?items | Bytes | 0x01 | Optional JSON array of algorithm object names; omit to query all supported algorithms. | maxLength=128 | Omit if not used. |
+| ?items | Array<String> | 0x01 | Optional algorithm object names; omit to query all supported algorithms. | array.itemType=string | Omit if not used. |
 
 #### Response Fields
 
@@ -291,7 +311,7 @@ Type: `AudioGetAlgorithmCapabilitiesRequest`
 
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
-| ?items | Bytes | 0x01 | Optional JSON array of algorithm object names; omit to query all supported algorithms. | maxLength=128 | Omit if not used. |
+| ?items | Array<String> | 0x01 | Optional algorithm object names; omit to query all supported algorithms. | array.itemType=string | Omit if not used. |
 
 #### Response Fields
 
@@ -360,7 +380,7 @@ Type: `AudioGetStreamCapabilitiesParams`
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
 | ?source | String | 0x01 | Optional audio source identifier; omit to query all visible sources. | maxLength=128 | Omit if not used. |
-| ?includeRuntimeState | Boolean | 0x02 | Whether to include current source runtime state. | None | Omit if not used. |
+| ?includeRuntimeState | Boolean | 0x02 | Whether to include current source runtime state. | None | Default: false |
 
 #### Response Fields
 
@@ -369,14 +389,14 @@ Type: `AudioStreamCapabilities`
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
 | capability | String | 0x01 | Fixed capability name audio.stream. | maxLength=32 | N/A |
-| sources | Bytes | 0x02 | JSON array of AudioStreamSource objects. | maxLength=8192 | N/A |
-| streamProfiles | Bytes | 0x03 | JSON array of supported stream profiles, normally media.audio. | maxLength=512 | N/A |
-| openModes | Bytes | 0x04 | JSON array of supported open modes, such as producer_open and receiver_pull. | maxLength=512 | N/A |
-| peerRoles | Bytes | 0x05 | JSON array of peer roles, such as receiver and transmitter. | maxLength=512 | N/A |
+| sources | Array<AudioStreamSource> | 0x02 | Audio stream source objects. | schema=AudioStreamSource, array.itemType=AudioStreamSource, array.itemSchema=AudioStreamSource | N/A |
+| streamProfiles | Array<String> | 0x03 | Supported stream profiles, normally media.audio. | array.itemType=string | N/A |
+| openModes | Array<String> | 0x04 | Supported open modes, such as producer_open and receiver_pull. | array.itemType=string | N/A |
+| peerRoles | Array<String> | 0x05 | Peer roles, such as receiver and transmitter. | array.itemType=string | N/A |
 | supportsSourceStateEvent | Boolean | 0x06 | Whether audio.streamSourceStateChanged is supported. | None | N/A |
 | supportsSyncGroup | Boolean | 0x07 | Whether audio streams can share a synchronization group with video streams. | None | N/A |
 | flowControlManagedByRuntime | Boolean | 0x08 | Whether normal applications can rely on runtime-managed STREAM flow control. | None | N/A |
-| ?aacTransportFormats | Bytes | 0x09 | Optional JSON array of AAC transport format strings; exact supported set remains product-confirmed. | maxLength=512 | Omit if not used. |
+| ?aacTransportFormats | Array<String> | 0x09 | Optional AAC transport format strings; exact supported set remains product-confirmed. | array.itemType=string | Omit if not used. |
 
 ---
 
@@ -408,7 +428,7 @@ Type: `AudioOpenStreamParams`
 | ?channels | UInt8 | 0x06 | Requested channel count. | None | Omit if not used. |
 | ?sampleFormat | Enum | 0x07 | Requested sample format. | None | Omit if not used. |
 | ?chunkDurationMs | UInt32 | 0x08 | Preferred chunk duration in milliseconds. | None | Omit if not used. |
-| ?streamProfile | String | 0x09 | STREAM profile name. | maxLength=64 | Omit if not used. |
+| ?streamProfile | String | 0x09 | STREAM profile name. | maxLength=64 | Default: "media.audio" |
 | ?cursorUnit | Enum | 0x0A | STREAM cursor unit, such as timestampUs or sampleIndex. | None | Omit if not used. |
 | ?syncGroupId | String | 0x0B | Optional synchronization group identifier. | maxLength=128 | Omit if not used. |
 | ?castSessionId | String | 0x0C | Optional cast session identifier. | maxLength=128 | Omit if not used. |
@@ -475,7 +495,7 @@ Type: `AudioCloseStreamResult`
 | streamId | UInt32 | 0x01 | Closed stream identifier. | None | N/A |
 | state | Enum | 0x02 | Close state, such as closing, closed, or failed. | None | N/A |
 | ?reason | Enum | 0x03 | Final close reason. | None | Omit if not used. |
-| ?alreadyClosed | Boolean | 0x04 | Whether the stream was already terminal before this request. | None | Omit if not used. |
+| ?alreadyClosed | Boolean | 0x04 | Whether the stream was already terminal before this request. | None | Default: false |
 
 ---
 
@@ -585,7 +605,7 @@ Type: `GetDeviceInfoParams`
 
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
-| ?includeCapabilitySummary | Boolean | 0x01 | Whether to include the lightweight DeviceCapabilitySummary block. | None | Omit if not used. |
+| ?includeCapabilitySummary | Boolean | 0x01 | Whether to include the lightweight DeviceCapabilitySummary block. | None | Default: true |
 
 #### Response Fields
 
@@ -680,7 +700,7 @@ Type: `BeginUpdateResult`
 | ---- | :---: | :---: | ---- | :---: | ---- |
 | updateSessionId | String | 0x01 | Firmware update session identifier. | maxLength=128 | N/A |
 | state | Enum | 0x02 | State after begin, normally receiving. | None | N/A |
-| streams | Bytes | 0x03 | JSON array of FirmwareUpdateStreamBinding objects. | maxLength=4096 | N/A |
+| streams | Array<FirmwareUpdateStreamBinding> | 0x03 | Firmware update stream bindings. | schema=FirmwareUpdateStreamBinding, array.itemType=FirmwareUpdateStreamBinding, array.itemSchema=FirmwareUpdateStreamBinding | N/A |
 | ?chunkSize | UInt32 | 0x04 | Recommended STREAM chunk size. | None | Omit if not used. |
 
 ---
@@ -800,8 +820,8 @@ Type: `NetworkGetIpConfigParams`
 
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
-| ?interfaceId | String | 0x01 | Interface identifier; omitted means default primary interface. | maxLength=64 | Omit if not used. |
-| ?family | Enum | 0x02 | IP family; candidate values include ipv4 and ipv6. | None | Omit if not used. |
+| ?interfaceId | String | 0x01 | Interface identifier; omitted means default primary interface. | maxLength=64 | Default: "defaults.primary" |
+| ?family | Enum | 0x02 | IP family; candidate values include ipv4 and ipv6. | None | Default: "ipv4" |
 
 #### Response Fields
 
@@ -810,12 +830,12 @@ Type: `NetworkIpConfig`
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
 | interfaceId | String | 0x01 | Interface identifier. | maxLength=64 | N/A |
-| ?family | Enum | 0x02 | IP family; candidate values include ipv4 and ipv6. | None | Omit if not used. |
+| ?family | Enum | 0x02 | IP family; candidate values include ipv4 and ipv6. | None | Default: "ipv4" |
 | mode | Enum | 0x03 | IP mode; candidate values include dhcp, static, disabled, link_local, and unknown. | None | N/A |
 | ?address | String | 0x04 | IP address. | maxLength=64 | Omit if not used. |
 | ?prefixLength | UInt8 | 0x05 | Network prefix length. | min=0, max=128 | Omit if not used. |
 | ?gateway | String | 0x06 | Default gateway. | maxLength=64 | Omit if not used. |
-| ?dns | Bytes | 0x07 | JSON array of DNS server addresses. | maxLength=1024 | Omit if not used. |
+| ?dns | Array<String> | 0x07 | DNS server addresses. | array.itemType=string | Omit if not used. |
 
 ---
 
@@ -839,10 +859,10 @@ Type: `NetworkSetIpConfigParams`
 
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
-| ?interfaceId | String | 0x01 | Interface identifier. | maxLength=64 | Omit if not used. |
-| ?family | Enum | 0x02 | IP family. | None | Omit if not used. |
+| ?interfaceId | String | 0x01 | Interface identifier. | maxLength=64 | Default: "defaults.primary" |
+| ?family | Enum | 0x02 | IP family. | None | Default: "ipv4" |
 | config | NetworkIpConfig | 0x03 | Target IP configuration. | None | N/A |
-| ?applyPolicy | Enum | 0x04 | Apply policy; candidate values include immediate and pending_restart. | None | Omit if not used. |
+| ?applyPolicy | Enum | 0x04 | Apply policy; candidate values include immediate and pending_restart. | None | Default: "immediate" |
 
 #### Response Fields
 
@@ -875,8 +895,8 @@ Type: `NetworkGetWifiConfigParams`
 
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
-| ?interfaceId | String | 0x01 | Wi-Fi station interface identifier. | maxLength=64 | Omit if not used. |
-| ?includeProfiles | Boolean | 0x02 | Whether to include saved profile summaries. | None | Omit if not used. |
+| ?interfaceId | String | 0x01 | Wi-Fi station interface identifier. | maxLength=64 | Default: "defaults.wifiSta" |
+| ?includeProfiles | Boolean | 0x02 | Whether to include saved profile summaries. | None | Default: true |
 
 #### Response Fields
 
@@ -885,7 +905,7 @@ Type: `NetworkWifiConfig`
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
 | ?interfaceId | String | 0x01 | Wi-Fi station interface identifier. | maxLength=64 | Omit if not used. |
-| ?profiles | Bytes | 0x02 | JSON array of NetworkWifiProfile summaries. Plaintext credentials must not be returned. | maxLength=8192 | Omit if not used. |
+| ?profiles | Array<NetworkWifiProfile> | 0x02 | NetworkWifiProfile summaries. Plaintext credentials must not be returned. | schema=NetworkWifiProfile, array.itemType=NetworkWifiProfile, array.itemSchema=NetworkWifiProfile | Omit if not used. |
 | ?defaultProfileId | String | 0x03 | Default profile identifier. | maxLength=128 | Omit if not used. |
 
 ---
@@ -910,10 +930,10 @@ Type: `NetworkSetWifiConfigParams`
 
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
-| ?interfaceId | String | 0x01 | Wi-Fi station interface identifier. | maxLength=64 | Omit if not used. |
+| ?interfaceId | String | 0x01 | Wi-Fi station interface identifier. | maxLength=64 | Default: "defaults.wifiSta" |
 | profile | NetworkWifiProfile | 0x02 | Profile to create or update. | None | N/A |
-| ?replaceExisting | Boolean | 0x03 | Whether an existing matching profile may be replaced. | None | Omit if not used. |
-| ?makeDefault | Boolean | 0x04 | Whether to make this the default profile. | None | Omit if not used. |
+| ?replaceExisting | Boolean | 0x03 | Whether an existing matching profile may be replaced. | None | Default: false |
+| ?makeDefault | Boolean | 0x04 | Whether to make this the default profile. | None | Default: false |
 | ?connectAfterSave | Boolean | 0x05 | Whether to start connection after saving. | None | Omit if not used. |
 
 #### Response Fields
@@ -948,7 +968,7 @@ Type: `NetworkScanWifiParams`
 
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
-| ?interfaceId | String | 0x01 | Wi-Fi station interface identifier. | maxLength=64 | Omit if not used. |
+| ?interfaceId | String | 0x01 | Wi-Fi station interface identifier. | maxLength=64 | Default: "defaults.wifiSta" |
 | ?ssidFilter | String | 0x02 | Optional SSID filter. | maxLength=64 | Omit if not used. |
 | ?timeoutMs | UInt32 | 0x03 | Scan timeout in milliseconds. | None | Omit if not used. |
 
@@ -959,7 +979,7 @@ Type: `NetworkScanWifiResult`
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
 | ?scanId | String | 0x01 | Asynchronous scan identifier. | maxLength=128 | Omit if not used. |
-| ?results | Bytes | 0x02 | JSON array of NetworkWifiScanResult objects. | maxLength=16384 | Omit if not used. |
+| ?results | Array<NetworkWifiScanResult> | 0x02 | NetworkWifiScanResult objects. | schema=NetworkWifiScanResult, array.itemType=NetworkWifiScanResult, array.itemSchema=NetworkWifiScanResult | Omit if not used. |
 | ?complete | Boolean | 0x03 | Whether returned results are complete. | None | Omit if not used. |
 
 ---
@@ -984,7 +1004,7 @@ Type: `NetworkConnectWifiParams`
 
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
-| ?interfaceId | String | 0x01 | Wi-Fi station interface identifier. | maxLength=64 | Omit if not used. |
+| ?interfaceId | String | 0x01 | Wi-Fi station interface identifier. | maxLength=64 | Default: "defaults.wifiSta" |
 | ?profileId | String | 0x02 | Saved profile identifier. | maxLength=128 | Omit if not used. |
 | ?profile | NetworkWifiProfile | 0x03 | Inline profile to connect with. | None | Omit if not used. |
 | ?timeoutMs | UInt32 | 0x04 | Connection timeout in milliseconds. | None | Omit if not used. |
@@ -1020,7 +1040,7 @@ Type: `NetworkDisconnectWifiParams`
 
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
-| ?interfaceId | String | 0x01 | Wi-Fi station interface identifier. | maxLength=64 | Omit if not used. |
+| ?interfaceId | String | 0x01 | Wi-Fi station interface identifier. | maxLength=64 | Default: "defaults.wifiSta" |
 | ?reason | Enum | 0x02 | Disconnect reason; candidate values include user_request, profile_changed, shutdown, and unknown. | None | Omit if not used. |
 
 #### Response Fields
@@ -1054,7 +1074,7 @@ Type: `NetworkGetWifiStateParams`
 
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
-| ?interfaceId | String | 0x01 | Wi-Fi station interface identifier. | maxLength=64 | Omit if not used. |
+| ?interfaceId | String | 0x01 | Wi-Fi station interface identifier. | maxLength=64 | Default: "defaults.wifiSta" |
 
 #### Response Fields
 
@@ -1092,7 +1112,7 @@ Type: `NetworkGetApConfigParams`
 
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
-| ?interfaceId | String | 0x01 | Wi-Fi AP interface identifier. | maxLength=64 | Omit if not used. |
+| ?interfaceId | String | 0x01 | Wi-Fi AP interface identifier. | maxLength=64 | Default: "defaults.wifiAp" |
 
 #### Response Fields
 
@@ -1103,7 +1123,7 @@ Type: `NetworkApConfig`
 | ?interfaceId | String | 0x01 | Wi-Fi AP interface identifier. | maxLength=64 | Omit if not used. |
 | ?enabled | Boolean | 0x02 | Whether AP should be enabled by configuration. | None | Omit if not used. |
 | ssid | String | 0x03 | AP SSID. | maxLength=64 | N/A |
-| ?hidden | Boolean | 0x04 | Whether SSID broadcast is hidden. | None | Omit if not used. |
+| ?hidden | Boolean | 0x04 | Whether SSID broadcast is hidden. | None | Default: false |
 | ?band | Enum | 0x05 | AP band. | None | Omit if not used. |
 | ?channel | UInt16 | 0x06 | AP channel. | None | Omit if not used. |
 | securityType | Enum | 0x07 | AP security type. | None | N/A |
@@ -1132,7 +1152,7 @@ Type: `NetworkSetApConfigParams`
 
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
-| ?interfaceId | String | 0x01 | Wi-Fi AP interface identifier. | maxLength=64 | Omit if not used. |
+| ?interfaceId | String | 0x01 | Wi-Fi AP interface identifier. | maxLength=64 | Default: "defaults.wifiAp" |
 | config | NetworkApConfig | 0x02 | AP configuration patch or target configuration. | None | N/A |
 
 #### Response Fields
@@ -1166,7 +1186,7 @@ Type: `NetworkApActionParams`
 
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
-| ?interfaceId | String | 0x01 | Wi-Fi AP interface identifier. | maxLength=64 | Omit if not used. |
+| ?interfaceId | String | 0x01 | Wi-Fi AP interface identifier. | maxLength=64 | Default: "defaults.wifiAp" |
 | ?reason | Enum | 0x02 | Action reason. | None | Omit if not used. |
 
 #### Response Fields
@@ -1200,7 +1220,7 @@ Type: `NetworkApActionParams`
 
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
-| ?interfaceId | String | 0x01 | Wi-Fi AP interface identifier. | maxLength=64 | Omit if not used. |
+| ?interfaceId | String | 0x01 | Wi-Fi AP interface identifier. | maxLength=64 | Default: "defaults.wifiAp" |
 | ?reason | Enum | 0x02 | Action reason. | None | Omit if not used. |
 
 #### Response Fields
@@ -1234,7 +1254,7 @@ Type: `NetworkGetApConfigParams`
 
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
-| ?interfaceId | String | 0x01 | Wi-Fi AP interface identifier. | maxLength=64 | Omit if not used. |
+| ?interfaceId | String | 0x01 | Wi-Fi AP interface identifier. | maxLength=64 | Default: "defaults.wifiAp" |
 
 #### Response Fields
 
@@ -1271,7 +1291,7 @@ Type: `NetworkGetInterfacesParams`
 
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
-| ?includeDisabled | Boolean | 0x01 | Whether disabled interfaces should be included. | None | Omit if not used. |
+| ?includeDisabled | Boolean | 0x01 | Whether disabled interfaces should be included. | None | Default: false |
 
 #### Response Fields
 
@@ -1279,7 +1299,7 @@ Type: `NetworkInterfaces`
 
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
-| interfaces | Bytes | 0x01 | JSON array of NetworkInterfaceSummary objects. | maxLength=8192 | N/A |
+| interfaces | Array<NetworkInterfaceSummary> | 0x01 | Network interface summary objects. | schema=NetworkInterfaceSummary, array.itemType=NetworkInterfaceSummary, array.itemSchema=NetworkInterfaceSummary | N/A |
 | ?defaults | NetworkDefaultInterfaceIds | 0x02 | Default interface identifiers for common roles. | None | Omit if not used. |
 
 ---
@@ -1340,7 +1360,7 @@ Type: `NetworkGetWifiCapabilitiesParams`
 
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
-| ?interfaceId | String | 0x01 | Wi-Fi station interface identifier. | maxLength=64 | Omit if not used. |
+| ?interfaceId | String | 0x01 | Wi-Fi station interface identifier. | maxLength=64 | Default: "defaults.wifiSta" |
 
 #### Response Fields
 
@@ -1349,9 +1369,9 @@ Type: `NetworkWifiCapabilities`
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
 | capability | String | 0x01 | Fixed capability name network.wifi. | maxLength=32 | N/A |
-| securityTypes | Bytes | 0x02 | JSON array of supported security type strings. | maxLength=1024 | N/A |
-| ?bands | Bytes | 0x03 | JSON array of supported Wi-Fi bands. | maxLength=512 | Omit if not used. |
-| credentialImportModes | Bytes | 0x04 | JSON array of supported credential import modes such as passphrase, pairing_token, and opaque_ref. | maxLength=512 | N/A |
+| securityTypes | Array<String> | 0x02 | Supported security type strings. | array.itemType=string | N/A |
+| ?bands | Array<String> | 0x03 | Supported Wi-Fi bands. | array.itemType=string | Omit if not used. |
+| credentialImportModes | Array<String> | 0x04 | Supported credential import modes such as passphrase, pairing_token, and opaque_ref. | array.itemType=string | N/A |
 | savedProfilesSupported | Boolean | 0x05 | Whether saved profiles are supported. | None | N/A |
 | scanSupported | Boolean | 0x06 | Whether Wi-Fi scanning is supported. | None | N/A |
 | ?autoConnectSupported | Boolean | 0x07 | Whether profiles can auto-connect. | None | Omit if not used. |
@@ -1378,7 +1398,7 @@ Type: `NetworkGetApCapabilitiesParams`
 
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
-| ?interfaceId | String | 0x01 | Wi-Fi AP interface identifier. | maxLength=64 | Omit if not used. |
+| ?interfaceId | String | 0x01 | Wi-Fi AP interface identifier. | maxLength=64 | Default: "defaults.wifiAp" |
 
 #### Response Fields
 
@@ -1387,9 +1407,9 @@ Type: `NetworkApCapabilities`
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
 | capability | String | 0x01 | Fixed capability name network.ap. | maxLength=32 | N/A |
-| securityTypes | Bytes | 0x02 | JSON array of supported security types. | maxLength=1024 | N/A |
-| ?bands | Bytes | 0x03 | JSON array of supported bands. | maxLength=512 | Omit if not used. |
-| ?credentialExportModes | Bytes | 0x04 | JSON array of credential export modes. | maxLength=512 | Omit if not used. |
+| securityTypes | Array<String> | 0x02 | Supported security types. | array.itemType=string | N/A |
+| ?bands | Array<String> | 0x03 | Supported bands. | array.itemType=string | Omit if not used. |
+| ?credentialExportModes | Array<String> | 0x04 | Credential export modes. | array.itemType=string | Omit if not used. |
 | ?clientsSupported | Boolean | 0x05 | Whether client list query and client change events are supported. | None | Omit if not used. |
 
 ---
@@ -1414,7 +1434,7 @@ Type: `NetworkGetApConfigParams`
 
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
-| ?interfaceId | String | 0x01 | Wi-Fi AP interface identifier. | maxLength=64 | Omit if not used. |
+| ?interfaceId | String | 0x01 | Wi-Fi AP interface identifier. | maxLength=64 | Default: "defaults.wifiAp" |
 
 #### Response Fields
 
@@ -1422,7 +1442,7 @@ Type: `NetworkApClients`
 
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
-| clients | Bytes | 0x01 | JSON array of NetworkApClientInfo objects. | maxLength=16384 | N/A |
+| clients | Array<NetworkApClientInfo> | 0x01 | NetworkApClientInfo objects. | schema=NetworkApClientInfo, array.itemType=NetworkApClientInfo, array.itemSchema=NetworkApClientInfo | N/A |
 
 ---
 
@@ -1466,7 +1486,7 @@ Type: `VideoOpenStreamParams`
 | ?height | UInt32 | 0x05 | Requested frame height in pixels. | None | Omit if not used. |
 | ?frameRate | UInt32 | 0x06 | Requested frame rate. | None | Omit if not used. |
 | ?bitrateKbps | UInt32 | 0x07 | Requested bitrate in kbps. | None | Omit if not used. |
-| ?streamProfile | String | 0x08 | STREAM profile name. | maxLength=64 | Omit if not used. |
+| ?streamProfile | String | 0x08 | STREAM profile name. | maxLength=64 | Default: "media.video" |
 | ?cursorUnit | Enum | 0x09 | STREAM cursor unit, such as timestampUs or frameIndex. | None | Omit if not used. |
 | ?syncGroupId | String | 0x0A | Optional synchronization group identifier. | maxLength=128 | Omit if not used. |
 | ?castSessionId | String | 0x0B | Optional cast session identifier. | maxLength=128 | Omit if not used. |
@@ -1529,7 +1549,7 @@ Type: `VideoCloseStreamResult`
 | streamId | UInt32 | 0x01 | Closed stream identifier. | None | N/A |
 | state | Enum | 0x02 | Close state, such as closing, closed, or failed. | None | N/A |
 | ?reason | Enum | 0x03 | Final close reason. | None | Omit if not used. |
-| ?alreadyClosed | Boolean | 0x04 | Whether the stream was already terminal before this request. | None | Omit if not used. |
+| ?alreadyClosed | Boolean | 0x04 | Whether the stream was already terminal before this request. | None | Default: false |
 
 ---
 
@@ -1596,7 +1616,7 @@ Type: `VideoGetStreamCapabilitiesParams`
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
 | ?source | String | 0x01 | Optional video source identifier; omit to query all visible sources. | maxLength=128 | Omit if not used. |
-| ?includeRuntimeState | Boolean | 0x02 | Whether to include current source runtime state. | None | Omit if not used. |
+| ?includeRuntimeState | Boolean | 0x02 | Whether to include current source runtime state. | None | Default: false |
 
 #### Response Fields
 
@@ -1605,10 +1625,10 @@ Type: `VideoStreamCapabilities`
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
 | capability | String | 0x01 | Fixed capability name video.stream. | maxLength=32 | N/A |
-| sources | Bytes | 0x02 | JSON array of VideoStreamSource objects. | maxLength=8192 | N/A |
-| streamProfiles | Bytes | 0x03 | JSON array of supported stream profiles, normally media.video. | maxLength=512 | N/A |
-| openModes | Bytes | 0x04 | JSON array of supported open modes, such as producer_open and receiver_pull. | maxLength=512 | N/A |
-| peerRoles | Bytes | 0x05 | JSON array of peer roles, such as receiver and transmitter. | maxLength=512 | N/A |
+| sources | Array<VideoStreamSource> | 0x02 | Video stream source objects. | schema=VideoStreamSource, array.itemType=VideoStreamSource, array.itemSchema=VideoStreamSource | N/A |
+| streamProfiles | Array<String> | 0x03 | Supported stream profiles, normally media.video. | array.itemType=string | N/A |
+| openModes | Array<String> | 0x04 | Supported open modes, such as producer_open and receiver_pull. | array.itemType=string | N/A |
+| peerRoles | Array<String> | 0x05 | Peer roles, such as receiver and transmitter. | array.itemType=string | N/A |
 | supportsSourceStateEvent | Boolean | 0x06 | Whether video.streamSourceStateChanged is supported. | None | N/A |
 | supportsSyncGroup | Boolean | 0x07 | Whether video streams can share a synchronization group with audio streams. | None | N/A |
 | flowControlManagedByRuntime | Boolean | 0x08 | Whether normal applications can rely on runtime-managed STREAM flow control. | None | N/A |
@@ -1721,7 +1741,7 @@ Type: `AudioAlgorithmConfigChangedEvent`
 | applyState | Enum | 0x02 | Apply state; values are applied or pending_restart. | None | N/A |
 | requiresAudioRestart | Boolean | 0x03 | Whether the change requires restarting the audio link or rebuilding the audio pipeline. | None | N/A |
 | config | AudioAlgorithmConfig | 0x04 | Changed or affected algorithm configuration values. | None | N/A |
-| ?changedFields | Bytes | 0x05 | Optional JSON array of changed field paths such as noiseSuppression.level. | maxLength=256 | Omit if not used. |
+| ?changedFields | Array<String> | 0x05 | Optional changed field paths such as noiseSuppression.level. | array.itemType=string | Omit if not used. |
 
 ---
 
@@ -1952,7 +1972,7 @@ Type: `NetworkWifiConfigChangedEvent`
 | ---- | :---: | :---: | ---- | :---: | ---- |
 | ?interfaceId | String | 0x01 | Wi-Fi station interface identifier. | maxLength=64 | Omit if not used. |
 | config | NetworkWifiConfig | 0x02 | New Wi-Fi configuration summary. | None | N/A |
-| ?changedFields | Bytes | 0x03 | JSON array of changed field paths. | maxLength=1024 | Omit if not used. |
+| ?changedFields | Array<String> | 0x03 | Changed field paths. | array.itemType=string | Omit if not used. |
 | ?reason | Enum | 0x04 | Change reason. | None | Omit if not used. |
 
 ---
@@ -2002,7 +2022,7 @@ Type: `NetworkWifiScanResultReportedEvent`
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
 | ?scanId | String | 0x01 | Scan identifier. | maxLength=128 | Omit if not used. |
-| ?results | Bytes | 0x02 | JSON array of NetworkWifiScanResult objects. | maxLength=16384 | Omit if not used. |
+| ?results | Array<NetworkWifiScanResult> | 0x02 | NetworkWifiScanResult objects. | schema=NetworkWifiScanResult, array.itemType=NetworkWifiScanResult, array.itemSchema=NetworkWifiScanResult | Omit if not used. |
 | complete | Boolean | 0x03 | Whether this event completes the scan. | None | N/A |
 
 ---
@@ -2028,7 +2048,7 @@ Type: `NetworkApConfigChangedEvent`
 | ---- | :---: | :---: | ---- | :---: | ---- |
 | ?interfaceId | String | 0x01 | Wi-Fi AP interface identifier. | maxLength=64 | Omit if not used. |
 | config | NetworkApConfig | 0x02 | New AP configuration. | None | N/A |
-| ?changedFields | Bytes | 0x03 | JSON array of changed field paths. | maxLength=1024 | Omit if not used. |
+| ?changedFields | Array<String> | 0x03 | Changed field paths. | array.itemType=string | Omit if not used. |
 | ?reason | Enum | 0x04 | Change reason. | None | Omit if not used. |
 
 ---
@@ -2190,18 +2210,6 @@ Capability descriptors for audio algorithm objects.
 
 ---
 
-## AudioAlgorithmCapability
-
-Device-level audio.algorithm capability summary.
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| ?configSchemaVersion | String | 0x01 | Version of the audio algorithm configuration schema exposed by the device. | maxLength=16 | Omit if not used. |
-| updatePolicy | AudioAlgorithmUpdatePolicy | 0x02 | Update and atomicity policy for set and reset operations. | None | N/A |
-| ?supportedAlgorithms | Bytes | 0x03 | Optional compact list of supported algorithm object names; JSON implementations expose names as an array of strings. | maxLength=64 | Omit if not used. |
-
----
-
 ## AudioAlgorithmPropertyCapability
 
 Descriptor for one algorithm configuration property.
@@ -2215,7 +2223,7 @@ Descriptor for one algorithm configuration property.
 | ?min | Int32 | 0x05 | Inclusive numeric minimum. | None | Omit if not used. |
 | ?max | Int32 | 0x06 | Inclusive numeric maximum. | None | Omit if not used. |
 | ?step | Int32 | 0x07 | Numeric step size. | None | Omit if not used. |
-| ?values | Bytes | 0x08 | Optional JSON array of enum values. | maxLength=128 | Omit if not used. |
+| ?values | Array<String> | 0x08 | Optional enum values. | array.itemType=string | Omit if not used. |
 | ?unit | String | 0x09 | Unit such as ms, dB, or degree. | maxLength=16 | Omit if not used. |
 | ?requiresAudioRestart | Boolean | 0x0A | Whether modifying this field requires restarting the audio link or rebuilding the audio pipeline. | None | Omit if not used. |
 
@@ -2415,21 +2423,6 @@ Noise suppression configuration object.
 
 ---
 
-## AudioStreamSource
-
-One real-time audio stream source.
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| source | String | 0x01 | Source identifier such as wireless_cast_audio. | maxLength=128 | N/A |
-| ?displayName | String | 0x02 | User-visible source name. | maxLength=128 | Omit if not used. |
-| codecs | Bytes | 0x03 | JSON array of supported audio codecs. | maxLength=512 | N/A |
-| ?sampleRates | Bytes | 0x04 | JSON array of supported sample rates in Hz. | maxLength=512 | Omit if not used. |
-| ?channels | Bytes | 0x05 | JSON array of supported channel counts. | maxLength=256 | Omit if not used. |
-| ?state | Enum | 0x06 | Runtime source state, such as available, receiving, stopped, or unavailable. | None | Omit if not used. |
-
----
-
 ## AudioStreamStats
 
 Bounded runtime statistics for an audio stream.
@@ -2522,9 +2515,9 @@ Lightweight capability modeling summary returned by device.getInfo.
 
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
-| ?domains | Bytes | 0x01 | JSON array of domain names represented by the device. | maxLength=1024 | Omit if not used. |
-| ?features | Bytes | 0x02 | JSON array of domain.feature names represented by the device. | maxLength=4096 | Omit if not used. |
-| ?profiles | Bytes | 0x03 | JSON array of profile names or product profile hints. | maxLength=1024 | Omit if not used. |
+| ?domains | Array<String> | 0x01 | Domain names represented by the device. | array.itemType=string | Omit if not used. |
+| ?features | Array<String> | 0x02 | Domain.feature names represented by the device. | array.itemType=string | Omit if not used. |
+| ?profiles | Array<String> | 0x03 | Profile names or product profile hints. | array.itemType=string | Omit if not used. |
 
 ---
 
@@ -2550,18 +2543,6 @@ Stable identity fields for the current main device.
 | ?serialNumber | String | 0x02 | Vendor serial number; may be omitted by permission policy. | maxLength=128 | Omit if not used. |
 | ?vendorId | String | 0x03 | Vendor identifier. | maxLength=64 | Omit if not used. |
 | ?productId | String | 0x04 | Product identifier. | maxLength=64 | Omit if not used. |
-
----
-
-## DeviceInfoCapability
-
-Capability descriptor for device.info.
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| readOnly | Boolean | 0x01 | device.info currently exposes only read-only information. | None | N/A |
-| ?supportsCapabilitySummary | Boolean | 0x02 | Whether device.getInfo can include DeviceCapabilitySummary. | None | Omit if not used. |
-| ?identityMerged | Boolean | 0x03 | Whether device.identity has been merged into device.info. | None | Omit if not used. |
 
 ---
 
@@ -2597,7 +2578,7 @@ Software component summary.
 
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
-| ?components | Bytes | 0x01 | JSON array of SoftwareComponent objects. | maxLength=4096 | Omit if not used. |
+| ?components | Array<SoftwareComponent> | 0x01 | Software component objects. | schema=SoftwareComponent, array.itemType=SoftwareComponent, array.itemSchema=SoftwareComponent | Omit if not used. |
 
 ---
 
@@ -2613,19 +2594,6 @@ Firmware update error details.
 
 ---
 
-## FirmwareUpdateFile
-
-One file in the firmware update manifest.
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| fileId | String | 0x01 | Manifest-scoped file identifier. | maxLength=128 | N/A |
-| ?target | String | 0x02 | Device-defined target component or partition. | maxLength=128 | Omit if not used. |
-| size | UInt64 | 0x03 | File size in bytes. | None | N/A |
-| md5 | String | 0x04 | File md5 digest as lowercase hexadecimal. | maxLength=32 | N/A |
-
----
-
 ## FirmwareUpdateManifest
 
 Minimal firmware update manifest.
@@ -2634,33 +2602,8 @@ Minimal firmware update manifest.
 | ---- | :---: | :---: | ---- | :---: | ---- |
 | ?packageId | String | 0x01 | Firmware package identifier. | maxLength=128 | Omit if not used. |
 | ?version | String | 0x02 | Target firmware version string. | maxLength=64 | Omit if not used. |
-| files | Bytes | 0x03 | JSON array of FirmwareUpdateFile objects. | maxLength=16384 | N/A |
+| files | Array<FirmwareUpdateFile> | 0x03 | Firmware update files. | schema=FirmwareUpdateFile, array.itemType=FirmwareUpdateFile, array.itemSchema=FirmwareUpdateFile | N/A |
 | ?devicePolicyVersion | String | 0x04 | Optional policy version used to interpret the package. | maxLength=64 | Omit if not used. |
-
----
-
-## FirmwareUpdateStreamBinding
-
-Binding between a manifest file and a STREAM streamId.
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| fileId | String | 0x01 | Manifest-scoped file identifier. | maxLength=128 | N/A |
-| streamId | UInt32 | 0x02 | STREAM data plane stream identifier. | None | N/A |
-
----
-
-## NetworkApClientInfo
-
-One AP client summary.
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| clientId | String | 0x01 | Client identifier. | maxLength=128 | N/A |
-| ?macAddress | String | 0x02 | Client MAC address, if available and permitted. | maxLength=32 | Omit if not used. |
-| ?displayName | String | 0x03 | Client display name. | maxLength=128 | Omit if not used. |
-| ?rssi | Int32 | 0x04 | Client RSSI in dBm. | None | Omit if not used. |
-| ?connectedSeconds | UInt32 | 0x05 | Connection age in seconds. | None | Omit if not used. |
 
 ---
 
@@ -2688,17 +2631,6 @@ Default network interface identifiers by role.
 
 ---
 
-## NetworkInterfaceCapability
-
-Capability descriptor for network.interface.
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| ?interfaceTypes | Bytes | 0x01 | JSON array of supported interface type strings. | maxLength=512 | Omit if not used. |
-| ?supportsStateEvent | Boolean | 0x02 | Whether network.interfaceStateChanged is supported. | None | Omit if not used. |
-
----
-
 ## NetworkInterfaceState
 
 Network interface administrative and link state.
@@ -2708,90 +2640,6 @@ Network interface administrative and link state.
 | ?admin | Enum | 0x01 | Administrative state; candidate values include up, down, disabled, and unknown. | None | Omit if not used. |
 | ?link | Enum | 0x02 | Link state; candidate values include up, down, dormant, unknown. | None | Omit if not used. |
 | ?speedMbps | UInt32 | 0x03 | Link speed in Mbps. | None | Omit if not used. |
-
----
-
-## NetworkInterfaceSummary
-
-Summary of one network interface.
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| interfaceId | String | 0x01 | Interface identifier. | maxLength=64 | N/A |
-| type | Enum | 0x02 | Interface type; candidate values include ethernet, wifi, cellular, usb, virtual, and unknown. | None | N/A |
-| ?displayName | String | 0x03 | User-visible interface name. | maxLength=128 | Omit if not used. |
-| ?state | NetworkInterfaceState | 0x04 | Current interface state. | None | Omit if not used. |
-
----
-
-## NetworkIpCapability
-
-Capability descriptor for network.ip.
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| ?families | Bytes | 0x01 | JSON array of supported IP families. | maxLength=256 | Omit if not used. |
-| ?modes | Bytes | 0x02 | JSON array of supported IP modes. | maxLength=512 | Omit if not used. |
-| ?applyPolicies | Bytes | 0x03 | JSON array of supported apply policies. | maxLength=512 | Omit if not used. |
-
----
-
-## NetworkWifiProfile
-
-Wi-Fi profile object used for station connection.
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| ?profileId | String | 0x01 | Profile identifier. | maxLength=128 | Omit if not used. |
-| ssid | String | 0x02 | Wi-Fi SSID. | maxLength=64 | N/A |
-| ?bssid | String | 0x03 | Optional AP BSSID. | maxLength=32 | Omit if not used. |
-| securityType | Enum | 0x04 | Security type, such as open, wpa2_psk, or wpa3_sae. | None | N/A |
-| ?credential | NetworkCredential | 0x05 | Credential descriptor or secret reference. Responses must not expose plaintext secrets. | None | Omit if not used. |
-| ?source | Enum | 0x06 | Profile source; candidate values include manual, pairing, migrated, and device_policy. | None | Omit if not used. |
-| ?persist | Boolean | 0x07 | Whether the profile should be persisted. This remains policy-controlled. | None | Omit if not used. |
-
----
-
-## NetworkWifiScanResult
-
-One Wi-Fi scan result.
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| ssid | String | 0x01 | SSID. | maxLength=64 | N/A |
-| ?bssid | String | 0x02 | BSSID. | maxLength=32 | Omit if not used. |
-| ?band | Enum | 0x03 | Wi-Fi band. | None | Omit if not used. |
-| ?channel | UInt16 | 0x04 | Channel number. | None | Omit if not used. |
-| ?rssi | Int32 | 0x05 | RSSI in dBm. | None | Omit if not used. |
-| ?securityType | Enum | 0x06 | Security type. | None | Omit if not used. |
-
----
-
-## SoftwareComponent
-
-One software component running on or hosted by the device.
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| id | String | 0x01 | Component identifier. | maxLength=64 | N/A |
-| ?name | String | 0x02 | Component display name. | maxLength=128 | Omit if not used. |
-| ?version | String | 0x03 | Component version. | maxLength=64 | Omit if not used. |
-| ?role | Enum | 0x04 | Component role, such as axtpHost, launcher, signagePlayer, agent, or unknown. | None | Omit if not used. |
-
----
-
-## VideoStreamSource
-
-One real-time video stream source.
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| source | String | 0x01 | Source identifier such as wireless_cast_video. | maxLength=128 | N/A |
-| ?displayName | String | 0x02 | User-visible source name. | maxLength=128 | Omit if not used. |
-| codecs | Bytes | 0x03 | JSON array of supported video codecs. | maxLength=512 | N/A |
-| ?resolutions | Bytes | 0x04 | JSON array of supported resolution descriptors. | maxLength=1024 | Omit if not used. |
-| ?frameRates | Bytes | 0x05 | JSON array of supported frame rates. | maxLength=512 | Omit if not used. |
-| ?state | Enum | 0x06 | Runtime source state, such as available, receiving, stopped, or unavailable. | None | Omit if not used. |
 
 ---
 
