@@ -16,11 +16,19 @@ enum class RenderBackend {
     MfD3d11,
 };
 
+enum class H264FeedMode {
+    StreamChunk,
+    AnnexBAccessUnit,
+};
+
 const char* renderBackendName(RenderBackend backend);
 RenderBackend parseRenderBackendOrNone(std::string_view text, bool* ok);
+const char* h264FeedModeName(H264FeedMode mode);
+H264FeedMode parseH264FeedModeOrDefault(std::string_view text, bool* ok);
 
 struct MediaRenderHostOptions {
     RenderBackend backend = RenderBackend::None;
+    H264FeedMode h264FeedMode = H264FeedMode::StreamChunk;
     bool enableVideo = true;
     bool enableAudio = true;
     bool startMuted = false;

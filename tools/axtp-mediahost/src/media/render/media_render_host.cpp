@@ -358,7 +358,103 @@ struct H264AccessUnit {
     bool keyframe = false;
     std::optional<VideoSize> spsSize;
     std::uint32_t nalCount = 0;
+    std::string nalSummary;
 };
+
+bool isH264VclNal(Byte nalType) {
+    return nalType >= 1 && nalType <= 5;
+}
+
+const char* h264NalTypeName(Byte nalType) {
+    switch (nalType) {
+    case 1:
+        return "non-idr";
+    case 5:
+        return "idr";
+    case 6:
+        return "sei";
+    case 7:
+        return "sps";
+    case 8:
+        return "pps";
+    case 9:
+        return "aud";
+    default:
+        return "nal";
+    }
+}
+
+std::optional<std::uint32_t> h264FirstMbInSlice(const Byte* nal, std::size_t size) {
+    if (size < 2) {
+        return std::nullopt;
+    }
+    auto rbsp = rbspFromNal(nal + 1, size - 1);
+    BitReader reader(rbsp);
+    std::uint32_t firstMb = 0;
+    if (!reader.readUE(&firstMb)) {
+        return std::nullopt;
+    }
+    return firstMb;
+}
+
+H264AccessUnit inspectH264AccessUnit(const Bytes& bytes) {
+    H264AccessUnit unit;
+
+    const auto starts = [&bytes]() {
+        std::vector<std::pair<std::size_t, std::size_t>> result;
+        std::size_t offset = 0;
+        while (auto start = findStartCode(bytes, offset)) {
+            result.push_back(*start);
+            offset = start->first + start->second;
+        }
+        return result;
+    }();
+    if (starts.empty()) {
+        unit.nalSummary = "no-annexb-start-code";
+        return unit;
+    }
+
+    std::ostringstream summary;
+    constexpr std::size_t kMaxSummaryNals = 10;
+    for (std::size_t i = 0; i < starts.size(); ++i) {
+        const auto nalStart = starts[i].first + starts[i].second;
+        const auto nalEnd = i + 1 < starts.size() ? starts[i + 1].first : bytes.size();
+        if (nalStart >= nalEnd || nalEnd > bytes.size()) {
+            continue;
+        }
+        const auto nalSize = nalEnd - nalStart;
+        const auto nalType = static_cast<Byte>(bytes[nalStart] & 0x1FU);
+        ++unit.nalCount;
+        unit.keyframe = unit.keyframe || nalType == 5;
+        if (nalType == 7) {
+            if (auto size = parseSps(bytes.data() + nalStart, nalSize)) {
+                unit.spsSize = size;
+            }
+        }
+
+        if (unit.nalCount <= kMaxSummaryNals) {
+            if (unit.nalCount > 1) {
+                summary << ",";
+            }
+            summary << static_cast<int>(nalType) << ":" << h264NalTypeName(nalType)
+                    << "(" << nalSize;
+            if (isH264VclNal(nalType)) {
+                const auto firstMb = h264FirstMbInSlice(bytes.data() + nalStart, nalSize);
+                if (firstMb.has_value()) {
+                    summary << ",mb=" << *firstMb;
+                } else {
+                    summary << ",mb=?";
+                }
+            }
+            summary << ")";
+        }
+    }
+    if (unit.nalCount > kMaxSummaryNals) {
+        summary << ",...";
+    }
+    unit.nalSummary = summary.str();
+    return unit;
+}
 
 class H264AccessUnitAssembler {
 public:
@@ -403,7 +499,7 @@ public:
 
 private:
     static bool isVclNal(Byte nalType) {
-        return nalType >= 1 && nalType <= 5;
+        return isH264VclNal(nalType);
     }
 
     static bool isBoundaryNonVcl(Byte nalType) {
@@ -414,13 +510,7 @@ private:
         if (size < 2) {
             return std::nullopt;
         }
-        auto rbsp = rbspFromNal(nal + 1, size - 1);
-        BitReader reader(rbsp);
-        std::uint32_t firstMb = 0;
-        if (!reader.readUE(&firstMb)) {
-            return std::nullopt;
-        }
-        return firstMb;
+        return h264FirstMbInSlice(nal, size);
     }
 
     std::vector<std::pair<std::size_t, std::size_t>> startCodes() const {
@@ -512,6 +602,7 @@ private:
         unit.keyframe = _currentKeyframe;
         unit.spsSize = _currentSpsSize;
         unit.nalCount = _currentNalCount;
+        unit.nalSummary = inspectH264AccessUnit(unit.bytes).nalSummary;
         units->push_back(std::move(unit));
 
         _currentAu.clear();
@@ -908,6 +999,12 @@ public:
         _streamingStarted = false;
         _width = 0;
         _height = 0;
+        _inputCount = 0;
+        _outputPollCount = 0;
+        _outputSampleCount = 0;
+        _needMoreInputCount = 0;
+        _streamChangeCount = 0;
+        _notAcceptingCount = 0;
     }
 
     bool
@@ -956,6 +1053,15 @@ public:
         if (_decoder == nullptr || accessUnit.empty()) {
             return;
         }
+        ++_inputCount;
+        const bool logInput = shouldLog(_inputCount);
+        if (logInput) {
+            std::ostringstream out;
+            out << "H264 decoder input index=" << _inputCount
+                << " bytes=" << accessUnit.size()
+                << " cursor=" << cursor;
+            logLine(_log, out.str());
+        }
         ComPtr<IMFSample> sample;
         HRESULT hr = MFCreateSample(&sample);
         if (failed(hr, _log, "MFCreateSample(video input)")) {
@@ -987,6 +1093,9 @@ public:
 
         hr = _decoder->ProcessInput(0, sample.Get(), 0);
         if (hr == MF_E_NOTACCEPTING) {
+            ++_notAcceptingCount;
+            logLine(_log,
+                    "H264 decoder input backpressure: MF_E_NOTACCEPTING, draining output");
             drainOutput(onSample);
             hr = _decoder->ProcessInput(0, sample.Get(), 0);
         }
@@ -994,10 +1103,17 @@ public:
             logLine(_log, "H264 decoder ProcessInput failed: " + hresultToString(hr));
             return;
         }
+        if (logInput) {
+            logLine(_log, "H264 decoder input accepted index=" + std::to_string(_inputCount));
+        }
         drainOutput(std::forward<Callback>(onSample));
     }
 
 private:
+    static bool shouldLog(std::uint64_t count) {
+        return count <= 50 || (count % 100) == 0;
+    }
+
     bool setOutputType() {
         if (_decoder == nullptr) {
             return false;
@@ -1044,7 +1160,9 @@ private:
             ComPtr<IMFSample> outputSample;
             MFT_OUTPUT_DATA_BUFFER output = {};
             output.dwStreamID = 0;
-            if ((streamInfo.dwFlags & MFT_OUTPUT_STREAM_PROVIDES_SAMPLES) == 0) {
+            const bool callerProvidesSample =
+                (streamInfo.dwFlags & MFT_OUTPUT_STREAM_PROVIDES_SAMPLES) == 0;
+            if (callerProvidesSample) {
                 HRESULT hr = MFCreateSample(&outputSample);
                 if (failed(hr, _log, "MFCreateSample(video output)")) {
                     return;
@@ -1061,13 +1179,28 @@ private:
 
             DWORD status = 0;
             HRESULT hr = _decoder->ProcessOutput(0, 1, &output, &status);
+            ++_outputPollCount;
             if (output.pEvents != nullptr) {
                 output.pEvents->Release();
             }
             if (hr == MF_E_TRANSFORM_NEED_MORE_INPUT) {
+                ++_needMoreInputCount;
+                if (shouldLog(_needMoreInputCount)) {
+                    std::ostringstream out;
+                    out << "H264 decoder needs more input"
+                        << " count=" << _needMoreInputCount
+                        << " outputPoll=" << _outputPollCount;
+                    logLine(_log, out.str());
+                }
                 return;
             }
             if (hr == MF_E_TRANSFORM_STREAM_CHANGE) {
+                ++_streamChangeCount;
+                std::ostringstream out;
+                out << "H264 decoder stream change"
+                    << " count=" << _streamChangeCount
+                    << " outputPoll=" << _outputPollCount;
+                logLine(_log, out.str());
                 setOutputType();
                 continue;
             }
@@ -1076,7 +1209,21 @@ private:
                 return;
             }
             if (output.pSample != nullptr) {
+                ++_outputSampleCount;
+                if (shouldLog(_outputSampleCount)) {
+                    std::ostringstream out;
+                    out << "H264 decoder output sample index=" << _outputSampleCount
+                        << " outputPoll=" << _outputPollCount
+                        << " outputStatus=0x" << std::hex << std::uppercase
+                        << output.dwStatus
+                        << " transformStatus=0x" << status;
+                    logLine(_log, out.str());
+                }
                 onSample(output.pSample);
+                if (!callerProvidesSample) {
+                    output.pSample->Release();
+                    output.pSample = nullptr;
+                }
             }
         }
     }
@@ -1087,6 +1234,12 @@ private:
     bool _streamingStarted = false;
     std::uint32_t _width = 0;
     std::uint32_t _height = 0;
+    std::uint64_t _inputCount = 0;
+    std::uint64_t _outputPollCount = 0;
+    std::uint64_t _outputSampleCount = 0;
+    std::uint64_t _needMoreInputCount = 0;
+    std::uint64_t _streamChangeCount = 0;
+    std::uint64_t _notAcceptingCount = 0;
 };
 
 class WasapiRenderer {
@@ -1536,8 +1689,9 @@ public:
         stop();
     }
 
-    bool start(RenderBackend backend) {
+    bool start(RenderBackend backend, H264FeedMode feedMode) {
         _backend = backend;
+        _feedMode = feedMode;
         _running.store(true);
         _thread = std::thread([this]() { windowThread(); });
         std::unique_lock<std::mutex> lock(_mutex);
@@ -1569,6 +1723,7 @@ public:
         std::lock_guard<std::mutex> lock(_mutex);
         _decoder.reset();
         _assembler.reset();
+        _hasPresentedVideo.store(false);
         _mainHwnd = nullptr;
         _videoHwnd = nullptr;
         _windowReady = false;
@@ -1586,7 +1741,9 @@ public:
             hwnd = _videoHwnd;
         }
         if (hwnd != nullptr) {
-            InvalidateRect(hwnd, nullptr, FALSE);
+            if (_backend == RenderBackend::SelfTest || !_hasPresentedVideo.load()) {
+                InvalidateRect(hwnd, nullptr, FALSE);
+            }
         }
     }
 
@@ -1608,9 +1765,11 @@ public:
         _accessUnitCount = 0;
         _decodedSampleCount = 0;
         _presentCount = 0;
+        _hasPresentedVideo.store(false);
         std::ostringstream out;
         out << "renderer init: video stream opened streamId=" << toHexU32(info.streamId)
-            << " codec=" << info.codec << " size=" << _width << "x" << _height;
+            << " codec=" << info.codec << " size=" << _width << "x" << _height
+            << " h264FeedMode=" << h264FeedModeName(_feedMode);
         logLine(_log, out.str());
         setStatusText("AXTP MediaHost video stream opened. Waiting for SPS/keyframe...");
     }
@@ -1630,6 +1789,25 @@ public:
                         " bytes=" + std::to_string(stream.data.size()));
         }
         ++_videoChunkCount;
+        if (_feedMode == H264FeedMode::StreamChunk) {
+            const auto unit = inspectH264AccessUnit(stream.data);
+            {
+                std::ostringstream out;
+                out << "renderer video chunk streamId=" << toHexU32(stream.streamId)
+                    << " seq=" << stream.seqId
+                    << " chunkIndex=" << _videoChunkCount
+                    << " bytes=" << stream.data.size()
+                    << " feedMode=stream-chunk"
+                    << " nalCount=" << unit.nalCount
+                    << " keyframe=" << (unit.keyframe ? "true" : "false")
+                    << " nals=" << unit.nalSummary
+                    << " cursor=" << stream.cursor;
+                logLine(_log, out.str());
+            }
+            processH264Sample(stream.data, unit, stream.cursor, "stream-chunk");
+            return;
+        }
+
         auto units = _assembler.pushChunk(stream.data);
         {
             std::ostringstream out;
@@ -1637,6 +1815,7 @@ public:
                 << " seq=" << stream.seqId
                 << " chunkIndex=" << _videoChunkCount
                 << " bytes=" << stream.data.size()
+                << " feedMode=annexb-au"
                 << " accessUnits=" << units.size()
                 << " pendingBytes=" << _assembler.pendingBytes()
                 << " cursor=" << stream.cursor;
@@ -1650,58 +1829,7 @@ public:
             return;
         }
         for (const auto& unit : units) {
-            ++_accessUnitCount;
-            if (_accessUnitCount <= 20 || (_accessUnitCount % 100) == 0) {
-                std::ostringstream out;
-                out << "renderer video AU index=" << _accessUnitCount
-                    << " bytes=" << unit.bytes.size()
-                    << " nalCount=" << unit.nalCount
-                    << " keyframe=" << (unit.keyframe ? "true" : "false");
-                logLine(_log, out.str());
-            }
-            if (unit.spsSize.has_value()) {
-                _width = unit.spsSize->width;
-                _height = unit.spsSize->height;
-                std::ostringstream out;
-                out << "renderer video SPS size=" << _width << "x" << _height;
-                logLine(_log, out.str());
-            }
-            if (_width == 0 || _height == 0) {
-                if (!_waitingLogged) {
-                    _waitingLogged = true;
-                    logLine(_log, "waiting for SPS/keyframe before H264 decode");
-                }
-                continue;
-            }
-            if (!_decoder.initialize(_presenter.deviceManager(), _width, _height)) {
-                return;
-            }
-            _decoder.processAccessUnit(unit.bytes, stream.cursor, [this](IMFSample* sample) {
-                ++_decodedSampleCount;
-                if (!_firstDecodedLogged) {
-                    _firstDecodedLogged = true;
-                    logLine(_log, "first decoded video sample");
-                } else if ((_decodedSampleCount % 100) == 0) {
-                    logLine(_log,
-                            "decoded video samples=" + std::to_string(_decodedSampleCount));
-                }
-                if (!isDxgiBackedSample(sample)) {
-                    logLine(_log,
-                            "first decoded video sample is not DXGI-backed; "
-                            "mf-d3d11 path "
-                            "requires DXVA/NV12");
-                    return;
-                }
-                if (_presenter.present(sample)) {
-                    ++_presentCount;
-                    if (!_firstPresentLogged) {
-                        _firstPresentLogged = true;
-                        logLine(_log, "first present");
-                    } else if ((_presentCount % 100) == 0) {
-                        logLine(_log, "presented video frames=" + std::to_string(_presentCount));
-                    }
-                }
-            });
+            processH264Sample(unit.bytes, unit, stream.cursor, "annexb-au");
         }
     }
 
@@ -1715,11 +1843,75 @@ public:
             _streamId = 0;
             _assembler.reset();
             _decoder.reset();
+            _hasPresentedVideo.store(false);
             setStatusText("AXTP MediaHost waiting for video stream...");
         }
     }
 
 private:
+    static bool shouldLogFrameCount(std::uint64_t count) {
+        return count <= 50 || (count % 100) == 0;
+    }
+
+    void processH264Sample(const Bytes& bytes,
+                           const H264AccessUnit& unit,
+                           std::uint64_t cursor,
+                           std::string_view source) {
+        ++_accessUnitCount;
+        if (shouldLogFrameCount(_accessUnitCount)) {
+            std::ostringstream out;
+            out << "renderer video sample index=" << _accessUnitCount
+                << " source=" << source
+                << " bytes=" << bytes.size()
+                << " nalCount=" << unit.nalCount
+                << " keyframe=" << (unit.keyframe ? "true" : "false")
+                << " nals=" << unit.nalSummary;
+            logLine(_log, out.str());
+        }
+        if (unit.spsSize.has_value()) {
+            _width = unit.spsSize->width;
+            _height = unit.spsSize->height;
+            std::ostringstream out;
+            out << "renderer video SPS size=" << _width << "x" << _height;
+            logLine(_log, out.str());
+        }
+        if (_width == 0 || _height == 0) {
+            if (!_waitingLogged) {
+                _waitingLogged = true;
+                logLine(_log, "waiting for SPS/keyframe before H264 decode");
+            }
+            return;
+        }
+        if (!_decoder.initialize(_presenter.deviceManager(), _width, _height)) {
+            return;
+        }
+        _decoder.processAccessUnit(bytes, cursor, [this](IMFSample* sample) {
+            ++_decodedSampleCount;
+            if (!_firstDecodedLogged) {
+                _firstDecodedLogged = true;
+                logLine(_log, "first decoded video sample");
+            } else if (shouldLogFrameCount(_decodedSampleCount)) {
+                logLine(_log, "decoded video samples=" + std::to_string(_decodedSampleCount));
+            }
+            if (!isDxgiBackedSample(sample)) {
+                logLine(_log,
+                        "decoded video sample is not DXGI-backed; mf-d3d11 path requires "
+                        "DXVA/NV12");
+                return;
+            }
+            if (_presenter.present(sample)) {
+                ++_presentCount;
+                _hasPresentedVideo.store(true);
+                if (!_firstPresentLogged) {
+                    _firstPresentLogged = true;
+                    logLine(_log, "first present");
+                } else if (shouldLogFrameCount(_presentCount)) {
+                    logLine(_log, "presented video frames=" + std::to_string(_presentCount));
+                }
+            }
+        });
+    }
+
     static LRESULT CALLBACK MainWindowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
         AxtpVideoRenderer* self = nullptr;
         if (message == WM_NCCREATE) {
@@ -1845,7 +2037,9 @@ private:
             return;
         }
 
-        SetTimer(videoHwnd, 1, 33, nullptr);
+        if (_backend == RenderBackend::SelfTest) {
+            SetTimer(videoHwnd, 1, 33, nullptr);
+        }
         resizeChild();
         ShowWindow(mainHwnd, SW_SHOW);
         UpdateWindow(mainHwnd);
@@ -1856,7 +2050,7 @@ private:
             TranslateMessage(&message);
             DispatchMessageW(&message);
         }
-        if (videoHwnd != nullptr) {
+        if (videoHwnd != nullptr && _backend == RenderBackend::SelfTest) {
             KillTimer(videoHwnd, 1);
         }
     }
@@ -1882,6 +2076,11 @@ private:
         HDC dc = BeginPaint(hwnd, &paintStruct);
         RECT client = {};
         GetClientRect(hwnd, &client);
+        if (_backend == RenderBackend::MfD3d11 && _hasPresentedVideo.load()) {
+            EndPaint(hwnd, &paintStruct);
+            return;
+        }
+
         HBRUSH black = CreateSolidBrush(RGB(8, 10, 12));
         FillRect(dc, &client, black);
         DeleteObject(black);
@@ -1926,7 +2125,9 @@ private:
 
     LogFn _log;
     RenderBackend _backend = RenderBackend::None;
+    H264FeedMode _feedMode = H264FeedMode::StreamChunk;
     std::atomic_bool _running{false};
+    std::atomic_bool _hasPresentedVideo{false};
     std::thread _thread;
     mutable std::mutex _mutex;
     std::condition_variable _readyCv;
@@ -1983,6 +2184,32 @@ RenderBackend parseRenderBackendOrNone(std::string_view text, bool* ok) {
     return RenderBackend::None;
 }
 
+const char* h264FeedModeName(H264FeedMode mode) {
+    switch (mode) {
+    case H264FeedMode::StreamChunk:
+        return "stream-chunk";
+    case H264FeedMode::AnnexBAccessUnit:
+        return "annexb-au";
+    }
+    return "stream-chunk";
+}
+
+H264FeedMode parseH264FeedModeOrDefault(std::string_view text, bool* ok) {
+    if (ok != nullptr) {
+        *ok = true;
+    }
+    if (text == "stream-chunk") {
+        return H264FeedMode::StreamChunk;
+    }
+    if (text == "annexb-au") {
+        return H264FeedMode::AnnexBAccessUnit;
+    }
+    if (ok != nullptr) {
+        *ok = false;
+    }
+    return H264FeedMode::StreamChunk;
+}
+
 MediaRenderHost::MediaRenderHost(LogFn log) : _log(std::move(log)) {}
 
 MediaRenderHost::~MediaRenderHost() {
@@ -2015,10 +2242,13 @@ bool MediaRenderHost::start(const MediaRenderHostOptions& options) {
     }
     _mfStarted = true;
 
-    logLine(std::string("renderer init: backend=") + renderBackendName(_options.backend));
+    std::ostringstream initLog;
+    initLog << "renderer init: backend=" << renderBackendName(_options.backend)
+            << " h264FeedMode=" << h264FeedModeName(_options.h264FeedMode);
+    logLine(initLog.str());
     if (_options.enableVideo) {
         _video = std::make_unique<AxtpVideoRenderer>(_log);
-        if (!_video->start(_options.backend)) {
+        if (!_video->start(_options.backend, _options.h264FeedMode)) {
             stop();
             return false;
         }

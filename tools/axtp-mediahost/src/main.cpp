@@ -51,6 +51,7 @@ struct CliOptions {
     bool render = false;
     bool renderBackendSpecified = false;
     axtp::mediahost::RenderBackend renderBackend = axtp::mediahost::RenderBackend::None;
+    axtp::mediahost::H264FeedMode h264FeedMode = axtp::mediahost::H264FeedMode::StreamChunk;
     bool noVideo = false;
     bool noAudio = false;
     bool logBody = false;
@@ -314,6 +315,7 @@ void printUsage() {
         << "Media options:\n"
         << "  --render                 Show a Windows video window and play received streams\n"
         << "  --render-backend <name>  none, self-test, or mf-d3d11; default mf-d3d11 with --render\n"
+        << "  --h264-feed-mode <mode>  stream-chunk (default) or annexb-au\n"
         << "  --dump-dir <dir>         Dump received video/audio bytes to .h264/.aac files\n"
         << "  --no-video               Reject video.openStream\n"
         << "  --no-audio               Reject audio.openStream\n"
@@ -475,6 +477,20 @@ bool parseOptions(int argc, char** argv, CliOptions* options) {
             options->renderBackend = backend;
             options->renderBackendSpecified = true;
             options->render = backend != axtp::mediahost::RenderBackend::None;
+            continue;
+        }
+        if (arg == "--h264-feed-mode") {
+            const auto* value = requireValue(arg.c_str());
+            if (value == nullptr) {
+                return false;
+            }
+            bool ok = false;
+            const auto mode = axtp::mediahost::parseH264FeedModeOrDefault(value, &ok);
+            if (!ok) {
+                std::cerr << "invalid --h264-feed-mode, expected stream-chunk or annexb-au\n";
+                return false;
+            }
+            options->h264FeedMode = mode;
             continue;
         }
         if (arg == "--no-video") {
@@ -715,6 +731,7 @@ int main(int argc, char** argv) {
         }
         axtp::mediahost::MediaRenderHostOptions renderOptions;
         renderOptions.backend = effectiveRenderBackend;
+        renderOptions.h264FeedMode = options.h264FeedMode;
         renderOptions.enableVideo = !options.noVideo;
         renderOptions.enableAudio = false;
         if (!renderer.start(renderOptions)) {
@@ -775,7 +792,8 @@ int main(int argc, char** argv) {
     modeLog << "MediaHost openMode=" << axtp::mediahost::openModeName(options.openMode)
             << " video=" << (mediaOptions.acceptVideo ? "enabled" : "disabled")
             << " audio=" << (mediaOptions.acceptAudio ? "enabled" : "disabled")
-            << " renderBackend=" << axtp::mediahost::renderBackendName(effectiveRenderBackend);
+            << " renderBackend=" << axtp::mediahost::renderBackendName(effectiveRenderBackend)
+            << " h264FeedMode=" << axtp::mediahost::h264FeedModeName(options.h264FeedMode);
     if (axtp::mediahost::receiverPullEnabled(options.openMode)) {
         modeLog << " receiver-pull=wait source-state events then send openStream";
     }
@@ -823,6 +841,7 @@ int main(int argc, char** argv) {
     if (effectiveRenderBackend != axtp::mediahost::RenderBackend::None) {
         axtp::mediahost::MediaRenderHostOptions renderOptions;
         renderOptions.backend = effectiveRenderBackend;
+        renderOptions.h264FeedMode = options.h264FeedMode;
         renderOptions.enableVideo = !options.noVideo;
         renderOptions.enableAudio = !options.noAudio;
         if (!renderer.start(renderOptions)) {
