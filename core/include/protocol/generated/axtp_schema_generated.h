@@ -76,15 +76,15 @@ inline constexpr FieldDescriptor kControlAcceptBodyFields[] = {
 inline constexpr FieldDescriptor kAudioAlgorithmCapabilityFields[] = {
     { 0x01, "configSchemaVersion", FieldType::String, false, 0, 0 },
     { 0x02, "updatePolicy", FieldType::Object, true, 0, 0 },
-    { 0x03, "supportedAlgorithms", FieldType::Bytes, false, 0, 0 },
+    { 0x03, "supportedAlgorithms", FieldType::Array, false, 0, 0 },
 };
 
 inline constexpr FieldDescriptor kAudioGetAlgorithmCapabilitiesRequestFields[] = {
-    { 0x01, "items", FieldType::Bytes, false, 0, 0 },
+    { 0x01, "items", FieldType::Array, false, 0, 0 },
 };
 
 inline constexpr FieldDescriptor kAudioGetAlgorithmConfigRequestFields[] = {
-    { 0x01, "items", FieldType::Bytes, false, 0, 0 },
+    { 0x01, "items", FieldType::Array, false, 0, 0 },
 };
 
 inline constexpr FieldDescriptor kAudioSetAlgorithmConfigRequestFields[] = {
@@ -106,7 +106,7 @@ inline constexpr FieldDescriptor kAudioAlgorithmConfigChangedEventFields[] = {
     { 0x02, "applyState", FieldType::Enum, true, 0, 0 },
     { 0x03, "requiresAudioRestart", FieldType::Bool, true, 0, 0 },
     { 0x04, "config", FieldType::Object, true, 0, 0 },
-    { 0x05, "changedFields", FieldType::Bytes, false, 0, 0 },
+    { 0x05, "changedFields", FieldType::Array, false, 0, 0 },
 };
 
 inline constexpr FieldDescriptor kAudioGetAlgorithmCapabilitiesResponseFields[] = {
@@ -140,7 +140,7 @@ inline constexpr FieldDescriptor kAudioAlgorithmPropertyCapabilityFields[] = {
     { 0x05, "min", FieldType::Int32, false, 0, 0 },
     { 0x06, "max", FieldType::Int32, false, 0, 0 },
     { 0x07, "step", FieldType::Int32, false, 0, 0 },
-    { 0x08, "values", FieldType::Bytes, false, 0, 0 },
+    { 0x08, "values", FieldType::Array, false, 0, 0 },
     { 0x09, "unit", FieldType::String, false, 0, 0 },
     { 0x0A, "requiresAudioRestart", FieldType::Bool, false, 0, 0 },
 };
@@ -275,22 +275,22 @@ inline constexpr FieldDescriptor kAudioGetStreamCapabilitiesParamsFields[] = {
 
 inline constexpr FieldDescriptor kAudioStreamCapabilitiesFields[] = {
     { 0x01, "capability", FieldType::String, true, 0, 0 },
-    { 0x02, "sources", FieldType::Bytes, true, 0, 0 },
-    { 0x03, "streamProfiles", FieldType::Bytes, true, 0, 0 },
-    { 0x04, "openModes", FieldType::Bytes, true, 0, 0 },
-    { 0x05, "peerRoles", FieldType::Bytes, true, 0, 0 },
+    { 0x02, "sources", FieldType::Array, true, 0, 0 },
+    { 0x03, "streamProfiles", FieldType::Array, true, 0, 0 },
+    { 0x04, "openModes", FieldType::Array, true, 0, 0 },
+    { 0x05, "peerRoles", FieldType::Array, true, 0, 0 },
     { 0x06, "supportsSourceStateEvent", FieldType::Bool, true, 0, 0 },
     { 0x07, "supportsSyncGroup", FieldType::Bool, true, 0, 0 },
     { 0x08, "flowControlManagedByRuntime", FieldType::Bool, true, 0, 0 },
-    { 0x09, "aacTransportFormats", FieldType::Bytes, false, 0, 0 },
+    { 0x09, "aacTransportFormats", FieldType::Array, false, 0, 0 },
 };
 
 inline constexpr FieldDescriptor kAudioStreamSourceFields[] = {
     { 0x01, "source", FieldType::String, true, 0, 0 },
     { 0x02, "displayName", FieldType::String, false, 0, 0 },
-    { 0x03, "codecs", FieldType::Bytes, true, 0, 0 },
-    { 0x04, "sampleRates", FieldType::Bytes, false, 0, 0 },
-    { 0x05, "channels", FieldType::Bytes, false, 0, 0 },
+    { 0x03, "codecs", FieldType::Array, true, 0, 0 },
+    { 0x04, "sampleRates", FieldType::Array, false, 0, 0 },
+    { 0x05, "channels", FieldType::Array, false, 0, 0 },
     { 0x06, "state", FieldType::Enum, false, 0, 0 },
 };
 
@@ -445,7 +445,7 @@ inline constexpr FieldDescriptor kDeviceOsFields[] = {
 };
 
 inline constexpr FieldDescriptor kDeviceSoftwareFields[] = {
-    { 0x01, "components", FieldType::Bytes, false, 0, 0 },
+    { 0x01, "components", FieldType::Array, false, 0, 0 },
 };
 
 inline constexpr FieldDescriptor kSoftwareComponentFields[] = {
@@ -462,9 +462,9 @@ inline constexpr FieldDescriptor kDeviceAxtpRuntimeFields[] = {
 };
 
 inline constexpr FieldDescriptor kDeviceCapabilitySummaryFields[] = {
-    { 0x01, "domains", FieldType::Bytes, false, 0, 0 },
-    { 0x02, "features", FieldType::Bytes, false, 0, 0 },
-    { 0x03, "profiles", FieldType::Bytes, false, 0, 0 },
+    { 0x01, "domains", FieldType::Array, false, 0, 0 },
+    { 0x02, "features", FieldType::Array, false, 0, 0 },
+    { 0x03, "profiles", FieldType::Array, false, 0, 0 },
 };
 
 inline constexpr FieldDescriptor kDeviceInfoCapabilityFields[] = {
@@ -490,7 +490,7 @@ inline constexpr FieldDescriptor kBeginUpdateParamsFields[] = {
 inline constexpr FieldDescriptor kBeginUpdateResultFields[] = {
     { 0x01, "updateSessionId", FieldType::String, true, 0, 0 },
     { 0x02, "state", FieldType::Enum, true, 0, 0 },
-    { 0x03, "streams", FieldType::Bytes, true, 0, 0 },
+    { 0x03, "streams", FieldType::Array, true, 0, 0 },
     { 0x04, "chunkSize", FieldType::Uint32, false, 0, 0 },
 };
 
@@ -511,7 +511,7 @@ inline constexpr FieldDescriptor kGetUpdateStateParamsFields[] = {
 inline constexpr FieldDescriptor kFirmwareUpdateManifestFields[] = {
     { 0x01, "packageId", FieldType::String, false, 0, 0 },
     { 0x02, "version", FieldType::String, false, 0, 0 },
-    { 0x03, "files", FieldType::Bytes, true, 0, 0 },
+    { 0x03, "files", FieldType::Array, true, 0, 0 },
     { 0x04, "devicePolicyVersion", FieldType::String, false, 0, 0 },
 };
 
@@ -563,7 +563,7 @@ inline constexpr FieldDescriptor kNetworkGetInterfaceInfoParamsFields[] = {
 };
 
 inline constexpr FieldDescriptor kNetworkInterfacesFields[] = {
-    { 0x01, "interfaces", FieldType::Bytes, true, 0, 0 },
+    { 0x01, "interfaces", FieldType::Array, true, 0, 0 },
     { 0x02, "defaults", FieldType::Object, false, 0, 0 },
 };
 
@@ -618,7 +618,7 @@ inline constexpr FieldDescriptor kNetworkIpConfigFields[] = {
     { 0x04, "address", FieldType::String, false, 0, 0 },
     { 0x05, "prefixLength", FieldType::Uint8, false, 0, 128 },
     { 0x06, "gateway", FieldType::String, false, 0, 0 },
-    { 0x07, "dns", FieldType::Bytes, false, 0, 0 },
+    { 0x07, "dns", FieldType::Array, false, 0, 0 },
 };
 
 inline constexpr FieldDescriptor kNetworkGetWifiCapabilitiesParamsFields[] = {
@@ -636,9 +636,9 @@ inline constexpr FieldDescriptor kNetworkGetWifiStateParamsFields[] = {
 
 inline constexpr FieldDescriptor kNetworkWifiCapabilitiesFields[] = {
     { 0x01, "capability", FieldType::String, true, 0, 0 },
-    { 0x02, "securityTypes", FieldType::Bytes, true, 0, 0 },
-    { 0x03, "bands", FieldType::Bytes, false, 0, 0 },
-    { 0x04, "credentialImportModes", FieldType::Bytes, true, 0, 0 },
+    { 0x02, "securityTypes", FieldType::Array, true, 0, 0 },
+    { 0x03, "bands", FieldType::Array, false, 0, 0 },
+    { 0x04, "credentialImportModes", FieldType::Array, true, 0, 0 },
     { 0x05, "savedProfilesSupported", FieldType::Bool, true, 0, 0 },
     { 0x06, "scanSupported", FieldType::Bool, true, 0, 0 },
     { 0x07, "autoConnectSupported", FieldType::Bool, false, 0, 0 },
@@ -646,7 +646,7 @@ inline constexpr FieldDescriptor kNetworkWifiCapabilitiesFields[] = {
 
 inline constexpr FieldDescriptor kNetworkWifiConfigFields[] = {
     { 0x01, "interfaceId", FieldType::String, false, 0, 0 },
-    { 0x02, "profiles", FieldType::Bytes, false, 0, 0 },
+    { 0x02, "profiles", FieldType::Array, false, 0, 0 },
     { 0x03, "defaultProfileId", FieldType::String, false, 0, 0 },
 };
 
@@ -688,7 +688,7 @@ inline constexpr FieldDescriptor kNetworkScanWifiParamsFields[] = {
 
 inline constexpr FieldDescriptor kNetworkScanWifiResultFields[] = {
     { 0x01, "scanId", FieldType::String, false, 0, 0 },
-    { 0x02, "results", FieldType::Bytes, false, 0, 0 },
+    { 0x02, "results", FieldType::Array, false, 0, 0 },
     { 0x03, "complete", FieldType::Bool, false, 0, 0 },
 };
 
@@ -738,9 +738,9 @@ inline constexpr FieldDescriptor kNetworkGetApConfigParamsFields[] = {
 
 inline constexpr FieldDescriptor kNetworkApCapabilitiesFields[] = {
     { 0x01, "capability", FieldType::String, true, 0, 0 },
-    { 0x02, "securityTypes", FieldType::Bytes, true, 0, 0 },
-    { 0x03, "bands", FieldType::Bytes, false, 0, 0 },
-    { 0x04, "credentialExportModes", FieldType::Bytes, false, 0, 0 },
+    { 0x02, "securityTypes", FieldType::Array, true, 0, 0 },
+    { 0x03, "bands", FieldType::Array, false, 0, 0 },
+    { 0x04, "credentialExportModes", FieldType::Array, false, 0, 0 },
     { 0x05, "clientsSupported", FieldType::Bool, false, 0, 0 },
 };
 
@@ -786,7 +786,7 @@ inline constexpr FieldDescriptor kNetworkApActionResultFields[] = {
 };
 
 inline constexpr FieldDescriptor kNetworkApClientsFields[] = {
-    { 0x01, "clients", FieldType::Bytes, true, 0, 0 },
+    { 0x01, "clients", FieldType::Array, true, 0, 0 },
 };
 
 inline constexpr FieldDescriptor kNetworkApClientInfoFields[] = {
@@ -815,7 +815,7 @@ inline constexpr FieldDescriptor kNetworkIpConfigChangedEventFields[] = {
 inline constexpr FieldDescriptor kNetworkWifiConfigChangedEventFields[] = {
     { 0x01, "interfaceId", FieldType::String, false, 0, 0 },
     { 0x02, "config", FieldType::Object, true, 0, 0 },
-    { 0x03, "changedFields", FieldType::Bytes, false, 0, 0 },
+    { 0x03, "changedFields", FieldType::Array, false, 0, 0 },
     { 0x04, "reason", FieldType::Enum, false, 0, 0 },
 };
 
@@ -827,14 +827,14 @@ inline constexpr FieldDescriptor kNetworkWifiStateChangedEventFields[] = {
 
 inline constexpr FieldDescriptor kNetworkWifiScanResultReportedEventFields[] = {
     { 0x01, "scanId", FieldType::String, false, 0, 0 },
-    { 0x02, "results", FieldType::Bytes, false, 0, 0 },
+    { 0x02, "results", FieldType::Array, false, 0, 0 },
     { 0x03, "complete", FieldType::Bool, true, 0, 0 },
 };
 
 inline constexpr FieldDescriptor kNetworkApConfigChangedEventFields[] = {
     { 0x01, "interfaceId", FieldType::String, false, 0, 0 },
     { 0x02, "config", FieldType::Object, true, 0, 0 },
-    { 0x03, "changedFields", FieldType::Bytes, false, 0, 0 },
+    { 0x03, "changedFields", FieldType::Array, false, 0, 0 },
     { 0x04, "reason", FieldType::Enum, false, 0, 0 },
 };
 
@@ -851,14 +851,14 @@ inline constexpr FieldDescriptor kNetworkApClientChangedEventFields[] = {
 };
 
 inline constexpr FieldDescriptor kNetworkInterfaceCapabilityFields[] = {
-    { 0x01, "interfaceTypes", FieldType::Bytes, false, 0, 0 },
+    { 0x01, "interfaceTypes", FieldType::Array, false, 0, 0 },
     { 0x02, "supportsStateEvent", FieldType::Bool, false, 0, 0 },
 };
 
 inline constexpr FieldDescriptor kNetworkIpCapabilityFields[] = {
-    { 0x01, "families", FieldType::Bytes, false, 0, 0 },
-    { 0x02, "modes", FieldType::Bytes, false, 0, 0 },
-    { 0x03, "applyPolicies", FieldType::Bytes, false, 0, 0 },
+    { 0x01, "families", FieldType::Array, false, 0, 0 },
+    { 0x02, "modes", FieldType::Array, false, 0, 0 },
+    { 0x03, "applyPolicies", FieldType::Array, false, 0, 0 },
 };
 
 inline constexpr FieldDescriptor kVideoGetStreamCapabilitiesParamsFields[] = {
@@ -868,10 +868,10 @@ inline constexpr FieldDescriptor kVideoGetStreamCapabilitiesParamsFields[] = {
 
 inline constexpr FieldDescriptor kVideoStreamCapabilitiesFields[] = {
     { 0x01, "capability", FieldType::String, true, 0, 0 },
-    { 0x02, "sources", FieldType::Bytes, true, 0, 0 },
-    { 0x03, "streamProfiles", FieldType::Bytes, true, 0, 0 },
-    { 0x04, "openModes", FieldType::Bytes, true, 0, 0 },
-    { 0x05, "peerRoles", FieldType::Bytes, true, 0, 0 },
+    { 0x02, "sources", FieldType::Array, true, 0, 0 },
+    { 0x03, "streamProfiles", FieldType::Array, true, 0, 0 },
+    { 0x04, "openModes", FieldType::Array, true, 0, 0 },
+    { 0x05, "peerRoles", FieldType::Array, true, 0, 0 },
     { 0x06, "supportsSourceStateEvent", FieldType::Bool, true, 0, 0 },
     { 0x07, "supportsSyncGroup", FieldType::Bool, true, 0, 0 },
     { 0x08, "flowControlManagedByRuntime", FieldType::Bool, true, 0, 0 },
@@ -880,9 +880,9 @@ inline constexpr FieldDescriptor kVideoStreamCapabilitiesFields[] = {
 inline constexpr FieldDescriptor kVideoStreamSourceFields[] = {
     { 0x01, "source", FieldType::String, true, 0, 0 },
     { 0x02, "displayName", FieldType::String, false, 0, 0 },
-    { 0x03, "codecs", FieldType::Bytes, true, 0, 0 },
-    { 0x04, "resolutions", FieldType::Bytes, false, 0, 0 },
-    { 0x05, "frameRates", FieldType::Bytes, false, 0, 0 },
+    { 0x03, "codecs", FieldType::Array, true, 0, 0 },
+    { 0x04, "resolutions", FieldType::Array, false, 0, 0 },
+    { 0x05, "frameRates", FieldType::Array, false, 0, 0 },
     { 0x06, "state", FieldType::Enum, false, 0, 0 },
 };
 

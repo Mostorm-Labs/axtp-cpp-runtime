@@ -1015,17 +1015,17 @@ struct AudioAlgorithmCapability {
     const char* configSchemaVersion = nullptr;
     bool has_configSchemaVersion = false;
     std::uint32_t updatePolicy = 0;
-    const std::uint8_t* supportedAlgorithms = nullptr;
+    std::uint32_t supportedAlgorithms = 0;
     bool has_supportedAlgorithms = false;
 };
 
 struct AudioGetAlgorithmCapabilitiesRequest {
-    const std::uint8_t* items = nullptr;
+    std::uint32_t items = 0;
     bool has_items = false;
 };
 
 struct AudioGetAlgorithmConfigRequest {
-    const std::uint8_t* items = nullptr;
+    std::uint32_t items = 0;
     bool has_items = false;
 };
 
@@ -1048,7 +1048,7 @@ struct AudioAlgorithmConfigChangedEvent {
     std::uint32_t applyState = 0;
     bool requiresAudioRestart = false;
     std::uint32_t config = 0;
-    const std::uint8_t* changedFields = nullptr;
+    std::uint32_t changedFields = 0;
     bool has_changedFields = false;
 };
 
@@ -1097,7 +1097,7 @@ struct AudioAlgorithmPropertyCapability {
     bool has_max = false;
     std::int32_t step = 0;
     bool has_step = false;
-    const std::uint8_t* values = nullptr;
+    std::uint32_t values = 0;
     bool has_values = false;
     const char* unit = nullptr;
     bool has_unit = false;
@@ -1301,14 +1301,14 @@ struct AudioGetStreamCapabilitiesParams {
 
 struct AudioStreamCapabilities {
     const char* capability = nullptr;
-    const std::uint8_t* sources = nullptr;
-    const std::uint8_t* streamProfiles = nullptr;
-    const std::uint8_t* openModes = nullptr;
-    const std::uint8_t* peerRoles = nullptr;
+    std::uint32_t sources = 0;
+    std::uint32_t streamProfiles = 0;
+    std::uint32_t openModes = 0;
+    std::uint32_t peerRoles = 0;
     bool supportsSourceStateEvent = false;
     bool supportsSyncGroup = false;
     bool flowControlManagedByRuntime = false;
-    const std::uint8_t* aacTransportFormats = nullptr;
+    std::uint32_t aacTransportFormats = 0;
     bool has_aacTransportFormats = false;
 };
 
@@ -1316,10 +1316,10 @@ struct AudioStreamSource {
     const char* source = nullptr;
     const char* displayName = nullptr;
     bool has_displayName = false;
-    const std::uint8_t* codecs = nullptr;
-    const std::uint8_t* sampleRates = nullptr;
+    std::uint32_t codecs = 0;
+    std::uint32_t sampleRates = 0;
     bool has_sampleRates = false;
-    const std::uint8_t* channels = nullptr;
+    std::uint32_t channels = 0;
     bool has_channels = false;
     std::uint32_t state = 0;
     bool has_state = false;
@@ -1537,7 +1537,7 @@ struct DeviceOs {
 };
 
 struct DeviceSoftware {
-    const std::uint8_t* components = nullptr;
+    std::uint32_t components = 0;
     bool has_components = false;
 };
 
@@ -1561,11 +1561,11 @@ struct DeviceAxtpRuntime {
 };
 
 struct DeviceCapabilitySummary {
-    const std::uint8_t* domains = nullptr;
+    std::uint32_t domains = 0;
     bool has_domains = false;
-    const std::uint8_t* features = nullptr;
+    std::uint32_t features = 0;
     bool has_features = false;
-    const std::uint8_t* profiles = nullptr;
+    std::uint32_t profiles = 0;
     bool has_profiles = false;
 };
 
@@ -1596,7 +1596,7 @@ struct BeginUpdateParams {
 struct BeginUpdateResult {
     const char* updateSessionId = nullptr;
     std::uint32_t state = 0;
-    const std::uint8_t* streams = nullptr;
+    std::uint32_t streams = 0;
     std::uint32_t chunkSize = 0;
     bool has_chunkSize = false;
 };
@@ -1620,7 +1620,7 @@ struct FirmwareUpdateManifest {
     bool has_packageId = false;
     const char* version = nullptr;
     bool has_version = false;
-    const std::uint8_t* files = nullptr;
+    std::uint32_t files = 0;
     const char* devicePolicyVersion = nullptr;
     bool has_devicePolicyVersion = false;
 };
@@ -1683,7 +1683,7 @@ struct NetworkGetInterfaceInfoParams {
 };
 
 struct NetworkInterfaces {
-    const std::uint8_t* interfaces = nullptr;
+    std::uint32_t interfaces = 0;
     std::uint32_t defaults = 0;
     bool has_defaults = false;
 };
@@ -1759,7 +1759,7 @@ struct NetworkIpConfig {
     bool has_prefixLength = false;
     const char* gateway = nullptr;
     bool has_gateway = false;
-    const std::uint8_t* dns = nullptr;
+    std::uint32_t dns = 0;
     bool has_dns = false;
 };
 
@@ -1782,10 +1782,10 @@ struct NetworkGetWifiStateParams {
 
 struct NetworkWifiCapabilities {
     const char* capability = nullptr;
-    const std::uint8_t* securityTypes = nullptr;
-    const std::uint8_t* bands = nullptr;
+    std::uint32_t securityTypes = 0;
+    std::uint32_t bands = 0;
     bool has_bands = false;
-    const std::uint8_t* credentialImportModes = nullptr;
+    std::uint32_t credentialImportModes = 0;
     bool savedProfilesSupported = false;
     bool scanSupported = false;
     bool autoConnectSupported = false;
@@ -1795,7 +1795,7 @@ struct NetworkWifiCapabilities {
 struct NetworkWifiConfig {
     const char* interfaceId = nullptr;
     bool has_interfaceId = false;
-    const std::uint8_t* profiles = nullptr;
+    std::uint32_t profiles = 0;
     bool has_profiles = false;
     const char* defaultProfileId = nullptr;
     bool has_defaultProfileId = false;
@@ -1856,7 +1856,7 @@ struct NetworkScanWifiParams {
 struct NetworkScanWifiResult {
     const char* scanId = nullptr;
     bool has_scanId = false;
-    const std::uint8_t* results = nullptr;
+    std::uint32_t results = 0;
     bool has_results = false;
     bool complete = false;
     bool has_complete = false;
@@ -1927,10 +1927,10 @@ struct NetworkGetApConfigParams {
 
 struct NetworkApCapabilities {
     const char* capability = nullptr;
-    const std::uint8_t* securityTypes = nullptr;
-    const std::uint8_t* bands = nullptr;
+    std::uint32_t securityTypes = 0;
+    std::uint32_t bands = 0;
     bool has_bands = false;
-    const std::uint8_t* credentialExportModes = nullptr;
+    std::uint32_t credentialExportModes = 0;
     bool has_credentialExportModes = false;
     bool clientsSupported = false;
     bool has_clientsSupported = false;
@@ -1992,7 +1992,7 @@ struct NetworkApActionResult {
 };
 
 struct NetworkApClients {
-    const std::uint8_t* clients = nullptr;
+    std::uint32_t clients = 0;
 };
 
 struct NetworkApClientInfo {
@@ -2031,7 +2031,7 @@ struct NetworkWifiConfigChangedEvent {
     const char* interfaceId = nullptr;
     bool has_interfaceId = false;
     std::uint32_t config = 0;
-    const std::uint8_t* changedFields = nullptr;
+    std::uint32_t changedFields = 0;
     bool has_changedFields = false;
     std::uint32_t reason = 0;
     bool has_reason = false;
@@ -2048,7 +2048,7 @@ struct NetworkWifiStateChangedEvent {
 struct NetworkWifiScanResultReportedEvent {
     const char* scanId = nullptr;
     bool has_scanId = false;
-    const std::uint8_t* results = nullptr;
+    std::uint32_t results = 0;
     bool has_results = false;
     bool complete = false;
 };
@@ -2057,7 +2057,7 @@ struct NetworkApConfigChangedEvent {
     const char* interfaceId = nullptr;
     bool has_interfaceId = false;
     std::uint32_t config = 0;
-    const std::uint8_t* changedFields = nullptr;
+    std::uint32_t changedFields = 0;
     bool has_changedFields = false;
     std::uint32_t reason = 0;
     bool has_reason = false;
@@ -2079,18 +2079,18 @@ struct NetworkApClientChangedEvent {
 };
 
 struct NetworkInterfaceCapability {
-    const std::uint8_t* interfaceTypes = nullptr;
+    std::uint32_t interfaceTypes = 0;
     bool has_interfaceTypes = false;
     bool supportsStateEvent = false;
     bool has_supportsStateEvent = false;
 };
 
 struct NetworkIpCapability {
-    const std::uint8_t* families = nullptr;
+    std::uint32_t families = 0;
     bool has_families = false;
-    const std::uint8_t* modes = nullptr;
+    std::uint32_t modes = 0;
     bool has_modes = false;
-    const std::uint8_t* applyPolicies = nullptr;
+    std::uint32_t applyPolicies = 0;
     bool has_applyPolicies = false;
 };
 
@@ -2103,10 +2103,10 @@ struct VideoGetStreamCapabilitiesParams {
 
 struct VideoStreamCapabilities {
     const char* capability = nullptr;
-    const std::uint8_t* sources = nullptr;
-    const std::uint8_t* streamProfiles = nullptr;
-    const std::uint8_t* openModes = nullptr;
-    const std::uint8_t* peerRoles = nullptr;
+    std::uint32_t sources = 0;
+    std::uint32_t streamProfiles = 0;
+    std::uint32_t openModes = 0;
+    std::uint32_t peerRoles = 0;
     bool supportsSourceStateEvent = false;
     bool supportsSyncGroup = false;
     bool flowControlManagedByRuntime = false;
@@ -2116,10 +2116,10 @@ struct VideoStreamSource {
     const char* source = nullptr;
     const char* displayName = nullptr;
     bool has_displayName = false;
-    const std::uint8_t* codecs = nullptr;
-    const std::uint8_t* resolutions = nullptr;
+    std::uint32_t codecs = 0;
+    std::uint32_t resolutions = 0;
     bool has_resolutions = false;
-    const std::uint8_t* frameRates = nullptr;
+    std::uint32_t frameRates = 0;
     bool has_frameRates = false;
     std::uint32_t state = 0;
     bool has_state = false;
