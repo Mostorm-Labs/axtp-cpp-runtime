@@ -1,7 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import YAML from "yaml";
-import type { ErrorCode, Event, Field, Method, Schema } from "./models.js";
+import type { Capability, ErrorCode, Event, Field, Method, Schema } from "./models.js";
 import type { ProtocolModel, TypeDefinition, TypeField } from "./protocolModel.js";
 import { loadProtocolDefinitionFromRaw } from "./protocolLoader.js";
 import type { ProtocolSourceModel } from "./sourceModel.js";
@@ -20,16 +20,29 @@ function schemaRef(name: string | undefined, emptyNames: Set<string>): string {
 }
 
 function fieldToTypeField(field: Field): TypeField {
+  const itemType = field.array?.itemType ?? field.array?.itemSchema ?? field.schema;
+  const itemSchema = field.array?.itemSchema ?? field.schema;
+  const enumValues = Array.isArray(field.enum)
+    ? field.enum.map(String)
+    : field.enum === undefined ? undefined : [String(field.enum)];
   return {
     fieldId: field.id,
     name: field.name,
-    type: field.type === "array" ? "bytes" : field.type,
+    type: field.type,
     required: field.required,
     min: typeof field.min === "number" ? field.min : undefined,
     max: typeof field.max === "number" ? field.max : undefined,
     maxLength: field.maxLength,
+    default: field.default,
     deprecated: field.deprecated || undefined,
     derivedFrom: field.derivedFrom,
+    schema: field.schema,
+    enumValues,
+    repeated: field.repeated,
+    array: field.type === "array" || field.repeated ? {
+      itemType,
+      itemSchema
+    } : undefined,
     description: field.description
   };
 }
@@ -139,6 +152,19 @@ function errorToProtocol(error: ErrorCode): Record<string, unknown> {
   };
 }
 
+function capabilityToProtocol(capability: Capability): Record<string, unknown> {
+  return {
+    name: capability.name,
+    description: capability.description,
+    capabilityId: capability.id,
+    domain: capability.domain,
+    since: capability.since ?? "1.0.0",
+    status: protocolStatus(capability.status),
+    type: capability.type,
+    schema: capability.schema
+  };
+}
+
 function defaultProfiles(source: ProtocolSourceModel): Array<Record<string, unknown>> {
   const requiredMethods = source.mvpProfile.methods;
   const requiredEvents = source.mvpProfile.events;
@@ -176,6 +202,7 @@ export function buildProtocolDefinitionRaw(source: ProtocolSourceModel): Record<
     methods: source.methods.map((method) => methodToProtocol(method, emptyNames)),
     events: source.events.map((event) => eventToProtocol(event, emptyNames)),
     errors: source.errors.map(errorToProtocol),
+    capabilities: source.capabilities.map(capabilityToProtocol),
     profiles: [...defaultProfiles(source), ...source.profiles]
   };
 }

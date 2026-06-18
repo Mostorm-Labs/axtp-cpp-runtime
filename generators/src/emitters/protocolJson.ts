@@ -21,6 +21,7 @@ export function toProtocolJson(model: ProtocolModel): Record<string, unknown> {
     methods: model.methods,
     events: model.events,
     errors: model.errors,
+    capabilities: model.capabilities,
     profiles: model.profiles
   };
 }

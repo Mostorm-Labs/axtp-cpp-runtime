@@ -4,6 +4,7 @@ import YAML from "yaml";
 import { GeneratorError } from "./errors.js";
 import type {
   CompatibilityDefinition,
+  CapabilityDefinition,
   ControlDefinition,
   ErrorDefinition,
   EventDefinition,
@@ -48,7 +49,12 @@ function optionalNumber(value: unknown): number | undefined {
   return typeof value === "number" ? value : undefined;
 }
 
+function optionalString(value: unknown): string | undefined {
+  return value === undefined ? undefined : String(value);
+}
+
 function mapSchemaField(field: any, schemaName: string): SchemaField {
+  const enumValues = field.enumValues ?? field.enum;
   return {
     fieldId: normalizeId(field.fieldId, `${schemaName}.${field.name}`),
     name: String(field.name),
@@ -57,8 +63,16 @@ function mapSchemaField(field: any, schemaName: string): SchemaField {
     min: optionalNumber(field.min),
     max: optionalNumber(field.max),
     maxLength: optionalNumber(field.maxLength),
+    default: field.default,
     deprecated: field.deprecated === undefined ? undefined : Boolean(field.deprecated),
-    derivedFrom: field.derivedFrom === undefined ? undefined : String(field.derivedFrom),
+    derivedFrom: optionalString(field.derivedFrom),
+    schema: optionalString(field.schema),
+    enumValues: enumValues === undefined ? undefined : asStringArray(enumValues),
+    repeated: field.repeated === undefined ? undefined : Boolean(field.repeated),
+    array: field.array === undefined ? undefined : {
+      itemType: optionalString(field.array?.itemType),
+      itemSchema: optionalString(field.array?.itemSchema)
+    },
     description: field.description === undefined ? undefined : String(field.description)
   };
 }
@@ -122,6 +136,19 @@ function mapErrors(errors: unknown): ErrorDefinition[] {
     severity: String(item.severity),
     retryable: Boolean(item.retryable),
     message: String(item.message)
+  }));
+}
+
+function mapCapabilities(capabilities: unknown): CapabilityDefinition[] {
+  return asArray(capabilities).map((item) => ({
+    name: String(item.name),
+    description: item.description === undefined ? undefined : String(item.description),
+    capabilityId: normalizeId(item.capabilityId, `capabilities.${item.name}.capabilityId`),
+    domain: String(item.domain),
+    since: optionalString(item.since),
+    status: item.status ?? "draft",
+    type: String(item.type),
+    schema: optionalString(item.schema)
   }));
 }
 
@@ -341,6 +368,7 @@ export function loadProtocolDefinitionFromRaw(specRoot: string, sourcePath: stri
     methods: mapMethods(raw.methods),
     events: mapEvents(raw.events),
     errors: mapErrors(raw.errors),
+    capabilities: mapCapabilities(raw.capabilities),
     profiles: mapProfiles(raw.profiles),
     raw
   };

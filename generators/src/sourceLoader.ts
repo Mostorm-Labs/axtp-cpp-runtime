@@ -123,6 +123,10 @@ function mapLegacy(item: any, file: string): LegacyMapping {
 }
 
 function mapField(item: any, file: string, schemaName: string): Field {
+  const array = item.array === undefined ? undefined : {
+    itemType: item.array.item_type ?? item.array.itemType,
+    itemSchema: item.array.item_schema ?? item.array.itemSchema
+  };
   return {
     id: normalizeId(item.id ?? item.field_id ?? item.fieldId, `${file}:${schemaName}.${item.name}`),
     name: String(item.name),
@@ -136,6 +140,7 @@ function mapField(item: any, file: string, schemaName: string): Field {
     schema: item.schema,
     enum: item.enum,
     repeated: item.repeated,
+    array,
     derivedFrom: item.derived_from ?? item.derivedFrom,
     description: item.description
   };

@@ -122,8 +122,16 @@ export interface SchemaField {
   min?: number;
   max?: number;
   maxLength?: number;
+  default?: unknown;
   deprecated?: boolean;
   derivedFrom?: string;
+  schema?: string;
+  enumValues?: string[];
+  repeated?: boolean;
+  array?: {
+    itemType?: string;
+    itemSchema?: string;
+  };
   description?: string;
 }
 
@@ -181,6 +189,17 @@ export interface ErrorDefinition {
   message: string;
 }
 
+export interface CapabilityDefinition {
+  name: string;
+  description?: string;
+  capabilityId: number;
+  domain: string;
+  since?: string;
+  status: ProtocolStatus;
+  type: string;
+  schema?: string;
+}
+
 export interface ProfileDefinition {
   name: string;
   since: string;
@@ -231,6 +250,7 @@ export interface ProtocolModel {
   methods: MethodDefinition[];
   events: EventDefinition[];
   errors: ErrorDefinition[];
+  capabilities: CapabilityDefinition[];
   profiles: ProfileDefinition[];
   raw: unknown;
 }

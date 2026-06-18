@@ -181,6 +181,19 @@ function assertKnownSchema(schemaName: string | undefined, schemas: Set<string>,
   }
 }
 
+function assertKnownFieldItemType(itemType: string | undefined, schemas: Set<string>, entry: string, field: string): void {
+  if (!itemType) return;
+  const builtins = new Set(["bool", "uint8", "uint16", "uint32", "uint64", "int8", "int16", "int32", "int64", "number", "string", "bytes", "enum", "bitmap", "array"]);
+  if (builtins.has(itemType) || schemas.has(itemType)) return;
+  throw new GeneratorError({
+    code: "AXTP-GEN-1004",
+    file: "registry/*.yaml",
+    entry,
+    field,
+    message: `missing array item type: ${itemType}`
+  });
+}
+
 function assertReservedReferences(spec: SpecModel): void {
   const capabilityByName = new Map(spec.capabilities.map((item) => [item.name, item]));
   const eventByName = new Map(spec.events.map((item) => [item.name, item]));
@@ -316,6 +329,17 @@ export function validateSpec(spec: SpecModel): string[] {
   for (const schema of spec.schemas) {
     for (const field of schema.fields) {
       if (field.schema) assertKnownSchema(field.schema, schemaNames, schema.name, field.name);
+      if (field.array?.itemSchema) assertKnownSchema(field.array.itemSchema, schemaNames, schema.name, `${field.name}.array.itemSchema`);
+      if (field.array?.itemType) assertKnownFieldItemType(field.array.itemType, schemaNames, schema.name, `${field.name}.array.itemType`);
+      if (field.type === "array" && !field.schema && !field.array?.itemType && !field.array?.itemSchema) {
+        throw new GeneratorError({
+          code: "AXTP-GEN-1004",
+          file: "registry/*.yaml",
+          entry: schema.name,
+          field: field.name,
+          message: "array field must declare schema, array.item_type, or array.item_schema"
+        });
+      }
     }
   }
 

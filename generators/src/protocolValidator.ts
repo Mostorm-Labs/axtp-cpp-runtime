@@ -77,7 +77,7 @@ function assertDomainName(name: string, domain: string, label: string): void {
   if (name.split(".")[0] !== domain) fail(name, "domain", `${label} domain must match name prefix`);
 }
 
-function assertMethodReferences(methods: MethodDefinition[], typeNames: Set<string>, eventNames: Set<string>, errorNames: Set<string>): void {
+function assertMethodReferences(methods: MethodDefinition[], typeNames: Set<string>, eventNames: Set<string>, errorNames: Set<string>, capabilityNames: Set<string>): void {
   for (const method of methods) {
     assertDomainName(method.name, method.domain, "method");
     if (!method.description || method.description.trim() === "") fail(method.name, "description", "method description is required by docs/specs/2-registry/02-Methods-Registry.md");
@@ -89,13 +89,28 @@ function assertMethodReferences(methods: MethodDefinition[], typeNames: Set<stri
     for (const error of method.errors) {
       if (!errorNames.has(error)) fail(method.name, "errors", `missing error: ${error}`);
     }
+    for (const capability of method.capabilities) {
+      if (!capabilityNames.has(capability)) fail(method.name, "capabilities", `missing capability: ${capability}`);
+    }
   }
 }
 
-function assertEventReferences(events: EventDefinition[], typeNames: Set<string>): void {
+function assertEventReferences(events: EventDefinition[], typeNames: Set<string>, capabilityNames: Set<string>): void {
   for (const event of events) {
     assertDomainName(event.name, event.domain, "event");
     if (!typeNames.has(event.payload.type)) fail(event.name, "payload.type", `missing type: ${event.payload.type}`);
+    for (const capability of event.capabilities) {
+      if (!capabilityNames.has(capability)) fail(event.name, "capabilities", `missing capability: ${capability}`);
+    }
+  }
+}
+
+function assertCapabilityReferences(model: ProtocolModel, typeNames: Set<string>): void {
+  for (const capability of model.capabilities) {
+    assertDomainName(capability.name, capability.domain, "capability");
+    if (capability.schema && !typeNames.has(capability.schema)) {
+      fail(capability.name, "schema", `missing type: ${capability.schema}`);
+    }
   }
 }
 
@@ -122,7 +137,7 @@ function assertDomainIdAlignment(methods: MethodDefinition[], events: EventDefin
 
 function assertSchemaDefinitions(schemas: SchemaDefinition[]): void {
   const allowedKinds = new Set(["object", "enum", "bitmap", "alias", "bytes"]);
-  const builtins = new Set(["bool", "uint8", "uint16", "uint32", "uint64", "int8", "int16", "int32", "int64", "string", "bytes", "enum", "bitmap"]);
+  const builtins = new Set(["bool", "uint8", "uint16", "uint32", "uint64", "int8", "int16", "int32", "int64", "number", "string", "bytes", "enum", "bitmap", "array"]);
   const schemaNames = new Set(schemas.map((schema) => schema.name));
   for (const schema of schemas) {
     if (!allowedKinds.has(schema.kind)) fail(schema.name, "kind", `unsupported schema kind: ${schema.kind}`);
@@ -135,6 +150,15 @@ function assertSchemaDefinitions(schemas: SchemaDefinition[]): void {
       fieldIds.set(field.fieldId, field.name);
       if (!builtins.has(field.type) && !schemaNames.has(field.type)) {
         fail(schema.name, "type", `field ${field.name} references missing schema: ${field.type}`);
+      }
+      if (field.schema && !schemaNames.has(field.schema)) {
+        fail(schema.name, "schema", `field ${field.name} references missing schema: ${field.schema}`);
+      }
+      if (field.array?.itemSchema && !schemaNames.has(field.array.itemSchema)) {
+        fail(schema.name, "array.itemSchema", `field ${field.name} references missing schema: ${field.array.itemSchema}`);
+      }
+      if (field.array?.itemType && !builtins.has(field.array.itemType) && !schemaNames.has(field.array.itemType)) {
+        fail(schema.name, "array.itemType", `field ${field.name} references missing item type: ${field.array.itemType}`);
       }
     }
   }
@@ -316,6 +340,8 @@ export function validateProtocolDefinition(model: ProtocolModel): string[] {
   assertUnique(model.events, (item) => item.eventId, "eventId", "eventId");
   assertUnique(model.errors, (item) => item.name, "error name", "name");
   assertUnique(model.errors, (item) => item.code, "error code", "code");
+  assertUnique(model.capabilities, (item) => item.name, "capability name", "name");
+  assertUnique(model.capabilities, (item) => item.capabilityId, "capabilityId", "capabilityId");
   assertUnique(model.schemas, (item) => item.name, "schema name", "name");
   assertUnique(model.transports, (item) => item.name, "transport name", "name");
   assertUnique(model.profiles, (item) => item.name, "profile name", "name");
@@ -332,11 +358,13 @@ export function validateProtocolDefinition(model: ProtocolModel): string[] {
   const methodNames = new Set(model.methods.map((item) => item.name));
   const eventNames = new Set(model.events.map((item) => item.name));
   const errorNames = new Set(model.errors.map((item) => item.name));
+  const capabilityNames = new Set(model.capabilities.map((item) => item.name));
   const transportNames = new Set(model.transports.map((item) => item.name));
   const frameProfileNames = new Set(model.frameProfiles.map((item) => item.name));
 
-  assertMethodReferences(model.methods, typeNames, eventNames, errorNames);
-  assertEventReferences(model.events, typeNames);
+  assertCapabilityReferences(model, typeNames);
+  assertMethodReferences(model.methods, typeNames, eventNames, errorNames, capabilityNames);
+  assertEventReferences(model.events, typeNames, capabilityNames);
 
   const supportedMethodsResponse = model.schemas.find((item) => item.name === "CapabilitySupportedMethodsResponse");
   if (supportedMethodsResponse) {
@@ -401,6 +429,7 @@ export function validateProtocolDefinition(model: ProtocolModel): string[] {
     `[OK] protocol/axtp.protocol.yaml: ${model.methods.length} methods checked`,
     `[OK] protocol/axtp.protocol.yaml: ${model.events.length} events checked`,
     `[OK] protocol/axtp.protocol.yaml: ${model.errors.length} errors checked`,
+    `[OK] protocol/axtp.protocol.yaml: ${model.capabilities.length} capabilities checked`,
     `[OK] protocol/axtp.protocol.yaml: ${model.schemas.length} schemas checked`,
     `[OK] protocol/axtp.protocol.yaml: ${model.profiles.length} profiles checked`
   ];

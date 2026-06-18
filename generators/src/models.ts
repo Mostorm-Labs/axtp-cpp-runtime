@@ -63,8 +63,12 @@ export interface Field {
   maxLength?: number;
   default?: unknown;
   schema?: string;
-  enum?: string;
+  enum?: string | string[];
   repeated?: boolean;
+  array?: {
+    itemType?: string;
+    itemSchema?: string;
+  };
   derivedFrom?: string;
   description?: string;
 }

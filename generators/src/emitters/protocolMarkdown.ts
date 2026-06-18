@@ -1,5 +1,6 @@
 import path from "node:path";
 import type {
+  CapabilityDefinition,
   ErrorDefinition,
   EventDefinition,
   MethodDefinition,
@@ -98,12 +99,18 @@ function renderFieldConstraint(field: SchemaField): string {
     field.max === undefined ? undefined : `max=${field.max}`,
     field.maxLength === undefined ? undefined : `maxLength=${field.maxLength}`,
     field.derivedFrom === undefined ? undefined : `derivedFrom=${field.derivedFrom}`,
+    field.schema === undefined ? undefined : `schema=${field.schema}`,
+    field.enumValues === undefined || field.enumValues.length === 0 ? undefined : `enum=${field.enumValues.join("/")}`,
+    field.repeated ? "repeated" : undefined,
+    field.array?.itemType === undefined ? undefined : `array.itemType=${field.array.itemType}`,
+    field.array?.itemSchema === undefined ? undefined : `array.itemSchema=${field.array.itemSchema}`,
     field.deprecated ? "deprecated" : undefined
   ].filter(Boolean);
   return constraints.length > 0 ? constraints.join(", ") : "None";
 }
 
 function renderDefaultBehavior(field: SchemaField): string {
+  if (field.default !== undefined) return `Default: ${JSON.stringify(field.default)}`;
   return field.required ? "N/A" : "Omit if not used.";
 }
 
@@ -111,7 +118,7 @@ function renderFieldName(field: SchemaField): string {
   return field.required ? field.name : `?${field.name}`;
 }
 
-function renderTypeName(type: string): string {
+function renderTypeName(type: string, field?: SchemaField): string {
   const names: Record<string, string> = {
     bool: "Boolean",
     bytes: "Bytes",
@@ -125,8 +132,14 @@ function renderTypeName(type: string): string {
     int8: "Int8",
     int16: "Int16",
     int32: "Int32",
-    int64: "Int64"
+    int64: "Int64",
+    number: "Number",
+    array: "Array"
   };
+  if (type === "array" && field?.array) {
+    const item = field.array.itemSchema ?? field.array.itemType;
+    return item ? `Array<${renderTypeName(item)}>` : "Array";
+  }
   return names[type] ?? type;
 }
 
@@ -136,7 +149,7 @@ function renderFields(schema: SchemaDefinition | undefined): string[] {
     ["Name", "Type", "Field ID", "Description", "Value Restrictions", "?Default Behavior"],
     schema.fields.map((field) => [
       renderFieldName(field),
-      renderTypeName(field.type),
+      renderTypeName(field.type, field),
       hex(field.fieldId, 2),
       optional(field.description),
       renderFieldConstraint(field),
@@ -225,8 +238,39 @@ function renderProfile(profile: ProfileDefinition): string[] {
 function referencedTypeNames(model: ProtocolModel): Set<string> {
   return new Set([
     ...model.methods.flatMap((method) => [method.request.type, method.response.type]),
-    ...model.events.map((event) => event.payload.type)
+    ...model.events.map((event) => event.payload.type),
+    ...model.capabilities.flatMap((capability) => capability.schema ? [capability.schema] : []),
+    ...model.schemas.flatMap((schema) => schema.fields.flatMap((field) => [
+      field.schema,
+      field.array?.itemSchema
+    ].filter((value): value is string => Boolean(value))))
   ]);
+}
+
+function sortedCapabilities(capabilities: CapabilityDefinition[]): CapabilityDefinition[] {
+  return [...capabilities].sort((a, b) => a.capabilityId - b.capabilityId || a.name.localeCompare(b.name));
+}
+
+function renderCapabilityDiscovery(model: ProtocolModel): string[] {
+  return [
+    "## Capability Discovery",
+    "",
+    "Generated capabilities are the feature-level switches that runtimes and devices use to declare support before invoking optional business methods or subscribing to events.",
+    "",
+    ...table(
+      ["Capability ID", "Name", "Domain", "Status", "Type", "Schema", "Description"],
+      sortedCapabilities(model.capabilities).map((capability) => [
+        hex(capability.capabilityId),
+        capability.name,
+        capability.domain,
+        capability.status,
+        capability.type,
+        optional(capability.schema),
+        optional(capability.description)
+      ]),
+      ["center", "left", "left", "center", "center", "left", "left"]
+    )
+  ];
 }
 
 function renderMainToc(model: ProtocolModel): string[] {
@@ -571,6 +615,8 @@ export function renderProtocolMarkdown(model: ProtocolModel): string {
     ...renderPayloadTypes(model),
     "",
     ...renderWireExamples(model),
+    "",
+    ...renderCapabilityDiscovery(model),
     "",
     "## Generated Method Index",
     "",
