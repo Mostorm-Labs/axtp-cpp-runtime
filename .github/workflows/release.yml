@@ -206,9 +206,8 @@ jobs:
           for item in \
             generated/axtp_generated_manifest.json \
             generated \
-            include/generated \
-            core/include/generated \
-            sdk/include/generated \
+            core/include/protocol/generated \
+            sdk/include/sdk/generated \
             lib/src/generated \
             src/generated \
             src/axtp_runtime/generated \

@@ -14,4 +14,4 @@ pnpm --dir generators test
 pnpm --dir generators generate:runtime
 ```
 
-Generated C++ artifacts are written to `core/include/generated/`.
+Generated C++ artifacts are written to `core/include/protocol/generated/`.

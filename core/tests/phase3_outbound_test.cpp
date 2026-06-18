@@ -4,9 +4,9 @@
 #include <utility>
 #include <vector>
 
-#include "core/inbound/inbound_processor.hpp"
-#include "core/outbound/outbound_processor.hpp"
-#include "io/byte_writer_sink.hpp"
+#include "protocol/wire/inbound_processor.hpp"
+#include "protocol/wire/outbound_processor.hpp"
+#include "support/io/byte_writer_sink.hpp"
 
 namespace {
 

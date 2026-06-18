@@ -8,9 +8,9 @@
 #include <thread>
 
 #include "audio_demo_handlers.hpp"
-#include "axtp_sdk_all.hpp"
-#include "hidapi/hid_local_backend.hpp"
-#include "hidapi/hid_transport.hpp"
+#include "sdk/axtp_sdk_all.hpp"
+#include "transports/hidapi/hid_local_backend.hpp"
+#include "transports/hidapi/hid_transport.hpp"
 
 #if !defined(_WIN32)
 #    include <unistd.h>

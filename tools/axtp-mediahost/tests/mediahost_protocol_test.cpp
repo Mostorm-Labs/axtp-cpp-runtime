@@ -6,11 +6,11 @@
 
 #include <nlohmann/json.hpp>
 
-#include "core/inbound/inbound_processor.hpp"
-#include "core/outbound/outbound_processor.hpp"
-#include "io/byte_writer_sink.hpp"
-#include "media_host.hpp"
-#include "testing/mock_transport.hpp"
+#include "protocol/wire/inbound_processor.hpp"
+#include "protocol/wire/outbound_processor.hpp"
+#include "support/io/byte_writer_sink.hpp"
+#include "media/protocol/media_host.hpp"
+#include "runtime/testing/mock_transport.hpp"
 
 namespace {
 

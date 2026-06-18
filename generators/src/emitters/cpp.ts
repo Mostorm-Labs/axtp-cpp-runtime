@@ -49,7 +49,7 @@ function cppType(type: string): string {
 }
 
 export async function emitCpp(spec: SpecModel, outDir: string): Promise<void> {
-  await emitCppFiles(spec, path.join(outDir, "cpp"));
+  await emitCppFiles(spec, path.join(outDir, "cpp", "protocol", "generated"));
 }
 
 export async function emitCppFiles(spec: SpecModel, cppDir: string): Promise<void> {
@@ -273,7 +273,7 @@ function emitTlvSkeleton(spec: SpecModel): string {
 
   return `${banner}#pragma once
 #include <cstdint>
-#include "axtp_ids_generated.h"
+#include "protocol/generated/axtp_ids_generated.h"
 
 namespace axtp {
 
@@ -309,8 +309,8 @@ struct EventTraits<EventId::${cppName(event.name)}> {
   return `${banner}#pragma once
 #include <cstdint>
 
-#include "generated/axtp_ids_generated.h"
-#include "generated/axtp_tlv_codec_generated.h"
+#include "protocol/generated/axtp_ids_generated.h"
+#include "protocol/generated/axtp_tlv_codec_generated.h"
 
 namespace axtp {
 
@@ -336,9 +336,9 @@ function emitSchemaCodec(): string {
 
 #include <nlohmann/json.hpp>
 
-#include "generated/method_traits.h"
-#include "model/bytes.hpp"
-#include "model/payload.hpp"
+#include "protocol/generated/method_traits.h"
+#include "protocol/model/bytes.hpp"
+#include "protocol/model/payload.hpp"
 
 namespace axtp {
 

@@ -1,4 +1,4 @@
-#include "hidapi/hid_transport.hpp"
+#include "transports/hidapi/hid_transport.hpp"
 
 #include <algorithm>
 #include <codecvt>

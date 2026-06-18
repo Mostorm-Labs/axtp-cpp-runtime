@@ -1,17 +1,115 @@
 # AXTP C++ Runtime
 
 This repository contains the AXTP C++ runtime, SDK, optional transports, and
-`axtpctl` tooling extracted from the AXTP specification repository.
+developer tooling. Protocol facts are generated from the locked AXTP spec; this
+repository implements those facts for C++.
 
-The runtime layout is intentionally kept as copied:
+## Repository Layout
+
+The public C++ headers are arranged by dependency direction:
 
 ```text
-core/
-json-rpc/
-sdk/
-thirdparty/
-tools/
-transports/
+support/io -> protocol -> runtime -> sdk/transports/json_rpc -> tools
+```
+
+| Path | Purpose |
+|---|---|
+| `core/include/axtp.hpp` | Main aggregate header for core/runtime users. |
+| `core/include/support/io/` | Byte buffers, readers/writers, byte sinks, CRC, text writer, and transport packet boundaries. |
+| `core/include/protocol/model/` | Stable protocol value types: bytes, errors, frames, messages, payloads, result wrappers, and protocol enums. |
+| `core/include/protocol/generated/` | Generated IDs, registries, schema facts, traits, lookup helpers, and generated version constants. Do not edit by hand. |
+| `core/include/protocol/session/` | Control/session helpers, pending call tracking, and stream session state. |
+| `core/include/protocol/wire/framed_binary/` | Standard framed binary encoders/decoders and control TLV codec. |
+| `core/include/protocol/wire/websocket_json_rpc/` | WebSocket JSON-RPC payload and envelope codecs. |
+| `core/include/protocol/wire/` | Wire-mode inbound/outbound processors and payload sink contracts. |
+| `core/include/runtime/core/` | `AxtpCore`, `CoreEvent`, and RPC dispatcher. |
+| `core/include/runtime/broker/` | `BasicBroker<>`, business routing, middleware, task dispatch, and result queues. |
+| `core/include/runtime/endpoint/` | `AxtpEndpoint` glue between core, broker, and transport. |
+| `core/include/runtime/transport/` | Transport interface and transport profile contracts. |
+| `core/include/runtime/testing/` | Test/mock transport utilities. |
+| `sdk/include/sdk/` | Higher-level client/device APIs, call options, endpoint options, typed generated clients, and SDK result/error wrappers. |
+| `json-rpc/include/json_rpc/` | Optional JSON-RPC registry loading and WebSocket JSON-RPC adapter. |
+| `transports/include/transports/` | Optional transport headers for HID, TCP Boost, WebSocket Boost, WebSocket IX, and WebSocket++/Asio. |
+| `transports/src/` | Non-header implementation files for optional transports, currently HID. |
+| `tools/axtpctl/` | CLI for method/capability inspection and HID demos. |
+| `tools/axtp-mediahost/` | Windows MediaHost tool split into app, media protocol, media model, and Win32 render layers. |
+| `generators/` | TypeScript generator that consumes the AXTP spec and emits C++ generated headers. |
+| `scripts/` | Spec lock, generation, versioning, conformance, and release helper scripts. |
+| `tests/` and `conformance/` | Runtime conformance runner sources and runtime conformance profile. |
+| `docs/` | Design notes, execution flow, style guide, generator notes, and tool designs. |
+| `thirdparty/` | Vendored or bundled dependencies used by local builds. |
+
+## Quickstart
+
+For most application code, start with the SDK target. It brings in the runtime
+target and the public include paths.
+
+Minimal `CMakeLists.txt`:
+
+```cmake
+cmake_minimum_required(VERSION 3.16)
+project(axtp_quickstart LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+add_subdirectory(path/to/axtp-cpp-runtime/sdk axtp-cpp-runtime-sdk)
+
+add_executable(axtp_quickstart main.cpp)
+target_link_libraries(axtp_quickstart PRIVATE axtp_sdk)
+```
+
+Minimal `main.cpp` using the SDK with the in-memory mock transport:
+
+```cpp
+#include <cstdint>
+#include <iostream>
+#include <memory>
+#include <string>
+
+#include "runtime/testing/mock_transport.hpp"
+#include "sdk/axtp_sdk_all.hpp"
+
+int main() {
+    axtp::sdk::AxtpClient client;
+    client.attachTransport(std::make_unique<axtp::MockTransport>());
+
+    client.registerMethod(
+        static_cast<std::uint16_t>(axtp::MethodId::AudioGetAlgorithmConfig),
+        [](const axtp::RpcPayload&) {
+            const std::string body =
+                R"({"noiseSuppression":{"enabled":true,"level":3}})";
+            return axtp::Bytes(body.begin(), body.end());
+        });
+
+    const std::string response = client.callJson("audio.getAlgorithmConfig", "{}");
+    std::cout << response << "\n";
+}
+```
+
+Build it:
+
+```bash
+cmake -S . -B build
+cmake --build build
+```
+
+Use lower-level targets when you need tighter control:
+
+| CMake target | Use when |
+|---|---|
+| `axtp_core` | You only need protocol types, generated facts, and wire codecs. |
+| `axtp_runtime` | You need `AxtpCore`, broker, endpoint glue, and transport interfaces. |
+| `axtp_sdk` | You want client/device convenience APIs. |
+| `axtp_json_rpc` | You need the optional WebSocket JSON-RPC adapter. Enable `AXTP_BUILD_JSON_RPC`. |
+| `axtp_transport_hidapi` | You need the optional HID transport. Enable `AXTP_BUILD_OPTIONAL_TRANSPORTS`. |
+| `axtp_transport_tcp_boost`, `axtp_transport_websocket_ix`, `axtp_transport_websocket_boost`, `axtp_transport_websocket_websocketpp` | You need optional TCP/WebSocket transport headers and their third-party dependencies. Enable `AXTP_BUILD_OPTIONAL_TRANSPORTS`. |
+
+If you are embedding only the runtime layer:
+
+```cmake
+add_subdirectory(path/to/axtp-cpp-runtime/core axtp-cpp-runtime-core)
+target_link_libraries(your_target PRIVATE axtp_runtime)
 ```
 
 ## AXTP Spec Compatibility
@@ -153,7 +251,7 @@ pnpm --dir generators test
 pnpm --dir generators generate:runtime
 ```
 
-Generated C++ artifacts are written to `core/include/generated/`.
+Generated C++ artifacts are written to `core/include/protocol/generated/`.
 
 To move to a later released spec tag:
 

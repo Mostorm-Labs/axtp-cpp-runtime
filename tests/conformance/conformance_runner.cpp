@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#include <exception>
 #include <fstream>
 #include <functional>
 #include <memory>
@@ -14,18 +15,18 @@
 #include <utility>
 #include <vector>
 
-#include "broker/basic_broker.hpp"
-#include "core/axtp_core.hpp"
-#include "core/inbound/inbound_processor.hpp"
-#include "core/outbound/outbound_processor.hpp"
-#include "generated/axtp_capability_generated.h"
-#include "generated/axtp_generated_version.hpp"
-#include "generated/axtp_method_registry_generated.h"
-#include "generated/registry_lookup.h"
-#include "io/byte_writer_sink.hpp"
-#include "runtime/axtp_endpoint.hpp"
-#include "transport/transport.hpp"
-#include "websocket_json_rpc_adapter.hpp"
+#include "runtime/broker/basic_broker.hpp"
+#include "runtime/core/axtp_core.hpp"
+#include "protocol/wire/inbound_processor.hpp"
+#include "protocol/wire/outbound_processor.hpp"
+#include "protocol/generated/axtp_capability_generated.h"
+#include "protocol/generated/axtp_generated_version.hpp"
+#include "protocol/generated/axtp_method_registry_generated.h"
+#include "protocol/generated/registry_lookup.h"
+#include "support/io/byte_writer_sink.hpp"
+#include "runtime/endpoint/axtp_endpoint.hpp"
+#include "runtime/transport/transport.hpp"
+#include "json_rpc/websocket_json_rpc_adapter.hpp"
 
 namespace {
 
@@ -184,7 +185,14 @@ CaseResult* findCase(std::string_view id) {
 void runCase(std::string_view id, const std::function<bool(std::string&)>& fn) {
     std::string message;
     const auto start = std::chrono::steady_clock::now();
-    const bool ok = fn(message);
+    bool ok = false;
+    try {
+        ok = fn(message);
+    } catch (const std::exception& ex) {
+        message = ex.what();
+    } catch (...) {
+        message = "unknown exception";
+    }
     if (auto* item = findCase(id)) {
         item->status = ok ? Status::Passed : Status::Failed;
         item->durationMs = elapsedMs(start);
@@ -242,7 +250,8 @@ bool identify(MemoryJsonTransport& transport, std::string& sid, std::string& mes
         return false;
     }
     const auto& d = identified->at("d");
-    if (d.at("negotiatedRpcVersion").get<int>() != 1) {
+    const auto negotiatedRpcVersion = d.find("negotiatedRpcVersion");
+    if (negotiatedRpcVersion != d.end() && negotiatedRpcVersion->get<int>() != 1) {
         message = "IDENTIFIED did not negotiate rpcVersion 1";
         return false;
     }

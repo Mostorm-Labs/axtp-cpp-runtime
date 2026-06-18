@@ -3,7 +3,7 @@
 #include <optional>
 #include <string>
 
-#include "hidapi/hid_local_backend.hpp"
+#include "transports/hidapi/hid_local_backend.hpp"
 
 #if !defined(_WIN32)
 #    include <unistd.h>
