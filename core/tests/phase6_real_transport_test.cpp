@@ -1,6 +1,4 @@
-#include <array>
 #include <atomic>
-#include <boost/asio.hpp>
 #include <cassert>
 #include <chrono>
 #include <condition_variable>
@@ -25,7 +23,7 @@
 #include "json_rpc/websocket_json_rpc_adapter.hpp"
 #include "runtime/endpoint/axtp_endpoint.hpp"
 #include "runtime/testing/mock_transport.hpp"
-#include "transports/tcp/boost/tcp_transport.hpp"
+#include "transports/tcp/native/tcp_transport.hpp"
 #include "transports/websocket/ix/websocket_transport.hpp"
 
 namespace {
@@ -48,6 +46,14 @@ struct CapturingPayloadSink : axtp::IPayloadSink {
     }
 
     void onStream(axtp::StreamPayload) override {}
+};
+
+struct CapturingByteSink : axtp::IByteSink {
+    axtp::Bytes bytes;
+
+    void onBytes(const axtp::Byte* data, std::size_t size) override {
+        bytes.insert(bytes.end(), data, data + size);
+    }
 };
 
 axtp::Bytes encodeRpcRequest(std::uint32_t requestId) {
@@ -89,46 +95,39 @@ int main() {
         axtp::AxtpEndpoint endpoint(broker);
         broker.registerMethod(0x0901, [](const axtp::RpcPayload&) { return axtp::Bytes{0xA1}; });
 
-        axtp::TcpTransport server(0);
+        axtp::TcpServerTransport server(0);
         endpoint.attachTransport(server);
         server.open();
         assert(server.profile().kind == axtp::TransportKind::Tcp);
         const auto port = server.localPort();
         assert(port != 0);
 
-        boost::asio::io_context io;
-        boost::asio::ip::tcp::socket client(io);
-        client.connect({boost::asio::ip::make_address("127.0.0.1"), port});
-        client.non_blocking(true);
+        CapturingByteSink clientSink;
+        axtp::TcpClientTransport client("127.0.0.1", port, std::chrono::milliseconds(500));
+        client.bind(clientSink);
+        client.open();
+        assert(client.isOpen());
         const auto first = encodeRpcRequest(601);
         const auto second = encodeRpcRequest(602);
-        boost::asio::write(client, boost::asio::buffer(first));
-        boost::asio::write(client, boost::asio::buffer(second));
+        client.sendBytes(first.data(), 5);
+        client.sendBytes(first.data() + 5, first.size() - 5);
+        client.sendBytes(second.data(), second.size());
 
-        axtp::Bytes responseBytes;
-        for (int i = 0; i < 100 && responseBytes.empty(); ++i) {
+        for (int i = 0; i < 100 && clientSink.bytes.empty(); ++i) {
             server.poll();
             endpoint.poll();
-            std::array<axtp::Byte, 4096> buffer{};
-            boost::system::error_code ec;
-            const auto n = client.read_some(boost::asio::buffer(buffer), ec);
-            if (!ec && n > 0) {
-                responseBytes.insert(responseBytes.end(), buffer.begin(), buffer.begin() + n);
-                break;
-            }
-            if (ec != boost::asio::error::would_block && ec != boost::asio::error::try_again) {
-                assert(false);
-            }
+            client.poll();
             std::this_thread::sleep_for(std::chrono::milliseconds(5));
         }
-        assert(!responseBytes.empty());
+        assert(!clientSink.bytes.empty());
         CapturingPayloadSink sink;
         axtp::InboundProcessor inbound(sink);
-        inbound.onBytes(responseBytes.data(), responseBytes.size());
+        inbound.onBytes(clientSink.bytes.data(), clientSink.bytes.size());
         assert(!sink.rpcs.empty());
         assert(sink.rpcs[0].op == axtp::RpcOp::RequestResponse);
         assert(sink.rpcs[0].requestId == 601);
         assert((sink.rpcs[0].body == axtp::Bytes{0xA1}));
+        client.close();
         server.close();
     }
 

@@ -406,7 +406,7 @@ bool testClose(std::string& message) {
     open.controlId = 1;
     auto bytes = encodeControl(open);
     core.byteSink().onBytes(bytes.data(), bytes.size());
-    (void)core.tryPopOutboundBytes();
+    while (core.tryPopOutboundBytes().has_value()) {}
 
     axtp::ControlPayload close;
     close.opcode = axtp::ControlOpcode::Close;

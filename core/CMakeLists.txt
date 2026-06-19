@@ -37,6 +37,20 @@ add_library(axtp_runtime INTERFACE)
 target_link_libraries(axtp_runtime INTERFACE axtp_core axtp_broker)
 target_compile_features(axtp_runtime INTERFACE cxx_std_17)
 
+add_library(axtp_transport_tcp_native INTERFACE)
+target_include_directories(axtp_transport_tcp_native
+    INTERFACE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../transports/include
+)
+target_link_libraries(axtp_transport_tcp_native
+    INTERFACE
+        axtp_runtime
+)
+if(WIN32)
+    target_link_libraries(axtp_transport_tcp_native INTERFACE ws2_32)
+endif()
+target_compile_features(axtp_transport_tcp_native INTERFACE cxx_std_17)
+
 set(AXTP_CORE_IS_TOP_LEVEL OFF)
 if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
     set(AXTP_CORE_IS_TOP_LEVEL ON)
@@ -237,7 +251,7 @@ if(NOT AXTP_CORE_BUILD_TESTS)
 endif()
 
 if(NOT TARGET axtp_json_rpc OR
-   NOT TARGET axtp_transport_tcp_boost OR
+   NOT TARGET axtp_transport_tcp_native OR
    NOT TARGET axtp_transport_websocket_ix OR
    NOT TARGET axtp_transport_hidapi)
     message(FATAL_ERROR "AXTP core tests require AXTP_BUILD_JSON_RPC and AXTP_BUILD_OPTIONAL_TRANSPORTS")
@@ -282,7 +296,7 @@ target_link_libraries(phase6_real_transport_test
     PRIVATE
         axtp_core
         axtp_json_rpc
-        axtp_transport_tcp_boost
+        axtp_transport_tcp_native
         axtp_transport_websocket_ix
 )
 add_test(NAME phase6_real_transport_test COMMAND phase6_real_transport_test)
