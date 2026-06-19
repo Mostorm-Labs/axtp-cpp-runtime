@@ -20,6 +20,7 @@
 #include "sdk/app_ready_options.hpp"
 #include "transports/hidapi/hid_transport.hpp"
 
+// Internal support library for repository tools. This is not a stable SDK API.
 namespace axtp::toolkit {
 
 enum class OutputFormat {

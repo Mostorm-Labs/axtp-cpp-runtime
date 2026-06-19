@@ -1,11 +1,9 @@
 #include "transports/hidapi/hid_transport.hpp"
 
 #include <algorithm>
-#include <codecvt>
 #include <cwchar>
 #include <hidapi.h>
 #include <limits>
-#include <locale>
 #include <mutex>
 #include <sstream>
 #include <utility>
@@ -14,20 +12,66 @@
 namespace axtp {
 namespace {
 
+bool isHighSurrogate(std::uint32_t codePoint) {
+    return codePoint >= 0xD800 && codePoint <= 0xDBFF;
+}
+
+bool isLowSurrogate(std::uint32_t codePoint) {
+    return codePoint >= 0xDC00 && codePoint <= 0xDFFF;
+}
+
+void appendUtf8Replacement(std::string& output) {
+    output.append("\xEF\xBF\xBD");
+}
+
+void appendUtf8(std::string& output, std::uint32_t codePoint) {
+    if (codePoint <= 0x7F) {
+        output.push_back(static_cast<char>(codePoint));
+    } else if (codePoint <= 0x7FF) {
+        output.push_back(static_cast<char>(0xC0 | (codePoint >> 6)));
+        output.push_back(static_cast<char>(0x80 | (codePoint & 0x3F)));
+    } else if (isHighSurrogate(codePoint) || isLowSurrogate(codePoint)) {
+        appendUtf8Replacement(output);
+    } else if (codePoint <= 0xFFFF) {
+        output.push_back(static_cast<char>(0xE0 | (codePoint >> 12)));
+        output.push_back(static_cast<char>(0x80 | ((codePoint >> 6) & 0x3F)));
+        output.push_back(static_cast<char>(0x80 | (codePoint & 0x3F)));
+    } else if (codePoint <= 0x10FFFF) {
+        output.push_back(static_cast<char>(0xF0 | (codePoint >> 18)));
+        output.push_back(static_cast<char>(0x80 | ((codePoint >> 12) & 0x3F)));
+        output.push_back(static_cast<char>(0x80 | ((codePoint >> 6) & 0x3F)));
+        output.push_back(static_cast<char>(0x80 | (codePoint & 0x3F)));
+    } else {
+        appendUtf8Replacement(output);
+    }
+}
+
 std::string wideToUtf8(const wchar_t* value) {
     if (value == nullptr || value[0] == L'\0') {
         return {};
     }
-    try {
-        std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
-        return converter.to_bytes(value);
-    } catch (...) {
-        std::string fallback;
-        for (const wchar_t* cursor = value; *cursor != L'\0'; ++cursor) {
-            fallback.push_back(*cursor >= 0x20 && *cursor <= 0x7E ? static_cast<char>(*cursor) : '?');
+
+    std::string output;
+    for (const wchar_t* cursor = value; *cursor != L'\0'; ++cursor) {
+        auto codePoint = static_cast<std::uint32_t>(*cursor);
+        if constexpr (sizeof(wchar_t) == 2) {
+            if (isHighSurrogate(codePoint)) {
+                const auto low = static_cast<std::uint32_t>(*(cursor + 1));
+                if (isLowSurrogate(low)) {
+                    codePoint = 0x10000 + ((codePoint - 0xD800) << 10) + (low - 0xDC00);
+                    ++cursor;
+                } else {
+                    appendUtf8Replacement(output);
+                    continue;
+                }
+            } else if (isLowSurrogate(codePoint)) {
+                appendUtf8Replacement(output);
+                continue;
+            }
         }
-        return fallback;
+        appendUtf8(output, codePoint);
     }
+    return output;
 }
 
 std::string busTypeName(hid_bus_type busType) {
