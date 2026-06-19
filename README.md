@@ -93,6 +93,7 @@ support/io -> protocol -> runtime -> sdk/json_rpc/transports -> tools
 | `tools/axtpctl/` | General AXTP CLI for method/capability inspection, app-ready handshakes, mock calls, and optional TCP/WebSocket/HID transport debugging. |
 | `tools/toolkit/` | Internal tool support library shared by CLI and application-style tools. |
 | `tools/axtp-mediahost/` | Windows MediaHost application-style integration sample split into app, media protocol, media model, and Win32 render layers. |
+| `examples/quickstart/` | Minimal external-style SDK quickstart project. |
 | `generators/` | TypeScript generator that consumes the AXTP spec and emits C++ generated headers. |
 | `scripts/` | Spec lock, generation, versioning, conformance, and release helper scripts. |
 | `tests/` and `conformance/` | Runtime conformance runner sources and runtime conformance profile. |
@@ -101,8 +102,11 @@ support/io -> protocol -> runtime -> sdk/json_rpc/transports -> tools
 
 ## Quickstart
 
-For most application code, start with the SDK target. It brings in the runtime
-target and the public include paths.
+For most application code, vendor this repository under your project's
+`third_party/` directory and start with the SDK target. It brings in the runtime
+target and the public include paths. See
+[third-party usage](docs/AXTP_CPP_THIRD_PARTY_USAGE.md) for SDK/core folder
+layout, optional transports, and CMake options.
 
 Minimal `CMakeLists.txt`:
 
@@ -113,11 +117,15 @@ project(axtp_quickstart LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_subdirectory(path/to/axtp-cpp-runtime/sdk axtp-cpp-runtime-sdk)
+add_subdirectory(third_party/axtp-cpp-runtime)
 
 add_executable(axtp_quickstart main.cpp)
-target_link_libraries(axtp_quickstart PRIVATE axtp_sdk)
+target_link_libraries(axtp_quickstart PRIVATE axtp::sdk)
 ```
+
+If you need to keep the older subdirectory form, use
+`add_subdirectory(path/to/axtp-cpp-runtime/sdk axtp-cpp-runtime-sdk)` and link
+`axtp_sdk`.
 
 Minimal `main.cpp` using the SDK with the in-memory mock transport:
 
@@ -154,23 +162,40 @@ cmake -S . -B build
 cmake --build build
 ```
 
-Use lower-level targets when you need tighter control:
+The same code is available as a runnable project in `examples/quickstart/`:
 
-| CMake target | Use when |
-|---|---|
-| `axtp_core` | You only need protocol types, generated facts, and wire codecs. |
-| `axtp_runtime` | You need `AxtpCore`, broker, endpoint glue, and transport interfaces. |
-| `axtp_sdk` | You want client/device convenience APIs. |
-| `axtp_json_rpc` | You need the optional WebSocket JSON-RPC adapter. Enable `AXTP_BUILD_JSON_RPC`. |
-| `axtp_transport_tcp_native` | You need the header-only native TCP transport without Boost. |
-| `axtp_transport_hidapi` | You need the optional HID transport. Enable `AXTP_BUILD_OPTIONAL_TRANSPORTS`. |
-| `axtp_transport_tcp_boost`, `axtp_transport_websocket_ix`, `axtp_transport_websocket_boost`, `axtp_transport_websocket_websocketpp` | You need optional TCP/WebSocket transport headers and their third-party dependencies. Enable `AXTP_BUILD_OPTIONAL_TRANSPORTS`. |
+```bash
+cmake -S examples/quickstart -B build/examples/quickstart
+cmake --build build/examples/quickstart
+build/examples/quickstart/axtp_quickstart
+```
+
+Installed-package consumers can use:
+
+```cmake
+find_package(axtp_cpp_runtime CONFIG REQUIRED)
+target_link_libraries(axtp_quickstart PRIVATE axtp::sdk)
+```
+
+Use lower-level targets when you need tighter control. Namespaced aliases are
+available for new projects; the unqualified target names remain supported.
+
+| CMake target | Alias | Use when |
+|---|---|---|
+| `axtp_core` | `axtp::core` | You only need protocol types, generated facts, and wire codecs. |
+| `axtp_runtime` | `axtp::runtime` | You need `AxtpCore`, broker, endpoint glue, and transport interfaces. |
+| `axtp_sdk` | `axtp::sdk` | You want client/device convenience APIs. |
+| `axtp_json_rpc` | `axtp::json_rpc` | You need the optional WebSocket JSON-RPC adapter. Enable `AXTP_BUILD_JSON_RPC`. |
+| `axtp_transport_tcp_native` | `axtp::transport_tcp_native` | You need the header-only native TCP transport without Boost. |
+| `axtp_transport_hidapi` | `axtp::transport_hidapi` | You need the optional HID transport. Enable `AXTP_BUILD_OPTIONAL_TRANSPORTS`. |
+| `axtp_transport_tcp_boost`, `axtp_transport_websocket_ix`, `axtp_transport_websocket_boost`, `axtp_transport_websocket_websocketpp` | `axtp::transport_tcp_boost`, `axtp::transport_websocket_ix`, `axtp::transport_websocket_boost`, `axtp::transport_websocket_websocketpp` | You need optional TCP/WebSocket transport headers and their third-party dependencies. Enable `AXTP_BUILD_OPTIONAL_TRANSPORTS`. |
 
 If you are embedding only the runtime layer:
 
 ```cmake
-add_subdirectory(path/to/axtp-cpp-runtime/core axtp-cpp-runtime-core)
-target_link_libraries(your_target PRIVATE axtp_runtime)
+set(AXTP_CPP_RUNTIME_BUILD_SDK OFF CACHE BOOL "" FORCE)
+add_subdirectory(path/to/axtp-cpp-runtime)
+target_link_libraries(your_target PRIVATE axtp::runtime)
 ```
 
 ## AXTP Spec Compatibility
@@ -247,6 +272,7 @@ mock/socket simulation is not provided.
 - [Execution flow](docs/AXTP_CPP_EXECUTION_FLOW.md)
 - [Core API design](docs/AXTP_CORE_API_DESIGN.md)
 - [SDK API design](docs/AXTP_SDK_API_DESIGN.md)
+- [Third-party usage](docs/AXTP_CPP_THIRD_PARTY_USAGE.md)
 - [axtpctl command design](docs/AXTPCTL_COMMAND_DESIGN.md)
 - [C++ style guide](docs/AXTP_CPP_STYLE.md)
 

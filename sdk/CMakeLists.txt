@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.16)
 
 project(axtp_sdk LANGUAGES CXX)
 
+include(GNUInstallDirs)
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -21,7 +23,8 @@ add_library(axtp_sdk INTERFACE)
 
 target_include_directories(axtp_sdk
     INTERFACE
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
 target_link_libraries(axtp_sdk
@@ -30,6 +33,11 @@ target_link_libraries(axtp_sdk
         axtp_transport_tcp_native
 )
 target_compile_features(axtp_sdk INTERFACE cxx_std_17)
+set_target_properties(axtp_sdk PROPERTIES EXPORT_NAME sdk)
+
+if(NOT TARGET axtp::sdk)
+    add_library(axtp::sdk ALIAS axtp_sdk)
+endif()
 
 if(NOT AXTP_SDK_BUILD_TESTS)
     return()

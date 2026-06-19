@@ -1,0 +1,44 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+
+if(@AXTP_CPP_RUNTIME_CONFIG_NEEDS_NLOHMANN_JSON@)
+    find_dependency(nlohmann_json CONFIG REQUIRED)
+endif()
+
+if(@AXTP_CPP_RUNTIME_CONFIG_NEEDS_BOOST@)
+    find_dependency(Boost CONFIG REQUIRED)
+endif()
+
+if(@AXTP_CPP_RUNTIME_CONFIG_NEEDS_IXWEBSOCKET@)
+    find_dependency(ixwebsocket CONFIG REQUIRED)
+endif()
+
+if(@AXTP_CPP_RUNTIME_CONFIG_NEEDS_HIDAPI@)
+    find_dependency(hidapi CONFIG QUIET)
+    if(NOT TARGET hidapi::hidapi AND
+       NOT TARGET hidapi::hidapi-shared AND
+       NOT TARGET hidapi::hidapi-static AND
+       NOT TARGET hidapi::hidapi-darwin AND
+       NOT TARGET hidapi::hidapi-hidraw AND
+       NOT TARGET hidapi::hidapi-libusb AND
+       NOT TARGET hidapi::darwin AND
+       NOT TARGET hidapi::hidraw AND
+       NOT TARGET hidapi::libusb)
+        find_package(PkgConfig QUIET)
+        if(PkgConfig_FOUND)
+            pkg_check_modules(HIDAPI QUIET IMPORTED_TARGET hidapi)
+            if(NOT TARGET PkgConfig::HIDAPI)
+                pkg_check_modules(HIDAPI_HIDRAW QUIET IMPORTED_TARGET hidapi-hidraw)
+            endif()
+            if(NOT TARGET PkgConfig::HIDAPI AND
+               NOT TARGET PkgConfig::HIDAPI_HIDRAW)
+                pkg_check_modules(HIDAPI_LIBUSB QUIET IMPORTED_TARGET hidapi-libusb)
+            endif()
+        endif()
+    endif()
+endif()
+
+include("${CMAKE_CURRENT_LIST_DIR}/axtp_cpp_runtimeTargets.cmake")
+
+check_required_components(axtp_cpp_runtime)
