@@ -66,6 +66,8 @@ struct HidTransportStats {
 struct HidTransportOptions {
     std::uint16_t vendorId = 0;
     std::uint16_t productId = 0;
+    std::uint16_t usagePage = 0;
+    std::uint16_t usage = 0;
     std::string devicePath;
     std::string serialNumber;
     std::uint8_t reportId = 0;

@@ -7,6 +7,7 @@
 #include <limits>
 #include <locale>
 #include <mutex>
+#include <sstream>
 #include <utility>
 #include <vector>
 
@@ -47,6 +48,49 @@ std::string busTypeName(hid_bus_type busType) {
     }
 }
 
+bool hasUsageFilter(const HidTransportOptions& options) {
+    return options.usagePage != 0 || options.usage != 0;
+}
+
+bool matchesDeviceFilter(const HidDeviceInfo& device, const HidTransportOptions& options) {
+    if (!options.serialNumber.empty() && device.serialNumber != options.serialNumber) {
+        return false;
+    }
+    if (options.usagePage != 0 && device.usagePage != options.usagePage) {
+        return false;
+    }
+    if (options.usage != 0 && device.usage != options.usage) {
+        return false;
+    }
+    return !device.path.empty();
+}
+
+std::string usageFilterDescription(const HidTransportOptions& options) {
+    std::ostringstream out;
+    out << "vid=0x" << std::hex << std::uppercase << options.vendorId
+        << " pid=0x" << options.productId;
+    if (options.usagePage != 0) {
+        out << " usagePage=0x" << options.usagePage;
+    }
+    if (options.usage != 0) {
+        out << " usage=0x" << options.usage;
+    }
+    if (!options.serialNumber.empty()) {
+        out << " serial=" << options.serialNumber;
+    }
+    return out.str();
+}
+
+std::optional<std::string> resolveHidPathFromFilters(const HidTransportOptions& options) {
+    const auto devices = enumerateHidDevices(options.vendorId, options.productId);
+    for (const auto& device : devices) {
+        if (matchesDeviceFilter(device, options)) {
+            return device.path;
+        }
+    }
+    return std::nullopt;
+}
+
 class HidApiBackend : public IHidBackend {
 public:
     ~HidApiBackend() override {
@@ -55,13 +99,25 @@ public:
 
     bool open(const HidTransportOptions& options) override {
         close();
+
+        std::string pathToOpen = options.devicePath;
+        if (pathToOpen.empty() && hasUsageFilter(options)) {
+            const auto resolvedPath = resolveHidPathFromFilters(options);
+            if (!resolvedPath.has_value()) {
+                setLastError("no HID device matched " + usageFilterDescription(options));
+                return false;
+            }
+            pathToOpen = *resolvedPath;
+        }
+
         if (hid_init() != 0) {
+            setLastError("hid_init failed");
             return false;
         }
         _initialized = true;
 
-        if (!options.devicePath.empty()) {
-            _handle = hid_open_path(options.devicePath.c_str());
+        if (!pathToOpen.empty()) {
+            _handle = hid_open_path(pathToOpen.c_str());
         } else {
             std::wstring serial;
             const wchar_t* serialPtr = nullptr;
@@ -72,11 +128,17 @@ public:
             _handle = hid_open(options.vendorId, options.productId, serialPtr);
         }
         if (_handle == nullptr) {
+            if (!pathToOpen.empty()) {
+                setLastError("hid_open_path failed for path=" + pathToOpen);
+            } else {
+                setLastError("hid_open failed for " + usageFilterDescription(options));
+            }
             close();
             return false;
         }
         _reportId = options.reportId;
         hid_set_nonblocking(_handle, 0);
+        setLastError({});
         return true;
     }
 
