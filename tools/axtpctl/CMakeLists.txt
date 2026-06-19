@@ -21,40 +21,17 @@ if(NOT TARGET axtp_sdk)
     add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../sdk ${CMAKE_CURRENT_BINARY_DIR}/sdk)
 endif()
 
+if(NOT TARGET axtp_toolkit)
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../toolkit ${CMAKE_CURRENT_BINARY_DIR}/toolkit)
+endif()
+
 add_executable(axtpctl
-    src/hid_main.cpp
+    src/main.cpp
 )
 
 target_link_libraries(axtpctl
     PRIVATE
-        axtp_sdk
-        axtp_transport_hidapi
-)
-
-option(AXTPCTL_BUILD_FULL "Build legacy all-transport axtpctl target" OFF)
-if(AXTPCTL_BUILD_FULL)
-    add_executable(axtpctl_full EXCLUDE_FROM_ALL
-        src/main.cpp
-    )
-
-    target_link_libraries(axtpctl_full
-        PRIVATE
-            axtp_sdk
-            axtp_json_rpc
-            axtp_transport_hidapi
-            axtp_transport_tcp_boost
-            axtp_transport_websocket_ix
-    )
-endif()
-
-add_executable(axtp_hid_audio_device_demo
-    src/hid_audio_device_demo.cpp
-)
-
-target_link_libraries(axtp_hid_audio_device_demo
-    PRIVATE
-        axtp_sdk
-        axtp_transport_hidapi
+        axtp_toolkit
 )
 
 enable_testing()
@@ -62,25 +39,6 @@ enable_testing()
 add_test(NAME axtpctl_help COMMAND axtpctl --help)
 add_test(NAME axtpctl_capability_methods COMMAND axtpctl capability methods)
 add_test(NAME axtpctl_list_methods COMMAND axtpctl list-methods)
-
-add_executable(hid_local_backend_test
-    tests/hid_local_backend_test.cpp
-)
-target_link_libraries(hid_local_backend_test PRIVATE axtp_transport_hidapi)
-add_test(NAME hid_local_backend_test COMMAND hid_local_backend_test)
-
-add_executable(hid_audio_demo_e2e_test
-    tests/hid_audio_demo_e2e_test.cpp
-)
-target_include_directories(hid_audio_demo_e2e_test PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/src
-)
-target_link_libraries(hid_audio_demo_e2e_test
-    PRIVATE
-        axtp_sdk
-        axtp_transport_hidapi
-)
-add_test(NAME hid_audio_demo_e2e_test COMMAND hid_audio_demo_e2e_test)
 
 add_test(NAME axtpctl_unknown_method
     COMMAND axtpctl -c unknown.method
@@ -91,3 +49,13 @@ add_test(NAME axtpctl_json_conflict
     COMMAND axtpctl -c audio.setAlgorithmConfig --json {} --json-file ${CMAKE_CURRENT_SOURCE_DIR}/tests/params_algorithm_config.json
 )
 set_tests_properties(axtpctl_json_conflict PROPERTIES WILL_FAIL TRUE)
+
+add_test(NAME axtpctl_invalid_vid
+    COMMAND axtpctl -t hid list-hid --vid 0x10000
+)
+set_tests_properties(axtpctl_invalid_vid PROPERTIES WILL_FAIL TRUE)
+
+add_test(NAME axtpctl_invalid_usage_page
+    COMMAND axtpctl -t hid list-hid --usage-page 0x81xyz
+)
+set_tests_properties(axtpctl_invalid_usage_page PROPERTIES WILL_FAIL TRUE)

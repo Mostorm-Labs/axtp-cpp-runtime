@@ -31,8 +31,9 @@ support/io -> protocol -> runtime -> sdk/transports/json_rpc -> tools
 | `json-rpc/include/json_rpc/` | Optional JSON-RPC registry loading and WebSocket JSON-RPC adapter. |
 | `transports/include/transports/` | Optional transport headers for HID, TCP Boost, WebSocket Boost, WebSocket IX, and WebSocket++/Asio. |
 | `transports/src/` | Non-header implementation files for optional transports, currently HID. |
-| `tools/axtpctl/` | CLI for method/capability inspection and HID demos. |
-| `tools/axtp-mediahost/` | Windows MediaHost tool split into app, media protocol, media model, and Win32 render layers. |
+| `tools/axtpctl/` | General AXTP CLI for method/capability inspection, app-ready handshakes, mock calls, and optional TCP/WebSocket/HID transport debugging. |
+| `tools/toolkit/` | Internal tool support library shared by CLI and application-style tools. |
+| `tools/axtp-mediahost/` | Windows MediaHost application-style integration sample split into app, media protocol, media model, and Win32 render layers. |
 | `generators/` | TypeScript generator that consumes the AXTP spec and emits C++ generated headers. |
 | `scripts/` | Spec lock, generation, versioning, conformance, and release helper scripts. |
 | `tests/` and `conformance/` | Runtime conformance runner sources and runtime conformance profile. |
@@ -174,6 +175,11 @@ cmake -S tools/axtpctl -B build/axtpctl
 cmake --build build/axtpctl
 ctest --test-dir build/axtpctl --output-on-failure
 ```
+
+The `axtpctl` target is the single protocol CLI. Use `axtpctl -t hid ...` for
+real HID device diagnostics; CLI defaults to HID VID/PID `0x0581:0x2581` and
+usagePage `0x81`. `--usage-page 0` disables the default usagePage filter. HID
+mock/socket simulation is not provided.
 
 ## Documentation
 

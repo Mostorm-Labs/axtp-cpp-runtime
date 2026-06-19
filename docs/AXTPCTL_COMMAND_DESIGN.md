@@ -13,6 +13,9 @@ P0 实现一组小而可用的 dynamic RPC 命令：
 - `capability methods`
 - `list-methods`
 - `ping`
+- `handshake`
+- `list-hid`
+- `read-hid`
 - `inspect frame --hex <HEX>`
 
 P1 保留更大的规划面：event watch/emit、stream read/write、mock-server 和完整 test-vector runner。
@@ -31,7 +34,7 @@ axtpctl \
   <command>
 ```
 
-`mock` 是 P0 smoke test 的默认 transport。真实设备应通过 SDK transport connector 或可选 transport factory 接入。HID/TCP/WebSocket concrete dependency 属于 tool/runtime dependency，不得下沉到 cpp/core。
+`mock` 是 P0 smoke test 的默认 transport。协议级调试优先走 `mock` 或 TCP/WebSocket mock server。HID 只面向真实设备调试，不提供 HID mock/socket simulation。真实设备应通过 SDK transport connector 或可选 transport factory 接入。HID/TCP/WebSocket concrete dependency 属于 tool/runtime dependency，不得下沉到 cpp/core。
 
 ## P0 命令
 
@@ -42,6 +45,7 @@ axtpctl --transport mock call audio.getAlgorithmConfig --json '{}'
 axtpctl --transport mock call audio.setAlgorithmConfig --json '{"noiseSuppression":{"enabled":true,"level":3}}'
 axtpctl --transport mock call --method-id 0x90010001 --raw-hex cafe
 axtpctl --transport mock --registry-file ./methods.json call vendor.echo --json '{"value":80}'
+axtpctl -t hid --path '<path from list-hid>' call audio.getAlgorithmConfig --json '{}'
 ```
 
 行为：
@@ -66,6 +70,30 @@ axtpctl --transport mock ping
 ```
 
 P0 mock ping 返回本地 success JSON 文档。真实 transport ping 等 SDK 拥有 client-side transport connection management 后，再接到 CONTROL/RPC。
+
+### handshake
+
+```bash
+axtpctl handshake -t hid --path '<path from list-hid>'
+axtpctl handshake -t hid
+axtpctl handshake -t tcp --host 127.0.0.1 --port 9000
+axtpctl handshake -t websocket --host 127.0.0.1 --port 9001
+```
+
+`handshake` 是 transport-generic app-ready/session 命令。它使用统一 transport factory 和 SDK `ensureAppReady()`，不属于 HID 专用命令。
+
+### list-hid / read-hid
+
+```bash
+axtpctl -t hid list-hid
+axtpctl -t hid read-hid --timeout 10000
+axtpctl -t hid read-hid --path '<path from list-hid>' --timeout 10000
+axtpctl -t hid read-hid --usage-page 0 --timeout 10000
+```
+
+这两个命令只用于真实 HID 设备诊断。HID mock/socket simulation 不再提供；协议调试走 `mock` 或 TCP/WebSocket mock server。
+CLI 默认 HID 目标为 VID/PID `0x0581:0x2581`、usagePage `0x81`；需要调试其他设备或 interface 时再显式传 `--vid`/`--pid`/`--usage-page`。
+当同一个 VID/PID 暴露多个 HID interface 时，可通过 `--usage-page`/`--usage` 过滤并解析到具体设备 path。
 
 ### inspect frame
 
@@ -129,6 +157,9 @@ hid       -> optional axtp_transport_hidapi
 tcp/ws    -> optional Boost transport targets
 ble/uart  -> reserved endpoint values until concrete transports exist
 ```
+
+仓库只构建一个 `axtpctl` CLI。HID 真实设备诊断通过 `axtpctl -t hid ...`
+进入；MediaHost 等业务应用复用内部 `axtp_toolkit`，但不作为 `axtpctl` 子命令。
 
 ## 文档链接
 

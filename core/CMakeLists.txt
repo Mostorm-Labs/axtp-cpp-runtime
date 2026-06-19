@@ -220,7 +220,6 @@ if(AXTP_BUILD_OPTIONAL_TRANSPORTS)
 
     add_library(axtp_transport_hidapi STATIC EXCLUDE_FROM_ALL
         ${CMAKE_CURRENT_SOURCE_DIR}/../transports/src/hidapi/hid_transport.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/../transports/src/hidapi/hid_local_backend.cpp
     )
     target_include_directories(axtp_transport_hidapi
         PUBLIC

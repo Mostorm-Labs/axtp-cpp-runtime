@@ -19,16 +19,20 @@
 #include <iostream>
 #include <mutex>
 #include <optional>
-#include <random>
 #include <sstream>
 #include <string>
 #include <thread>
 #include <vector>
 
 #include "transports/hidapi/hid_transport.hpp"
+#include "toolkit/axtp_toolkit.hpp"
 #include "media/render/win32/media_render_host.hpp"
 
 namespace {
+
+constexpr std::uint32_t kDefaultHidVendorId = 0x0581;
+constexpr std::uint32_t kDefaultHidProductId = 0x2581;
+constexpr std::uint32_t kDefaultHidUsagePage = 0x81;
 
 volatile std::sig_atomic_t g_running = 1;
 
@@ -37,11 +41,14 @@ void handleSignal(int) {
 }
 
 struct CliOptions {
-    std::optional<std::uint32_t> vid;
-    std::optional<std::uint32_t> pid;
+    std::optional<std::uint32_t> vid = kDefaultHidVendorId;
+    std::optional<std::uint32_t> pid = kDefaultHidProductId;
+    std::optional<std::uint32_t> usagePage = kDefaultHidUsagePage;
+    std::optional<std::uint32_t> usage;
     std::optional<std::uint32_t> randomSeed;
     std::string hidPath;
     std::string serial;
+    bool hidTargetSpecified = false;
     std::uint32_t reportId = 0x05;
     std::uint32_t inputReportSize = 255;
     std::uint32_t outputReportSize = 255;
@@ -303,12 +310,14 @@ private:
 void printUsage() {
     std::cout
         << "Usage: axtp-mediahost --path <hid path> [options]\n"
-        << "       axtp-mediahost --vid 0x0581 --pid 0x2581 [options]\n"
+        << "       axtp-mediahost [--vid 0x0581 --pid 0x2581 --usage-page 0x81] [options]\n"
         << "\n"
         << "HID options:\n"
         << "  --path, --hid-path <path> Open HIDAPI path with hid_open_path\n"
-        << "  --vid <hex|dec>          HID vendor id\n"
-        << "  --pid <hex|dec>          HID product id\n"
+        << "  --vid <hex|dec>          HID vendor id, default 0x0581\n"
+        << "  --pid <hex|dec>          HID product id, default 0x2581\n"
+        << "  --usage-page <hex|dec>   HID usage page filter, default 0x81\n"
+        << "  --usage <hex|dec>        HID usage filter\n"
         << "  --serial <value>         HID serial value for VID/PID open\n"
         << "  --report-id <id>         HID report id, default 0x05\n"
         << "  --input-report-size <n>  HID input report bytes incl report id, default 255\n"
@@ -401,6 +410,7 @@ bool parseOptions(int argc, char** argv, CliOptions* options) {
                 return false;
             }
             options->hidPath = value;
+            options->hidTargetSpecified = true;
             continue;
         }
         if (arg == "--serial") {
@@ -409,9 +419,13 @@ bool parseOptions(int argc, char** argv, CliOptions* options) {
                 return false;
             }
             options->serial = value;
+            options->hidTargetSpecified = true;
             continue;
         }
-        if (arg == "--vid" || arg == "--pid" || arg == "--random-seed") {
+        if (arg == "--vid" || arg == "--pid" || arg == "--usage-page" ||
+            arg == "--usagepage" || arg == "--hid-usage-page" ||
+            arg == "--hid-usagepage" || arg == "--usage" ||
+            arg == "--hid-usage" || arg == "--random-seed") {
             const auto* value = requireValue(arg.c_str());
             if (value == nullptr) {
                 return false;
@@ -422,9 +436,34 @@ bool parseOptions(int argc, char** argv, CliOptions* options) {
                 return false;
             }
             if (arg == "--vid") {
+                if (*parsed > 0xFFFF) {
+                    std::cerr << "invalid " << arg << "\n";
+                    return false;
+                }
                 options->vid = *parsed;
+                options->hidTargetSpecified = true;
             } else if (arg == "--pid") {
+                if (*parsed > 0xFFFF) {
+                    std::cerr << "invalid " << arg << "\n";
+                    return false;
+                }
                 options->pid = *parsed;
+                options->hidTargetSpecified = true;
+            } else if (arg == "--usage-page" || arg == "--usagepage" ||
+                       arg == "--hid-usage-page" || arg == "--hid-usagepage") {
+                if (*parsed > 0xFFFF) {
+                    std::cerr << "invalid " << arg << "\n";
+                    return false;
+                }
+                options->usagePage = *parsed;
+                options->hidTargetSpecified = true;
+            } else if (arg == "--usage" || arg == "--hid-usage") {
+                if (*parsed > 0xFFFF) {
+                    std::cerr << "invalid " << arg << "\n";
+                    return false;
+                }
+                options->usage = *parsed;
+                options->hidTargetSpecified = true;
             } else {
                 options->randomSeed = *parsed;
             }
@@ -596,133 +635,12 @@ bool hasHidTarget(const CliOptions& options) {
     return !options.hidPath.empty() || (options.vid.has_value() && options.pid.has_value());
 }
 
-std::uint32_t generateRandomSeed() {
-    try {
-        std::random_device random;
-        const auto first = static_cast<std::uint32_t>(random());
-        const auto second = static_cast<std::uint32_t>(random());
-        const auto mixed = first ^ (second << 1U) ^ (second >> 1U);
-        if (mixed != 0) {
-            return mixed;
-        }
-    } catch (const std::exception&) {
-    }
-
-    const auto now = std::chrono::high_resolution_clock::now().time_since_epoch().count();
-    auto seed = static_cast<std::uint32_t>(now) ^
-                static_cast<std::uint32_t>(static_cast<std::uint64_t>(now) >> 32U) ^
-                GetCurrentProcessId();
-    return seed == 0 ? 0xA5A5A5A5U : seed;
+bool hasExplicitHidTarget(const CliOptions& options) {
+    return options.hidTargetSpecified;
 }
-
-struct AppReadyResult {
-    bool ok = false;
-    axtp::ErrorCode status = axtp::ErrorCode::Success;
-    std::string stage;
-    std::string sid;
-    std::uint32_t randomSeed = 0;
-};
 
 const char* errorName(axtp::ErrorCode code) {
-    const auto* descriptor = axtp::RegistryLookup::errorByCode(code);
-    return descriptor != nullptr ? descriptor->name : "UNKNOWN_ERROR";
-}
-
-AppReadyResult ensureAppReady(axtp::AxtpEndpoint<axtp::BasicBroker<>>& endpoint,
-                              axtp::ITransport& transport,
-                              std::chrono::milliseconds timeout,
-                              std::optional<std::uint32_t> seedOverride,
-                              LocalLogger& logger) {
-    AppReadyResult result;
-    const auto deadline = std::chrono::steady_clock::now() + timeout;
-    const auto profile = transport.profile();
-    endpoint.core().configure(profile);
-
-    if (profile.wireMode == axtp::AxtpWireMode::FramedBinary) {
-        result.stage = "control-open";
-        const std::uint16_t controlId = 1;
-        logger.write("APP_READY control: send CONTROL OPEN");
-        endpoint.sendControlOpen(controlId);
-        logger.write("APP_READY control: wait CONTROL ACCEPT");
-        while (std::chrono::steady_clock::now() < deadline) {
-            endpoint.poll(32);
-            if (auto accept = endpoint.tryTakeControlNotice(axtp::ControlOpcode::Accept)) {
-                std::ostringstream out;
-                out << "APP_READY control: ACCEPT controlId=" << accept->controlId
-                    << " status=" << errorName(accept->statusCode);
-                logger.write(out.str());
-                if (accept->controlId == controlId &&
-                    accept->statusCode == axtp::ErrorCode::Success &&
-                    endpoint.core().controlSessionOpen()) {
-                    break;
-                }
-                result.status = accept->statusCode == axtp::ErrorCode::Success
-                                    ? axtp::ErrorCode::ControlOpenRejected
-                                    : accept->statusCode;
-                return result;
-            }
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
-        }
-        if (!endpoint.core().controlSessionOpen()) {
-            result.status = axtp::ErrorCode::RpcResponseTimeout;
-            return result;
-        }
-    }
-
-    result.stage = "hello";
-    logger.write("APP_READY rpc: wait Hello");
-    bool gotHello = false;
-    while (std::chrono::steady_clock::now() < deadline) {
-        endpoint.poll(32);
-        if (auto hello = endpoint.tryTakeSessionRpc(axtp::RpcOp::Hello)) {
-            gotHello = true;
-            if (logger.includeBody()) {
-                logger.write("APP_READY rpc: Hello body=" +
-                             std::string(hello->body.begin(), hello->body.end()));
-            } else {
-                logger.write("APP_READY rpc: Hello received");
-            }
-            break;
-        }
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
-    }
-    if (!gotHello) {
-        result.status = axtp::ErrorCode::RpcResponseTimeout;
-        return result;
-    }
-
-    result.randomSeed = seedOverride.value_or(generateRandomSeed());
-    result.stage = "identify";
-    logger.write("APP_READY rpc: send Identify randomSeed=" +
-                 axtp::mediahost::toHexU32(result.randomSeed));
-    endpoint.sendRpcSession(axtp::JsonRpcEncoder::makeIdentify(result.randomSeed, ""));
-
-    result.stage = "identified";
-    logger.write("APP_READY rpc: wait Identified");
-    while (std::chrono::steady_clock::now() < deadline) {
-        endpoint.poll(32);
-        if (auto identified = endpoint.tryTakeSessionRpc(axtp::RpcOp::Identified)) {
-            result.sid = identified->meta.jsonSid;
-            if (logger.includeBody()) {
-                logger.write("APP_READY rpc: Identified sid=" + result.sid + " body=" +
-                             std::string(identified->body.begin(), identified->body.end()));
-            } else {
-                logger.write("APP_READY rpc: Identified sid=" + result.sid);
-            }
-            if (result.sid.empty()) {
-                result.status = axtp::ErrorCode::RpcPayloadInvalid;
-                return result;
-            }
-            result.stage = "app-ready";
-            result.ok = true;
-            result.status = axtp::ErrorCode::Success;
-            return result;
-        }
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
-    }
-
-    result.status = axtp::ErrorCode::RpcResponseTimeout;
-    return result;
+    return axtp::toolkit::errorName(code);
 }
 
 }  // namespace
@@ -754,7 +672,7 @@ int main(int argc, char** argv) {
         [&logger](std::string_view line) { logger.write(line); });
     if (options.renderBackendSpecified &&
         effectiveRenderBackend == axtp::mediahost::RenderBackend::SelfTest &&
-        !hasHidTarget(options)) {
+        !hasExplicitHidTarget(options)) {
         if (options.noVideo) {
             std::cerr << "--render-backend self-test requires video; remove --no-video\n";
             return 2;
@@ -844,24 +762,29 @@ int main(int argc, char** argv) {
     }
     logger.write(modeLog.str());
 
-    axtp::HidTransportOptions hidOptions;
-    hidOptions.vendorId = static_cast<std::uint16_t>(options.vid.value_or(0));
-    hidOptions.productId = static_cast<std::uint16_t>(options.pid.value_or(0));
-    hidOptions.devicePath = options.hidPath;
-    hidOptions.serialNumber = options.serial;
-    hidOptions.reportId = static_cast<std::uint8_t>(options.reportId);
-    hidOptions.inputReportSize = static_cast<std::size_t>(options.inputReportSize);
-    hidOptions.outputReportSize = static_cast<std::size_t>(options.outputReportSize);
-    hidOptions.readBufferSize = static_cast<std::size_t>(options.readBufferSize);
-    hidOptions.maxReportsPerPoll = static_cast<std::size_t>(options.maxReportsPerPoll);
-    hidOptions.useReadThread = true;
-    hidOptions.readThreadTimeoutMs = 1000;
+    axtp::toolkit::HidOpenOptions hidOpenOptions;
+    hidOpenOptions.vendorId = options.vid;
+    hidOpenOptions.productId = options.pid;
+    hidOpenOptions.usagePage = options.usagePage;
+    hidOpenOptions.usage = options.usage;
+    hidOpenOptions.devicePath = options.hidPath;
+    hidOpenOptions.serialNumber = options.serial;
+    hidOpenOptions.reportId = options.reportId;
+    hidOpenOptions.inputReportSize = options.inputReportSize;
+    hidOpenOptions.outputReportSize = options.outputReportSize;
+    hidOpenOptions.readBufferSize = options.readBufferSize;
+    hidOpenOptions.maxReportsPerPoll = options.maxReportsPerPoll;
+    hidOpenOptions.useReadThread = true;
+    hidOpenOptions.readThreadTimeoutMs = 1000;
+    auto hidOptions = axtp::toolkit::makeHidTransportOptions(hidOpenOptions);
 
     std::ostringstream openLog;
     openLog << "opening HID"
             << " path=" << (options.hidPath.empty() ? "<none>" : options.hidPath)
             << " vid=" << axtp::mediahost::toHexU32(options.vid.value_or(0))
             << " pid=" << axtp::mediahost::toHexU32(options.pid.value_or(0))
+            << " usagePage=" << axtp::mediahost::toHexU32(options.usagePage.value_or(0))
+            << " usage=" << axtp::mediahost::toHexU32(options.usage.value_or(0))
             << " reportId=0x" << std::hex << std::uppercase << options.reportId
             << std::dec
             << " inputReportSize=" << options.inputReportSize
@@ -896,11 +819,12 @@ int main(int argc, char** argv) {
     }
 
     const auto started = std::chrono::steady_clock::now();
-    const auto ready = ensureAppReady(endpoint,
-                                      *transport,
-                                      std::chrono::milliseconds(options.timeoutMs),
-                                      options.randomSeed,
-                                      logger);
+    axtp::toolkit::EndpointAppReadyOptions appReadyOptions;
+    appReadyOptions.timeout = std::chrono::milliseconds(options.timeoutMs);
+    appReadyOptions.randomSeed = options.randomSeed;
+    appReadyOptions.includeBody = options.logBody;
+    appReadyOptions.log = [&logger](std::string_view line) { logger.write(line); };
+    const auto ready = axtp::toolkit::ensureEndpointAppReady(endpoint, *transport, appReadyOptions);
     const auto readyMs = std::chrono::duration_cast<std::chrono::milliseconds>(
                              std::chrono::steady_clock::now() - started)
                              .count();

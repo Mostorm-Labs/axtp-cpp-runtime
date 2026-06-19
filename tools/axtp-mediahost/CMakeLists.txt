@@ -25,6 +25,10 @@ if(NOT TARGET axtp_sdk)
     add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../sdk ${CMAKE_CURRENT_BINARY_DIR}/sdk)
 endif()
 
+if(NOT TARGET axtp_toolkit)
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../toolkit ${CMAKE_CURRENT_BINARY_DIR}/toolkit)
+endif()
+
 add_library(axtp_mediahost_protocol INTERFACE)
 target_include_directories(axtp_mediahost_protocol INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
@@ -83,6 +87,7 @@ target_link_libraries(axtp-mediahost
     PRIVATE
         axtp_mediahost_protocol
         axtp_mediahost_render_win32
+        axtp_toolkit
         axtp_sdk
         axtp_transport_hidapi
 )
@@ -90,9 +95,13 @@ target_link_libraries(axtp-mediahost
 enable_testing()
 
 add_test(NAME axtp_mediahost_help COMMAND axtp-mediahost --help)
-add_test(NAME axtp_mediahost_missing_hid COMMAND axtp-mediahost --timeout 1)
+add_test(NAME axtp_mediahost_missing_hid
+    COMMAND axtp-mediahost --path __axtp_missing_hid__ --timeout 1
+)
 set_tests_properties(axtp_mediahost_missing_hid PROPERTIES WILL_FAIL TRUE)
-add_test(NAME axtp_mediahost_render_missing_hid COMMAND axtp-mediahost --render --timeout 1)
+add_test(NAME axtp_mediahost_render_missing_hid
+    COMMAND axtp-mediahost --render --path __axtp_missing_hid__ --timeout 1
+)
 set_tests_properties(axtp_mediahost_render_missing_hid PROPERTIES WILL_FAIL TRUE)
 
 add_executable(axtp_mediahost_protocol_test
