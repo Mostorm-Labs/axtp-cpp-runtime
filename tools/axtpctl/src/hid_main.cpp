@@ -58,6 +58,8 @@ struct CliOptions {
     std::optional<std::uint32_t> methodId;
     std::optional<std::uint32_t> vid;
     std::optional<std::uint32_t> pid;
+    std::optional<std::uint32_t> usagePage;
+    std::optional<std::uint32_t> usage;
     std::optional<std::uint32_t> randomSeed;
     std::uint32_t timeoutMs = 5000;
     std::uint32_t reportId = 0x05;
@@ -83,6 +85,8 @@ void printUsage() {
         << "      --pid <hex|dec>          HID product id, for example 0x5678\n"
         << "      --path, --hid-path <path> Open HIDAPI path from list-hid with hid_open_path\n"
         << "      --serial <value>         HID serial value for VID/PID open\n"
+        << "      --usage-page <hex|dec>   HID usage page filter, resolved in runtime layer\n"
+        << "      --usage <hex|dec>        HID usage filter, resolved in runtime layer\n"
         << "      --report-id <id>         HID report id, default 0x05\n"
         << "      --input-report-size <n>  HIDAPI input buffer bytes incl report id, default 255\n"
         << "      --read-buffer-size <n>   HIDAPI read buffer bytes, default 4096\n"
@@ -115,13 +119,15 @@ void printUsage() {
         << "  call <method>\n"
         << "  handshake                 Open HID and complete CONTROL + RPC app-ready\n"
         << "  read-hid                  Open HID and only read inbound reports\n"
-        << "  list-hid [--vid VID --pid PID]\n"
+        << "  list-hid [--vid VID --pid PID --usage-page PAGE --usage USAGE]\n"
         << "  list-methods\n"
         << "  capability methods\n"
         << "\n"
         << "Examples:\n"
         << "  axtpctl list-hid --vid 0x1234 --pid 0x5678\n"
+        << "  axtpctl list-hid --vid 0x0581 --pid 0x2581 --usage-page 0x81\n"
         << "  axtpctl read-hid --path \"<path from list-hid>\" --timeout 10000 --log-body\n"
+        << "  axtpctl --vid 0x0581 --pid 0x2581 --usage-page 0x81 handshake\n"
         << "  axtpctl --path \"<path from list-hid>\" -c network.getInterfaces -o json\n"
         << "  axtpctl --path \"<path from list-hid>\" handshake --random-seed 0x12345678\n"
         << "  axtpctl --path \"<path from list-hid>\" -c network.getInterfaces --no-app-ready --sid 00000000\n"
@@ -1208,6 +1214,85 @@ bool hasHidTarget(const CliOptions& options) {
     return !options.hidPath.empty() || (options.vid.has_value() && options.pid.has_value());
 }
 
+axtp::HidTransportOptions makeHidTransportOptions(const CliOptions& options) {
+    axtp::HidTransportOptions hidOptions;
+    hidOptions.vendorId = static_cast<std::uint16_t>(options.vid.value_or(0));
+    hidOptions.productId = static_cast<std::uint16_t>(options.pid.value_or(0));
+    hidOptions.usagePage = static_cast<std::uint16_t>(options.usagePage.value_or(0));
+    hidOptions.usage = static_cast<std::uint16_t>(options.usage.value_or(0));
+    hidOptions.devicePath = options.hidPath;
+    hidOptions.serialNumber = options.serialNumber;
+    hidOptions.reportId = static_cast<std::uint8_t>(options.reportId);
+    hidOptions.inputReportSize = static_cast<std::size_t>(options.inputReportSize);
+    hidOptions.readBufferSize = static_cast<std::size_t>(options.readBufferSize);
+    hidOptions.outputReportSize = static_cast<std::size_t>(options.outputReportSize);
+    hidOptions.maxReportsPerPoll = static_cast<std::size_t>(options.maxReportsPerPoll);
+    hidOptions.useReadThread = true;
+    hidOptions.readThreadTimeoutMs = 1000;
+    return hidOptions;
+}
+
+bool matchesHidDeviceFilters(const axtp::HidDeviceInfo& device, const CliOptions& options) {
+    if (options.usagePage.has_value() && device.usagePage != *options.usagePage) {
+        return false;
+    }
+    if (options.usage.has_value() && device.usage != *options.usage) {
+        return false;
+    }
+    return true;
+}
+
+std::vector<axtp::HidDeviceInfo> filteredHidDevices(const CliOptions& options) {
+    const auto vid = static_cast<std::uint16_t>(options.vid.value_or(0));
+    const auto pid = static_cast<std::uint16_t>(options.pid.value_or(0));
+    const auto allDevices = axtp::enumerateHidDevices(vid, pid);
+    std::vector<axtp::HidDeviceInfo> devices;
+    for (const auto& device : allDevices) {
+        if (matchesHidDeviceFilters(device, options)) {
+            devices.push_back(device);
+        }
+    }
+    return devices;
+}
+
+std::string hidOpenMode(const CliOptions& options) {
+    if (!options.hidPath.empty()) {
+        return "path";
+    }
+    if (options.usagePage.has_value() || options.usage.has_value()) {
+        return "vid-pid-usage";
+    }
+    return "vid-pid";
+}
+
+void appendHidTargetLog(std::ostringstream& out, const CliOptions& options) {
+    out << " vid=" << toHexId(options.vid.value_or(0))
+        << " pid=" << toHexId(options.pid.value_or(0))
+        << " usagePage=" << (options.usagePage.has_value() ? toHexId(*options.usagePage) : "<none>")
+        << " usage=" << (options.usage.has_value() ? toHexId(*options.usage) : "<none>")
+        << " path=" << (options.hidPath.empty() ? "<none>" : options.hidPath)
+        << " serial=" << (options.serialNumber.empty() ? "<none>" : options.serialNumber);
+}
+
+void appendHidTargetError(std::ostream& out, const CliOptions& options) {
+    if (options.vid.has_value() || options.pid.has_value()) {
+        out << " vid=" << toHexId(options.vid.value_or(0))
+            << " pid=" << toHexId(options.pid.value_or(0));
+    }
+    if (options.usagePage.has_value()) {
+        out << " usagePage=" << toHexId(*options.usagePage);
+    }
+    if (options.usage.has_value()) {
+        out << " usage=" << toHexId(*options.usage);
+    }
+    if (!options.hidPath.empty()) {
+        out << " path=" << options.hidPath;
+    }
+    if (!options.serialNumber.empty()) {
+        out << " serial=" << options.serialNumber;
+    }
+}
+
 std::string hidTraceJsonForConsole(const axtp::HidReportTrace& trace) {
     std::ostringstream out;
     out << "{\"direction\":\"" << hidTraceDirectionName(trace.kind) << "\",\"kind\":\""
@@ -1550,6 +1635,25 @@ bool parseArgs(int argc, char** argv, CliOptions* options) {
             options->pid = *value;
             continue;
         }
+        if (arg == "--usage-page" || arg == "--usagepage" || arg == "--hid-usage-page" ||
+            arg == "--hid-usagepage") {
+            const auto value = parseNumberOption(arg.c_str());
+            if (!value.has_value() || *value > 0xFFFF) {
+                std::cerr << "invalid " << arg << "\n";
+                return false;
+            }
+            options->usagePage = *value;
+            continue;
+        }
+        if (arg == "--usage" || arg == "--hid-usage") {
+            const auto value = parseNumberOption(arg.c_str());
+            if (!value.has_value() || *value > 0xFFFF) {
+                std::cerr << "invalid " << arg << "\n";
+                return false;
+            }
+            options->usage = *value;
+            continue;
+        }
         if (arg == "--timeout") {
             const auto value = parseNumberOption(arg.c_str());
             if (!value.has_value()) {
@@ -1643,9 +1747,7 @@ int printMethods(OutputFormat format) {
 }
 
 int printHidDevices(const CliOptions& options, OutputFormat format) {
-    const auto vid = static_cast<std::uint16_t>(options.vid.value_or(0));
-    const auto pid = static_cast<std::uint16_t>(options.pid.value_or(0));
-    const auto devices = axtp::enumerateHidDevices(vid, pid);
+    const auto devices = filteredHidDevices(options);
 
     if (format == OutputFormat::Json) {
         std::cout << "[";
@@ -1670,9 +1772,16 @@ int printHidDevices(const CliOptions& options, OutputFormat format) {
 
     if (devices.empty()) {
         std::cout << "No HID devices found";
-        if (options.vid.has_value() || options.pid.has_value()) {
+        if (options.vid.has_value() || options.pid.has_value() ||
+            options.usagePage.has_value() || options.usage.has_value()) {
             std::cout << " for vid=" << toHexId(options.vid.value_or(0))
                       << " pid=" << toHexId(options.pid.value_or(0));
+            if (options.usagePage.has_value()) {
+                std::cout << " usagePage=" << toHexId(*options.usagePage);
+            }
+            if (options.usage.has_value()) {
+                std::cout << " usage=" << toHexId(*options.usage);
+            }
         }
         std::cout << "\n";
         return 0;
@@ -1811,30 +1920,17 @@ int readHid(const CliOptions& options, LocalLogger& logger) {
     std::mutex outputMutex;
     const auto format = parseOutputFormat(options.output);
 
-    axtp::HidTransportOptions hidOptions;
-    hidOptions.vendorId = static_cast<std::uint16_t>(options.vid.value_or(0));
-    hidOptions.productId = static_cast<std::uint16_t>(options.pid.value_or(0));
-    hidOptions.devicePath = options.hidPath;
-    hidOptions.serialNumber = options.serialNumber;
-    hidOptions.reportId = static_cast<std::uint8_t>(options.reportId);
-    hidOptions.inputReportSize = static_cast<std::size_t>(options.inputReportSize);
-    hidOptions.readBufferSize = static_cast<std::size_t>(options.readBufferSize);
-    hidOptions.outputReportSize = static_cast<std::size_t>(options.outputReportSize);
-    hidOptions.maxReportsPerPoll = static_cast<std::size_t>(options.maxReportsPerPoll);
-    hidOptions.useReadThread = true;
-    hidOptions.readThreadTimeoutMs = 1000;
+    auto hidOptions = makeHidTransportOptions(options);
     hidOptions.reportTrace = [&logger, format, &outputMutex](const axtp::HidReportTrace& trace) {
         logger.write(hidTraceForLog(trace, logger.includeBody()));
         printReadOnlyTrace(trace, format, &outputMutex);
     };
 
     std::ostringstream openLog;
-    openLog << "opening HID read-only vid=" << toHexId(options.vid.value_or(0))
-            << " pid=" << toHexId(options.pid.value_or(0))
-            << " path=" << (options.hidPath.empty() ? "<none>" : options.hidPath)
-            << " serial=" << (options.serialNumber.empty() ? "<none>" : options.serialNumber)
-            << " backend=hidapi"
-            << " openMode=" << (options.hidPath.empty() ? "vid-pid" : "path")
+    openLog << "opening HID read-only";
+    appendHidTargetLog(openLog, options);
+    openLog << " backend=hidapi"
+            << " openMode=" << hidOpenMode(options)
             << " tx=disabled"
             << " reportId=" << toHexByte(options.reportId)
             << " inputReportSize=" << options.inputReportSize
@@ -1852,16 +1948,7 @@ int readHid(const CliOptions& options, LocalLogger& logger) {
     transport->open();
     if (!transport->isOpen()) {
         std::cerr << "failed to open HID device";
-        if (options.vid.has_value() || options.pid.has_value()) {
-            std::cerr << " vid=" << toHexId(options.vid.value_or(0))
-                      << " pid=" << toHexId(options.pid.value_or(0));
-        }
-        if (!options.hidPath.empty()) {
-            std::cerr << " path=" << options.hidPath;
-        }
-        if (!options.serialNumber.empty()) {
-            std::cerr << " serial=" << options.serialNumber;
-        }
+        appendHidTargetError(std::cerr, options);
         std::cerr << "\n";
         logger.write("failed to open HID device for read-hid");
         return 4;
@@ -1917,30 +2004,17 @@ int handshakeHid(const CliOptions& options, LocalLogger& logger) {
     }
 
     std::mutex outputMutex;
-    axtp::HidTransportOptions hidOptions;
-    hidOptions.vendorId = static_cast<std::uint16_t>(options.vid.value_or(0));
-    hidOptions.productId = static_cast<std::uint16_t>(options.pid.value_or(0));
-    hidOptions.devicePath = options.hidPath;
-    hidOptions.serialNumber = options.serialNumber;
-    hidOptions.reportId = static_cast<std::uint8_t>(options.reportId);
-    hidOptions.inputReportSize = static_cast<std::size_t>(options.inputReportSize);
-    hidOptions.readBufferSize = static_cast<std::size_t>(options.readBufferSize);
-    hidOptions.outputReportSize = static_cast<std::size_t>(options.outputReportSize);
-    hidOptions.maxReportsPerPoll = static_cast<std::size_t>(options.maxReportsPerPoll);
-    hidOptions.useReadThread = true;
-    hidOptions.readThreadTimeoutMs = 1000;
+    auto hidOptions = makeHidTransportOptions(options);
     hidOptions.reportTrace = [&logger, &outputMutex](const axtp::HidReportTrace& trace) {
         logger.write(hidTraceForLog(trace, logger.includeBody()));
         printCallTrace(trace, logger.includeBody(), &outputMutex);
     };
 
     std::ostringstream openLog;
-    openLog << "opening HID handshake vid=" << toHexId(options.vid.value_or(0))
-            << " pid=" << toHexId(options.pid.value_or(0))
-            << " path=" << (options.hidPath.empty() ? "<none>" : options.hidPath)
-            << " serial=" << (options.serialNumber.empty() ? "<none>" : options.serialNumber)
-            << " backend=hidapi"
-            << " openMode=" << (options.hidPath.empty() ? "vid-pid" : "path")
+    openLog << "opening HID handshake";
+    appendHidTargetLog(openLog, options);
+    openLog << " backend=hidapi"
+            << " openMode=" << hidOpenMode(options)
             << " reportId=" << toHexByte(options.reportId)
             << " inputReportSize=" << options.inputReportSize
             << " readBufferSize=" << hidOptions.readBufferSize
@@ -1960,16 +2034,7 @@ int handshakeHid(const CliOptions& options, LocalLogger& logger) {
     client.attachTransport(std::move(transport));
     if (hidTransport == nullptr || !hidTransport->isOpen()) {
         std::cerr << "failed to open HID device";
-        if (options.vid.has_value() || options.pid.has_value()) {
-            std::cerr << " vid=" << toHexId(options.vid.value_or(0))
-                      << " pid=" << toHexId(options.pid.value_or(0));
-        }
-        if (!options.hidPath.empty()) {
-            std::cerr << " path=" << options.hidPath;
-        }
-        if (!options.serialNumber.empty()) {
-            std::cerr << " serial=" << options.serialNumber;
-        }
+        appendHidTargetError(std::cerr, options);
         std::cerr << "\n";
         logger.write("failed to open HID device for handshake");
         return 4;
@@ -2102,30 +2167,17 @@ int callMethod(const CliOptions& options, LocalLogger& logger) {
     logger.write(requestLog.str());
 
     std::mutex outputMutex;
-    axtp::HidTransportOptions hidOptions;
-    hidOptions.vendorId = static_cast<std::uint16_t>(options.vid.value_or(0));
-    hidOptions.productId = static_cast<std::uint16_t>(options.pid.value_or(0));
-    hidOptions.devicePath = options.hidPath;
-    hidOptions.serialNumber = options.serialNumber;
-    hidOptions.reportId = static_cast<std::uint8_t>(options.reportId);
-    hidOptions.inputReportSize = static_cast<std::size_t>(options.inputReportSize);
-    hidOptions.readBufferSize = static_cast<std::size_t>(options.readBufferSize);
-    hidOptions.outputReportSize = static_cast<std::size_t>(options.outputReportSize);
-    hidOptions.maxReportsPerPoll = static_cast<std::size_t>(options.maxReportsPerPoll);
-    hidOptions.useReadThread = true;
-    hidOptions.readThreadTimeoutMs = 1000;
+    auto hidOptions = makeHidTransportOptions(options);
     hidOptions.reportTrace = [&logger, &outputMutex](const axtp::HidReportTrace& trace) {
         logger.write(hidTraceForLog(trace, logger.includeBody()));
         printCallTrace(trace, logger.includeBody(), &outputMutex);
     };
 
     std::ostringstream openLog;
-    openLog << "opening HID vid=" << toHexId(options.vid.value_or(0))
-            << " pid=" << toHexId(options.pid.value_or(0))
-            << " path=" << (options.hidPath.empty() ? "<none>" : options.hidPath)
-            << " serial=" << (options.serialNumber.empty() ? "<none>" : options.serialNumber)
-            << " backend=hidapi"
-            << " openMode=" << (options.hidPath.empty() ? "vid-pid" : "path")
+    openLog << "opening HID";
+    appendHidTargetLog(openLog, options);
+    openLog << " backend=hidapi"
+            << " openMode=" << hidOpenMode(options)
             << " reportId=" << toHexByte(options.reportId)
             << " inputReportSize=" << options.inputReportSize
             << " readBufferSize=" << hidOptions.readBufferSize
@@ -2144,16 +2196,7 @@ int callMethod(const CliOptions& options, LocalLogger& logger) {
     client.attachTransport(std::move(transport));
     if (hidTransport == nullptr || !hidTransport->isOpen()) {
         std::cerr << "failed to open HID device";
-        if (options.vid.has_value() || options.pid.has_value()) {
-            std::cerr << " vid=" << toHexId(options.vid.value_or(0))
-                      << " pid=" << toHexId(options.pid.value_or(0));
-        }
-        if (!options.hidPath.empty()) {
-            std::cerr << " path=" << options.hidPath;
-        }
-        if (!options.serialNumber.empty()) {
-            std::cerr << " serial=" << options.serialNumber;
-        }
+        appendHidTargetError(std::cerr, options);
         std::cerr << "\n";
         logger.write("failed to open HID device");
         return 4;
