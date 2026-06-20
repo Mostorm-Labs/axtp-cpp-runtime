@@ -73,7 +73,21 @@ function gitValue(args, fallback = "unknown") {
   }
 }
 
+function parseRuntimeReleaseVersion(version) {
+  const match = version.match(/^([0-9]+)\.([0-9]+)\.([0-9]+)(?:\.([0-9]+))?$/);
+  if (!match) {
+    throw new Error("Runtime release version must match MAJOR.MINOR.PATCH or MAJOR.MINOR.PATCH.REVISION");
+  }
+  return {
+    runtimeVersion: version,
+    specVersion: `${match[1]}.${match[2]}.${match[3]}`,
+    revision: match[4] ?? null
+  };
+}
+
 async function readRuntimeVersion(runtimeName) {
+  const versionFile = path.join(root, "VERSION");
+  if (existsSync(versionFile)) return (await readText(versionFile)).trim();
   if (runtimeName === "axtp-c-runtime") {
     const text = await readText(path.join(root, "CMakeLists.txt"));
     const match = text.match(/project\s*\([^)]*?\bVERSION\s+([0-9]+\.[0-9]+\.[0-9][^\s)]*)/is);
@@ -341,9 +355,10 @@ async function checkVersionMetadata(runtimeName, { release = false, tagVersion =
     throw new Error("Release builds must not use AXTP Spec tag: unreleased");
   }
   if (tagVersion !== null) {
-    assertEqual("runtime tag version", runtimeVersion, tagVersion);
-    assertEqual("AXTP Spec lock version", lock.version, tagVersion);
-    assertEqual("AXTP Spec lock tag", lock.tag, "spec/v" + tagVersion);
+    const releaseVersion = parseRuntimeReleaseVersion(tagVersion);
+    assertEqual("runtime tag version", runtimeVersion, releaseVersion.runtimeVersion);
+    assertEqual("AXTP Spec lock version", lock.version, releaseVersion.specVersion);
+    assertEqual("AXTP Spec lock tag", lock.tag, "spec/v" + releaseVersion.specVersion);
   }
   assertEqual("runtime.name", manifest.runtime.name, runtimeName);
   assertEqual("runtime.version", manifest.runtime.version, runtimeVersion);
@@ -432,7 +447,7 @@ try {
     await checkVersionMetadata(runtimeName);
   } else if (command === "release-check") {
     const tagVersion = options["tag-version"];
-    if (!tagVersion) throw new Error("release-check requires --tag-version X.Y.Z");
+    if (!tagVersion) throw new Error("release-check requires --tag-version X.Y.Z or X.Y.Z.R");
     await checkVersionMetadata(runtimeName, { release: true, tagVersion });
   } else if (command === "release-notes") {
     const outFile = options.out;

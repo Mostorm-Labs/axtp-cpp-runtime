@@ -99,7 +99,7 @@ jobs:
 
       - name: Align runtime/tool version
         shell: bash
-        run: devtools/scripts/set-runtime-version.sh "$SPEC_VERSION"
+        run: devtools/scripts/set-runtime-version.sh "$SPEC_VERSION.0"
 
       - name: Build generator
         shell: bash
@@ -232,10 +232,10 @@ jobs:
           AXTP Spec tag: $SPEC_TAG
           AXTP Spec version: $SPEC_VERSION
           AXTP Spec commit: ${SPEC_COMMIT:-resolved by devtools/scripts/upgrade-axtp-spec.sh}
-          Runtime/tool target version: $SPEC_VERSION
+          Runtime/tool target version: $SPEC_VERSION.0
           Generated manifest: generated/axtp_generated_manifest.json
 
-          This PR updates AXTP_SPEC.lock.yaml, aligns the runtime/tool version with the AXTP Spec version, regenerates runtime/tool artifacts, and runs the available build/test/conformance checks.
+          This PR updates AXTP_SPEC.lock.yaml, aligns the runtime/tool release version with the AXTP Spec version at runtime revision 0, regenerates runtime/tool artifacts, and runs the available build/test/conformance checks.
           EOF
 
       - name: Create upgrade PR

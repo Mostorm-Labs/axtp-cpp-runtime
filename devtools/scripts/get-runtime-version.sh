@@ -4,6 +4,12 @@ set -euo pipefail
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 runtime_name="$(basename "$root")"
 
+if [[ -f "$root/VERSION" ]]; then
+  tr -d '[:space:]' < "$root/VERSION"
+  echo
+  exit 0
+fi
+
 read_cmake_project_version() {
   local file="$1"
   [[ -f "$file" ]] || return 1

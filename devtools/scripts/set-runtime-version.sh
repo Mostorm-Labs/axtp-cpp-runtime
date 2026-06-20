@@ -2,14 +2,22 @@
 set -euo pipefail
 
 if [[ $# -ne 1 ]]; then
-  echo "Usage: $0 X.Y.Z" >&2
+  echo "Usage: $0 X.Y.Z[.R]" >&2
   exit 2
 fi
 
 version="$1"
-if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-  echo "Runtime/tool version must match MAJOR.MINOR.PATCH" >&2
+if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(\.[0-9]+)?$ ]]; then
+  echo "Runtime/tool version must match MAJOR.MINOR.PATCH or MAJOR.MINOR.PATCH.REVISION" >&2
   exit 2
+fi
+
+IFS=. read -r version_major version_minor version_patch version_revision_extra <<< "$version"
+spec_version="$version_major.$version_minor.$version_patch"
+runtime_revision="${version_revision_extra:-0}"
+ecosystem_version="$spec_version"
+if [[ "$runtime_revision" != "0" ]]; then
+  ecosystem_version="$spec_version-runtime.$runtime_revision"
 fi
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -32,7 +40,8 @@ set_cmake_project_version() {
 
 set_package_json_version() {
   local file="$1"
-  PACKAGE_JSON="$file" VERSION="$version" node --input-type=module <<'NODE'
+  local value="${2:-$version}"
+  PACKAGE_JSON="$file" VERSION="$value" node --input-type=module <<'NODE'
 import { readFileSync, writeFileSync } from "node:fs";
 
 const file = process.env.PACKAGE_JSON;
@@ -66,7 +75,8 @@ case "$runtime_name" in
     fi
     ;;
   axtp-flutter-runtime)
-    VERSION="$version" perl -0pi -e 's/^version:\s*[^\n]+/version: $ENV{VERSION}/m' "$root/pubspec.yaml"
+    write_version_file "$root/VERSION"
+    VERSION="$ecosystem_version" perl -0pi -e 's/^version:\s*[^\n]+/version: $ENV{VERSION}/m' "$root/pubspec.yaml"
     ;;
   axtp-python-runtime)
     if [[ -f "$root/pyproject.toml" ]]; then
@@ -79,7 +89,8 @@ case "$runtime_name" in
     fi
     ;;
   axtp-ts-runtime)
-    set_package_json_version "$root/package.json"
+    write_version_file "$root/VERSION"
+    set_package_json_version "$root/package.json" "$ecosystem_version"
     ;;
   axtp-mock-server)
     if [[ -f "$root/package.json" ]]; then

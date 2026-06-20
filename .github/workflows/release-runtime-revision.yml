@@ -1,0 +1,122 @@
+name: Release Runtime Revision
+
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: Why this runtime-only revision is needed
+        required: true
+        type: string
+      target_version:
+        description: Optional explicit runtime version, for example 0.8.4.1
+        required: false
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  prepare-revision:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout runtime repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.AXTP_RUNTIME_AUTOMATION_TOKEN || github.token }}
+          submodules: recursive
+
+      - name: Resolve locked AXTP spec tag
+        id: spec_lock
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          spec_tag="$(awk '/^[[:space:]]+tag:/ { value = $0; sub("^[[:space:]]+tag:[[:space:]]*", "", value); gsub(/^"/, "", value); gsub(/"$/, "", value); print value; exit }' AXTP_SPEC.lock.yaml)"
+          spec_version="$(awk '/^[[:space:]]+version:/ { value = $0; sub("^[[:space:]]+version:[[:space:]]*", "", value); gsub(/^"/, "", value); gsub(/"$/, "", value); print value; exit }' AXTP_SPEC.lock.yaml)"
+
+          if [[ ! "$spec_tag" =~ ^spec/v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "AXTP_SPEC.lock.yaml tag must match spec/vMAJOR.MINOR.PATCH: $spec_tag" >&2
+            exit 2
+          fi
+          if [[ "$spec_version" != "${spec_tag#spec/v}" ]]; then
+            echo "AXTP_SPEC.lock.yaml version $spec_version does not match $spec_tag" >&2
+            exit 2
+          fi
+
+          echo "spec_tag=$spec_tag" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout AXTP spec
+        uses: actions/checkout@v4
+        with:
+          repository: Mostorm-Labs/axtp
+          ref: ${{ steps.spec_lock.outputs.spec_tag }}
+          path: third_party/axtp-spec
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup pnpm
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack prepare pnpm@11.3.0 --activate
+
+      - name: Prepare runtime revision
+        id: revision
+        shell: bash
+        env:
+          TARGET_VERSION: ${{ github.event.inputs.target_version }}
+        run: |
+          set -euo pipefail
+
+          args=()
+          if [[ -n "${TARGET_VERSION:-}" ]]; then
+            args+=(--target-version "$TARGET_VERSION")
+          fi
+
+          AXTP_SPEC_PATH="$GITHUB_WORKSPACE/third_party/axtp-spec" bash devtools/scripts/prepare-runtime-revision.sh "${args[@]}"
+
+      - name: Check AXTP spec lock was not modified
+        shell: bash
+        run: git diff --exit-code -- AXTP_SPEC.lock.yaml
+
+      - name: Write PR body
+        shell: bash
+        env:
+          REASON: ${{ github.event.inputs.reason }}
+          RUNTIME_NAME: ${{ steps.revision.outputs.runtime_name }}
+          SPEC_TAG: ${{ steps.revision.outputs.spec_tag }}
+          SPEC_VERSION: ${{ steps.revision.outputs.spec_version }}
+          PREVIOUS_VERSION: ${{ steps.revision.outputs.previous_version }}
+          TARGET_VERSION: ${{ steps.revision.outputs.target_version }}
+        run: |
+          set -euo pipefail
+
+          cat > "$RUNNER_TEMP/runtime-revision-pr.md" <<EOF
+          Runtime/tool: $RUNTIME_NAME
+          AXTP Spec: $SPEC_TAG ($SPEC_VERSION)
+          Previous runtime/tool version: $PREVIOUS_VERSION
+          Target runtime/tool version: $TARGET_VERSION
+
+          Reason:
+          $REASON
+
+          This PR prepares a runtime-only revision. It must not change AXTP_SPEC.lock.yaml. After merge, the existing auto-release workflow will create tag v$TARGET_VERSION and run the release checks.
+          EOF
+
+      - name: Create runtime revision PR
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.AXTP_RUNTIME_AUTOMATION_TOKEN || github.token }}
+          branch: automation/release-runtime-revision-v${{ steps.revision.outputs.target_version }}
+          title: "chore: release runtime revision v${{ steps.revision.outputs.target_version }}"
+          commit-message: "chore: release runtime revision v${{ steps.revision.outputs.target_version }}"
+          body-path: ${{ runner.temp }}/runtime-revision-pr.md
+          labels: runtime-revision-release
+          delete-branch: true

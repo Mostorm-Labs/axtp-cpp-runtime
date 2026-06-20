@@ -2,13 +2,13 @@
 set -euo pipefail
 
 if [[ $# -ne 1 ]]; then
-  echo "Usage: $0 X.Y.Z" >&2
+  echo "Usage: $0 X.Y.Z[.R]" >&2
   exit 2
 fi
 
 tag_version="$1"
-if [[ ! "$tag_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-.+][0-9A-Za-z.-]+)?$ ]]; then
-  echo "Expected runtime tag version without leading v, for example 0.3.1" >&2
+if [[ ! "$tag_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(\.[0-9]+)?$ ]]; then
+  echo "Expected runtime tag version without leading v, for example 0.3.1 or 0.3.1.2" >&2
   exit 2
 fi
 

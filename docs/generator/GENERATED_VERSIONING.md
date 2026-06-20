@@ -3,12 +3,21 @@
 Runtime repositories track three separate version concepts:
 
 - AXTP Spec Version comes from the AXTP main repository tag, such as `spec/v0.3.0`.
-- Runtime Version comes from this runtime repository, such as `v0.3.1`.
+- Runtime Version comes from this runtime repository, such as `v0.3.0.1`.
 - Generated Artifact Version comes from `generated/axtp_generated_manifest.json` and generated language constants.
 
-AXTP Spec tags use `spec/vX.Y.Z`. Runtime release tags use `vX.Y.Z`.
-Runtime patch releases may move independently while staying on the same AXTP
+AXTP Spec tags use `spec/vX.Y.Z`. Runtime release tags use `vX.Y.Z.R`, where `R` is a runtime/tool revision scoped to the locked spec version.
+Runtime revision releases may move independently while staying on the same locked AXTP
 Spec patch.
+
+## Runtime Revision Workflow
+
+For runtime-only changes that do not change `AXTP_SPEC.lock.yaml`, use
+`.github/workflows/release-runtime-revision.yml` or the local skill at
+`devtools/skills/70-release-runtime-revision/SKILL.md`. The workflow runs
+`devtools/scripts/prepare-runtime-revision.sh`, increments only `R`,
+regenerates version metadata, and opens a PR. After that PR merges,
+`auto-release-on-merge.yml` creates tag `vX.Y.Z.R`.
 
 ## Generated Manifest
 
@@ -34,7 +43,7 @@ Use:
 
 ```bash
 devtools/scripts/check-generated-version.sh
-devtools/scripts/check-runtime-release.sh 0.3.1
+devtools/scripts/check-runtime-release.sh 0.3.0.1
 ```
 
 `check-generated-version.sh` validates lock, manifest, runtime version, and

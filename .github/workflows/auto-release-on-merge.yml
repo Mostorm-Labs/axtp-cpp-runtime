@@ -27,8 +27,8 @@ jobs:
           set -euo pipefail
 
           runtime_version="$(devtools/scripts/get-runtime-version.sh)"
-          if [[ ! "$runtime_version" =~ ^[0-9]+.[0-9]+.[0-9]+$ ]]; then
-            echo "Runtime/tool version must match MAJOR.MINOR.PATCH for automated releases: $runtime_version" >&2
+          if [[ ! "$runtime_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(\.[0-9]+)?$ ]]; then
+            echo "Runtime/tool version must match MAJOR.MINOR.PATCH or MAJOR.MINOR.PATCH.REVISION for automated releases: $runtime_version" >&2
             exit 2
           fi
 
@@ -90,7 +90,7 @@ jobs:
           set -euo pipefail
 
           spec_tag="$(awk '/^[[:space:]]+tag:/ { value = $0; sub("^[[:space:]]+tag:[[:space:]]*", "", value); gsub(/^"/, "", value); gsub(/"$/, "", value); print value; exit }' AXTP_SPEC.lock.yaml)"
-          if [[ ! "$spec_tag" =~ ^spec/v[0-9]+.[0-9]+.[0-9]+$ ]]; then
+          if [[ ! "$spec_tag" =~ ^spec/v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "AXTP_SPEC.lock.yaml tag must match spec/vMAJOR.MINOR.PATCH: $spec_tag" >&2
             exit 2
           fi
