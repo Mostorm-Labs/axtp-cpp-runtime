@@ -4,12 +4,12 @@
 namespace axtp::generated {
 
 inline constexpr const char* kRuntimeName = "axtp-cpp-runtime";
-inline constexpr const char* kRuntimeVersion = "0.8.6.0";
-inline constexpr const char* kSpecVersion = "0.8.6";
-inline constexpr const char* kSpecTag = "spec/v0.8.6";
-inline constexpr const char* kSpecCommit = "3179210ca157851d53d5ff1d661b85bdfca81440";
+inline constexpr const char* kRuntimeVersion = "0.8.7.0";
+inline constexpr const char* kSpecVersion = "0.8.7";
+inline constexpr const char* kSpecTag = "spec/v0.8.7";
+inline constexpr const char* kSpecCommit = "75b65ead2e806d88ca2092e2ec591a8255e2cc41";
 inline constexpr const char* kGeneratorName = "@axtp/cpp-runtime-generator";
 inline constexpr const char* kGeneratorVersion = "1.0.0";
-inline constexpr const char* kGeneratedAt = "2026-06-20T13:47:52Z";
+inline constexpr const char* kGeneratedAt = "2026-06-20T14:38:41Z";
 
 }  // namespace axtp::generated
