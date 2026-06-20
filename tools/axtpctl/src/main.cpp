@@ -1,4 +1,3 @@
-#include <cctype>
 #include <atomic>
 #include <chrono>
 #include <cstdint>
@@ -17,12 +16,16 @@
 #include <utility>
 #include <vector>
 
-#include "axtp.hpp"
+#include "axtp_core.hpp"
 #include "json_rpc/method_registry_json.hpp"
-#include "sdk/axtp_sdk_all.hpp"
+#include "axtp_sdk.hpp"
 #include "toolkit/axtp_toolkit.hpp"
 
 namespace {
+
+using axtp::toolkit::parseHex;
+using axtp::toolkit::parseUint32;
+using axtp::toolkit::toHex;
 
 constexpr std::uint32_t kDefaultHidVendorId = 0x0581;
 constexpr std::uint32_t kDefaultHidProductId = 0x2581;
@@ -180,83 +183,6 @@ bool writeBinaryFile(const std::string& path, const axtp::Bytes& bytes) {
     output.write(reinterpret_cast<const char*>(bytes.data()),
                  static_cast<std::streamsize>(bytes.size()));
     return true;
-}
-
-int hexNibble(char ch) {
-    if (ch >= '0' && ch <= '9') {
-        return ch - '0';
-    }
-    if (ch >= 'a' && ch <= 'f') {
-        return 10 + ch - 'a';
-    }
-    if (ch >= 'A' && ch <= 'F') {
-        return 10 + ch - 'A';
-    }
-    return -1;
-}
-
-std::optional<axtp::Bytes> parseHex(std::string text) {
-    std::string compact;
-    for (std::size_t i = 0; i < text.size(); ++i) {
-        const auto ch = text[i];
-        if (std::isspace(static_cast<unsigned char>(ch))) {
-            continue;
-        }
-        if (ch == '0' && i + 1 < text.size() && (text[i + 1] == 'x' || text[i + 1] == 'X')) {
-            ++i;
-            continue;
-        }
-        compact.push_back(ch);
-    }
-    if (compact.size() % 2 != 0) {
-        return std::nullopt;
-    }
-    axtp::Bytes bytes;
-    bytes.reserve(compact.size() / 2);
-    for (std::size_t i = 0; i < compact.size(); i += 2) {
-        const auto hi = hexNibble(compact[i]);
-        const auto lo = hexNibble(compact[i + 1]);
-        if (hi < 0 || lo < 0) {
-            return std::nullopt;
-        }
-        bytes.push_back(static_cast<axtp::Byte>((hi << 4) | lo));
-    }
-    return bytes;
-}
-
-std::string toHex(const axtp::Bytes& bytes) {
-    static constexpr char kDigits[] = "0123456789abcdef";
-    std::string out;
-    out.reserve(bytes.size() * 2);
-    for (const auto byte : bytes) {
-        out.push_back(kDigits[(byte >> 4) & 0x0F]);
-        out.push_back(kDigits[byte & 0x0F]);
-    }
-    return out;
-}
-
-std::optional<std::uint32_t> parseUint32(const std::string& text) {
-    if (text.empty()) {
-        return std::nullopt;
-    }
-    std::size_t offset = 0;
-    int base = 10;
-    if (text.size() > 2 && text[0] == '0' && (text[1] == 'x' || text[1] == 'X')) {
-        offset = 2;
-        base = 16;
-    }
-    if (offset >= text.size()) {
-        return std::nullopt;
-    }
-    try {
-        std::size_t consumed = 0;
-        const auto value = std::stoull(text.substr(offset), &consumed, base);
-        if (consumed == text.size() - offset && value <= 0xFFFFFFFFULL) {
-            return static_cast<std::uint32_t>(value);
-        }
-    } catch (const std::exception&) {
-    }
-    return std::nullopt;
 }
 
 bool parseGlobalOptions(int argc, char** argv, CliOptions* options) {

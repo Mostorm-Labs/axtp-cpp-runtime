@@ -19,16 +19,17 @@ ITransport <-> AxtpEndpoint -> AxtpCore -> BasicBroker<>
 | `axtp_broker` | `INTERFACE` | `BasicBroker<>`、`BrokerTask`、`BrokerResult`、dynamic method dispatch helpers |
 | `axtp_runtime` | `INTERFACE` | core + broker + endpoint glue，供普通应用使用 |
 | `axtp_json_rpc` | `INTERFACE` | WebSocket session helper adapter 和 JSON registry-file loader |
-| `axtp_transport_hidapi` | `STATIC` optional | HID report-level transport，位于 `transports`，依赖 `thirdparty/hidapi` |
-| `axtp_transport_tcp_boost` | `INTERFACE` optional | Boost.Asio TCP transport，位于 `transports` |
-| `axtp_transport_websocket_ix` | `INTERFACE` optional | 默认 IXWebSocket WebSocket transport，位于 `transports` |
-| `axtp_transport_websocket_websocketpp` | `INTERFACE` optional | 高级可选 websocketpp + standalone Asio WebSocket transport，位于 `transports` |
-| `axtp_transport_websocket_boost` | `INTERFACE` optional | Legacy optional Boost.Beast WebSocket transport，位于 `transports` |
+| `axtp_transport_tcp_native` | `INTERFACE` | 默认 native TCP transport，public header 位于 `include/transports`，不依赖 Boost |
+| `axtp_transport_hidapi` | `STATIC` optional | HID report-level transport，public header 位于 `include/transports`，实现位于 `src/transports`，依赖 `third_party/hidapi` |
+| `axtp_transport_tcp_boost` | `INTERFACE` optional | Legacy Boost.Asio TCP transport，Boost 可用时定义，位于 `include/transports` |
+| `axtp_transport_websocket_ix` | `INTERFACE` optional | 默认 IXWebSocket WebSocket transport，位于 `include/transports` |
+| `axtp_transport_websocket_websocketpp` | `INTERFACE` optional | 高级可选 websocketpp + standalone Asio WebSocket transport，位于 `include/transports` |
+| `axtp_transport_websocket_boost` | `INTERFACE` optional | Legacy optional Boost.Beast WebSocket transport，位于 `include/transports` |
 
 推荐 runtime include：
 
 ```cpp
-#include <axtp.hpp>
+#include <axtp_core.hpp>
 ```
 
 Concrete transports 不包含在聚合头中。
@@ -90,14 +91,14 @@ flowchart TB
 
 | 模式 | 代码位置 | 作用 |
 |---|---|---|
-| Endpoint glue | `runtime/endpoint/axtp_endpoint.hpp` | 唯一连接 transport、core、broker 的对象 |
-| Protocol-only core | `runtime/core/axtp_core.hpp` | 解码 payload、维护 session/pending calls、输出 `CoreEvent` 和 bytes |
-| Task/result broker | `runtime/broker/basic_broker.hpp` | 接收 `BrokerTask`，分发 handler，输出 `BrokerResult` |
+| Endpoint glue | `include/core/runtime/endpoint/axtp_endpoint.hpp` | 唯一连接 transport、core、broker 的对象 |
+| Protocol-only core | `include/core/runtime/core/axtp_core.hpp` | 解码 payload、维护 session/pending calls、输出 `CoreEvent` 和 bytes |
+| Task/result broker | `include/core/runtime/broker/basic_broker.hpp` | 接收 `BrokerTask`，分发 handler，输出 `BrokerResult` |
 | Port adapter | `AxtpCore` 内部 sink/writer port | 把内部 processor 适配成队列输出，避免 core 暴露可变实现细节 |
-| Pipeline processor | `protocol/wire/*` | 把 wire mode 的解析和编码分成小组件 |
+| Pipeline processor | `include/core/protocol/wire/*` | 把 wire mode 的解析和编码分成小组件 |
 | Dynamic RPC first | `MethodRegistry` + broker dynamic handlers | 默认按 method id/name + body bytes 调用业务 |
-| Optional platform adapter | `transports/*` | HID/TCP/WebSocket 作为可选 transport target，不污染 core |
-| Generated facts boundary | `protocol/generated/*` | ID、registry、schema 是事实源产物；runtime 不手写业务常量 |
+| Optional platform adapter | `include/transports/*`, `src/transports/*` | HID/TCP/WebSocket 作为可选 transport target，不污染 core |
+| Generated facts boundary | `include/core/protocol/generated/*` | ID、registry、schema 是事实源产物；runtime 不手写业务常量 |
 
 ## Endpoint Glue 模式
 
@@ -215,7 +216,7 @@ Transport 可以处理平台特有边界，例如 HID report id、report size、
 - JSON-RPC method name
 - Legacy/AXDP command
 
-如果 transport 需要额外平台库，应放在 `transports` 或更上层 target。`core/include` 不能泄漏平台 include。
+如果 transport 需要额外平台库，应放在 `transports` 或更上层 target。`include/core` 不能泄漏平台 include。
 
 ## Dynamic RPC 模式
 
@@ -237,8 +238,8 @@ method name/id + RpcEncoding + body bytes
 
 ### 新增 Transport
 
-1. 在 `transports/include/<name>/` 增加 public header。
-2. 实现 `ITransport`，只处理平台 I/O。
+1. 在 `include/transports/<name>/` 增加 public header。
+2. 在 `src/transports/<name>/` 增加需要编译的实现文件，只处理平台 I/O。
 3. `profile()` 填写 `TransportKind`、`AxtpWireMode`、message/text/binary 能力和 `preferredFrameSize`。
 4. 在 optional CMake target 中链接平台依赖。
 5. 使用 `MockTransport` 或 backend seam 做 report/message/byte slicing 测试。
@@ -273,14 +274,14 @@ method name/id + RpcEncoding + body bytes
 | `phase5_transport_test` | `AxtpEndpoint` + `MockTransport` |
 | `phase6_real_transport_test` | optional TCP 和 WebSocketJsonRpc transport flows |
 | `phase7_broker_test` | `BasicBroker<>` dynamic Raw/JSON/TLV dispatch |
-| `phase8_api_surface_test` | `<axtp.hpp>`、packet/text IO、dynamic registry |
+| `phase8_api_surface_test` | `<axtp_core.hpp>`、packet/text IO、dynamic registry |
 | `phase9_hid_transport_test` | optional HID report slicing、report-id filtering、ManualPoll callbacks |
 
 ## Anti-Pattern
 
 - `AxtpCore` 直接 `attachTransport()` 或 `attachBroker()`。
 - `BasicBroker<>` 保存 `AxtpCore*` 并回调 core。
-- concrete transport include 出现在 `core/include`。
+- concrete transport include 出现在 `include/core`。
 - transport 根据 `MethodId` 或 payload type 分流。
 - CLI 为普通 `call` 命令手写 frame。
 - core 为某个业务 schema 引入 `MethodTraits` 或 `SchemaCodec`。

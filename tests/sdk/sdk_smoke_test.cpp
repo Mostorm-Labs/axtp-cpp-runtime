@@ -1,0 +1,331 @@
+#include <cassert>
+#include <algorithm>
+#include <atomic>
+#include <chrono>
+#include <memory>
+#include <string>
+#include <thread>
+#include <utility>
+#include <vector>
+
+#include "core/runtime/endpoint/axtp_endpoint.hpp"
+#include "core/runtime/testing/mock_transport.hpp"
+#include "transports/tcp/native/tcp_transport.hpp"
+
+#include <axtp_sdk.hpp>
+
+namespace {
+
+struct CapturingByteWriter : axtp::IByteWriter {
+    axtp::Bytes bytes;
+
+    void writeBytes(const axtp::Byte* data, std::size_t size) override {
+        bytes.insert(bytes.end(), data, data + size);
+    }
+};
+
+struct CapturingPayloadSink : axtp::IPayloadSink {
+    std::vector<axtp::ControlPayload> controls;
+    std::vector<axtp::RpcPayload> rpcs;
+    std::vector<axtp::StreamPayload> streams;
+
+    void onControl(axtp::ControlPayload payload) override {
+        controls.push_back(std::move(payload));
+    }
+
+    void onRpc(axtp::RpcPayload payload) override {
+        rpcs.push_back(std::move(payload));
+    }
+
+    void onStream(axtp::StreamPayload payload) override {
+        streams.push_back(std::move(payload));
+    }
+};
+
+axtp::Bytes encodeControl(axtp::ControlPayload payload) {
+    CapturingByteWriter writer;
+    axtp::OutboundProcessor outbound(writer);
+    outbound.sendControl(std::move(payload));
+    return writer.bytes;
+}
+
+axtp::Bytes encodeRpc(axtp::RpcPayload payload) {
+    CapturingByteWriter writer;
+    axtp::OutboundProcessor outbound(writer);
+    outbound.sendRpc(std::move(payload));
+    return writer.bytes;
+}
+
+class ScriptedHandshakeTransport : public axtp::ITransport {
+public:
+    void bind(axtp::IByteSink& sink) override {
+        _sink = &sink;
+    }
+
+    void open() override {
+        _open = true;
+    }
+
+    void close() override {
+        _open = false;
+    }
+
+    void sendBytes(const axtp::Byte* data, std::size_t size) override {
+        CapturingPayloadSink sink;
+        axtp::InboundProcessor inbound(sink);
+        inbound.onBytes(data, size);
+
+        for (const auto& control : sink.controls) {
+            if (control.opcode != axtp::ControlOpcode::Open) {
+                continue;
+            }
+            sawOpen = true;
+            axtp::ControlPayload accept;
+            accept.opcode = axtp::ControlOpcode::Accept;
+            accept.controlId = control.controlId;
+            accept.statusCode = axtp::ErrorCode::Success;
+            inject(encodeControl(accept));
+            inject(encodeRpc(axtp::JsonRpcEncoder::makeHello()));
+        }
+
+        for (const auto& rpc : sink.rpcs) {
+            if (rpc.op == axtp::RpcOp::Identify) {
+                sawIdentify = true;
+                assert(rpc.meta.jsonSid.empty());
+                const std::string body(rpc.body.begin(), rpc.body.end());
+                assert(body.find("rpcVersion") == std::string::npos);
+                assert(body.find(R"("randomSeed":305419896)") != std::string::npos);
+                inject(encodeRpc(axtp::JsonRpcEncoder::makeIdentified("12345678")));
+                continue;
+            }
+            if (rpc.op == axtp::RpcOp::Request) {
+                sawBusinessRequest = true;
+                assert(rpc.meta.jsonSid == "12345678");
+                axtp::RpcPayload response;
+                response.encoding = axtp::RpcEncoding::Json;
+                response.op = axtp::RpcOp::RequestResponse;
+                response.requestId = rpc.requestId;
+                response.methodOrEventId = rpc.methodOrEventId;
+                response.statusCode = axtp::ErrorCode::Success;
+                response.bodyEncoding = axtp::RpcBodyEncoding::None;
+                response.meta.sourceProtocol = axtp::SourceProtocol::JsonRpc;
+                response.meta.jsonSid = rpc.meta.jsonSid;
+                response.body = {'{', '}'};
+                inject(encodeRpc(response));
+            }
+        }
+    }
+
+    axtp::TransportProfile profile() const override {
+        return axtp::TransportProfile{
+            axtp::TransportKind::Mock,
+            axtp::AxtpWireMode::FramedBinary,
+            axtp::RpcEncoding::Json,
+            false,
+            false,
+            true,
+            4096,
+        };
+    }
+
+    bool isOpen() const {
+        return _open;
+    }
+
+    bool sawOpen = false;
+    bool sawIdentify = false;
+    bool sawBusinessRequest = false;
+
+private:
+    void inject(const axtp::Bytes& bytes) {
+        if (_sink != nullptr) {
+            _sink->onBytes(bytes.data(), bytes.size());
+        }
+    }
+
+    axtp::IByteSink* _sink = nullptr;
+    bool _open = false;
+};
+
+}  // namespace
+
+int main() {
+    axtp::sdk::AxtpClient client;
+    client.attachTransport(std::make_unique<axtp::MockTransport>());
+    assert(client.isConnected());
+
+    client.registerMethod(
+        static_cast<std::uint16_t>(axtp::MethodId::AudioGetAlgorithmConfig),
+        [](const axtp::RpcPayload&) {
+            const std::string body = R"({"noiseSuppression":{"enabled":true,"level":3}})";
+            return axtp::Bytes(body.begin(), body.end());
+        });
+    client.registerMethod(static_cast<std::uint16_t>(axtp::MethodId::AudioSetAlgorithmConfig),
+                          [](const axtp::RpcPayload& request) {
+                              if (request.encoding == axtp::RpcEncoding::Json) {
+                                  const std::string body(request.body.begin(), request.body.end());
+                                  assert(body == "{}" ||
+                                         body.find("noiseSuppression") != std::string::npos);
+                              } else {
+                                  assert((request.body == axtp::Bytes{0x01, 0x01, 0x50}));
+                              }
+                              return axtp::Bytes{};
+                          });
+    client.registerMethod(static_cast<std::uint16_t>(axtp::MethodId::AudioGetAlgorithmCapabilities),
+                          [](const axtp::RpcPayload&) {
+                              const std::string body =
+                                  R"({"algorithms":{"noiseSuppression":{"level":{"min":0,"max":5}}}})";
+                              return axtp::Bytes(body.begin(), body.end());
+                          });
+    client.registerMethod(0x90010001, [](const axtp::RpcPayload& request) { return request.body; });
+    client.registry().addMethod(0x90010001, "vendor.echo");
+
+    axtp::RpcPayload raw;
+    raw.encoding = axtp::RpcEncoding::Json;
+    raw.op = axtp::RpcOp::Request;
+    raw.methodOrEventId = static_cast<std::uint16_t>(axtp::MethodId::AudioGetAlgorithmConfig);
+    raw.bodyEncoding = axtp::RpcBodyEncoding::None;
+    raw.body = {'{', '}'};
+    auto response = client.callRaw(raw);
+    assert(response.statusCode == axtp::ErrorCode::Success);
+    assert(response.op == axtp::RpcOp::RequestResponse);
+
+    const auto dynamicJsonByName = client.callJson("audio.getAlgorithmConfig", "{}");
+    assert(dynamicJsonByName.find("noiseSuppression") != std::string::npos);
+
+    const auto dynamicJsonById = client.callJson(0x90010001, R"({"hello":true})");
+    assert(dynamicJsonById == R"({"hello":true})");
+
+    auto tlv = client.callTlv("audio.setAlgorithmConfig", axtp::Bytes{0x01, 0x01, 0x50});
+    assert((tlv == axtp::Bytes{}));
+
+    auto rawBytes = client.callRawBytes(0x90010001, axtp::Bytes{0xCA, 0xFE});
+    assert((rawBytes == axtp::Bytes{0xCA, 0xFE}));
+
+    axtp::sdk::AxtpDevice device(client);
+    auto config = device.audio.getAlgorithmConfig();
+    (void)config;
+
+    auto setResponse =
+        device.audio.setAlgorithmConfig(axtp::AudioSetAlgorithmConfigRequest{});
+    (void)setResponse;
+    auto capabilities = client.callTyped<axtp::MethodId::AudioGetAlgorithmCapabilities>(
+        axtp::AudioGetAlgorithmCapabilitiesRequest{});
+    (void)capabilities;
+
+    const auto methods = device.capability.methods();
+    assert(!methods.empty());
+    assert(axtp::RegistryLookup::methodIdByName("audio.getAlgorithmConfig").has_value());
+
+    client.close();
+    assert(!client.isConnected());
+
+    {
+        axtp::sdk::AxtpClient handshakeClient;
+        auto transport = std::make_unique<ScriptedHandshakeTransport>();
+        auto* transportPtr = transport.get();
+        handshakeClient.attachTransport(std::move(transport));
+        assert(transportPtr->isOpen());
+
+        axtp::sdk::AppReadyOptions options;
+        options.randomSeed = 0x12345678;
+        std::vector<std::string> appReadyTrace;
+        options.trace = [&appReadyTrace](const axtp::sdk::AppReadyTraceEvent& event) {
+            if (event.stage == "control-open" || event.stage == "control-accept" ||
+                event.stage == "framing-ready") {
+                assert(!event.hasRandomSeed);
+            }
+            if (event.stage == "identify") {
+                assert(event.hasRandomSeed);
+                assert(event.randomSeed == 0x12345678);
+            }
+            appReadyTrace.push_back(event.stage + ":" + event.action);
+        };
+        const auto appReady = handshakeClient.ensureAppReady(options);
+        assert(appReady.ok);
+        assert(appReady.sid == "12345678");
+        assert(appReady.hasRandomSeed);
+        assert(appReady.randomSeed == 0x12345678);
+        assert(handshakeClient.isAppReady());
+        assert(handshakeClient.sessionSid() == "12345678");
+        assert(transportPtr->sawOpen);
+        assert(transportPtr->sawIdentify);
+        assert(!appReadyTrace.empty());
+        assert(std::find(appReadyTrace.begin(),
+                         appReadyTrace.end(),
+                         "control-open:send") != appReadyTrace.end());
+        assert(std::find(appReadyTrace.begin(), appReadyTrace.end(), "hello:receive") !=
+               appReadyTrace.end());
+        assert(std::find(appReadyTrace.begin(), appReadyTrace.end(), "identify:send") !=
+               appReadyTrace.end());
+        assert(std::find(appReadyTrace.begin(), appReadyTrace.end(), "identified:receive") !=
+               appReadyTrace.end());
+        assert(std::find(appReadyTrace.begin(), appReadyTrace.end(), "app-ready:ready") !=
+               appReadyTrace.end());
+
+        axtp::RpcPayload request;
+        request.encoding = axtp::RpcEncoding::Json;
+        request.op = axtp::RpcOp::Request;
+        request.methodOrEventId =
+            static_cast<std::uint16_t>(axtp::MethodId::AudioGetAlgorithmConfig);
+        request.bodyEncoding = axtp::RpcBodyEncoding::None;
+        request.meta.sourceProtocol = axtp::SourceProtocol::JsonRpc;
+        request.meta.jsonMethodOrEventName = "audio.getAlgorithmConfig";
+        request.body = {'{', '}'};
+
+        axtp::sdk::CallOptions callOptions;
+        callOptions.acceptAnyResponse = true;
+        auto response = handshakeClient.callRaw(std::move(request), callOptions);
+        assert(response.statusCode == axtp::ErrorCode::Success);
+        assert(response.requestId == 1);
+        assert(transportPtr->sawBusinessRequest);
+    }
+
+    {
+        axtp::BasicBroker<> broker;
+        axtp::AxtpEndpoint endpoint(broker);
+        broker.registerMethod(
+            static_cast<std::uint16_t>(axtp::MethodId::AudioGetAlgorithmConfig),
+            [](const axtp::RpcPayload&) {
+                const std::string body = R"({"noiseSuppression":{"enabled":true,"level":3}})";
+                return axtp::Bytes(body.begin(), body.end());
+            });
+
+        axtp::TcpServerTransport server(0);
+        endpoint.attachTransport(server);
+        server.open();
+        assert(server.isOpen());
+        const auto port = server.localPort();
+        assert(port != 0);
+
+        std::atomic<bool> running{true};
+        std::thread serverThread([&] {
+            while (running.load()) {
+                endpoint.poll();
+                std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            }
+        });
+
+        axtp::sdk::AxtpClient tcpClient;
+        tcpClient.connect(axtp::sdk::TcpEndpoint{"127.0.0.1", port});
+        assert(tcpClient.isConnected());
+
+        axtp::sdk::AppReadyOptions options;
+        options.timeout = std::chrono::milliseconds(1000);
+        options.randomSeed = 0x01020304;
+        const auto ready = tcpClient.ensureAppReady(options);
+        assert(ready.ok);
+        assert(tcpClient.isAppReady());
+        assert(!tcpClient.sessionSid().empty());
+
+        axtp::sdk::CallOptions callOptions;
+        callOptions.timeout = std::chrono::milliseconds(1000);
+        const auto body = tcpClient.callJson("audio.getAlgorithmConfig", "{}", callOptions);
+        assert(body.find("noiseSuppression") != std::string::npos);
+
+        tcpClient.close();
+        running = false;
+        serverThread.join();
+        server.close();
+    }
+}

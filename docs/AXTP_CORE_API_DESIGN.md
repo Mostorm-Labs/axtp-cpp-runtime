@@ -31,16 +31,17 @@ ITransport <-> AxtpEndpoint -> AxtpCore -> BasicBroker
 | `axtp_broker` | `INTERFACE` | `BasicBroker<>`、`BrokerTask`、`BrokerResult`、dynamic method dispatch helper |
 | `axtp_runtime` | `INTERFACE` | core + broker + endpoint glue，供普通应用使用 |
 | `axtp_json_rpc` | `INTERFACE` | WebSocket session helper adapter 和 JSON registry-file loader |
-| `axtp_transport_hidapi` | `STATIC` optional | HID report-level transport，位于 `axtp-cpp-runtime/transports`，依赖 submodule `axtp-cpp-runtime/thirdparty/hidapi` |
-| `axtp_transport_tcp_boost` | `INTERFACE` optional | Boost.Asio TCP transport，位于 `axtp-cpp-runtime/transports` |
-| `axtp_transport_websocket_ix` | `INTERFACE` optional | 默认 IXWebSocket WebSocket transport，位于 `axtp-cpp-runtime/transports` |
-| `axtp_transport_websocket_websocketpp` | `INTERFACE` optional | 高级可选 websocketpp + standalone Asio WebSocket transport，位于 `axtp-cpp-runtime/transports` |
-| `axtp_transport_websocket_boost` | `INTERFACE` optional | Legacy optional Boost.Beast WebSocket transport，位于 `axtp-cpp-runtime/transports` |
+| `axtp_transport_tcp_native` | `INTERFACE` | 默认 native TCP transport，public header 位于 `include/transports`，不依赖 Boost |
+| `axtp_transport_hidapi` | `STATIC` optional | HID report-level transport，public header 位于 `include/transports`，实现位于 `src/transports`，依赖 submodule `third_party/hidapi` |
+| `axtp_transport_tcp_boost` | `INTERFACE` optional | Legacy Boost.Asio TCP transport，Boost 可用时定义，位于 `include/transports` |
+| `axtp_transport_websocket_ix` | `INTERFACE` optional | 默认 IXWebSocket WebSocket transport，位于 `include/transports` |
+| `axtp_transport_websocket_websocketpp` | `INTERFACE` optional | 高级可选 websocketpp + standalone Asio WebSocket transport，位于 `include/transports` |
+| `axtp_transport_websocket_boost` | `INTERFACE` optional | Legacy optional Boost.Beast WebSocket transport，位于 `include/transports` |
 
 推荐 runtime 聚合 include：
 
 ```cpp
-#include <axtp.hpp>
+#include <axtp_core.hpp>
 ```
 
 该聚合头只包含 runtime/core/broker 常用入口，不包含 HID/TCP/WebSocket concrete transport、`MockTransport` 或 schema-aware typed codec。
@@ -61,15 +62,15 @@ Core public headers 按职责分组：
 
 | 区域 | 作用 |
 |---|---|
-| `support/io/*` | byte sink/writer、可选 text writer、transport packet 边界类型 |
-| `protocol/model/*` | Bytes、status/result、frame、message、payload、协议常量和枚举 |
-| `protocol/generated/*` | 生成的 ID、dynamic registry、lookup helper |
-| `protocol/wire/*` | FramedBinary 和 WebSocketJsonRpc inbound/outbound processor |
-| `protocol/session/*` | session helper、pending call、stream session |
-| `runtime/core/*` | `AxtpCore`、`CoreEvent`、RPC dispatcher |
-| `runtime/transport/*` | transport interface 和 profile |
-| `runtime/broker/*` | `BasicBroker<>`、task dispatch、business routing、result queue |
-| `runtime/endpoint/*` | `AxtpEndpoint` glue 和 endpoint ports |
+| `include/core/support/io/*` | byte sink/writer、可选 text writer、transport packet 边界类型 |
+| `include/core/protocol/model/*` | Bytes、status/result、frame、message、payload、协议常量和枚举 |
+| `include/core/protocol/generated/*` | 生成的 ID、dynamic registry、lookup helper |
+| `include/core/protocol/wire/*` | FramedBinary 和 WebSocketJsonRpc inbound/outbound processor |
+| `include/core/protocol/session/*` | session helper、pending call、stream session |
+| `include/core/runtime/core/*` | `AxtpCore`、`CoreEvent`、RPC dispatcher |
+| `include/core/runtime/transport/*` | transport interface 和 profile |
+| `include/core/runtime/broker/*` | `BasicBroker<>`、task dispatch、business routing、result queue |
+| `include/core/runtime/endpoint/*` | `AxtpEndpoint` glue 和 endpoint ports |
 
 ## Core API 契约
 
@@ -164,7 +165,7 @@ Core 把 RPC body 当作 bytes 处理，`RpcEncoding` 描述这些 bytes 的语�
 
 `MethodRegistry` 是运行时数据，可以来自 generated defaults，也可以在运行时扩展。可选 `axtp_json_rpc` 通过 `json_rpc/method_registry_json.hpp` 提供 JSON 文件加载。
 
-Generated typed traits 和 schema codecs 只是可选便利头，不包含在 `<axtp.hpp>` 中，也不能成为 core routing 的前提。
+Generated typed traits 和 schema codecs 只是可选便利头，不包含在 `<axtp_core.hpp>` 的稳定 core routing 前提中。
 
 ## 当前边界
 

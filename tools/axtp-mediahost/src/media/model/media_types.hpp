@@ -8,7 +8,7 @@
 
 #include <nlohmann/json.hpp>
 
-#include "axtp.hpp"
+#include "axtp_core.hpp"
 
 namespace axtp::mediahost {
 

@@ -3,8 +3,8 @@
 #include <memory>
 #include <string>
 
-#include "runtime/testing/mock_transport.hpp"
-#include "sdk/axtp_sdk_all.hpp"
+#include <axtp_sdk.hpp>
+#include <core/runtime/testing/mock_transport.hpp>
 
 int main() {
     axtp::sdk::AxtpClient client;

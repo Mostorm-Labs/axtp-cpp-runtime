@@ -1,15 +1,15 @@
-[submodule "thirdparty/json"]
-	path = thirdparty/json
+[submodule "third_party/json"]
+	path = third_party/json
 	url = https://github.com/nlohmann/json.git
-[submodule "thirdparty/IXWebSocket"]
-	path = thirdparty/IXWebSocket
+[submodule "third_party/IXWebSocket"]
+	path = third_party/IXWebSocket
 	url = https://github.com/machinezone/IXWebSocket.git
-[submodule "thirdparty/websocketpp"]
-	path = thirdparty/websocketpp
+[submodule "third_party/websocketpp"]
+	path = third_party/websocketpp
 	url = https://github.com/zaphoyd/websocketpp.git
-[submodule "thirdparty/asio"]
-	path = thirdparty/asio
+[submodule "third_party/asio"]
+	path = third_party/asio
 	url = https://github.com/chriskohlhoff/asio.git
-[submodule "thirdparty/hidapi"]
-	path = thirdparty/hidapi
+[submodule "third_party/hidapi"]
+	path = third_party/hidapi
 	url = https://github.com/libusb/hidapi.git

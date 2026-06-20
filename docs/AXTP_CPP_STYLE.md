@@ -133,13 +133,13 @@ hid_transport.cpp
 目录也使用 lower_snake_case。如果目录已经表达模块，不要在文件名里重复模块名：
 
 ```text
-runtime/core/axtp_core.hpp
-protocol/wire/framed_binary/inbound/frame_decoder.hpp
-protocol/wire/framed_binary/outbound/frame_encoder.hpp
-runtime/broker/basic_broker.hpp
-runtime/transport/transport.hpp
-runtime/transport/transport_profile.hpp
-runtime/testing/mock_transport.hpp
+include/core/runtime/core/axtp_core.hpp
+include/core/protocol/wire/framed_binary/inbound/frame_decoder.hpp
+include/core/protocol/wire/framed_binary/outbound/frame_encoder.hpp
+include/core/runtime/broker/basic_broker.hpp
+include/core/runtime/transport/transport.hpp
+include/core/runtime/transport/transport_profile.hpp
+include/core/runtime/testing/mock_transport.hpp
 ```
 
 Generated files 可以继续使用当前 `.h` 文件名，直到 generator 单独负责迁移。Third-party code 不由 AXTP 脚本改名或格式化。
@@ -149,12 +149,12 @@ Generated files 可以继续使用当前 `.h` 文件名，直到 generator 单�
 使用完整 module include path：
 
 ```cpp
-#include <axtp.hpp>
-#include <runtime/core/axtp_core.hpp>
-#include <runtime/broker/basic_broker.hpp>
-#include <protocol/wire/framed_binary/inbound/frame_decoder.hpp>
-#include <protocol/wire/framed_binary/outbound/frame_encoder.hpp>
-#include <runtime/transport/transport.hpp>
+#include <axtp_core.hpp>
+#include <core/runtime/core/axtp_core.hpp>
+#include <core/runtime/broker/basic_broker.hpp>
+#include <core/protocol/wire/framed_binary/inbound/frame_decoder.hpp>
+#include <core/protocol/wire/framed_binary/outbound/frame_encoder.hpp>
+#include <core/runtime/transport/transport.hpp>
 ```
 
 不要包含旧的 top-level pipeline path：
@@ -207,8 +207,8 @@ Core 可以解析 frame、重组 message、解码 payload envelope、维护 sess
 在 `axtp-cpp-runtime` 仓库中使用：
 
 ```bash
-scripts/format-cpp.sh
-scripts/check-format-cpp.sh
+devtools/scripts/format-cpp.sh
+devtools/scripts/check-format-cpp.sh
 ```
 
-脚本扫描 `core`、`sdk`、`json-rpc`、`transports` 和 `tools`，排除 `build/`、`generated/` 和 `thirdparty/`。
+脚本扫描 `include`、`src`、`tests` 和 `tools`，排除 `build/`、`generated/` 和 `third_party/`。

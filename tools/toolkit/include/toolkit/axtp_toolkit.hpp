@@ -12,11 +12,11 @@
 #include <string_view>
 #include <vector>
 
-#include "protocol/model/bytes.hpp"
-#include "protocol/model/error.hpp"
-#include "runtime/broker/basic_broker.hpp"
-#include "runtime/endpoint/axtp_endpoint.hpp"
-#include "runtime/transport/transport.hpp"
+#include "core/protocol/model/bytes.hpp"
+#include "core/protocol/model/error.hpp"
+#include "core/runtime/broker/basic_broker.hpp"
+#include "core/runtime/endpoint/axtp_endpoint.hpp"
+#include "core/runtime/transport/transport.hpp"
 #include "sdk/app_ready_options.hpp"
 #include "transports/hidapi/hid_transport.hpp"
 

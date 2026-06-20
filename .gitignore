@@ -66,13 +66,10 @@ vcpkg_installed/
 
 # test output & cache
 Testing/
-!core/include/testing/
-!core/include/testing/**
 .cache/
 
 # Generator local outputs
-generators/node_modules/
-generators/dist/
-generators/.vite/
+devtools/generators/node_modules/
+devtools/generators/dist/
+devtools/generators/.vite/
 third_party/axtp-spec/
-conformance-results/

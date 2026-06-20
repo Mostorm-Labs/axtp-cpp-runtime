@@ -74,15 +74,15 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          pnpm --dir generators install --frozen-lockfile
-          pnpm --dir generators build
+          pnpm --dir devtools/generators install --frozen-lockfile
+          pnpm --dir devtools/generators build
 
       - name: Version release checks
         shell: bash
         run: |
           set -euo pipefail
-          bash -n scripts/*.sh
-          scripts/check-runtime-release.sh "$RUNTIME_VERSION"
+          bash -n devtools/scripts/*.sh
+          devtools/scripts/check-runtime-release.sh "$RUNTIME_VERSION"
 
       - name: Root package checks
         shell: bash
@@ -143,21 +143,11 @@ jobs:
         run: |
           set -euo pipefail
           if [[ -f CMakeLists.txt ]]; then
+            sudo apt-get update
+            sudo apt-get install -y libboost-json-dev nlohmann-json3-dev libudev-dev libusb-1.0-0-dev
             cmake -S . -B build
             cmake --build build
             ctest --test-dir build --output-on-failure
-          elif [[ -f core/CMakeLists.txt ]]; then
-            sudo apt-get update
-            sudo apt-get install -y libboost-json-dev nlohmann-json3-dev libudev-dev libusb-1.0-0-dev
-            cmake -S core -B build/core
-            cmake --build build/core
-            ctest --test-dir build/core --output-on-failure
-            cmake -S sdk -B build/sdk
-            cmake --build build/sdk
-            ctest --test-dir build/sdk --output-on-failure
-            cmake -S tools/axtpctl -B build/axtpctl
-            cmake --build build/axtpctl
-            ctest --test-dir build/axtpctl --output-on-failure
           else
             echo "No CMake runtime layout; skipping CMake checks."
           fi
@@ -194,7 +184,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          AXTP_SPEC_PATH="$GITHUB_WORKSPACE/third_party/axtp-spec" scripts/run-conformance.sh
+          AXTP_SPEC_PATH="$GITHUB_WORKSPACE/third_party/axtp-spec" devtools/scripts/run-conformance.sh
 
       - name: Package release artifacts
         shell: bash
@@ -206,8 +196,8 @@ jobs:
           for item in \
             generated/axtp_generated_manifest.json \
             generated \
-            core/include/protocol/generated \
-            sdk/include/sdk/generated \
+            include/core/protocol/generated \
+            include/sdk/generated \
             lib/src/generated \
             src/generated \
             src/axtp_runtime/generated \
@@ -229,7 +219,7 @@ jobs:
         run: |
           set -euo pipefail
           runtime_name="${GITHUB_REPOSITORY#*/}"
-          node scripts/axtp-versioning.mjs release-notes --runtime-name "$runtime_name" --out "$RUNNER_TEMP/release-notes.md"
+          node devtools/scripts/axtp-versioning.mjs release-notes --runtime-name "$runtime_name" --out "$RUNNER_TEMP/release-notes.md"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2

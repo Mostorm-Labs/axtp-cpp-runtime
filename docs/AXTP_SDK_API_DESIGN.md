@@ -41,23 +41,27 @@ SDK P0 目标是跑通一条可构建、可测试的纵向链路：
 ## 包布局
 
 ```text
-axtp-cpp-runtime/sdk/
+axtp-cpp-runtime/
   include/
-    sdk/axtp_client.hpp
-    sdk/axtp_server.hpp
-    sdk/axtp_device.hpp
-    sdk/client_options.hpp
-    sdk/endpoints.hpp
-    sdk/call_options.hpp
-    sdk/event_subscription.hpp
-    sdk/capability_client.hpp
-    sdk/stream_client.hpp
-    sdk/sdk_error.hpp
-    sdk/sdk_result.hpp
-    sdk/generated/
-      audio_client.h
-    sdk/axtp_sdk_all.hpp
+    axtp_sdk.hpp
+    sdk/
+      axtp_client.hpp
+      axtp_server.hpp
+      axtp_device.hpp
+      client_options.hpp
+      endpoints.hpp
+      call_options.hpp
+      event_subscription.hpp
+      capability_client.hpp
+      stream_client.hpp
+      sdk_error.hpp
+      sdk_result.hpp
+      generated/
+        audio_client.h
+      axtp_sdk_all.hpp
+  sdk/
   tests/
+    sdk/
 ```
 
 SDK namespace 是 `axtp::sdk`。

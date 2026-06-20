@@ -130,7 +130,7 @@ argv
   -> parse global options
   -> load generated MethodRegistry
   -> optionally merge --registry-file
-  -> choose mock or optional concrete transport
+  -> choose mock or configured concrete transport
   -> construct AxtpClient
   -> execute SDK dynamic API
   -> render json/hex/file output
@@ -154,7 +154,8 @@ argv
 ```text
 mock      -> testing/mock transport or local handler
 hid       -> optional axtp_transport_hidapi
-tcp/ws    -> optional Boost transport targets
+tcp       -> built-in axtp_transport_tcp_native
+ws        -> optional axtp_transport_websocket_ix
 ble/uart  -> reserved endpoint values until concrete transports exist
 ```
 

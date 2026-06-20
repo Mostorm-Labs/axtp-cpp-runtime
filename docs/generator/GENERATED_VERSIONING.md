@@ -21,7 +21,7 @@ generated/axtp_generated_manifest.json
 The manifest records:
 
 - `axtpSpec` from `AXTP_SPEC.lock.yaml`
-- `generator` from `generators/package.json` and the current repository commit
+- `generator` from `devtools/generators/package.json` and the current repository commit
 - `runtime` from the runtime version source and current repository commit
 - `inputs.registryHash`, `inputs.schemasHash`, and `inputs.conformanceHash`
 
@@ -33,8 +33,8 @@ generator does not invent hashes for missing inputs.
 Use:
 
 ```bash
-scripts/check-generated-version.sh
-scripts/check-runtime-release.sh 0.3.1
+devtools/scripts/check-generated-version.sh
+devtools/scripts/check-runtime-release.sh 0.3.1
 ```
 
 `check-generated-version.sh` validates lock, manifest, runtime version, and

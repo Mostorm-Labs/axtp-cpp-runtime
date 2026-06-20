@@ -6,6 +6,17 @@ project(axtp_cpp_runtime VERSION ${AXTP_CPP_RUNTIME_VERSION} LANGUAGES CXX)
 include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
 
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+if(MSVC)
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+endif()
+
+set(AXTP_CPP_RUNTIME_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
+set(AXTP_CPP_RUNTIME_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
+
 set(AXTP_CPP_RUNTIME_IS_TOP_LEVEL OFF)
 if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
     set(AXTP_CPP_RUNTIME_IS_TOP_LEVEL ON)
@@ -14,8 +25,12 @@ endif()
 option(AXTP_CPP_RUNTIME_BUILD_SDK "Build the AXTP SDK target" ON)
 option(AXTP_CPP_RUNTIME_BUILD_TOOLS "Build AXTP command line tools" OFF)
 option(AXTP_CPP_RUNTIME_BUILD_MEDIAHOST "Build the AXTP MediaHost sample" OFF)
+option(AXTP_CPP_RUNTIME_BUILD_TESTS "Build AXTP C++ runtime tests" ${AXTP_CPP_RUNTIME_IS_TOP_LEVEL})
+option(AXTP_CPP_RUNTIME_BUILD_CONFORMANCE "Build AXTP conformance runner" OFF)
 option(AXTP_CPP_RUNTIME_ENABLE_INSTALL "Install AXTP C++ runtime package targets" ${AXTP_CPP_RUNTIME_IS_TOP_LEVEL})
 option(AXTP_CPP_RUNTIME_INSTALL_OPTIONAL_TRANSPORTS "Install optional transport targets that were built" OFF)
+option(AXTP_BUILD_JSON_RPC "Build optional AXTP WebSocket JSON-RPC helpers" OFF)
+option(AXTP_BUILD_OPTIONAL_TRANSPORTS "Build optional AXTP transport targets" OFF)
 
 function(axtp_cpp_runtime_target_is_imported target output_variable)
     if(TARGET ${target})
@@ -28,28 +43,65 @@ function(axtp_cpp_runtime_target_is_imported target output_variable)
     set(${output_variable} OFF PARENT_SCOPE)
 endfunction()
 
-if(AXTP_CPP_RUNTIME_BUILD_TOOLS OR AXTP_CPP_RUNTIME_BUILD_MEDIAHOST)
+if(AXTP_CPP_RUNTIME_BUILD_TESTS OR
+   AXTP_CPP_RUNTIME_BUILD_TOOLS OR
+   AXTP_CPP_RUNTIME_BUILD_MEDIAHOST)
     set(AXTP_BUILD_JSON_RPC ON CACHE BOOL "" FORCE)
     set(AXTP_BUILD_OPTIONAL_TRANSPORTS ON CACHE BOOL "" FORCE)
 endif()
 
-if(AXTP_CPP_RUNTIME_BUILD_TOOLS OR AXTP_CPP_RUNTIME_BUILD_MEDIAHOST OR
-   AXTP_CORE_BUILD_TESTS OR AXTP_SDK_BUILD_TESTS)
+if(AXTP_CPP_RUNTIME_BUILD_CONFORMANCE)
+    set(AXTP_BUILD_JSON_RPC ON CACHE BOOL "" FORCE)
+endif()
+
+if(AXTP_CPP_RUNTIME_BUILD_TESTS)
     enable_testing()
 endif()
 
-if(AXTP_CPP_RUNTIME_BUILD_SDK)
-    add_subdirectory(sdk)
-else()
-    add_subdirectory(core)
+include(cmake/targets/core.cmake)
+
+set(AXTP_CPP_RUNTIME_NEEDS_SDK ${AXTP_CPP_RUNTIME_BUILD_SDK})
+if(AXTP_CPP_RUNTIME_BUILD_TESTS OR
+   AXTP_CPP_RUNTIME_BUILD_TOOLS OR
+   AXTP_CPP_RUNTIME_BUILD_MEDIAHOST)
+    set(AXTP_CPP_RUNTIME_NEEDS_SDK ON)
 endif()
 
-if(AXTP_CPP_RUNTIME_BUILD_TOOLS)
-    add_subdirectory(tools/axtpctl)
+if(NOT AXTP_CPP_RUNTIME_BUILD_SDK AND AXTP_CPP_RUNTIME_NEEDS_SDK)
+    message(STATUS "Enabling axtp_sdk target because tests/tools/mediahost require it")
 endif()
 
-if(AXTP_CPP_RUNTIME_BUILD_MEDIAHOST)
-    add_subdirectory(tools/axtp-mediahost)
+if(AXTP_CPP_RUNTIME_NEEDS_SDK)
+    include(cmake/targets/sdk.cmake)
+endif()
+
+if(AXTP_CPP_RUNTIME_BUILD_TESTS OR
+   AXTP_CPP_RUNTIME_BUILD_TOOLS OR
+   AXTP_CPP_RUNTIME_BUILD_MEDIAHOST)
+    include(cmake/targets/toolkit.cmake)
+endif()
+
+if(AXTP_CPP_RUNTIME_BUILD_TESTS OR AXTP_CPP_RUNTIME_BUILD_TOOLS)
+    include(cmake/targets/axtpctl.cmake)
+endif()
+
+if(AXTP_CPP_RUNTIME_BUILD_TESTS OR AXTP_CPP_RUNTIME_BUILD_MEDIAHOST)
+    include(cmake/targets/mediahost.cmake)
+endif()
+
+if(AXTP_CPP_RUNTIME_BUILD_CONFORMANCE)
+    if(NOT TARGET axtp_json_rpc)
+        message(FATAL_ERROR "AXTP conformance runner requires AXTP_BUILD_JSON_RPC")
+    endif()
+
+    add_executable(axtp_conformance_runner
+        devtools/conformance/conformance_runner.cpp
+    )
+    target_link_libraries(axtp_conformance_runner PRIVATE axtp_core axtp_json_rpc)
+endif()
+
+if(AXTP_CPP_RUNTIME_BUILD_TESTS)
+    include(cmake/targets/tests.cmake)
 endif()
 
 if(AXTP_CPP_RUNTIME_ENABLE_INSTALL)
@@ -118,40 +170,27 @@ if(AXTP_CPP_RUNTIME_ENABLE_INSTALL)
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     )
 
-    install(DIRECTORY core/include/
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-    )
-    if(TARGET axtp_sdk)
-        install(DIRECTORY sdk/include/
-            DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-        )
-    endif()
-    if(TARGET axtp_json_rpc)
-        install(DIRECTORY json-rpc/include/
-            DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-        )
-    endif()
-    install(DIRECTORY transports/include/
+    install(DIRECTORY include/
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
     )
 
     set(AXTP_CPP_RUNTIME_CONFIG_NEEDS_NLOHMANN_JSON ON)
-    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/json/include/nlohmann/json.hpp")
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/third_party/json/include/nlohmann/json.hpp")
         set(AXTP_CPP_RUNTIME_CONFIG_NEEDS_NLOHMANN_JSON OFF)
-        install(DIRECTORY thirdparty/json/include/
+        install(DIRECTORY third_party/json/include/
             DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
         )
     endif()
 
     if(AXTP_CPP_RUNTIME_INSTALL_OPTIONAL_TRANSPORTS AND
        TARGET axtp_transport_websocket_websocketpp)
-        install(DIRECTORY thirdparty/websocketpp/websocketpp
+        install(DIRECTORY third_party/websocketpp/websocketpp
             DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
         )
-        install(DIRECTORY thirdparty/asio/asio/include/asio
+        install(DIRECTORY third_party/asio/asio/include/asio
             DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
         )
-        install(FILES thirdparty/asio/asio/include/asio.hpp
+        install(FILES third_party/asio/asio/include/asio.hpp
             DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
         )
     endif()

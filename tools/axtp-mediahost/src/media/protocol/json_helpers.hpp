@@ -8,7 +8,7 @@
 
 #include <nlohmann/json.hpp>
 
-#include "axtp.hpp"
+#include "axtp_core.hpp"
 #include "media/model/format.hpp"
 #include "media/model/media_types.hpp"
 

@@ -25,7 +25,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          runtime_version="$(scripts/get-runtime-version.sh)"
+          runtime_version="$(devtools/scripts/get-runtime-version.sh)"
           if [[ ! "$runtime_version" =~ ^[0-9]+.[0-9]+.[0-9]+$ ]]; then
             echo "Runtime/tool version must match MAJOR.MINOR.PATCH for automated releases: $runtime_version" >&2
             exit 2
@@ -73,7 +73,7 @@ jobs:
           fi
 
           echo "$changed"
-          if echo "$changed" | grep -Eq '^(AXTP_SPEC.lock.yaml|generated/axtp_generated_manifest.json|VERSION|CMakeLists.txt|core/CMakeLists.txt|pubspec.yaml|package.json|pyproject.toml)$'; then
+          if echo "$changed" | grep -Eq '^(AXTP_SPEC.lock.yaml|generated/axtp_generated_manifest.json|VERSION|CMakeLists.txt|pubspec.yaml|package.json|pyproject.toml)$'; then
             echo "should_release=true" >> "$GITHUB_OUTPUT"
             echo "Release-relevant AXTP Spec or runtime/tool version changes detected."
           else
@@ -135,19 +135,19 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          bash -n scripts/*.sh
-          scripts/check-runtime-release.sh "${{ steps.version.outputs.runtime_version }}"
-          scripts/check-axtp-spec-lock.sh
-          scripts/check-generated-version.sh
+          bash -n devtools/scripts/*.sh
+          devtools/scripts/check-runtime-release.sh "${{ steps.version.outputs.runtime_version }}"
+          devtools/scripts/check-axtp-spec-lock.sh
+          devtools/scripts/check-generated-version.sh
 
       - name: Build generator
         if: steps.detect.outputs.should_release == 'true'
         shell: bash
         run: |
           set -euo pipefail
-          pnpm --dir generators install --frozen-lockfile
-          pnpm --dir generators build
-          AXTP_SPEC_PATH="$GITHUB_WORKSPACE/third_party/axtp-spec" pnpm --dir generators test
+          pnpm --dir devtools/generators install --frozen-lockfile
+          pnpm --dir devtools/generators build
+          AXTP_SPEC_PATH="$GITHUB_WORKSPACE/third_party/axtp-spec" pnpm --dir devtools/generators test
 
       - name: Root package checks
         if: steps.detect.outputs.should_release == 'true'
@@ -196,21 +196,11 @@ jobs:
         run: |
           set -euo pipefail
           if [[ -f CMakeLists.txt ]]; then
+            sudo apt-get update
+            sudo apt-get install -y libboost-json-dev nlohmann-json3-dev libudev-dev libusb-1.0-0-dev
             cmake -S . -B build
             cmake --build build
             ctest --test-dir build --output-on-failure
-          elif [[ -f core/CMakeLists.txt ]]; then
-            sudo apt-get update
-            sudo apt-get install -y libboost-json-dev nlohmann-json3-dev libudev-dev libusb-1.0-0-dev
-            cmake -S core -B build/core
-            cmake --build build/core
-            ctest --test-dir build/core --output-on-failure
-            cmake -S sdk -B build/sdk
-            cmake --build build/sdk
-            ctest --test-dir build/sdk --output-on-failure
-            cmake -S tools/axtpctl -B build/axtpctl
-            cmake --build build/axtpctl
-            ctest --test-dir build/axtpctl --output-on-failure
           else
             echo "No CMake runtime layout; skipping CMake checks."
           fi
@@ -256,7 +246,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          AXTP_SPEC_PATH="$GITHUB_WORKSPACE/third_party/axtp-spec" scripts/run-conformance.sh
+          AXTP_SPEC_PATH="$GITHUB_WORKSPACE/third_party/axtp-spec" devtools/scripts/run-conformance.sh
 
       - name: Create and push runtime/tool tag
         if: steps.detect.outputs.should_release == 'true'

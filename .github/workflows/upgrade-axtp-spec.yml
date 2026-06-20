@@ -93,30 +93,30 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          AXTP_SPEC_PATH="$GITHUB_WORKSPACE/third_party/axtp-spec" scripts/upgrade-axtp-spec.sh "$SPEC_TAG"
+          AXTP_SPEC_PATH="$GITHUB_WORKSPACE/third_party/axtp-spec" devtools/scripts/upgrade-axtp-spec.sh "$SPEC_TAG"
 
       - name: Align runtime/tool version
         shell: bash
-        run: scripts/set-runtime-version.sh "$SPEC_VERSION"
+        run: devtools/scripts/set-runtime-version.sh "$SPEC_VERSION"
 
       - name: Build generator
         shell: bash
         run: |
           set -euo pipefail
-          pnpm --dir generators install --frozen-lockfile
-          pnpm --dir generators build
+          pnpm --dir devtools/generators install --frozen-lockfile
+          pnpm --dir devtools/generators build
 
       - name: Generate runtime/tool artifacts
         shell: bash
         run: |
           set -euo pipefail
-          AXTP_SPEC_PATH="$GITHUB_WORKSPACE/third_party/axtp-spec" pnpm --dir generators exec vitest run --update
-          AXTP_SPEC_PATH="$GITHUB_WORKSPACE/third_party/axtp-spec" pnpm --dir generators test
-          AXTP_SPEC_PATH="$GITHUB_WORKSPACE/third_party/axtp-spec" pnpm --dir generators generate:runtime
+          AXTP_SPEC_PATH="$GITHUB_WORKSPACE/third_party/axtp-spec" pnpm --dir devtools/generators exec vitest run --update
+          AXTP_SPEC_PATH="$GITHUB_WORKSPACE/third_party/axtp-spec" pnpm --dir devtools/generators test
+          AXTP_SPEC_PATH="$GITHUB_WORKSPACE/third_party/axtp-spec" pnpm --dir devtools/generators generate:runtime
 
       - name: Check spec lock
         shell: bash
-        run: scripts/check-axtp-spec-lock.sh
+        run: devtools/scripts/check-axtp-spec-lock.sh
 
       - name: Check dispatch payload commit
         shell: bash
@@ -134,7 +134,7 @@ jobs:
 
       - name: Check generated version metadata
         shell: bash
-        run: scripts/check-generated-version.sh
+        run: devtools/scripts/check-generated-version.sh
 
       - name: Root package checks
         shell: bash
@@ -179,21 +179,11 @@ jobs:
         run: |
           set -euo pipefail
           if [[ -f CMakeLists.txt ]]; then
+            sudo apt-get update
+            sudo apt-get install -y libboost-json-dev nlohmann-json3-dev libudev-dev libusb-1.0-0-dev
             cmake -S . -B build
             cmake --build build
             ctest --test-dir build --output-on-failure
-          elif [[ -f core/CMakeLists.txt ]]; then
-            sudo apt-get update
-            sudo apt-get install -y libboost-json-dev nlohmann-json3-dev libudev-dev libusb-1.0-0-dev
-            cmake -S core -B build/core
-            cmake --build build/core
-            ctest --test-dir build/core --output-on-failure
-            cmake -S sdk -B build/sdk
-            cmake --build build/sdk
-            ctest --test-dir build/sdk --output-on-failure
-            cmake -S tools/axtpctl -B build/axtpctl
-            cmake --build build/axtpctl
-            ctest --test-dir build/axtpctl --output-on-failure
           else
             echo "No CMake runtime layout; skipping CMake checks."
           fi
@@ -230,7 +220,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          CONFORMANCE_ALLOW_INCOMPLETE=true AXTP_SPEC_PATH="$GITHUB_WORKSPACE/third_party/axtp-spec" scripts/run-conformance.sh
+          CONFORMANCE_ALLOW_INCOMPLETE=true AXTP_SPEC_PATH="$GITHUB_WORKSPACE/third_party/axtp-spec" devtools/scripts/run-conformance.sh
 
       - name: Write PR body
         shell: bash
@@ -239,7 +229,7 @@ jobs:
           cat > "$RUNNER_TEMP/axtp-spec-upgrade-pr.md" <<EOF
           AXTP Spec tag: $SPEC_TAG
           AXTP Spec version: $SPEC_VERSION
-          AXTP Spec commit: ${SPEC_COMMIT:-resolved by scripts/upgrade-axtp-spec.sh}
+          AXTP Spec commit: ${SPEC_COMMIT:-resolved by devtools/scripts/upgrade-axtp-spec.sh}
           Runtime/tool target version: $SPEC_VERSION
           Generated manifest: generated/axtp_generated_manifest.json
 

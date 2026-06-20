@@ -20,10 +20,10 @@
 #    include <unistd.h>
 #endif
 
-#include "protocol/generated/registry_lookup.h"
-#include "protocol/wire/websocket_json_rpc/outbound/json_rpc_encoder.hpp"
-#include "runtime/testing/mock_transport.hpp"
-#include "transports/tcp/boost/tcp_transport.hpp"
+#include "core/protocol/generated/registry_lookup.h"
+#include "core/protocol/wire/websocket_json_rpc/outbound/json_rpc_encoder.hpp"
+#include "core/runtime/testing/mock_transport.hpp"
+#include "transports/tcp/native/tcp_transport.hpp"
 #include "transports/websocket/ix/websocket_transport.hpp"
 
 namespace axtp::toolkit {

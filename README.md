@@ -11,19 +11,19 @@ level and avoid depending on lower-level wire details unless it needs them.
 
 ```mermaid
 flowchart LR
-    Spec["AXTP spec repo\nlocked by AXTP_SPEC.lock.yaml"] --> Generators["generators/\nTypeScript emitter"]
-    Generators --> Generated["core/include/protocol/generated/\nIDs, registries, schemas"]
+    Spec["AXTP spec repo\nlocked by AXTP_SPEC.lock.yaml"] --> Generators["devtools/generators/\nTypeScript emitter"]
+    Generators --> Generated["include/core/protocol/generated/\nIDs, registries, schemas"]
 
-    Support["support/io"] --> Protocol["protocol/model\nprotocol/generated"]
+    Support["include/core/support/io"] --> Protocol["include/core/protocol/model\ninclude/core/protocol/generated"]
     Generated --> Protocol
-    Protocol --> Wire["protocol/wire\nprotocol/session"]
-    Wire --> Runtime["runtime/core\nruntime/broker\nruntime/endpoint"]
-    Runtime --> SDK["sdk/\nAxtpClient, AxtpDevice"]
+    Protocol --> Wire["include/core/protocol/wire\ninclude/core/protocol/session"]
+    Wire --> Runtime["include/core/runtime/core\ninclude/core/runtime/broker\ninclude/core/runtime/endpoint"]
+    Runtime --> SDK["include/sdk/\nAxtpClient, AxtpDevice"]
 
-    Runtime --> TransportApi["runtime/transport\nITransport contract"]
-    TransportApi --> ConcreteTransports["transports/\nTCP, HID, WebSocket"]
+    Runtime --> TransportApi["include/core/runtime/transport\nITransport contract"]
+    TransportApi --> ConcreteTransports["include/transports/\nTCP, HID, WebSocket"]
 
-    Runtime --> JsonRpc["json-rpc/\nregistry and adapter helpers"]
+    Runtime --> JsonRpc["include/json_rpc/\nregistry and adapter helpers"]
     SDK --> Toolkit["tools/toolkit\ninternal tool support"]
     JsonRpc --> Toolkit
     ConcreteTransports --> Toolkit
@@ -38,7 +38,7 @@ Dependency direction is one way: lower layers do not depend on the SDK, tools,
 or concrete applications. `tools/toolkit` is an internal support library for
 repository tools, not a stable SDK API.
 
-`core/include/protocol/wire/websocket_json_rpc/` owns the protocol-level
+`include/core/protocol/wire/websocket_json_rpc/` owns the protocol-level
 WebSocket JSON-RPC envelope and payload codecs. The top-level `json-rpc/`
 directory is an optional helper layer above the runtime: it provides registry
 JSON loading plus WebSocket JSON-RPC adapter/session glue for tools and
@@ -48,16 +48,16 @@ integrations.
 
 | You need to... | Use this layer | Link this target | Start with | Example entry |
 |---|---|---|---|---|
-| Make business RPC calls from an app | SDK | `axtp_sdk` | `#include "sdk/axtp_sdk_all.hpp"` | `sdk/tests/sdk_smoke_test.cpp` |
-| Use a typed device facade | SDK generated clients | `axtp_sdk` | `axtp::sdk::AxtpDevice` | `sdk/tests/sdk_smoke_test.cpp` |
-| Host methods behind a transport | Runtime endpoint + broker | `axtp_runtime` | `AxtpEndpoint`, `BasicBroker<>` | `core/tests/phase7_broker_test.cpp` |
-| Encode/decode frames or payloads directly | Protocol wire layer | `axtp_core` | `OutboundProcessor`, `InboundProcessor` | `core/tests/phase2_inbound_test.cpp`, `core/tests/phase3_outbound_test.cpp` |
-| Inspect protocol IDs, registries, or generated facts | Protocol generated layer | `axtp_core` | `MethodRegistry`, `RegistryLookup` | `core/tests/phase8_api_surface_test.cpp` |
-| Connect over TCP without extra dependencies | Native TCP transport | `axtp_transport_tcp_native` | `TcpClientTransport`, `TcpServerTransport` | `core/tests/phase6_real_transport_test.cpp` |
-| Connect to real HID devices | HID transport | `axtp_transport_hidapi` | `HidTransport` | `core/tests/phase9_hid_transport_test.cpp` |
+| Make business RPC calls from an app | SDK | `axtp::sdk` | `#include <axtp_sdk.hpp>` | `tests/sdk/sdk_smoke_test.cpp` |
+| Use a typed device facade | SDK generated clients | `axtp::sdk` | `#include <axtp_sdk.hpp>` | `tests/sdk/sdk_smoke_test.cpp` |
+| Host methods behind a transport | Runtime endpoint + broker | `axtp::runtime` | `#include <axtp_runtime.hpp>` | `tests/core/phase7_broker_test.cpp` |
+| Encode/decode frames or payloads directly | Protocol wire layer | `axtp::core` | `#include <axtp_core.hpp>` | `tests/core/phase2_inbound_test.cpp`, `tests/core/phase3_outbound_test.cpp` |
+| Inspect protocol IDs, registries, or generated facts | Protocol generated layer | `axtp::core` | `#include <core/protocol/generated/registry_lookup.h>` | `tests/core/phase8_api_surface_test.cpp` |
+| Connect over TCP without extra dependencies | Native TCP transport | `axtp::transport_tcp_native` | `#include <axtp_transport_tcp_native.hpp>` | `tests/core/phase6_real_transport_test.cpp` |
+| Connect to real HID devices | HID transport | `axtp::transport_hidapi` | `#include <axtp_transport_hid.hpp>` | `tests/core/phase9_hid_transport_test.cpp` |
 | Debug protocol calls from a terminal | CLI | `axtpctl` | `axtpctl -t hid ...`, `axtpctl -c ...` | `tools/axtpctl/src/main.cpp` |
-| Build a Windows media receiver sample | App-level tool | `axtp-mediahost` | Media stream registry/coordinators | `tools/axtp-mediahost/src/app/main.cpp`, `tools/axtp-mediahost/tests/mediahost_protocol_test.cpp` |
-| Regenerate runtime protocol facts | Generator | `pnpm --dir generators ...` | `AXTP_SPEC_PATH=/path/to/axtp` | `generators/README.md` |
+| Build a Windows media receiver sample | App-level tool | `axtp-mediahost` | Media stream registry/coordinators | `tools/axtp-mediahost/src/app/main.cpp`, `tests/tools/axtp-mediahost/mediahost_protocol_test.cpp` |
+| Regenerate runtime protocol facts | Generator | `pnpm --dir devtools/generators ...` | `AXTP_SPEC_PATH=/path/to/axtp` | `devtools/generators/README.md` |
 
 If you are unsure, start with `axtp_sdk`. Drop to `axtp_runtime` only when you
 need to host methods or own endpoint polling. Drop to `axtp_core` only for
@@ -73,32 +73,37 @@ support/io -> protocol -> runtime -> sdk/json_rpc/transports -> tools
 
 | Path | Purpose |
 |---|---|
-| `core/include/axtp.hpp` | Main aggregate header for core/runtime users. |
-| `core/include/support/io/` | Byte buffers, readers/writers, byte sinks, CRC, text writer, and transport packet boundaries. |
-| `core/include/protocol/model/` | Stable protocol value types: bytes, errors, frames, messages, payloads, result wrappers, and protocol enums. |
-| `core/include/protocol/generated/` | Generated IDs, registries, schema facts, traits, lookup helpers, and generated version constants. Do not edit by hand. |
-| `core/include/protocol/session/` | Control/session helpers, pending call tracking, and stream session state. |
-| `core/include/protocol/wire/framed_binary/` | Standard framed binary encoders/decoders and control TLV codec. |
-| `core/include/protocol/wire/websocket_json_rpc/` | WebSocket JSON-RPC payload and envelope codecs. |
-| `core/include/protocol/wire/` | Wire-mode inbound/outbound processors and payload sink contracts. |
-| `core/include/runtime/core/` | `AxtpCore`, `CoreEvent`, and RPC dispatcher. |
-| `core/include/runtime/broker/` | `BasicBroker<>`, business routing, middleware, task dispatch, and result queues. |
-| `core/include/runtime/endpoint/` | `AxtpEndpoint` glue between core, broker, and transport. |
-| `core/include/runtime/transport/` | Transport interface and transport profile contracts. |
-| `core/include/runtime/testing/` | Test/mock transport utilities. |
-| `sdk/include/sdk/` | Higher-level client/device APIs, call options, endpoint options, typed generated clients, and SDK result/error wrappers. |
-| `json-rpc/include/json_rpc/` | Optional runtime helper layer for registry JSON loading and WebSocket JSON-RPC adapter/session glue; not the wire codec owner. |
-| `transports/include/transports/` | Optional transport headers for HID, TCP Boost, WebSocket Boost, WebSocket IX, and WebSocket++/Asio. |
-| `transports/src/` | Non-header implementation files for optional transports, currently HID. |
+| `include/axtp_sdk.hpp` | Recommended SDK aggregate header for applications. |
+| `include/axtp_runtime.hpp` | Recommended runtime aggregate header for endpoint/broker users. |
+| `include/axtp_core.hpp` | Recommended core aggregate header for protocol/runtime internals. |
+| `include/axtp_transport_hid.hpp` | HID transport facade for real device debugging/integration. |
+| `include/axtp_transport_tcp_native.hpp` | Native TCP transport facade without Boost. |
+| `include/core/support/io/` | Byte buffers, readers/writers, byte sinks, CRC, text writer, and transport packet boundaries. |
+| `include/core/protocol/model/` | Stable protocol value types: bytes, errors, frames, messages, payloads, result wrappers, and protocol enums. |
+| `include/core/protocol/generated/` | Generated IDs, registries, schema facts, traits, lookup helpers, and generated version constants. Do not edit by hand. |
+| `include/core/protocol/session/` | Control/session helpers, pending call tracking, and stream session state. |
+| `include/core/protocol/wire/framed_binary/` | Standard framed binary encoders/decoders and control TLV codec. |
+| `include/core/protocol/wire/websocket_json_rpc/` | WebSocket JSON-RPC payload and envelope codecs. |
+| `include/core/protocol/wire/` | Wire-mode inbound/outbound processors and payload sink contracts. |
+| `include/core/runtime/core/` | `AxtpCore`, `CoreEvent`, and RPC dispatcher. |
+| `include/core/runtime/broker/` | `BasicBroker<>`, business routing, middleware, task dispatch, and result queues. |
+| `include/core/runtime/endpoint/` | `AxtpEndpoint` glue between core, broker, and transport. |
+| `include/core/runtime/transport/` | Transport interface and transport profile contracts. |
+| `include/core/runtime/testing/` | Test/mock transport utilities. |
+| `include/sdk/` | Higher-level client/device APIs, call options, endpoint options, typed generated clients, and SDK result/error wrappers. |
+| `include/json_rpc/` | Optional runtime helper layer for registry JSON loading and WebSocket JSON-RPC adapter/session glue; not the wire codec owner. |
+| `include/transports/` | Optional transport headers for HID, TCP Boost, WebSocket Boost, WebSocket IX, and WebSocket++/Asio. |
+| `src/transports/` | Non-header implementation files for optional transports, currently HID. |
 | `tools/axtpctl/` | General AXTP CLI for method/capability inspection, app-ready handshakes, mock calls, and optional TCP/WebSocket/HID transport debugging. |
 | `tools/toolkit/` | Internal tool support library shared by CLI and application-style tools. |
 | `tools/axtp-mediahost/` | Windows MediaHost application-style integration sample split into app, media protocol, media model, and Win32 render layers. |
 | `examples/quickstart/` | Minimal external-style SDK quickstart project. |
-| `generators/` | TypeScript generator that consumes the AXTP spec and emits C++ generated headers. |
-| `scripts/` | Spec lock, generation, versioning, conformance, and release helper scripts. |
-| `tests/` and `conformance/` | Runtime conformance runner sources and runtime conformance profile. |
+| `devtools/generators/` | TypeScript generator that consumes the AXTP spec and emits C++ generated headers. |
+| `devtools/scripts/` | Spec lock, generation, versioning, conformance, and release helper scripts. |
+| `tests/` | Root-registered unit and tool test sources. |
+| `devtools/conformance/` | Runtime conformance runner source and runtime conformance profile. |
 | `docs/` | Design notes, execution flow, style guide, generator notes, and tool designs. |
-| `thirdparty/` | Git submodules or bundled dependencies used by local builds. |
+| `third_party/` | Git submodules or bundled dependencies used by local builds. |
 
 ## Quickstart
 
@@ -123,10 +128,6 @@ add_executable(axtp_quickstart main.cpp)
 target_link_libraries(axtp_quickstart PRIVATE axtp::sdk)
 ```
 
-If you need to keep the older subdirectory form, use
-`add_subdirectory(path/to/axtp-cpp-runtime/sdk axtp-cpp-runtime-sdk)` and link
-`axtp_sdk`.
-
 Minimal `main.cpp` using the SDK with the in-memory mock transport:
 
 ```cpp
@@ -135,8 +136,8 @@ Minimal `main.cpp` using the SDK with the in-memory mock transport:
 #include <memory>
 #include <string>
 
-#include "runtime/testing/mock_transport.hpp"
-#include "sdk/axtp_sdk_all.hpp"
+#include <axtp_sdk.hpp>
+#include <core/runtime/testing/mock_transport.hpp>
 
 int main() {
     axtp::sdk::AxtpClient client;
@@ -188,7 +189,7 @@ available for new projects; the unqualified target names remain supported.
 | `axtp_json_rpc` | `axtp::json_rpc` | You need the optional WebSocket JSON-RPC adapter. Enable `AXTP_BUILD_JSON_RPC`. |
 | `axtp_transport_tcp_native` | `axtp::transport_tcp_native` | You need the header-only native TCP transport without Boost. |
 | `axtp_transport_hidapi` | `axtp::transport_hidapi` | You need the optional HID transport. Enable `AXTP_BUILD_OPTIONAL_TRANSPORTS`. |
-| `axtp_transport_tcp_boost`, `axtp_transport_websocket_ix`, `axtp_transport_websocket_boost`, `axtp_transport_websocket_websocketpp` | `axtp::transport_tcp_boost`, `axtp::transport_websocket_ix`, `axtp::transport_websocket_boost`, `axtp::transport_websocket_websocketpp` | You need optional TCP/WebSocket transport headers and their third-party dependencies. Enable `AXTP_BUILD_OPTIONAL_TRANSPORTS`. |
+| `axtp_transport_tcp_boost`, `axtp_transport_websocket_ix`, `axtp_transport_websocket_boost`, `axtp_transport_websocket_websocketpp` | `axtp::transport_tcp_boost`, `axtp::transport_websocket_ix`, `axtp::transport_websocket_boost`, `axtp::transport_websocket_websocketpp` | You need legacy Boost TCP or optional WebSocket transport headers and their third-party dependencies. Enable `AXTP_BUILD_OPTIONAL_TRANSPORTS`; Boost targets are defined only when Boost is available. |
 
 If you are embedding only the runtime layer:
 
@@ -237,28 +238,27 @@ If `third_party/axtp-spec` is used, check it out to the locked tag or commit.
 
 ## Build And Test
 
-Core runtime:
+Default development build:
 
 ```bash
-cmake -S core -B build/core
-cmake --build build/core
-ctest --test-dir build/core --output-on-failure
+cmake -S . -B build/root
+cmake --build build/root
+ctest --test-dir build/root --output-on-failure
 ```
 
-SDK:
+Lightweight third-party style build without tests:
 
 ```bash
-cmake -S sdk -B build/sdk
-cmake --build build/sdk
-ctest --test-dir build/sdk --output-on-failure
+cmake -S . -B build/root-no-tests -DAXTP_CPP_RUNTIME_BUILD_TESTS=OFF
+cmake --build build/root-no-tests
 ```
 
-CLI:
+Optional tool build:
 
 ```bash
-cmake -S tools/axtpctl -B build/axtpctl
-cmake --build build/axtpctl
-ctest --test-dir build/axtpctl --output-on-failure
+cmake -S . -B build/root-tools -DAXTP_CPP_RUNTIME_BUILD_TOOLS=ON
+cmake --build build/root-tools
+ctest --test-dir build/root-tools --output-on-failure
 ```
 
 The `axtpctl` target is the single protocol CLI. Use `axtpctl -t hid ...` for
@@ -279,7 +279,7 @@ mock/socket simulation is not provided.
 ## Spec Lock Checks
 
 ```bash
-scripts/check-axtp-spec-lock.sh
+devtools/scripts/check-axtp-spec-lock.sh
 ```
 
 ## AXTP Spec Upgrade
@@ -289,8 +289,8 @@ This runtime follows AXTP Spec via `AXTP_SPEC.lock.yaml`.
 To upgrade:
 
 ```bash
-scripts/upgrade-axtp-spec.sh spec/v0.3.0
-scripts/check-axtp-spec-lock.sh
+devtools/scripts/upgrade-axtp-spec.sh spec/v0.3.0
+devtools/scripts/check-axtp-spec-lock.sh
 ```
 
 After upgrading, run generator checks, CMake/CTest, and the conformance runner
@@ -302,10 +302,10 @@ Conformance cases are owned by the AXTP spec repository. Point the runner at the
 locked spec checkout and run:
 
 ```bash
-AXTP_SPEC_PATH=/path/to/axtp scripts/run-conformance.sh
+AXTP_SPEC_PATH=/path/to/axtp devtools/scripts/run-conformance.sh
 ```
 
-The runner writes `conformance-results/result.json`. Required failures exit
+The runner writes `build/conformance-results/result.json`. Required failures exit
 nonzero. Optional cases are reported as skipped or passed unless
 `CONFORMANCE_STRICT_OPTIONAL=true`; upgrade PR workflows may temporarily use
 `CONFORMANCE_ALLOW_INCOMPLETE=true`.
@@ -333,22 +333,22 @@ Repository settings must allow GitHub Actions to create PRs, enable auto-merge, 
 
 ## Local Generator
 
-This repository maintains its own generator under `generators/`.
+This repository maintains its own generator under `devtools/generators/`.
 
 ```bash
 export AXTP_SPEC_PATH=/path/to/axtp
-pnpm --dir generators install
-pnpm --dir generators build
-pnpm --dir generators test
-pnpm --dir generators generate:runtime
+pnpm --dir devtools/generators install
+pnpm --dir devtools/generators build
+pnpm --dir devtools/generators test
+pnpm --dir devtools/generators generate:runtime
 ```
 
-Generated C++ artifacts are written to `core/include/protocol/generated/`.
+Generated C++ artifacts are written to `include/core/protocol/generated/`.
 
 To move to a later released spec tag:
 
 ```bash
-scripts/upgrade-axtp-spec.sh spec/v0.1.0
+devtools/scripts/upgrade-axtp-spec.sh spec/v0.1.0
 ```
 
 ## Versioning
@@ -360,7 +360,7 @@ separate:
 - Runtime releases use `vX.Y.Z`.
 - Generated artifact metadata is recorded in `generated/axtp_generated_manifest.json`.
 
-Use `scripts/check-generated-version.sh` to verify that the lock file,
+Use `devtools/scripts/check-generated-version.sh` to verify that the lock file,
 generated manifest, runtime version, and generated constants are aligned.
 
 See `docs/generator/GENERATED_VERSIONING.md` for generator versioning details.
