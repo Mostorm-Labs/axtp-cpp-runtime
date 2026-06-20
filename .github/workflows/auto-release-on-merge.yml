@@ -18,6 +18,7 @@ jobs:
         with:
           fetch-depth: 0
           token: ${{ secrets.AXTP_RUNTIME_AUTOMATION_TOKEN || github.token }}
+          submodules: recursive
 
       - name: Resolve runtime/tool version
         id: version

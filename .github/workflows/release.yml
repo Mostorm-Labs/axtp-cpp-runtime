@@ -14,6 +14,8 @@ jobs:
     steps:
       - name: Checkout runtime repository
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Validate runtime tag
         shell: bash
