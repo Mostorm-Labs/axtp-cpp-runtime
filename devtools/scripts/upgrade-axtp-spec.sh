@@ -79,7 +79,7 @@ if [[ -z "$spec_path" &&
   spec_path="$root/third_party/axtp-spec"
 fi
 
-if [[ -n "$spec_path" && -d "$spec_path/registry" ]]; then
+if [[ -n "$spec_path" && ( -d "$spec_path/registry" || -d "$spec_path/contract/registry" ) ]]; then
   if [[ -x "$root/devtools/scripts/generate-axtp-artifacts.sh" && -f "$root/devtools/generators/dist/sourceLoader.js" ]]; then
     echo "Regenerating AXTP artifacts from $spec_path"
     AXTP_SPEC_PATH="$spec_path" "$root/devtools/scripts/generate-axtp-artifacts.sh"
