@@ -4,25 +4,35 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      runtime_tag:
+        description: Runtime release tag to publish, for example v0.8.5.0
+        required: true
+        type: string
 
 permissions:
   contents: write
 
+env:
+  RUNTIME_TAG: ${{ inputs.runtime_tag || github.ref_name }}
+
 jobs:
   windows-tools:
     name: Build Windows tools
-    runs-on: windows-latest
+    runs-on: windows-2022
     steps:
       - name: Checkout runtime repository
         uses: actions/checkout@v4
         with:
+          ref: ${{ env.RUNTIME_TAG }}
           submodules: recursive
 
       - name: Validate runtime tag
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
-          $runtimeTag = $env:GITHUB_REF_NAME
+          $runtimeTag = $env:RUNTIME_TAG
           if ($runtimeTag -notmatch "^v\d+\.\d+\.\d+(\.\d+)?$") {
             throw "Runtime release tags must match vMAJOR.MINOR.PATCH or vMAJOR.MINOR.PATCH.REVISION"
           }
@@ -107,17 +117,18 @@ jobs:
       - name: Checkout runtime repository
         uses: actions/checkout@v4
         with:
+          ref: ${{ env.RUNTIME_TAG }}
           submodules: recursive
 
       - name: Validate runtime tag
         shell: bash
         run: |
           set -euo pipefail
-          if [[ ! "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(\.[0-9]+)?$ ]]; then
+          if [[ ! "$RUNTIME_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(\.[0-9]+)?$ ]]; then
             echo "Runtime release tags must match vMAJOR.MINOR.PATCH or vMAJOR.MINOR.PATCH.REVISION" >&2
             exit 2
           fi
-          echo "RUNTIME_VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+          echo "RUNTIME_VERSION=${RUNTIME_TAG#v}" >> "$GITHUB_ENV"
 
       - name: Resolve locked AXTP spec tag
         id: spec_lock
@@ -324,6 +335,7 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ env.RUNTIME_TAG }}
           name: ${{ github.event.repository.name }} v${{ env.RUNTIME_VERSION }}
           body_path: ${{ runner.temp }}/release-notes.md
           files: release-artifacts/*
