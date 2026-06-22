@@ -89,15 +89,15 @@ int main() {
     assert(stats.unknownChunks == 1);
     assert(sink.chunks.size() == 3);
 
-    const auto dumpPath = dumpDir / "file-0x00000010.bin";
-    assert(fileSize(dumpPath) == 15);
-
     axtp::stream::StreamInfo closed;
     assert(registry.close(0x10, &closed));
     assert(closed.streamId == 0x10);
     assert(sink.closed.size() == 1);
     assert(registry.activeStreamCount() == 0);
     assert(!registry.close(0x10));
+
+    const auto dumpPath = dumpDir / "file-0x00000010.bin";
+    assert(fileSize(dumpPath) == 15);
 
     std::filesystem::remove_all(dumpDir);
     return 0;
