@@ -314,6 +314,150 @@ struct MethodTraits<MethodId::NetworkGetApClients> {
     static constexpr const char* name = "network.getApClients";
 };
 
+template <>
+struct MethodTraits<MethodId::CastGetSession> {
+    using Request = CastGetSessionParams;
+    using Response = CastSessionState;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::CastGetSession);
+    static constexpr const char* name = "cast.getSession";
+};
+
+template <>
+struct MethodTraits<MethodId::CastStopSession> {
+    using Request = CastStopSessionParams;
+    using Response = CastStopSessionResult;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::CastStopSession);
+    static constexpr const char* name = "cast.stopSession";
+};
+
+template <>
+struct MethodTraits<MethodId::CastGetAirPlayName> {
+    using Request = Empty;
+    using Response = CastAirPlayNameState;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::CastGetAirPlayName);
+    static constexpr const char* name = "cast.getAirPlayName";
+};
+
+template <>
+struct MethodTraits<MethodId::CastSetAirPlayName> {
+    using Request = CastSetAirPlayNameParams;
+    using Response = CastAirPlayNameState;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::CastSetAirPlayName);
+    static constexpr const char* name = "cast.setAirPlayName";
+};
+
+template <>
+struct MethodTraits<MethodId::CastGetAudio> {
+    using Request = CastGetAudioParams;
+    using Response = CastAudioState;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::CastGetAudio);
+    static constexpr const char* name = "cast.getAudio";
+};
+
+template <>
+struct MethodTraits<MethodId::CastSetAudio> {
+    using Request = CastSetAudioParams;
+    using Response = CastAudioState;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::CastSetAudio);
+    static constexpr const char* name = "cast.setAudio";
+};
+
+template <>
+struct MethodTraits<MethodId::CastSetMuted> {
+    using Request = CastSetMutedParams;
+    using Response = CastAudioState;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::CastSetMuted);
+    static constexpr const char* name = "cast.setMuted";
+};
+
+template <>
+struct MethodTraits<MethodId::CastGetPinCodeConfig> {
+    using Request = CastGetPinCodeConfigParams;
+    using Response = CastPinCodeConfig;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::CastGetPinCodeConfig);
+    static constexpr const char* name = "cast.getPinCodeConfig";
+};
+
+template <>
+struct MethodTraits<MethodId::CastSetPinCodeConfig> {
+    using Request = CastSetPinCodeConfigParams;
+    using Response = CastPinCodeConfig;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::CastSetPinCodeConfig);
+    static constexpr const char* name = "cast.setPinCodeConfig";
+};
+
+template <>
+struct MethodTraits<MethodId::CastSetPinCode> {
+    using Request = CastSetPinCodeParams;
+    using Response = CastPinCodeConfig;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::CastSetPinCode);
+    static constexpr const char* name = "cast.setPinCode";
+};
+
+template <>
+struct MethodTraits<MethodId::CastGetWindowState> {
+    using Request = Empty;
+    using Response = CastWindowState;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::CastGetWindowState);
+    static constexpr const char* name = "cast.getWindowState";
+};
+
+template <>
+struct MethodTraits<MethodId::CastSetWindowState> {
+    using Request = CastSetWindowStateParams;
+    using Response = CastWindowState;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::CastSetWindowState);
+    static constexpr const char* name = "cast.setWindowState";
+};
+
+template <>
+struct MethodTraits<MethodId::CastGetBackendStatus> {
+    using Request = CastGetBackendStatusParams;
+    using Response = CastBackendStatus;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::CastGetBackendStatus);
+    static constexpr const char* name = "cast.getBackendStatus";
+};
+
+template <>
+struct MethodTraits<MethodId::CastRestartBackend> {
+    using Request = CastRestartBackendParams;
+    using Response = CastRestartBackendResult;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::CastRestartBackend);
+    static constexpr const char* name = "cast.restartBackend";
+};
+
+template <>
+struct MethodTraits<MethodId::CastGetFlowControlState> {
+    using Request = CastGetFlowControlStateParams;
+    using Response = CastFlowControlState;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::CastGetFlowControlState);
+    static constexpr const char* name = "cast.getFlowControlState";
+};
+
+template <>
+struct MethodTraits<MethodId::CastSetRenderFps> {
+    using Request = CastSetRenderFpsParams;
+    using Response = CastFlowControlState;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::CastSetRenderFps);
+    static constexpr const char* name = "cast.setRenderFps";
+};
+
+template <>
+struct MethodTraits<MethodId::CastSetFlowPolicy> {
+    using Request = CastSetFlowPolicyParams;
+    using Response = CastFlowControlState;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::CastSetFlowPolicy);
+    static constexpr const char* name = "cast.setFlowPolicy";
+};
+
+template <>
+struct MethodTraits<MethodId::CastGetStatus> {
+    using Request = CastGetStatusParams;
+    using Response = CastStatus;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::CastGetStatus);
+    static constexpr const char* name = "cast.getStatus";
+};
+
 template <EventId Id>
 struct EventTraits;
 
@@ -434,6 +578,97 @@ struct EventTraits<EventId::NetworkApClientChanged> {
     using Event = NetworkApClientChangedEvent;
     static constexpr std::uint16_t id = static_cast<std::uint16_t>(EventId::NetworkApClientChanged);
     static constexpr const char* name = "network.apClientChanged";
+};
+
+template <>
+struct EventTraits<EventId::CastSessionIncoming> {
+    using Event = CastSessionIncomingEvent;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(EventId::CastSessionIncoming);
+    static constexpr const char* name = "cast.sessionIncoming";
+};
+
+template <>
+struct EventTraits<EventId::CastSessionStateChanged> {
+    using Event = CastSessionStateChangedEvent;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(EventId::CastSessionStateChanged);
+    static constexpr const char* name = "cast.sessionStateChanged";
+};
+
+template <>
+struct EventTraits<EventId::CastSessionStarted> {
+    using Event = CastSessionStartedEvent;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(EventId::CastSessionStarted);
+    static constexpr const char* name = "cast.sessionStarted";
+};
+
+template <>
+struct EventTraits<EventId::CastSessionStopped> {
+    using Event = CastSessionStoppedEvent;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(EventId::CastSessionStopped);
+    static constexpr const char* name = "cast.sessionStopped";
+};
+
+template <>
+struct EventTraits<EventId::CastSessionFailed> {
+    using Event = CastSessionFailedEvent;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(EventId::CastSessionFailed);
+    static constexpr const char* name = "cast.sessionFailed";
+};
+
+template <>
+struct EventTraits<EventId::CastAudioChanged> {
+    using Event = CastAudioChangedEvent;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(EventId::CastAudioChanged);
+    static constexpr const char* name = "cast.audioChanged";
+};
+
+template <>
+struct EventTraits<EventId::CastPinCodeChanged> {
+    using Event = CastPinCodeChangedEvent;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(EventId::CastPinCodeChanged);
+    static constexpr const char* name = "cast.pinCodeChanged";
+};
+
+template <>
+struct EventTraits<EventId::CastPinCodeRequired> {
+    using Event = CastPinCodeRequiredEvent;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(EventId::CastPinCodeRequired);
+    static constexpr const char* name = "cast.pinCodeRequired";
+};
+
+template <>
+struct EventTraits<EventId::CastPinCodeAuthFailed> {
+    using Event = CastPinCodeAuthFailedEvent;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(EventId::CastPinCodeAuthFailed);
+    static constexpr const char* name = "cast.pinCodeAuthFailed";
+};
+
+template <>
+struct EventTraits<EventId::CastWindowChanged> {
+    using Event = CastWindowChangedEvent;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(EventId::CastWindowChanged);
+    static constexpr const char* name = "cast.windowChanged";
+};
+
+template <>
+struct EventTraits<EventId::CastBackendChanged> {
+    using Event = CastBackendChangedEvent;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(EventId::CastBackendChanged);
+    static constexpr const char* name = "cast.backendChanged";
+};
+
+template <>
+struct EventTraits<EventId::CastFlowControlChanged> {
+    using Event = CastFlowControlChangedEvent;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(EventId::CastFlowControlChanged);
+    static constexpr const char* name = "cast.flowControlChanged";
+};
+
+template <>
+struct EventTraits<EventId::CastStatusChanged> {
+    using Event = CastStatusChangedEvent;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(EventId::CastStatusChanged);
+    static constexpr const char* name = "cast.statusChanged";
 };
 
 } // namespace axtp

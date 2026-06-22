@@ -52,8 +52,26 @@ inline constexpr MethodDescriptor kMethodRegistry[] = {
     { 0x0E12, "network.getWifiCapabilities", "network", "NetworkGetWifiCapabilitiesParams", "NetworkWifiCapabilities" },
     { 0x0E13, "network.getApCapabilities", "network", "NetworkGetApCapabilitiesParams", "NetworkApCapabilities" },
     { 0x0E14, "network.getApClients", "network", "NetworkGetApConfigParams", "NetworkApClients" },
+    { 0x1601, "cast.getSession", "cast", "CastGetSessionParams", "CastSessionState" },
+    { 0x1602, "cast.stopSession", "cast", "CastStopSessionParams", "CastStopSessionResult" },
+    { 0x1603, "cast.getAirPlayName", "cast", "Empty", "CastAirPlayNameState" },
+    { 0x1604, "cast.setAirPlayName", "cast", "CastSetAirPlayNameParams", "CastAirPlayNameState" },
+    { 0x1605, "cast.getAudio", "cast", "CastGetAudioParams", "CastAudioState" },
+    { 0x1606, "cast.setAudio", "cast", "CastSetAudioParams", "CastAudioState" },
+    { 0x1607, "cast.setMuted", "cast", "CastSetMutedParams", "CastAudioState" },
+    { 0x1608, "cast.getPinCodeConfig", "cast", "CastGetPinCodeConfigParams", "CastPinCodeConfig" },
+    { 0x1609, "cast.setPinCodeConfig", "cast", "CastSetPinCodeConfigParams", "CastPinCodeConfig" },
+    { 0x160A, "cast.setPinCode", "cast", "CastSetPinCodeParams", "CastPinCodeConfig" },
+    { 0x160B, "cast.getWindowState", "cast", "Empty", "CastWindowState" },
+    { 0x160C, "cast.setWindowState", "cast", "CastSetWindowStateParams", "CastWindowState" },
+    { 0x160D, "cast.getBackendStatus", "cast", "CastGetBackendStatusParams", "CastBackendStatus" },
+    { 0x160E, "cast.restartBackend", "cast", "CastRestartBackendParams", "CastRestartBackendResult" },
+    { 0x160F, "cast.getFlowControlState", "cast", "CastGetFlowControlStateParams", "CastFlowControlState" },
+    { 0x1610, "cast.setRenderFps", "cast", "CastSetRenderFpsParams", "CastFlowControlState" },
+    { 0x1611, "cast.setFlowPolicy", "cast", "CastSetFlowPolicyParams", "CastFlowControlState" },
+    { 0x1612, "cast.getStatus", "cast", "CastGetStatusParams", "CastStatus" },
 };
 
-inline constexpr std::size_t kMethodRegistryCount = 38;
+inline constexpr std::size_t kMethodRegistryCount = 56;
 
 } // namespace axtp

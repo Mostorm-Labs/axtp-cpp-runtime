@@ -403,6 +403,450 @@ inline constexpr FieldDescriptor kAudioStreamStatsFields[] = {
     { 0x04, "jitterMs", FieldType::Uint32, false, 0, 0 },
 };
 
+inline constexpr FieldDescriptor kCastSourceSummaryFields[] = {
+    { 0x01, "name", FieldType::String, false, 0, 0 },
+    { 0x02, "model", FieldType::String, false, 0, 0 },
+    { 0x03, "address", FieldType::String, false, 0, 0 },
+    { 0x04, "sourceId", FieldType::String, false, 0, 0 },
+    { 0x05, "protocol", FieldType::Enum, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastMediaSummaryFields[] = {
+    { 0x01, "firstFrame", FieldType::Bool, false, 0, 0 },
+    { 0x02, "width", FieldType::Uint32, false, 0, 0 },
+    { 0x03, "height", FieldType::Uint32, false, 0, 0 },
+    { 0x04, "orientation", FieldType::Enum, false, 0, 0 },
+    { 0x05, "inputFps", FieldType::Object, false, 0, 0 },
+    { 0x06, "renderFps", FieldType::Object, false, 0, 0 },
+    { 0x07, "audioActive", FieldType::Bool, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastLastErrorFields[] = {
+    { 0x01, "code", FieldType::String, false, 0, 0 },
+    { 0x02, "message", FieldType::String, false, 0, 0 },
+    { 0x03, "occurredAt", FieldType::String, false, 0, 0 },
+    { 0x04, "redacted", FieldType::Bool, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastGetSessionParamsFields[] = {
+    { 0x01, "include", FieldType::Array, false, 0, 0 },
+    { 0x02, "sessionId", FieldType::String, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastSessionStateFields[] = {
+    { 0x01, "receiverState", FieldType::Enum, true, 0, 0 },
+    { 0x02, "sessionId", FieldType::String, false, 0, 0 },
+    { 0x03, "receiverPhase", FieldType::Enum, true, 0, 0 },
+    { 0x04, "sessionState", FieldType::Enum, false, 0, 0 },
+    { 0x05, "protocol", FieldType::Enum, false, 0, 0 },
+    { 0x06, "airPlayName", FieldType::String, false, 0, 0 },
+    { 0x07, "source", FieldType::Object, false, 0, 0 },
+    { 0x08, "media", FieldType::Object, false, 0, 0 },
+    { 0x09, "backendState", FieldType::Enum, false, 0, 0 },
+    { 0x0A, "reason", FieldType::Enum, false, 0, 0 },
+    { 0x0B, "authRequired", FieldType::Bool, false, 0, 0 },
+    { 0x0C, "updatedAt", FieldType::String, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastStopSessionParamsFields[] = {
+    { 0x01, "sessionId", FieldType::String, false, 0, 0 },
+    { 0x02, "reason", FieldType::Enum, false, 0, 0 },
+    { 0x03, "force", FieldType::Bool, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastStopSessionResultFields[] = {
+    { 0x01, "accepted", FieldType::Bool, true, 0, 0 },
+    { 0x02, "sessionId", FieldType::String, false, 0, 0 },
+    { 0x03, "previousReceiverPhase", FieldType::Enum, false, 0, 0 },
+    { 0x04, "receiverPhase", FieldType::Enum, true, 0, 0 },
+    { 0x05, "previousState", FieldType::Enum, false, 0, 0 },
+    { 0x06, "sessionState", FieldType::Enum, false, 0, 0 },
+    { 0x07, "reason", FieldType::Enum, false, 0, 0 },
+    { 0x08, "noActiveSession", FieldType::Bool, false, 0, 0 },
+    { 0x09, "updatedAt", FieldType::String, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastSetAirPlayNameParamsFields[] = {
+    { 0x01, "displayName", FieldType::String, true, 0, 0 },
+    { 0x02, "apply", FieldType::Enum, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastAirPlayNameStateFields[] = {
+    { 0x01, "displayName", FieldType::String, true, 0, 0 },
+    { 0x02, "previousDisplayName", FieldType::String, false, 0, 0 },
+    { 0x03, "source", FieldType::Enum, false, 0, 0 },
+    { 0x04, "apply", FieldType::Enum, false, 0, 0 },
+    { 0x05, "publishState", FieldType::Enum, true, 0, 0 },
+    { 0x06, "backendType", FieldType::Enum, false, 0, 0 },
+    { 0x07, "updatedAt", FieldType::String, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastSessionIncomingEventFields[] = {
+    { 0x01, "sessionId", FieldType::String, false, 0, 0 },
+    { 0x02, "receiverPhase", FieldType::Enum, true, 0, 0 },
+    { 0x03, "protocol", FieldType::Enum, false, 0, 0 },
+    { 0x04, "source", FieldType::Object, false, 0, 0 },
+    { 0x05, "authRequired", FieldType::Bool, false, 0, 0 },
+    { 0x06, "incomingAt", FieldType::String, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastSessionStateChangedEventFields[] = {
+    { 0x01, "sessionId", FieldType::String, false, 0, 0 },
+    { 0x02, "previousReceiverPhase", FieldType::Enum, false, 0, 0 },
+    { 0x03, "receiverPhase", FieldType::Enum, true, 0, 0 },
+    { 0x04, "previousState", FieldType::Enum, false, 0, 0 },
+    { 0x05, "sessionState", FieldType::Enum, false, 0, 0 },
+    { 0x06, "protocol", FieldType::Enum, false, 0, 0 },
+    { 0x07, "authRequired", FieldType::Bool, false, 0, 0 },
+    { 0x08, "media", FieldType::Object, false, 0, 0 },
+    { 0x09, "reason", FieldType::Enum, false, 0, 0 },
+    { 0x0A, "updatedAt", FieldType::String, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastSessionStartedEventFields[] = {
+    { 0x01, "sessionId", FieldType::String, true, 0, 0 },
+    { 0x02, "receiverPhase", FieldType::Enum, true, 0, 0 },
+    { 0x03, "sessionState", FieldType::Enum, false, 0, 0 },
+    { 0x04, "protocol", FieldType::Enum, false, 0, 0 },
+    { 0x05, "source", FieldType::Object, false, 0, 0 },
+    { 0x06, "media", FieldType::Object, false, 0, 0 },
+    { 0x07, "startedAt", FieldType::String, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastSessionStoppedEventFields[] = {
+    { 0x01, "sessionId", FieldType::String, false, 0, 0 },
+    { 0x02, "previousReceiverPhase", FieldType::Enum, false, 0, 0 },
+    { 0x03, "receiverPhase", FieldType::Enum, true, 0, 0 },
+    { 0x04, "previousState", FieldType::Enum, false, 0, 0 },
+    { 0x05, "sessionState", FieldType::Enum, false, 0, 0 },
+    { 0x06, "reason", FieldType::Enum, false, 0, 0 },
+    { 0x07, "backendType", FieldType::Enum, false, 0, 0 },
+    { 0x08, "stoppedAt", FieldType::String, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastSessionFailedEventFields[] = {
+    { 0x01, "sessionId", FieldType::String, false, 0, 0 },
+    { 0x02, "receiverPhase", FieldType::Enum, true, 0, 0 },
+    { 0x03, "sessionState", FieldType::Enum, false, 0, 0 },
+    { 0x04, "protocol", FieldType::Enum, false, 0, 0 },
+    { 0x05, "source", FieldType::Object, false, 0, 0 },
+    { 0x06, "reason", FieldType::Enum, false, 0, 0 },
+    { 0x07, "error", FieldType::Object, false, 0, 0 },
+    { 0x08, "failedAt", FieldType::String, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastGetAudioParamsFields[] = {
+    { 0x01, "includeEffective", FieldType::Bool, false, 0, 0 },
+    { 0x02, "sessionId", FieldType::String, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastSetAudioParamsFields[] = {
+    { 0x01, "enabled", FieldType::Bool, true, 0, 0 },
+    { 0x02, "sessionId", FieldType::String, false, 0, 0 },
+    { 0x03, "scope", FieldType::Enum, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastSetMutedParamsFields[] = {
+    { 0x01, "muted", FieldType::Bool, true, 0, 0 },
+    { 0x02, "sessionId", FieldType::String, false, 0, 0 },
+    { 0x03, "scope", FieldType::Enum, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastAudioStateFields[] = {
+    { 0x01, "enabled", FieldType::Bool, true, 0, 0 },
+    { 0x02, "muted", FieldType::Bool, true, 0, 0 },
+    { 0x03, "effectivePlayback", FieldType::Bool, true, 0, 0 },
+    { 0x04, "scope", FieldType::Enum, false, 0, 0 },
+    { 0x05, "sessionId", FieldType::String, false, 0, 0 },
+    { 0x06, "source", FieldType::Enum, false, 0, 0 },
+    { 0x07, "reason", FieldType::Enum, false, 0, 0 },
+    { 0x08, "changedFields", FieldType::Array, false, 0, 0 },
+    { 0x09, "updatedAt", FieldType::String, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastAudioChangedEventFields[] = {
+    { 0x01, "changedFields", FieldType::Array, true, 0, 0 },
+    { 0x02, "state", FieldType::Object, true, 0, 0 },
+    { 0x03, "reason", FieldType::Enum, false, 0, 0 },
+    { 0x04, "updatedAt", FieldType::String, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastGetPinCodeConfigParamsFields[] = {
+    { 0x01, "includeSecret", FieldType::Bool, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastSetPinCodeConfigParamsFields[] = {
+    { 0x01, "enabled", FieldType::Bool, false, 0, 0 },
+    { 0x02, "pinDisplay", FieldType::Enum, false, 0, 0 },
+    { 0x03, "rotatePin", FieldType::Bool, false, 0, 0 },
+    { 0x04, "visibility", FieldType::Enum, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastSetPinCodeParamsFields[] = {
+    { 0x01, "pinCode", FieldType::String, true, 0, 0 },
+    { 0x02, "expirePrevious", FieldType::Bool, false, 0, 0 },
+    { 0x03, "visibility", FieldType::Enum, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastPinCodeConfigFields[] = {
+    { 0x01, "enabled", FieldType::Bool, true, 0, 0 },
+    { 0x02, "hasPinCode", FieldType::Bool, true, 0, 0 },
+    { 0x03, "pinCode", FieldType::String, false, 0, 0 },
+    { 0x04, "pinDisplay", FieldType::Enum, false, 0, 0 },
+    { 0x05, "generatedBy", FieldType::Enum, false, 0, 0 },
+    { 0x06, "visibility", FieldType::Enum, false, 0, 0 },
+    { 0x07, "expiresAt", FieldType::String, false, 0, 0 },
+    { 0x08, "redactionRequired", FieldType::Bool, false, 0, 0 },
+    { 0x09, "changedFields", FieldType::Array, false, 0, 0 },
+    { 0x0A, "updatedAt", FieldType::String, false, 0, 0 },
+    { 0x0B, "redacted", FieldType::Bool, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastPinCodeChangedEventFields[] = {
+    { 0x01, "changedFields", FieldType::Array, true, 0, 0 },
+    { 0x02, "config", FieldType::Object, true, 0, 0 },
+    { 0x03, "reason", FieldType::Enum, false, 0, 0 },
+    { 0x04, "updatedAt", FieldType::String, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastPinCodeRequiredEventFields[] = {
+    { 0x01, "sessionId", FieldType::String, false, 0, 0 },
+    { 0x02, "source", FieldType::Object, false, 0, 0 },
+    { 0x03, "pinCode", FieldType::String, false, 0, 0 },
+    { 0x04, "visibility", FieldType::Enum, false, 0, 0 },
+    { 0x05, "redactionRequired", FieldType::Bool, false, 0, 0 },
+    { 0x06, "requestedAt", FieldType::String, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastPinCodeAuthFailedEventFields[] = {
+    { 0x01, "sessionId", FieldType::String, false, 0, 0 },
+    { 0x02, "source", FieldType::Object, false, 0, 0 },
+    { 0x03, "authFailureReason", FieldType::Enum, false, 0, 0 },
+    { 0x04, "attemptCount", FieldType::Uint16, false, 0, 0 },
+    { 0x05, "failedAt", FieldType::String, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastRectFields[] = {
+    { 0x01, "x", FieldType::Int32, true, 0, 0 },
+    { 0x02, "y", FieldType::Int32, true, 0, 0 },
+    { 0x03, "width", FieldType::Uint32, true, 0, 0 },
+    { 0x04, "height", FieldType::Uint32, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastSetWindowStateParamsFields[] = {
+    { 0x01, "mode", FieldType::Enum, false, 0, 0 },
+    { 0x02, "fullscreen", FieldType::Bool, false, 0, 0 },
+    { 0x03, "alwaysOnTop", FieldType::Bool, false, 0, 0 },
+    { 0x04, "bounds", FieldType::Object, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastWindowStateFields[] = {
+    { 0x01, "hasWindow", FieldType::Bool, true, 0, 0 },
+    { 0x02, "visible", FieldType::Bool, true, 0, 0 },
+    { 0x03, "mode", FieldType::Enum, true, 0, 0 },
+    { 0x04, "fullscreen", FieldType::Bool, true, 0, 0 },
+    { 0x05, "alwaysOnTop", FieldType::Bool, true, 0, 0 },
+    { 0x06, "sessionId", FieldType::String, false, 0, 0 },
+    { 0x07, "bounds", FieldType::Object, false, 0, 0 },
+    { 0x08, "previousNormalBounds", FieldType::Object, false, 0, 0 },
+    { 0x09, "restoredBounds", FieldType::Object, false, 0, 0 },
+    { 0x0A, "changedFields", FieldType::Array, false, 0, 0 },
+    { 0x0B, "updatedAt", FieldType::String, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastWindowChangedEventFields[] = {
+    { 0x01, "changedFields", FieldType::Array, true, 0, 0 },
+    { 0x02, "state", FieldType::Object, true, 0, 0 },
+    { 0x03, "reason", FieldType::Enum, false, 0, 0 },
+    { 0x04, "updatedAt", FieldType::String, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastGetBackendStatusParamsFields[] = {
+    { 0x01, "includeLastError", FieldType::Bool, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastRestartBackendParamsFields[] = {
+    { 0x01, "reason", FieldType::Enum, false, 0, 0 },
+    { 0x02, "force", FieldType::Bool, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastBackendStatusFields[] = {
+    { 0x01, "backendType", FieldType::Enum, true, 0, 0 },
+    { 0x02, "state", FieldType::Enum, true, 0, 0 },
+    { 0x03, "discoverable", FieldType::Bool, true, 0, 0 },
+    { 0x04, "pid", FieldType::Uint32, false, 0, 0 },
+    { 0x05, "version", FieldType::String, false, 0, 0 },
+    { 0x06, "activeSessionId", FieldType::String, false, 0, 0 },
+    { 0x07, "restartInProgress", FieldType::Bool, true, 0, 0 },
+    { 0x08, "lastError", FieldType::Object, false, 0, 0 },
+    { 0x09, "updatedAt", FieldType::String, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastRestartBackendResultFields[] = {
+    { 0x01, "accepted", FieldType::Bool, true, 0, 0 },
+    { 0x02, "backendType", FieldType::Enum, true, 0, 0 },
+    { 0x03, "state", FieldType::Enum, true, 0, 0 },
+    { 0x04, "restartId", FieldType::String, false, 0, 0 },
+    { 0x05, "activeSessionEnded", FieldType::Bool, true, 0, 0 },
+    { 0x06, "endedSessionId", FieldType::String, false, 0, 0 },
+    { 0x07, "sessionStopReason", FieldType::Enum, false, 0, 0 },
+    { 0x08, "estimatedReadyInMs", FieldType::Uint32, false, 0, 0 },
+    { 0x09, "updatedAt", FieldType::String, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastBackendChangedEventFields[] = {
+    { 0x01, "changedFields", FieldType::Array, true, 0, 0 },
+    { 0x02, "state", FieldType::Object, true, 0, 0 },
+    { 0x03, "reason", FieldType::Enum, false, 0, 0 },
+    { 0x04, "restartId", FieldType::String, false, 0, 0 },
+    { 0x05, "activeSessionEnded", FieldType::Bool, false, 0, 0 },
+    { 0x06, "endedSessionId", FieldType::String, false, 0, 0 },
+    { 0x07, "updatedAt", FieldType::String, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastGetFlowControlStateParamsFields[] = {
+    { 0x01, "includeStats", FieldType::Bool, false, 0, 0 },
+    { 0x02, "includePolicy", FieldType::Bool, false, 0, 0 },
+    { 0x03, "sessionId", FieldType::String, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastSetRenderFpsParamsFields[] = {
+    { 0x01, "fps", FieldType::Object, true, 0, 0 },
+    { 0x02, "sessionId", FieldType::String, false, 0, 0 },
+    { 0x03, "scope", FieldType::Enum, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastSetFlowPolicyParamsFields[] = {
+    { 0x01, "videoQueueFrames", FieldType::Uint32, false, 1, 0 },
+    { 0x02, "lateFrameThresholdMs", FieldType::Uint32, false, 0, 0 },
+    { 0x03, "dropMode", FieldType::Enum, false, 0, 0 },
+    { 0x04, "overlayEnabled", FieldType::Bool, false, 0, 0 },
+    { 0x05, "sessionId", FieldType::String, false, 0, 0 },
+    { 0x06, "scope", FieldType::Enum, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastFlowControlStateFields[] = {
+    { 0x01, "targetRenderFps", FieldType::Object, true, 0, 0 },
+    { 0x02, "inputFps", FieldType::Object, false, 0, 0 },
+    { 0x03, "renderFps", FieldType::Object, false, 0, 0 },
+    { 0x04, "dropMode", FieldType::Enum, true, 0, 0 },
+    { 0x05, "videoQueueFrames", FieldType::Uint32, true, 1, 0 },
+    { 0x06, "videoQueueDepth", FieldType::Uint32, false, 0, 0 },
+    { 0x07, "audioQueueDepth", FieldType::Uint32, false, 0, 0 },
+    { 0x08, "lateFrameThresholdMs", FieldType::Uint32, true, 0, 0 },
+    { 0x09, "overlayEnabled", FieldType::Bool, true, 0, 0 },
+    { 0x0A, "droppedFrames", FieldType::Uint64, false, 0, 0 },
+    { 0x0B, "lateFrames", FieldType::Uint64, false, 0, 0 },
+    { 0x0C, "keyframeRequestCount", FieldType::Uint32, false, 0, 0 },
+    { 0x0D, "keyFrameOnDropBurst", FieldType::Bool, false, 0, 0 },
+    { 0x0E, "changedFields", FieldType::Array, false, 0, 0 },
+    { 0x0F, "sampledAt", FieldType::String, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastFlowControlChangedEventFields[] = {
+    { 0x01, "changedFields", FieldType::Array, true, 0, 0 },
+    { 0x02, "state", FieldType::Object, true, 0, 0 },
+    { 0x03, "reason", FieldType::Enum, false, 0, 0 },
+    { 0x04, "sampledAt", FieldType::String, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastGetStatusParamsFields[] = {
+    { 0x01, "include", FieldType::Array, false, 0, 0 },
+    { 0x02, "includeSensitive", FieldType::Bool, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastReceiverSummaryFields[] = {
+    { 0x01, "role", FieldType::Enum, true, 0, 0 },
+    { 0x02, "protocols", FieldType::Array, true, 0, 0 },
+    { 0x03, "state", FieldType::Enum, true, 0, 0 },
+    { 0x04, "receiverPhase", FieldType::Enum, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastSessionStatusSummaryFields[] = {
+    { 0x01, "sessionId", FieldType::String, false, 0, 0 },
+    { 0x02, "receiverPhase", FieldType::Enum, false, 0, 0 },
+    { 0x03, "sessionState", FieldType::Enum, false, 0, 0 },
+    { 0x04, "protocol", FieldType::Enum, false, 0, 0 },
+    { 0x05, "sourceName", FieldType::String, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastPinCodeStatusSummaryFields[] = {
+    { 0x01, "enabled", FieldType::Bool, true, 0, 0 },
+    { 0x02, "hasPinCode", FieldType::Bool, true, 0, 0 },
+    { 0x03, "pinDisplay", FieldType::Enum, false, 0, 0 },
+    { 0x04, "pinCode", FieldType::String, false, 0, 0 },
+    { 0x05, "redacted", FieldType::Bool, false, 0, 0 },
+    { 0x06, "visibility", FieldType::Enum, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastStatusFields[] = {
+    { 0x01, "receiver", FieldType::Object, true, 0, 0 },
+    { 0x02, "session", FieldType::Object, false, 0, 0 },
+    { 0x03, "pinCode", FieldType::Object, false, 0, 0 },
+    { 0x04, "audio", FieldType::Object, false, 0, 0 },
+    { 0x05, "window", FieldType::Object, false, 0, 0 },
+    { 0x06, "backend", FieldType::Object, false, 0, 0 },
+    { 0x07, "flowControl", FieldType::Object, false, 0, 0 },
+    { 0x08, "sampledAt", FieldType::String, true, 0, 0 },
+    { 0x09, "redacted", FieldType::Bool, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastStatusChangedEventFields[] = {
+    { 0x01, "changedSections", FieldType::Array, true, 0, 0 },
+    { 0x02, "status", FieldType::Object, true, 0, 0 },
+    { 0x03, "sampledAt", FieldType::String, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastSessionCapabilityFields[] = {
+    { 0x01, "protocols", FieldType::Array, true, 0, 0 },
+    { 0x02, "receiverPhases", FieldType::Array, true, 0, 0 },
+    { 0x03, "supportsAirPlayName", FieldType::Bool, false, 0, 0 },
+    { 0x04, "supportsStopSession", FieldType::Bool, false, 0, 0 },
+    { 0x05, "backendTypes", FieldType::Array, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastAudioCapabilityFields[] = {
+    { 0x01, "defaultEnabled", FieldType::Bool, false, 0, 0 },
+    { 0x02, "supportsMute", FieldType::Bool, false, 0, 0 },
+    { 0x03, "reportsEffectivePlayback", FieldType::Bool, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastPinCodeCapabilityFields[] = {
+    { 0x01, "defaultEnabled", FieldType::Bool, false, 0, 0 },
+    { 0x02, "supportsPlaintextResponse", FieldType::Bool, false, 0, 0 },
+    { 0x03, "supportedPinDisplays", FieldType::Array, false, 0, 0 },
+    { 0x04, "supportsGeneratedPin", FieldType::Bool, false, 0, 0 },
+    { 0x05, "redactionRequired", FieldType::Bool, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastWindowCapabilityFields[] = {
+    { 0x01, "supportsFullscreen", FieldType::Bool, false, 0, 0 },
+    { 0x02, "supportsAlwaysOnTop", FieldType::Bool, false, 0, 0 },
+    { 0x03, "supportsNormalRestore", FieldType::Bool, false, 0, 0 },
+    { 0x04, "noWindowPolicy", FieldType::Enum, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastBackendCapabilityFields[] = {
+    { 0x01, "backendTypes", FieldType::Array, true, 0, 0 },
+    { 0x02, "supportsRestart", FieldType::Bool, false, 0, 0 },
+    { 0x03, "reportsProcess", FieldType::Bool, false, 0, 0 },
+    { 0x04, "supportsLastError", FieldType::Bool, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastFlowControlCapabilityFields[] = {
+    { 0x01, "supportsRenderFps", FieldType::Bool, false, 0, 0 },
+    { 0x02, "supportsQueuePolicy", FieldType::Bool, false, 0, 0 },
+    { 0x03, "supportsOverlay", FieldType::Bool, false, 0, 0 },
+    { 0x04, "supportsStats", FieldType::Bool, false, 0, 0 },
+    { 0x05, "exposesExternalKeyframeRequest", FieldType::Bool, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastStatusCapabilityFields[] = {
+    { 0x01, "sections", FieldType::Array, true, 0, 0 },
+    { 0x02, "supportsSensitiveRedaction", FieldType::Bool, false, 0, 0 },
+    { 0x03, "supportsStatusChangedEvent", FieldType::Bool, false, 0, 0 },
+};
+
 inline constexpr FieldDescriptor kGetDeviceInfoParamsFields[] = {
     { 0x01, "includeCapabilitySummary", FieldType::Bool, false, 0, 0 },
 };
@@ -1048,6 +1492,59 @@ inline constexpr SchemaDescriptor kAudioStreamStateChangedEventSchema = { "Audio
 inline constexpr SchemaDescriptor kAudioStreamSourceStateChangedEventSchema = { "AudioStreamSourceStateChangedEvent", kAudioStreamSourceStateChangedEventFields, 5 };
 inline constexpr SchemaDescriptor kAudioStreamStatsReportedEventSchema = { "AudioStreamStatsReportedEvent", kAudioStreamStatsReportedEventFields, 2 };
 inline constexpr SchemaDescriptor kAudioStreamStatsSchema = { "AudioStreamStats", kAudioStreamStatsFields, 4 };
+inline constexpr SchemaDescriptor kCastSourceSummarySchema = { "CastSourceSummary", kCastSourceSummaryFields, 5 };
+inline constexpr SchemaDescriptor kCastMediaSummarySchema = { "CastMediaSummary", kCastMediaSummaryFields, 7 };
+inline constexpr SchemaDescriptor kCastLastErrorSchema = { "CastLastError", kCastLastErrorFields, 4 };
+inline constexpr SchemaDescriptor kCastGetSessionParamsSchema = { "CastGetSessionParams", kCastGetSessionParamsFields, 2 };
+inline constexpr SchemaDescriptor kCastSessionStateSchema = { "CastSessionState", kCastSessionStateFields, 12 };
+inline constexpr SchemaDescriptor kCastStopSessionParamsSchema = { "CastStopSessionParams", kCastStopSessionParamsFields, 3 };
+inline constexpr SchemaDescriptor kCastStopSessionResultSchema = { "CastStopSessionResult", kCastStopSessionResultFields, 9 };
+inline constexpr SchemaDescriptor kCastSetAirPlayNameParamsSchema = { "CastSetAirPlayNameParams", kCastSetAirPlayNameParamsFields, 2 };
+inline constexpr SchemaDescriptor kCastAirPlayNameStateSchema = { "CastAirPlayNameState", kCastAirPlayNameStateFields, 7 };
+inline constexpr SchemaDescriptor kCastSessionIncomingEventSchema = { "CastSessionIncomingEvent", kCastSessionIncomingEventFields, 6 };
+inline constexpr SchemaDescriptor kCastSessionStateChangedEventSchema = { "CastSessionStateChangedEvent", kCastSessionStateChangedEventFields, 10 };
+inline constexpr SchemaDescriptor kCastSessionStartedEventSchema = { "CastSessionStartedEvent", kCastSessionStartedEventFields, 7 };
+inline constexpr SchemaDescriptor kCastSessionStoppedEventSchema = { "CastSessionStoppedEvent", kCastSessionStoppedEventFields, 8 };
+inline constexpr SchemaDescriptor kCastSessionFailedEventSchema = { "CastSessionFailedEvent", kCastSessionFailedEventFields, 8 };
+inline constexpr SchemaDescriptor kCastGetAudioParamsSchema = { "CastGetAudioParams", kCastGetAudioParamsFields, 2 };
+inline constexpr SchemaDescriptor kCastSetAudioParamsSchema = { "CastSetAudioParams", kCastSetAudioParamsFields, 3 };
+inline constexpr SchemaDescriptor kCastSetMutedParamsSchema = { "CastSetMutedParams", kCastSetMutedParamsFields, 3 };
+inline constexpr SchemaDescriptor kCastAudioStateSchema = { "CastAudioState", kCastAudioStateFields, 9 };
+inline constexpr SchemaDescriptor kCastAudioChangedEventSchema = { "CastAudioChangedEvent", kCastAudioChangedEventFields, 4 };
+inline constexpr SchemaDescriptor kCastGetPinCodeConfigParamsSchema = { "CastGetPinCodeConfigParams", kCastGetPinCodeConfigParamsFields, 1 };
+inline constexpr SchemaDescriptor kCastSetPinCodeConfigParamsSchema = { "CastSetPinCodeConfigParams", kCastSetPinCodeConfigParamsFields, 4 };
+inline constexpr SchemaDescriptor kCastSetPinCodeParamsSchema = { "CastSetPinCodeParams", kCastSetPinCodeParamsFields, 3 };
+inline constexpr SchemaDescriptor kCastPinCodeConfigSchema = { "CastPinCodeConfig", kCastPinCodeConfigFields, 11 };
+inline constexpr SchemaDescriptor kCastPinCodeChangedEventSchema = { "CastPinCodeChangedEvent", kCastPinCodeChangedEventFields, 4 };
+inline constexpr SchemaDescriptor kCastPinCodeRequiredEventSchema = { "CastPinCodeRequiredEvent", kCastPinCodeRequiredEventFields, 6 };
+inline constexpr SchemaDescriptor kCastPinCodeAuthFailedEventSchema = { "CastPinCodeAuthFailedEvent", kCastPinCodeAuthFailedEventFields, 5 };
+inline constexpr SchemaDescriptor kCastRectSchema = { "CastRect", kCastRectFields, 4 };
+inline constexpr SchemaDescriptor kCastSetWindowStateParamsSchema = { "CastSetWindowStateParams", kCastSetWindowStateParamsFields, 4 };
+inline constexpr SchemaDescriptor kCastWindowStateSchema = { "CastWindowState", kCastWindowStateFields, 11 };
+inline constexpr SchemaDescriptor kCastWindowChangedEventSchema = { "CastWindowChangedEvent", kCastWindowChangedEventFields, 4 };
+inline constexpr SchemaDescriptor kCastGetBackendStatusParamsSchema = { "CastGetBackendStatusParams", kCastGetBackendStatusParamsFields, 1 };
+inline constexpr SchemaDescriptor kCastRestartBackendParamsSchema = { "CastRestartBackendParams", kCastRestartBackendParamsFields, 2 };
+inline constexpr SchemaDescriptor kCastBackendStatusSchema = { "CastBackendStatus", kCastBackendStatusFields, 9 };
+inline constexpr SchemaDescriptor kCastRestartBackendResultSchema = { "CastRestartBackendResult", kCastRestartBackendResultFields, 9 };
+inline constexpr SchemaDescriptor kCastBackendChangedEventSchema = { "CastBackendChangedEvent", kCastBackendChangedEventFields, 7 };
+inline constexpr SchemaDescriptor kCastGetFlowControlStateParamsSchema = { "CastGetFlowControlStateParams", kCastGetFlowControlStateParamsFields, 3 };
+inline constexpr SchemaDescriptor kCastSetRenderFpsParamsSchema = { "CastSetRenderFpsParams", kCastSetRenderFpsParamsFields, 3 };
+inline constexpr SchemaDescriptor kCastSetFlowPolicyParamsSchema = { "CastSetFlowPolicyParams", kCastSetFlowPolicyParamsFields, 6 };
+inline constexpr SchemaDescriptor kCastFlowControlStateSchema = { "CastFlowControlState", kCastFlowControlStateFields, 15 };
+inline constexpr SchemaDescriptor kCastFlowControlChangedEventSchema = { "CastFlowControlChangedEvent", kCastFlowControlChangedEventFields, 4 };
+inline constexpr SchemaDescriptor kCastGetStatusParamsSchema = { "CastGetStatusParams", kCastGetStatusParamsFields, 2 };
+inline constexpr SchemaDescriptor kCastReceiverSummarySchema = { "CastReceiverSummary", kCastReceiverSummaryFields, 4 };
+inline constexpr SchemaDescriptor kCastSessionStatusSummarySchema = { "CastSessionStatusSummary", kCastSessionStatusSummaryFields, 5 };
+inline constexpr SchemaDescriptor kCastPinCodeStatusSummarySchema = { "CastPinCodeStatusSummary", kCastPinCodeStatusSummaryFields, 6 };
+inline constexpr SchemaDescriptor kCastStatusSchema = { "CastStatus", kCastStatusFields, 9 };
+inline constexpr SchemaDescriptor kCastStatusChangedEventSchema = { "CastStatusChangedEvent", kCastStatusChangedEventFields, 3 };
+inline constexpr SchemaDescriptor kCastSessionCapabilitySchema = { "CastSessionCapability", kCastSessionCapabilityFields, 5 };
+inline constexpr SchemaDescriptor kCastAudioCapabilitySchema = { "CastAudioCapability", kCastAudioCapabilityFields, 3 };
+inline constexpr SchemaDescriptor kCastPinCodeCapabilitySchema = { "CastPinCodeCapability", kCastPinCodeCapabilityFields, 5 };
+inline constexpr SchemaDescriptor kCastWindowCapabilitySchema = { "CastWindowCapability", kCastWindowCapabilityFields, 4 };
+inline constexpr SchemaDescriptor kCastBackendCapabilitySchema = { "CastBackendCapability", kCastBackendCapabilityFields, 4 };
+inline constexpr SchemaDescriptor kCastFlowControlCapabilitySchema = { "CastFlowControlCapability", kCastFlowControlCapabilityFields, 5 };
+inline constexpr SchemaDescriptor kCastStatusCapabilitySchema = { "CastStatusCapability", kCastStatusCapabilityFields, 3 };
 inline constexpr SchemaDescriptor kGetDeviceInfoParamsSchema = { "GetDeviceInfoParams", kGetDeviceInfoParamsFields, 1 };
 inline constexpr SchemaDescriptor kDeviceInfoSchema = { "DeviceInfo", kDeviceInfoFields, 7 };
 inline constexpr SchemaDescriptor kDeviceIdentitySchema = { "DeviceIdentity", kDeviceIdentityFields, 4 };
