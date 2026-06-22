@@ -67,6 +67,7 @@ bool isDxgiBackedSample(IMFSample* sample) {
 constexpr int kOverlayButtonMute = 1001;
 constexpr int kOverlayButtonStop = 1002;
 constexpr int kOverlayButtonMaxRestore = 1003;
+constexpr int kOverlayButtonOpenStreams = 1004;
 constexpr UINT kUpdateMutedMessage = WM_APP + 41;
 constexpr UINT_PTR kSelfTestTimerId = 1;
 constexpr UINT_PTR kFpsTimerId = 2;

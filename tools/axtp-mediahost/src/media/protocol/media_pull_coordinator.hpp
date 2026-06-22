@@ -30,6 +30,13 @@ public:
         _sid = std::move(sid);
     }
 
+    void setOpenParamExtras(MediaKind kind, nlohmann::json extras) {
+        if (!extras.is_object()) {
+            extras = nlohmann::json::object();
+        }
+        _openParamExtras[kind] = std::move(extras);
+    }
+
     bool handleEvent(const RpcPayload& event) {
         const auto kind = kindFromSourceEvent(event);
         if (!kind.has_value()) {
@@ -255,21 +262,30 @@ private:
     }
 
     nlohmann::json openParamsFor(const PullRequest& pull) const {
+        nlohmann::json params;
         if (pull.kind == MediaKind::Video) {
-            return nlohmann::json{{"source", pull.source},
-                                  {"peerRole", "transmitter"},
-                                  {"codec", "h264"},
-                                  {"streamProfile", "media.video"},
-                                  {"cursorUnit", "timestampUs"}};
+            params = nlohmann::json{{"source", pull.source},
+                                    {"peerRole", "transmitter"},
+                                    {"codec", "h264"},
+                                    {"streamProfile", "media.video"},
+                                    {"cursorUnit", "timestampUs"}};
+        } else {
+            params = nlohmann::json{{"source", pull.source},
+                                    {"peerRole", "transmitter"},
+                                    {"codec", "aac"},
+                                    {"transportFormat", "adts"},
+                                    {"sampleRate", _registry.audioSampleRate()},
+                                    {"channels", _registry.audioChannels()},
+                                    {"streamProfile", "media.audio"},
+                                    {"cursorUnit", "timestampUs"}};
         }
-        return nlohmann::json{{"source", pull.source},
-                              {"peerRole", "transmitter"},
-                              {"codec", "aac"},
-                              {"transportFormat", "adts"},
-                              {"sampleRate", _registry.audioSampleRate()},
-                              {"channels", _registry.audioChannels()},
-                              {"streamProfile", "media.audio"},
-                              {"cursorUnit", "timestampUs"}};
+        const auto extras = _openParamExtras.find(pull.kind);
+        if (extras != _openParamExtras.end() && extras->second.is_object()) {
+            for (auto it = extras->second.begin(); it != extras->second.end(); ++it) {
+                params[it.key()] = it.value();
+            }
+        }
+        return params;
     }
 
     template <typename Endpoint> void sendOpen(Endpoint& endpoint, PullRequest& pull) {
@@ -401,6 +417,7 @@ private:
     std::chrono::milliseconds _requestTimeout;
     LogFn _log;
     std::map<std::string, PullRequest> _pulls;
+    std::map<MediaKind, nlohmann::json> _openParamExtras;
     std::uint32_t _nextRequestId = 1;
 };
 

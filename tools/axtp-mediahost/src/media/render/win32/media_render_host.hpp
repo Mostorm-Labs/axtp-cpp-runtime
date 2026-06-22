@@ -54,6 +54,7 @@ public:
     bool isMuted() const;
     bool toggleMuted();
     bool consumeStopCastingRequested();
+    bool consumeOpenStreamsRequested();
     void resetVideoDecoder(std::string_view reason);
 
     void onStreamOpened(const MediaStreamInfo& info) override;
