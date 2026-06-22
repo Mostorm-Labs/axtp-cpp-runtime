@@ -30,8 +30,21 @@ inline constexpr EventDescriptor kEventRegistry[] = {
     { 0x0E06, "network.apConfigChanged", "network", "NetworkApConfigChangedEvent" },
     { 0x0E07, "network.apStateChanged", "network", "NetworkApStateChangedEvent" },
     { 0x0E08, "network.apClientChanged", "network", "NetworkApClientChangedEvent" },
+    { 0x1601, "cast.sessionIncoming", "cast", "CastSessionIncomingEvent" },
+    { 0x1602, "cast.sessionStateChanged", "cast", "CastSessionStateChangedEvent" },
+    { 0x1603, "cast.sessionStarted", "cast", "CastSessionStartedEvent" },
+    { 0x1604, "cast.sessionStopped", "cast", "CastSessionStoppedEvent" },
+    { 0x1605, "cast.sessionFailed", "cast", "CastSessionFailedEvent" },
+    { 0x1606, "cast.audioChanged", "cast", "CastAudioChangedEvent" },
+    { 0x1607, "cast.pinCodeChanged", "cast", "CastPinCodeChangedEvent" },
+    { 0x1608, "cast.pinCodeRequired", "cast", "CastPinCodeRequiredEvent" },
+    { 0x1609, "cast.pinCodeAuthFailed", "cast", "CastPinCodeAuthFailedEvent" },
+    { 0x160A, "cast.windowChanged", "cast", "CastWindowChangedEvent" },
+    { 0x160B, "cast.backendChanged", "cast", "CastBackendChangedEvent" },
+    { 0x160C, "cast.flowControlChanged", "cast", "CastFlowControlChangedEvent" },
+    { 0x160D, "cast.statusChanged", "cast", "CastStatusChangedEvent" },
 };
 
-inline constexpr std::size_t kEventRegistryCount = 17;
+inline constexpr std::size_t kEventRegistryCount = 30;
 
 } // namespace axtp

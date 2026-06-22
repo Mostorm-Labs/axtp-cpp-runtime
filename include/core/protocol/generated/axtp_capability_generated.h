@@ -27,8 +27,15 @@ inline constexpr CapabilityDescriptor kCapabilityRegistry[] = {
     { 0x0E02, "network.ip", "network", "object", "NetworkIpCapability" },
     { 0x0E03, "network.wifi", "network", "object", "NetworkWifiCapabilities" },
     { 0x0E04, "network.ap", "network", "object", "NetworkApCapabilities" },
+    { 0x1601, "cast.session", "cast", "object", "CastSessionCapability" },
+    { 0x1602, "cast.audio", "cast", "object", "CastAudioCapability" },
+    { 0x1603, "cast.pinCode", "cast", "object", "CastPinCodeCapability" },
+    { 0x1604, "cast.window", "cast", "object", "CastWindowCapability" },
+    { 0x1605, "cast.backend", "cast", "object", "CastBackendCapability" },
+    { 0x1606, "cast.flowControl", "cast", "object", "CastFlowControlCapability" },
+    { 0x1607, "cast.status", "cast", "object", "CastStatusCapability" },
 };
 
-inline constexpr std::size_t kCapabilityRegistryCount = 13;
+inline constexpr std::size_t kCapabilityRegistryCount = 20;
 
 } // namespace axtp

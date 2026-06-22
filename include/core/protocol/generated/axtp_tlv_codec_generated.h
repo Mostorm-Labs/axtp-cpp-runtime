@@ -3,10 +3,6 @@
 #include <cstdint>
 #include "core/protocol/generated/axtp_ids_generated.h"
 
-#ifdef ERROR
-#undef ERROR
-#endif
-
 namespace axtp {
 
 class TlvWriter;
@@ -375,6 +371,450 @@ constexpr std::uint8_t PACKETS = 0x01;
 constexpr std::uint8_t BYTES = 0x02;
 constexpr std::uint8_t DROPPED_PACKETS = 0x03;
 constexpr std::uint8_t JITTER_MS = 0x04;
+}
+
+namespace fields::cast_source_summary {
+constexpr std::uint8_t NAME = 0x01;
+constexpr std::uint8_t MODEL = 0x02;
+constexpr std::uint8_t ADDRESS = 0x03;
+constexpr std::uint8_t SOURCE_ID = 0x04;
+constexpr std::uint8_t PROTOCOL = 0x05;
+}
+
+namespace fields::cast_media_summary {
+constexpr std::uint8_t FIRST_FRAME = 0x01;
+constexpr std::uint8_t WIDTH = 0x02;
+constexpr std::uint8_t HEIGHT = 0x03;
+constexpr std::uint8_t ORIENTATION = 0x04;
+constexpr std::uint8_t INPUT_FPS = 0x05;
+constexpr std::uint8_t RENDER_FPS = 0x06;
+constexpr std::uint8_t AUDIO_ACTIVE = 0x07;
+}
+
+namespace fields::cast_last_error {
+constexpr std::uint8_t CODE = 0x01;
+constexpr std::uint8_t MESSAGE = 0x02;
+constexpr std::uint8_t OCCURRED_AT = 0x03;
+constexpr std::uint8_t REDACTED = 0x04;
+}
+
+namespace fields::cast_get_session_params {
+constexpr std::uint8_t INCLUDE = 0x01;
+constexpr std::uint8_t SESSION_ID = 0x02;
+}
+
+namespace fields::cast_session_state {
+constexpr std::uint8_t RECEIVER_STATE = 0x01;
+constexpr std::uint8_t SESSION_ID = 0x02;
+constexpr std::uint8_t RECEIVER_PHASE = 0x03;
+constexpr std::uint8_t SESSION_STATE = 0x04;
+constexpr std::uint8_t PROTOCOL = 0x05;
+constexpr std::uint8_t AIR_PLAY_NAME = 0x06;
+constexpr std::uint8_t SOURCE = 0x07;
+constexpr std::uint8_t MEDIA = 0x08;
+constexpr std::uint8_t BACKEND_STATE = 0x09;
+constexpr std::uint8_t REASON = 0x0A;
+constexpr std::uint8_t AUTH_REQUIRED = 0x0B;
+constexpr std::uint8_t UPDATED_AT = 0x0C;
+}
+
+namespace fields::cast_stop_session_params {
+constexpr std::uint8_t SESSION_ID = 0x01;
+constexpr std::uint8_t REASON = 0x02;
+constexpr std::uint8_t FORCE = 0x03;
+}
+
+namespace fields::cast_stop_session_result {
+constexpr std::uint8_t ACCEPTED = 0x01;
+constexpr std::uint8_t SESSION_ID = 0x02;
+constexpr std::uint8_t PREVIOUS_RECEIVER_PHASE = 0x03;
+constexpr std::uint8_t RECEIVER_PHASE = 0x04;
+constexpr std::uint8_t PREVIOUS_STATE = 0x05;
+constexpr std::uint8_t SESSION_STATE = 0x06;
+constexpr std::uint8_t REASON = 0x07;
+constexpr std::uint8_t NO_ACTIVE_SESSION = 0x08;
+constexpr std::uint8_t UPDATED_AT = 0x09;
+}
+
+namespace fields::cast_set_air_play_name_params {
+constexpr std::uint8_t DISPLAY_NAME = 0x01;
+constexpr std::uint8_t APPLY = 0x02;
+}
+
+namespace fields::cast_air_play_name_state {
+constexpr std::uint8_t DISPLAY_NAME = 0x01;
+constexpr std::uint8_t PREVIOUS_DISPLAY_NAME = 0x02;
+constexpr std::uint8_t SOURCE = 0x03;
+constexpr std::uint8_t APPLY = 0x04;
+constexpr std::uint8_t PUBLISH_STATE = 0x05;
+constexpr std::uint8_t BACKEND_TYPE = 0x06;
+constexpr std::uint8_t UPDATED_AT = 0x07;
+}
+
+namespace fields::cast_session_incoming_event {
+constexpr std::uint8_t SESSION_ID = 0x01;
+constexpr std::uint8_t RECEIVER_PHASE = 0x02;
+constexpr std::uint8_t PROTOCOL = 0x03;
+constexpr std::uint8_t SOURCE = 0x04;
+constexpr std::uint8_t AUTH_REQUIRED = 0x05;
+constexpr std::uint8_t INCOMING_AT = 0x06;
+}
+
+namespace fields::cast_session_state_changed_event {
+constexpr std::uint8_t SESSION_ID = 0x01;
+constexpr std::uint8_t PREVIOUS_RECEIVER_PHASE = 0x02;
+constexpr std::uint8_t RECEIVER_PHASE = 0x03;
+constexpr std::uint8_t PREVIOUS_STATE = 0x04;
+constexpr std::uint8_t SESSION_STATE = 0x05;
+constexpr std::uint8_t PROTOCOL = 0x06;
+constexpr std::uint8_t AUTH_REQUIRED = 0x07;
+constexpr std::uint8_t MEDIA = 0x08;
+constexpr std::uint8_t REASON = 0x09;
+constexpr std::uint8_t UPDATED_AT = 0x0A;
+}
+
+namespace fields::cast_session_started_event {
+constexpr std::uint8_t SESSION_ID = 0x01;
+constexpr std::uint8_t RECEIVER_PHASE = 0x02;
+constexpr std::uint8_t SESSION_STATE = 0x03;
+constexpr std::uint8_t PROTOCOL = 0x04;
+constexpr std::uint8_t SOURCE = 0x05;
+constexpr std::uint8_t MEDIA = 0x06;
+constexpr std::uint8_t STARTED_AT = 0x07;
+}
+
+namespace fields::cast_session_stopped_event {
+constexpr std::uint8_t SESSION_ID = 0x01;
+constexpr std::uint8_t PREVIOUS_RECEIVER_PHASE = 0x02;
+constexpr std::uint8_t RECEIVER_PHASE = 0x03;
+constexpr std::uint8_t PREVIOUS_STATE = 0x04;
+constexpr std::uint8_t SESSION_STATE = 0x05;
+constexpr std::uint8_t REASON = 0x06;
+constexpr std::uint8_t BACKEND_TYPE = 0x07;
+constexpr std::uint8_t STOPPED_AT = 0x08;
+}
+
+namespace fields::cast_session_failed_event {
+constexpr std::uint8_t SESSION_ID = 0x01;
+constexpr std::uint8_t RECEIVER_PHASE = 0x02;
+constexpr std::uint8_t SESSION_STATE = 0x03;
+constexpr std::uint8_t PROTOCOL = 0x04;
+constexpr std::uint8_t SOURCE = 0x05;
+constexpr std::uint8_t REASON = 0x06;
+constexpr std::uint8_t ERROR = 0x07;
+constexpr std::uint8_t FAILED_AT = 0x08;
+}
+
+namespace fields::cast_get_audio_params {
+constexpr std::uint8_t INCLUDE_EFFECTIVE = 0x01;
+constexpr std::uint8_t SESSION_ID = 0x02;
+}
+
+namespace fields::cast_set_audio_params {
+constexpr std::uint8_t ENABLED = 0x01;
+constexpr std::uint8_t SESSION_ID = 0x02;
+constexpr std::uint8_t SCOPE = 0x03;
+}
+
+namespace fields::cast_set_muted_params {
+constexpr std::uint8_t MUTED = 0x01;
+constexpr std::uint8_t SESSION_ID = 0x02;
+constexpr std::uint8_t SCOPE = 0x03;
+}
+
+namespace fields::cast_audio_state {
+constexpr std::uint8_t ENABLED = 0x01;
+constexpr std::uint8_t MUTED = 0x02;
+constexpr std::uint8_t EFFECTIVE_PLAYBACK = 0x03;
+constexpr std::uint8_t SCOPE = 0x04;
+constexpr std::uint8_t SESSION_ID = 0x05;
+constexpr std::uint8_t SOURCE = 0x06;
+constexpr std::uint8_t REASON = 0x07;
+constexpr std::uint8_t CHANGED_FIELDS = 0x08;
+constexpr std::uint8_t UPDATED_AT = 0x09;
+}
+
+namespace fields::cast_audio_changed_event {
+constexpr std::uint8_t CHANGED_FIELDS = 0x01;
+constexpr std::uint8_t STATE = 0x02;
+constexpr std::uint8_t REASON = 0x03;
+constexpr std::uint8_t UPDATED_AT = 0x04;
+}
+
+namespace fields::cast_get_pin_code_config_params {
+constexpr std::uint8_t INCLUDE_SECRET = 0x01;
+}
+
+namespace fields::cast_set_pin_code_config_params {
+constexpr std::uint8_t ENABLED = 0x01;
+constexpr std::uint8_t PIN_DISPLAY = 0x02;
+constexpr std::uint8_t ROTATE_PIN = 0x03;
+constexpr std::uint8_t VISIBILITY = 0x04;
+}
+
+namespace fields::cast_set_pin_code_params {
+constexpr std::uint8_t PIN_CODE = 0x01;
+constexpr std::uint8_t EXPIRE_PREVIOUS = 0x02;
+constexpr std::uint8_t VISIBILITY = 0x03;
+}
+
+namespace fields::cast_pin_code_config {
+constexpr std::uint8_t ENABLED = 0x01;
+constexpr std::uint8_t HAS_PIN_CODE = 0x02;
+constexpr std::uint8_t PIN_CODE = 0x03;
+constexpr std::uint8_t PIN_DISPLAY = 0x04;
+constexpr std::uint8_t GENERATED_BY = 0x05;
+constexpr std::uint8_t VISIBILITY = 0x06;
+constexpr std::uint8_t EXPIRES_AT = 0x07;
+constexpr std::uint8_t REDACTION_REQUIRED = 0x08;
+constexpr std::uint8_t CHANGED_FIELDS = 0x09;
+constexpr std::uint8_t UPDATED_AT = 0x0A;
+constexpr std::uint8_t REDACTED = 0x0B;
+}
+
+namespace fields::cast_pin_code_changed_event {
+constexpr std::uint8_t CHANGED_FIELDS = 0x01;
+constexpr std::uint8_t CONFIG = 0x02;
+constexpr std::uint8_t REASON = 0x03;
+constexpr std::uint8_t UPDATED_AT = 0x04;
+}
+
+namespace fields::cast_pin_code_required_event {
+constexpr std::uint8_t SESSION_ID = 0x01;
+constexpr std::uint8_t SOURCE = 0x02;
+constexpr std::uint8_t PIN_CODE = 0x03;
+constexpr std::uint8_t VISIBILITY = 0x04;
+constexpr std::uint8_t REDACTION_REQUIRED = 0x05;
+constexpr std::uint8_t REQUESTED_AT = 0x06;
+}
+
+namespace fields::cast_pin_code_auth_failed_event {
+constexpr std::uint8_t SESSION_ID = 0x01;
+constexpr std::uint8_t SOURCE = 0x02;
+constexpr std::uint8_t AUTH_FAILURE_REASON = 0x03;
+constexpr std::uint8_t ATTEMPT_COUNT = 0x04;
+constexpr std::uint8_t FAILED_AT = 0x05;
+}
+
+namespace fields::cast_rect {
+constexpr std::uint8_t X = 0x01;
+constexpr std::uint8_t Y = 0x02;
+constexpr std::uint8_t WIDTH = 0x03;
+constexpr std::uint8_t HEIGHT = 0x04;
+}
+
+namespace fields::cast_set_window_state_params {
+constexpr std::uint8_t MODE = 0x01;
+constexpr std::uint8_t FULLSCREEN = 0x02;
+constexpr std::uint8_t ALWAYS_ON_TOP = 0x03;
+constexpr std::uint8_t BOUNDS = 0x04;
+}
+
+namespace fields::cast_window_state {
+constexpr std::uint8_t HAS_WINDOW = 0x01;
+constexpr std::uint8_t VISIBLE = 0x02;
+constexpr std::uint8_t MODE = 0x03;
+constexpr std::uint8_t FULLSCREEN = 0x04;
+constexpr std::uint8_t ALWAYS_ON_TOP = 0x05;
+constexpr std::uint8_t SESSION_ID = 0x06;
+constexpr std::uint8_t BOUNDS = 0x07;
+constexpr std::uint8_t PREVIOUS_NORMAL_BOUNDS = 0x08;
+constexpr std::uint8_t RESTORED_BOUNDS = 0x09;
+constexpr std::uint8_t CHANGED_FIELDS = 0x0A;
+constexpr std::uint8_t UPDATED_AT = 0x0B;
+}
+
+namespace fields::cast_window_changed_event {
+constexpr std::uint8_t CHANGED_FIELDS = 0x01;
+constexpr std::uint8_t STATE = 0x02;
+constexpr std::uint8_t REASON = 0x03;
+constexpr std::uint8_t UPDATED_AT = 0x04;
+}
+
+namespace fields::cast_get_backend_status_params {
+constexpr std::uint8_t INCLUDE_LAST_ERROR = 0x01;
+}
+
+namespace fields::cast_restart_backend_params {
+constexpr std::uint8_t REASON = 0x01;
+constexpr std::uint8_t FORCE = 0x02;
+}
+
+namespace fields::cast_backend_status {
+constexpr std::uint8_t BACKEND_TYPE = 0x01;
+constexpr std::uint8_t STATE = 0x02;
+constexpr std::uint8_t DISCOVERABLE = 0x03;
+constexpr std::uint8_t PID = 0x04;
+constexpr std::uint8_t VERSION = 0x05;
+constexpr std::uint8_t ACTIVE_SESSION_ID = 0x06;
+constexpr std::uint8_t RESTART_IN_PROGRESS = 0x07;
+constexpr std::uint8_t LAST_ERROR = 0x08;
+constexpr std::uint8_t UPDATED_AT = 0x09;
+}
+
+namespace fields::cast_restart_backend_result {
+constexpr std::uint8_t ACCEPTED = 0x01;
+constexpr std::uint8_t BACKEND_TYPE = 0x02;
+constexpr std::uint8_t STATE = 0x03;
+constexpr std::uint8_t RESTART_ID = 0x04;
+constexpr std::uint8_t ACTIVE_SESSION_ENDED = 0x05;
+constexpr std::uint8_t ENDED_SESSION_ID = 0x06;
+constexpr std::uint8_t SESSION_STOP_REASON = 0x07;
+constexpr std::uint8_t ESTIMATED_READY_IN_MS = 0x08;
+constexpr std::uint8_t UPDATED_AT = 0x09;
+}
+
+namespace fields::cast_backend_changed_event {
+constexpr std::uint8_t CHANGED_FIELDS = 0x01;
+constexpr std::uint8_t STATE = 0x02;
+constexpr std::uint8_t REASON = 0x03;
+constexpr std::uint8_t RESTART_ID = 0x04;
+constexpr std::uint8_t ACTIVE_SESSION_ENDED = 0x05;
+constexpr std::uint8_t ENDED_SESSION_ID = 0x06;
+constexpr std::uint8_t UPDATED_AT = 0x07;
+}
+
+namespace fields::cast_get_flow_control_state_params {
+constexpr std::uint8_t INCLUDE_STATS = 0x01;
+constexpr std::uint8_t INCLUDE_POLICY = 0x02;
+constexpr std::uint8_t SESSION_ID = 0x03;
+}
+
+namespace fields::cast_set_render_fps_params {
+constexpr std::uint8_t FPS = 0x01;
+constexpr std::uint8_t SESSION_ID = 0x02;
+constexpr std::uint8_t SCOPE = 0x03;
+}
+
+namespace fields::cast_set_flow_policy_params {
+constexpr std::uint8_t VIDEO_QUEUE_FRAMES = 0x01;
+constexpr std::uint8_t LATE_FRAME_THRESHOLD_MS = 0x02;
+constexpr std::uint8_t DROP_MODE = 0x03;
+constexpr std::uint8_t OVERLAY_ENABLED = 0x04;
+constexpr std::uint8_t SESSION_ID = 0x05;
+constexpr std::uint8_t SCOPE = 0x06;
+}
+
+namespace fields::cast_flow_control_state {
+constexpr std::uint8_t TARGET_RENDER_FPS = 0x01;
+constexpr std::uint8_t INPUT_FPS = 0x02;
+constexpr std::uint8_t RENDER_FPS = 0x03;
+constexpr std::uint8_t DROP_MODE = 0x04;
+constexpr std::uint8_t VIDEO_QUEUE_FRAMES = 0x05;
+constexpr std::uint8_t VIDEO_QUEUE_DEPTH = 0x06;
+constexpr std::uint8_t AUDIO_QUEUE_DEPTH = 0x07;
+constexpr std::uint8_t LATE_FRAME_THRESHOLD_MS = 0x08;
+constexpr std::uint8_t OVERLAY_ENABLED = 0x09;
+constexpr std::uint8_t DROPPED_FRAMES = 0x0A;
+constexpr std::uint8_t LATE_FRAMES = 0x0B;
+constexpr std::uint8_t KEYFRAME_REQUEST_COUNT = 0x0C;
+constexpr std::uint8_t KEY_FRAME_ON_DROP_BURST = 0x0D;
+constexpr std::uint8_t CHANGED_FIELDS = 0x0E;
+constexpr std::uint8_t SAMPLED_AT = 0x0F;
+}
+
+namespace fields::cast_flow_control_changed_event {
+constexpr std::uint8_t CHANGED_FIELDS = 0x01;
+constexpr std::uint8_t STATE = 0x02;
+constexpr std::uint8_t REASON = 0x03;
+constexpr std::uint8_t SAMPLED_AT = 0x04;
+}
+
+namespace fields::cast_get_status_params {
+constexpr std::uint8_t INCLUDE = 0x01;
+constexpr std::uint8_t INCLUDE_SENSITIVE = 0x02;
+}
+
+namespace fields::cast_receiver_summary {
+constexpr std::uint8_t ROLE = 0x01;
+constexpr std::uint8_t PROTOCOLS = 0x02;
+constexpr std::uint8_t STATE = 0x03;
+constexpr std::uint8_t RECEIVER_PHASE = 0x04;
+}
+
+namespace fields::cast_session_status_summary {
+constexpr std::uint8_t SESSION_ID = 0x01;
+constexpr std::uint8_t RECEIVER_PHASE = 0x02;
+constexpr std::uint8_t SESSION_STATE = 0x03;
+constexpr std::uint8_t PROTOCOL = 0x04;
+constexpr std::uint8_t SOURCE_NAME = 0x05;
+}
+
+namespace fields::cast_pin_code_status_summary {
+constexpr std::uint8_t ENABLED = 0x01;
+constexpr std::uint8_t HAS_PIN_CODE = 0x02;
+constexpr std::uint8_t PIN_DISPLAY = 0x03;
+constexpr std::uint8_t PIN_CODE = 0x04;
+constexpr std::uint8_t REDACTED = 0x05;
+constexpr std::uint8_t VISIBILITY = 0x06;
+}
+
+namespace fields::cast_status {
+constexpr std::uint8_t RECEIVER = 0x01;
+constexpr std::uint8_t SESSION = 0x02;
+constexpr std::uint8_t PIN_CODE = 0x03;
+constexpr std::uint8_t AUDIO = 0x04;
+constexpr std::uint8_t WINDOW = 0x05;
+constexpr std::uint8_t BACKEND = 0x06;
+constexpr std::uint8_t FLOW_CONTROL = 0x07;
+constexpr std::uint8_t SAMPLED_AT = 0x08;
+constexpr std::uint8_t REDACTED = 0x09;
+}
+
+namespace fields::cast_status_changed_event {
+constexpr std::uint8_t CHANGED_SECTIONS = 0x01;
+constexpr std::uint8_t STATUS = 0x02;
+constexpr std::uint8_t SAMPLED_AT = 0x03;
+}
+
+namespace fields::cast_session_capability {
+constexpr std::uint8_t PROTOCOLS = 0x01;
+constexpr std::uint8_t RECEIVER_PHASES = 0x02;
+constexpr std::uint8_t SUPPORTS_AIR_PLAY_NAME = 0x03;
+constexpr std::uint8_t SUPPORTS_STOP_SESSION = 0x04;
+constexpr std::uint8_t BACKEND_TYPES = 0x05;
+}
+
+namespace fields::cast_audio_capability {
+constexpr std::uint8_t DEFAULT_ENABLED = 0x01;
+constexpr std::uint8_t SUPPORTS_MUTE = 0x02;
+constexpr std::uint8_t REPORTS_EFFECTIVE_PLAYBACK = 0x03;
+}
+
+namespace fields::cast_pin_code_capability {
+constexpr std::uint8_t DEFAULT_ENABLED = 0x01;
+constexpr std::uint8_t SUPPORTS_PLAINTEXT_RESPONSE = 0x02;
+constexpr std::uint8_t SUPPORTED_PIN_DISPLAYS = 0x03;
+constexpr std::uint8_t SUPPORTS_GENERATED_PIN = 0x04;
+constexpr std::uint8_t REDACTION_REQUIRED = 0x05;
+}
+
+namespace fields::cast_window_capability {
+constexpr std::uint8_t SUPPORTS_FULLSCREEN = 0x01;
+constexpr std::uint8_t SUPPORTS_ALWAYS_ON_TOP = 0x02;
+constexpr std::uint8_t SUPPORTS_NORMAL_RESTORE = 0x03;
+constexpr std::uint8_t NO_WINDOW_POLICY = 0x04;
+}
+
+namespace fields::cast_backend_capability {
+constexpr std::uint8_t BACKEND_TYPES = 0x01;
+constexpr std::uint8_t SUPPORTS_RESTART = 0x02;
+constexpr std::uint8_t REPORTS_PROCESS = 0x03;
+constexpr std::uint8_t SUPPORTS_LAST_ERROR = 0x04;
+}
+
+namespace fields::cast_flow_control_capability {
+constexpr std::uint8_t SUPPORTS_RENDER_FPS = 0x01;
+constexpr std::uint8_t SUPPORTS_QUEUE_POLICY = 0x02;
+constexpr std::uint8_t SUPPORTS_OVERLAY = 0x03;
+constexpr std::uint8_t SUPPORTS_STATS = 0x04;
+constexpr std::uint8_t EXPOSES_EXTERNAL_KEYFRAME_REQUEST = 0x05;
+}
+
+namespace fields::cast_status_capability {
+constexpr std::uint8_t SECTIONS = 0x01;
+constexpr std::uint8_t SUPPORTS_SENSITIVE_REDACTION = 0x02;
+constexpr std::uint8_t SUPPORTS_STATUS_CHANGED_EVENT = 0x03;
 }
 
 namespace fields::get_device_info_params {
@@ -1482,6 +1922,666 @@ struct AudioStreamStats {
     bool has_jitterMs = false;
 };
 
+struct CastSourceSummary {
+    const char* name = nullptr;
+    bool has_name = false;
+    const char* model = nullptr;
+    bool has_model = false;
+    const char* address = nullptr;
+    bool has_address = false;
+    const char* sourceId = nullptr;
+    bool has_sourceId = false;
+    std::uint32_t protocol = 0;
+    bool has_protocol = false;
+};
+
+struct CastMediaSummary {
+    bool firstFrame = false;
+    bool has_firstFrame = false;
+    std::uint32_t width = 0;
+    bool has_width = false;
+    std::uint32_t height = 0;
+    bool has_height = false;
+    std::uint32_t orientation = 0;
+    bool has_orientation = false;
+    std::uint32_t inputFps = 0;
+    bool has_inputFps = false;
+    std::uint32_t renderFps = 0;
+    bool has_renderFps = false;
+    bool audioActive = false;
+    bool has_audioActive = false;
+};
+
+struct CastLastError {
+    const char* code = nullptr;
+    bool has_code = false;
+    const char* message = nullptr;
+    bool has_message = false;
+    const char* occurredAt = nullptr;
+    bool has_occurredAt = false;
+    bool redacted = false;
+    bool has_redacted = false;
+};
+
+struct CastGetSessionParams {
+    std::uint32_t include = 0;
+    bool has_include = false;
+    const char* sessionId = nullptr;
+    bool has_sessionId = false;
+};
+
+struct CastSessionState {
+    std::uint32_t receiverState = 0;
+    const char* sessionId = nullptr;
+    bool has_sessionId = false;
+    std::uint32_t receiverPhase = 0;
+    std::uint32_t sessionState = 0;
+    bool has_sessionState = false;
+    std::uint32_t protocol = 0;
+    bool has_protocol = false;
+    const char* airPlayName = nullptr;
+    bool has_airPlayName = false;
+    std::uint32_t source = 0;
+    bool has_source = false;
+    std::uint32_t media = 0;
+    bool has_media = false;
+    std::uint32_t backendState = 0;
+    bool has_backendState = false;
+    std::uint32_t reason = 0;
+    bool has_reason = false;
+    bool authRequired = false;
+    bool has_authRequired = false;
+    const char* updatedAt = nullptr;
+    bool has_updatedAt = false;
+};
+
+struct CastStopSessionParams {
+    const char* sessionId = nullptr;
+    bool has_sessionId = false;
+    std::uint32_t reason = 0;
+    bool has_reason = false;
+    bool force = false;
+    bool has_force = false;
+};
+
+struct CastStopSessionResult {
+    bool accepted = false;
+    const char* sessionId = nullptr;
+    bool has_sessionId = false;
+    std::uint32_t previousReceiverPhase = 0;
+    bool has_previousReceiverPhase = false;
+    std::uint32_t receiverPhase = 0;
+    std::uint32_t previousState = 0;
+    bool has_previousState = false;
+    std::uint32_t sessionState = 0;
+    bool has_sessionState = false;
+    std::uint32_t reason = 0;
+    bool has_reason = false;
+    bool noActiveSession = false;
+    bool has_noActiveSession = false;
+    const char* updatedAt = nullptr;
+    bool has_updatedAt = false;
+};
+
+struct CastSetAirPlayNameParams {
+    const char* displayName = nullptr;
+    std::uint32_t apply = 0;
+    bool has_apply = false;
+};
+
+struct CastAirPlayNameState {
+    const char* displayName = nullptr;
+    const char* previousDisplayName = nullptr;
+    bool has_previousDisplayName = false;
+    std::uint32_t source = 0;
+    bool has_source = false;
+    std::uint32_t apply = 0;
+    bool has_apply = false;
+    std::uint32_t publishState = 0;
+    std::uint32_t backendType = 0;
+    bool has_backendType = false;
+    const char* updatedAt = nullptr;
+    bool has_updatedAt = false;
+};
+
+struct CastSessionIncomingEvent {
+    const char* sessionId = nullptr;
+    bool has_sessionId = false;
+    std::uint32_t receiverPhase = 0;
+    std::uint32_t protocol = 0;
+    bool has_protocol = false;
+    std::uint32_t source = 0;
+    bool has_source = false;
+    bool authRequired = false;
+    bool has_authRequired = false;
+    const char* incomingAt = nullptr;
+    bool has_incomingAt = false;
+};
+
+struct CastSessionStateChangedEvent {
+    const char* sessionId = nullptr;
+    bool has_sessionId = false;
+    std::uint32_t previousReceiverPhase = 0;
+    bool has_previousReceiverPhase = false;
+    std::uint32_t receiverPhase = 0;
+    std::uint32_t previousState = 0;
+    bool has_previousState = false;
+    std::uint32_t sessionState = 0;
+    bool has_sessionState = false;
+    std::uint32_t protocol = 0;
+    bool has_protocol = false;
+    bool authRequired = false;
+    bool has_authRequired = false;
+    std::uint32_t media = 0;
+    bool has_media = false;
+    std::uint32_t reason = 0;
+    bool has_reason = false;
+    const char* updatedAt = nullptr;
+    bool has_updatedAt = false;
+};
+
+struct CastSessionStartedEvent {
+    const char* sessionId = nullptr;
+    std::uint32_t receiverPhase = 0;
+    std::uint32_t sessionState = 0;
+    bool has_sessionState = false;
+    std::uint32_t protocol = 0;
+    bool has_protocol = false;
+    std::uint32_t source = 0;
+    bool has_source = false;
+    std::uint32_t media = 0;
+    bool has_media = false;
+    const char* startedAt = nullptr;
+    bool has_startedAt = false;
+};
+
+struct CastSessionStoppedEvent {
+    const char* sessionId = nullptr;
+    bool has_sessionId = false;
+    std::uint32_t previousReceiverPhase = 0;
+    bool has_previousReceiverPhase = false;
+    std::uint32_t receiverPhase = 0;
+    std::uint32_t previousState = 0;
+    bool has_previousState = false;
+    std::uint32_t sessionState = 0;
+    bool has_sessionState = false;
+    std::uint32_t reason = 0;
+    bool has_reason = false;
+    std::uint32_t backendType = 0;
+    bool has_backendType = false;
+    const char* stoppedAt = nullptr;
+    bool has_stoppedAt = false;
+};
+
+struct CastSessionFailedEvent {
+    const char* sessionId = nullptr;
+    bool has_sessionId = false;
+    std::uint32_t receiverPhase = 0;
+    std::uint32_t sessionState = 0;
+    bool has_sessionState = false;
+    std::uint32_t protocol = 0;
+    bool has_protocol = false;
+    std::uint32_t source = 0;
+    bool has_source = false;
+    std::uint32_t reason = 0;
+    bool has_reason = false;
+    std::uint32_t error = 0;
+    bool has_error = false;
+    const char* failedAt = nullptr;
+    bool has_failedAt = false;
+};
+
+struct CastGetAudioParams {
+    bool includeEffective = false;
+    bool has_includeEffective = false;
+    const char* sessionId = nullptr;
+    bool has_sessionId = false;
+};
+
+struct CastSetAudioParams {
+    bool enabled = false;
+    const char* sessionId = nullptr;
+    bool has_sessionId = false;
+    std::uint32_t scope = 0;
+    bool has_scope = false;
+};
+
+struct CastSetMutedParams {
+    bool muted = false;
+    const char* sessionId = nullptr;
+    bool has_sessionId = false;
+    std::uint32_t scope = 0;
+    bool has_scope = false;
+};
+
+struct CastAudioState {
+    bool enabled = false;
+    bool muted = false;
+    bool effectivePlayback = false;
+    std::uint32_t scope = 0;
+    bool has_scope = false;
+    const char* sessionId = nullptr;
+    bool has_sessionId = false;
+    std::uint32_t source = 0;
+    bool has_source = false;
+    std::uint32_t reason = 0;
+    bool has_reason = false;
+    std::uint32_t changedFields = 0;
+    bool has_changedFields = false;
+    const char* updatedAt = nullptr;
+    bool has_updatedAt = false;
+};
+
+struct CastAudioChangedEvent {
+    std::uint32_t changedFields = 0;
+    std::uint32_t state = 0;
+    std::uint32_t reason = 0;
+    bool has_reason = false;
+    const char* updatedAt = nullptr;
+    bool has_updatedAt = false;
+};
+
+struct CastGetPinCodeConfigParams {
+    bool includeSecret = false;
+    bool has_includeSecret = false;
+};
+
+struct CastSetPinCodeConfigParams {
+    bool enabled = false;
+    bool has_enabled = false;
+    std::uint32_t pinDisplay = 0;
+    bool has_pinDisplay = false;
+    bool rotatePin = false;
+    bool has_rotatePin = false;
+    std::uint32_t visibility = 0;
+    bool has_visibility = false;
+};
+
+struct CastSetPinCodeParams {
+    const char* pinCode = nullptr;
+    bool expirePrevious = false;
+    bool has_expirePrevious = false;
+    std::uint32_t visibility = 0;
+    bool has_visibility = false;
+};
+
+struct CastPinCodeConfig {
+    bool enabled = false;
+    bool hasPinCode = false;
+    const char* pinCode = nullptr;
+    bool has_pinCode = false;
+    std::uint32_t pinDisplay = 0;
+    bool has_pinDisplay = false;
+    std::uint32_t generatedBy = 0;
+    bool has_generatedBy = false;
+    std::uint32_t visibility = 0;
+    bool has_visibility = false;
+    const char* expiresAt = nullptr;
+    bool has_expiresAt = false;
+    bool redactionRequired = false;
+    bool has_redactionRequired = false;
+    std::uint32_t changedFields = 0;
+    bool has_changedFields = false;
+    const char* updatedAt = nullptr;
+    bool has_updatedAt = false;
+    bool redacted = false;
+    bool has_redacted = false;
+};
+
+struct CastPinCodeChangedEvent {
+    std::uint32_t changedFields = 0;
+    std::uint32_t config = 0;
+    std::uint32_t reason = 0;
+    bool has_reason = false;
+    const char* updatedAt = nullptr;
+    bool has_updatedAt = false;
+};
+
+struct CastPinCodeRequiredEvent {
+    const char* sessionId = nullptr;
+    bool has_sessionId = false;
+    std::uint32_t source = 0;
+    bool has_source = false;
+    const char* pinCode = nullptr;
+    bool has_pinCode = false;
+    std::uint32_t visibility = 0;
+    bool has_visibility = false;
+    bool redactionRequired = false;
+    bool has_redactionRequired = false;
+    const char* requestedAt = nullptr;
+    bool has_requestedAt = false;
+};
+
+struct CastPinCodeAuthFailedEvent {
+    const char* sessionId = nullptr;
+    bool has_sessionId = false;
+    std::uint32_t source = 0;
+    bool has_source = false;
+    std::uint32_t authFailureReason = 0;
+    bool has_authFailureReason = false;
+    std::uint16_t attemptCount = 0;
+    bool has_attemptCount = false;
+    const char* failedAt = nullptr;
+    bool has_failedAt = false;
+};
+
+struct CastRect {
+    std::int32_t x = 0;
+    std::int32_t y = 0;
+    std::uint32_t width = 0;
+    std::uint32_t height = 0;
+};
+
+struct CastSetWindowStateParams {
+    std::uint32_t mode = 0;
+    bool has_mode = false;
+    bool fullscreen = false;
+    bool has_fullscreen = false;
+    bool alwaysOnTop = false;
+    bool has_alwaysOnTop = false;
+    std::uint32_t bounds = 0;
+    bool has_bounds = false;
+};
+
+struct CastWindowState {
+    bool hasWindow = false;
+    bool visible = false;
+    std::uint32_t mode = 0;
+    bool fullscreen = false;
+    bool alwaysOnTop = false;
+    const char* sessionId = nullptr;
+    bool has_sessionId = false;
+    std::uint32_t bounds = 0;
+    bool has_bounds = false;
+    std::uint32_t previousNormalBounds = 0;
+    bool has_previousNormalBounds = false;
+    std::uint32_t restoredBounds = 0;
+    bool has_restoredBounds = false;
+    std::uint32_t changedFields = 0;
+    bool has_changedFields = false;
+    const char* updatedAt = nullptr;
+    bool has_updatedAt = false;
+};
+
+struct CastWindowChangedEvent {
+    std::uint32_t changedFields = 0;
+    std::uint32_t state = 0;
+    std::uint32_t reason = 0;
+    bool has_reason = false;
+    const char* updatedAt = nullptr;
+    bool has_updatedAt = false;
+};
+
+struct CastGetBackendStatusParams {
+    bool includeLastError = false;
+    bool has_includeLastError = false;
+};
+
+struct CastRestartBackendParams {
+    std::uint32_t reason = 0;
+    bool has_reason = false;
+    bool force = false;
+    bool has_force = false;
+};
+
+struct CastBackendStatus {
+    std::uint32_t backendType = 0;
+    std::uint32_t state = 0;
+    bool discoverable = false;
+    std::uint32_t pid = 0;
+    bool has_pid = false;
+    const char* version = nullptr;
+    bool has_version = false;
+    const char* activeSessionId = nullptr;
+    bool has_activeSessionId = false;
+    bool restartInProgress = false;
+    std::uint32_t lastError = 0;
+    bool has_lastError = false;
+    const char* updatedAt = nullptr;
+    bool has_updatedAt = false;
+};
+
+struct CastRestartBackendResult {
+    bool accepted = false;
+    std::uint32_t backendType = 0;
+    std::uint32_t state = 0;
+    const char* restartId = nullptr;
+    bool has_restartId = false;
+    bool activeSessionEnded = false;
+    const char* endedSessionId = nullptr;
+    bool has_endedSessionId = false;
+    std::uint32_t sessionStopReason = 0;
+    bool has_sessionStopReason = false;
+    std::uint32_t estimatedReadyInMs = 0;
+    bool has_estimatedReadyInMs = false;
+    const char* updatedAt = nullptr;
+    bool has_updatedAt = false;
+};
+
+struct CastBackendChangedEvent {
+    std::uint32_t changedFields = 0;
+    std::uint32_t state = 0;
+    std::uint32_t reason = 0;
+    bool has_reason = false;
+    const char* restartId = nullptr;
+    bool has_restartId = false;
+    bool activeSessionEnded = false;
+    bool has_activeSessionEnded = false;
+    const char* endedSessionId = nullptr;
+    bool has_endedSessionId = false;
+    const char* updatedAt = nullptr;
+    bool has_updatedAt = false;
+};
+
+struct CastGetFlowControlStateParams {
+    bool includeStats = false;
+    bool has_includeStats = false;
+    bool includePolicy = false;
+    bool has_includePolicy = false;
+    const char* sessionId = nullptr;
+    bool has_sessionId = false;
+};
+
+struct CastSetRenderFpsParams {
+    std::uint32_t fps = 0;
+    const char* sessionId = nullptr;
+    bool has_sessionId = false;
+    std::uint32_t scope = 0;
+    bool has_scope = false;
+};
+
+struct CastSetFlowPolicyParams {
+    std::uint32_t videoQueueFrames = 0;
+    bool has_videoQueueFrames = false;
+    std::uint32_t lateFrameThresholdMs = 0;
+    bool has_lateFrameThresholdMs = false;
+    std::uint32_t dropMode = 0;
+    bool has_dropMode = false;
+    bool overlayEnabled = false;
+    bool has_overlayEnabled = false;
+    const char* sessionId = nullptr;
+    bool has_sessionId = false;
+    std::uint32_t scope = 0;
+    bool has_scope = false;
+};
+
+struct CastFlowControlState {
+    std::uint32_t targetRenderFps = 0;
+    std::uint32_t inputFps = 0;
+    bool has_inputFps = false;
+    std::uint32_t renderFps = 0;
+    bool has_renderFps = false;
+    std::uint32_t dropMode = 0;
+    std::uint32_t videoQueueFrames = 0;
+    std::uint32_t videoQueueDepth = 0;
+    bool has_videoQueueDepth = false;
+    std::uint32_t audioQueueDepth = 0;
+    bool has_audioQueueDepth = false;
+    std::uint32_t lateFrameThresholdMs = 0;
+    bool overlayEnabled = false;
+    std::uint64_t droppedFrames = 0;
+    bool has_droppedFrames = false;
+    std::uint64_t lateFrames = 0;
+    bool has_lateFrames = false;
+    std::uint32_t keyframeRequestCount = 0;
+    bool has_keyframeRequestCount = false;
+    bool keyFrameOnDropBurst = false;
+    bool has_keyFrameOnDropBurst = false;
+    std::uint32_t changedFields = 0;
+    bool has_changedFields = false;
+    const char* sampledAt = nullptr;
+    bool has_sampledAt = false;
+};
+
+struct CastFlowControlChangedEvent {
+    std::uint32_t changedFields = 0;
+    std::uint32_t state = 0;
+    std::uint32_t reason = 0;
+    bool has_reason = false;
+    const char* sampledAt = nullptr;
+    bool has_sampledAt = false;
+};
+
+struct CastGetStatusParams {
+    std::uint32_t include = 0;
+    bool has_include = false;
+    bool includeSensitive = false;
+    bool has_includeSensitive = false;
+};
+
+struct CastReceiverSummary {
+    std::uint32_t role = 0;
+    std::uint32_t protocols = 0;
+    std::uint32_t state = 0;
+    std::uint32_t receiverPhase = 0;
+};
+
+struct CastSessionStatusSummary {
+    const char* sessionId = nullptr;
+    bool has_sessionId = false;
+    std::uint32_t receiverPhase = 0;
+    bool has_receiverPhase = false;
+    std::uint32_t sessionState = 0;
+    bool has_sessionState = false;
+    std::uint32_t protocol = 0;
+    bool has_protocol = false;
+    const char* sourceName = nullptr;
+    bool has_sourceName = false;
+};
+
+struct CastPinCodeStatusSummary {
+    bool enabled = false;
+    bool hasPinCode = false;
+    std::uint32_t pinDisplay = 0;
+    bool has_pinDisplay = false;
+    const char* pinCode = nullptr;
+    bool has_pinCode = false;
+    bool redacted = false;
+    bool has_redacted = false;
+    std::uint32_t visibility = 0;
+    bool has_visibility = false;
+};
+
+struct CastStatus {
+    std::uint32_t receiver = 0;
+    std::uint32_t session = 0;
+    bool has_session = false;
+    std::uint32_t pinCode = 0;
+    bool has_pinCode = false;
+    std::uint32_t audio = 0;
+    bool has_audio = false;
+    std::uint32_t window = 0;
+    bool has_window = false;
+    std::uint32_t backend = 0;
+    bool has_backend = false;
+    std::uint32_t flowControl = 0;
+    bool has_flowControl = false;
+    const char* sampledAt = nullptr;
+    bool redacted = false;
+    bool has_redacted = false;
+};
+
+struct CastStatusChangedEvent {
+    std::uint32_t changedSections = 0;
+    std::uint32_t status = 0;
+    const char* sampledAt = nullptr;
+};
+
+struct CastSessionCapability {
+    std::uint32_t protocols = 0;
+    std::uint32_t receiverPhases = 0;
+    bool supportsAirPlayName = false;
+    bool has_supportsAirPlayName = false;
+    bool supportsStopSession = false;
+    bool has_supportsStopSession = false;
+    std::uint32_t backendTypes = 0;
+    bool has_backendTypes = false;
+};
+
+struct CastAudioCapability {
+    bool defaultEnabled = false;
+    bool has_defaultEnabled = false;
+    bool supportsMute = false;
+    bool has_supportsMute = false;
+    bool reportsEffectivePlayback = false;
+    bool has_reportsEffectivePlayback = false;
+};
+
+struct CastPinCodeCapability {
+    bool defaultEnabled = false;
+    bool has_defaultEnabled = false;
+    bool supportsPlaintextResponse = false;
+    bool has_supportsPlaintextResponse = false;
+    std::uint32_t supportedPinDisplays = 0;
+    bool has_supportedPinDisplays = false;
+    bool supportsGeneratedPin = false;
+    bool has_supportsGeneratedPin = false;
+    bool redactionRequired = false;
+    bool has_redactionRequired = false;
+};
+
+struct CastWindowCapability {
+    bool supportsFullscreen = false;
+    bool has_supportsFullscreen = false;
+    bool supportsAlwaysOnTop = false;
+    bool has_supportsAlwaysOnTop = false;
+    bool supportsNormalRestore = false;
+    bool has_supportsNormalRestore = false;
+    std::uint32_t noWindowPolicy = 0;
+    bool has_noWindowPolicy = false;
+};
+
+struct CastBackendCapability {
+    std::uint32_t backendTypes = 0;
+    bool supportsRestart = false;
+    bool has_supportsRestart = false;
+    bool reportsProcess = false;
+    bool has_reportsProcess = false;
+    bool supportsLastError = false;
+    bool has_supportsLastError = false;
+};
+
+struct CastFlowControlCapability {
+    bool supportsRenderFps = false;
+    bool has_supportsRenderFps = false;
+    bool supportsQueuePolicy = false;
+    bool has_supportsQueuePolicy = false;
+    bool supportsOverlay = false;
+    bool has_supportsOverlay = false;
+    bool supportsStats = false;
+    bool has_supportsStats = false;
+    bool exposesExternalKeyframeRequest = false;
+    bool has_exposesExternalKeyframeRequest = false;
+};
+
+struct CastStatusCapability {
+    std::uint32_t sections = 0;
+    bool supportsSensitiveRedaction = false;
+    bool has_supportsSensitiveRedaction = false;
+    bool supportsStatusChangedEvent = false;
+    bool has_supportsStatusChangedEvent = false;
+};
+
 struct GetDeviceInfoParams {
     bool includeCapabilitySummary = false;
     bool has_includeCapabilitySummary = false;
@@ -2429,6 +3529,165 @@ bool DecodeAudioStreamStatsReportedEvent(TlvReader& reader, AudioStreamStatsRepo
 
 bool EncodeAudioStreamStats(const AudioStreamStats& input, TlvWriter& writer, ErrorCode* error);
 bool DecodeAudioStreamStats(TlvReader& reader, AudioStreamStats* output, ErrorCode* error);
+
+bool EncodeCastSourceSummary(const CastSourceSummary& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastSourceSummary(TlvReader& reader, CastSourceSummary* output, ErrorCode* error);
+
+bool EncodeCastMediaSummary(const CastMediaSummary& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastMediaSummary(TlvReader& reader, CastMediaSummary* output, ErrorCode* error);
+
+bool EncodeCastLastError(const CastLastError& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastLastError(TlvReader& reader, CastLastError* output, ErrorCode* error);
+
+bool EncodeCastGetSessionParams(const CastGetSessionParams& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastGetSessionParams(TlvReader& reader, CastGetSessionParams* output, ErrorCode* error);
+
+bool EncodeCastSessionState(const CastSessionState& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastSessionState(TlvReader& reader, CastSessionState* output, ErrorCode* error);
+
+bool EncodeCastStopSessionParams(const CastStopSessionParams& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastStopSessionParams(TlvReader& reader, CastStopSessionParams* output, ErrorCode* error);
+
+bool EncodeCastStopSessionResult(const CastStopSessionResult& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastStopSessionResult(TlvReader& reader, CastStopSessionResult* output, ErrorCode* error);
+
+bool EncodeCastSetAirPlayNameParams(const CastSetAirPlayNameParams& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastSetAirPlayNameParams(TlvReader& reader, CastSetAirPlayNameParams* output, ErrorCode* error);
+
+bool EncodeCastAirPlayNameState(const CastAirPlayNameState& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastAirPlayNameState(TlvReader& reader, CastAirPlayNameState* output, ErrorCode* error);
+
+bool EncodeCastSessionIncomingEvent(const CastSessionIncomingEvent& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastSessionIncomingEvent(TlvReader& reader, CastSessionIncomingEvent* output, ErrorCode* error);
+
+bool EncodeCastSessionStateChangedEvent(const CastSessionStateChangedEvent& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastSessionStateChangedEvent(TlvReader& reader, CastSessionStateChangedEvent* output, ErrorCode* error);
+
+bool EncodeCastSessionStartedEvent(const CastSessionStartedEvent& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastSessionStartedEvent(TlvReader& reader, CastSessionStartedEvent* output, ErrorCode* error);
+
+bool EncodeCastSessionStoppedEvent(const CastSessionStoppedEvent& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastSessionStoppedEvent(TlvReader& reader, CastSessionStoppedEvent* output, ErrorCode* error);
+
+bool EncodeCastSessionFailedEvent(const CastSessionFailedEvent& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastSessionFailedEvent(TlvReader& reader, CastSessionFailedEvent* output, ErrorCode* error);
+
+bool EncodeCastGetAudioParams(const CastGetAudioParams& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastGetAudioParams(TlvReader& reader, CastGetAudioParams* output, ErrorCode* error);
+
+bool EncodeCastSetAudioParams(const CastSetAudioParams& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastSetAudioParams(TlvReader& reader, CastSetAudioParams* output, ErrorCode* error);
+
+bool EncodeCastSetMutedParams(const CastSetMutedParams& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastSetMutedParams(TlvReader& reader, CastSetMutedParams* output, ErrorCode* error);
+
+bool EncodeCastAudioState(const CastAudioState& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastAudioState(TlvReader& reader, CastAudioState* output, ErrorCode* error);
+
+bool EncodeCastAudioChangedEvent(const CastAudioChangedEvent& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastAudioChangedEvent(TlvReader& reader, CastAudioChangedEvent* output, ErrorCode* error);
+
+bool EncodeCastGetPinCodeConfigParams(const CastGetPinCodeConfigParams& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastGetPinCodeConfigParams(TlvReader& reader, CastGetPinCodeConfigParams* output, ErrorCode* error);
+
+bool EncodeCastSetPinCodeConfigParams(const CastSetPinCodeConfigParams& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastSetPinCodeConfigParams(TlvReader& reader, CastSetPinCodeConfigParams* output, ErrorCode* error);
+
+bool EncodeCastSetPinCodeParams(const CastSetPinCodeParams& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastSetPinCodeParams(TlvReader& reader, CastSetPinCodeParams* output, ErrorCode* error);
+
+bool EncodeCastPinCodeConfig(const CastPinCodeConfig& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastPinCodeConfig(TlvReader& reader, CastPinCodeConfig* output, ErrorCode* error);
+
+bool EncodeCastPinCodeChangedEvent(const CastPinCodeChangedEvent& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastPinCodeChangedEvent(TlvReader& reader, CastPinCodeChangedEvent* output, ErrorCode* error);
+
+bool EncodeCastPinCodeRequiredEvent(const CastPinCodeRequiredEvent& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastPinCodeRequiredEvent(TlvReader& reader, CastPinCodeRequiredEvent* output, ErrorCode* error);
+
+bool EncodeCastPinCodeAuthFailedEvent(const CastPinCodeAuthFailedEvent& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastPinCodeAuthFailedEvent(TlvReader& reader, CastPinCodeAuthFailedEvent* output, ErrorCode* error);
+
+bool EncodeCastRect(const CastRect& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastRect(TlvReader& reader, CastRect* output, ErrorCode* error);
+
+bool EncodeCastSetWindowStateParams(const CastSetWindowStateParams& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastSetWindowStateParams(TlvReader& reader, CastSetWindowStateParams* output, ErrorCode* error);
+
+bool EncodeCastWindowState(const CastWindowState& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastWindowState(TlvReader& reader, CastWindowState* output, ErrorCode* error);
+
+bool EncodeCastWindowChangedEvent(const CastWindowChangedEvent& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastWindowChangedEvent(TlvReader& reader, CastWindowChangedEvent* output, ErrorCode* error);
+
+bool EncodeCastGetBackendStatusParams(const CastGetBackendStatusParams& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastGetBackendStatusParams(TlvReader& reader, CastGetBackendStatusParams* output, ErrorCode* error);
+
+bool EncodeCastRestartBackendParams(const CastRestartBackendParams& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastRestartBackendParams(TlvReader& reader, CastRestartBackendParams* output, ErrorCode* error);
+
+bool EncodeCastBackendStatus(const CastBackendStatus& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastBackendStatus(TlvReader& reader, CastBackendStatus* output, ErrorCode* error);
+
+bool EncodeCastRestartBackendResult(const CastRestartBackendResult& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastRestartBackendResult(TlvReader& reader, CastRestartBackendResult* output, ErrorCode* error);
+
+bool EncodeCastBackendChangedEvent(const CastBackendChangedEvent& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastBackendChangedEvent(TlvReader& reader, CastBackendChangedEvent* output, ErrorCode* error);
+
+bool EncodeCastGetFlowControlStateParams(const CastGetFlowControlStateParams& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastGetFlowControlStateParams(TlvReader& reader, CastGetFlowControlStateParams* output, ErrorCode* error);
+
+bool EncodeCastSetRenderFpsParams(const CastSetRenderFpsParams& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastSetRenderFpsParams(TlvReader& reader, CastSetRenderFpsParams* output, ErrorCode* error);
+
+bool EncodeCastSetFlowPolicyParams(const CastSetFlowPolicyParams& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastSetFlowPolicyParams(TlvReader& reader, CastSetFlowPolicyParams* output, ErrorCode* error);
+
+bool EncodeCastFlowControlState(const CastFlowControlState& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastFlowControlState(TlvReader& reader, CastFlowControlState* output, ErrorCode* error);
+
+bool EncodeCastFlowControlChangedEvent(const CastFlowControlChangedEvent& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastFlowControlChangedEvent(TlvReader& reader, CastFlowControlChangedEvent* output, ErrorCode* error);
+
+bool EncodeCastGetStatusParams(const CastGetStatusParams& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastGetStatusParams(TlvReader& reader, CastGetStatusParams* output, ErrorCode* error);
+
+bool EncodeCastReceiverSummary(const CastReceiverSummary& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastReceiverSummary(TlvReader& reader, CastReceiverSummary* output, ErrorCode* error);
+
+bool EncodeCastSessionStatusSummary(const CastSessionStatusSummary& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastSessionStatusSummary(TlvReader& reader, CastSessionStatusSummary* output, ErrorCode* error);
+
+bool EncodeCastPinCodeStatusSummary(const CastPinCodeStatusSummary& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastPinCodeStatusSummary(TlvReader& reader, CastPinCodeStatusSummary* output, ErrorCode* error);
+
+bool EncodeCastStatus(const CastStatus& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastStatus(TlvReader& reader, CastStatus* output, ErrorCode* error);
+
+bool EncodeCastStatusChangedEvent(const CastStatusChangedEvent& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastStatusChangedEvent(TlvReader& reader, CastStatusChangedEvent* output, ErrorCode* error);
+
+bool EncodeCastSessionCapability(const CastSessionCapability& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastSessionCapability(TlvReader& reader, CastSessionCapability* output, ErrorCode* error);
+
+bool EncodeCastAudioCapability(const CastAudioCapability& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastAudioCapability(TlvReader& reader, CastAudioCapability* output, ErrorCode* error);
+
+bool EncodeCastPinCodeCapability(const CastPinCodeCapability& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastPinCodeCapability(TlvReader& reader, CastPinCodeCapability* output, ErrorCode* error);
+
+bool EncodeCastWindowCapability(const CastWindowCapability& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastWindowCapability(TlvReader& reader, CastWindowCapability* output, ErrorCode* error);
+
+bool EncodeCastBackendCapability(const CastBackendCapability& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastBackendCapability(TlvReader& reader, CastBackendCapability* output, ErrorCode* error);
+
+bool EncodeCastFlowControlCapability(const CastFlowControlCapability& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastFlowControlCapability(TlvReader& reader, CastFlowControlCapability* output, ErrorCode* error);
+
+bool EncodeCastStatusCapability(const CastStatusCapability& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastStatusCapability(TlvReader& reader, CastStatusCapability* output, ErrorCode* error);
 
 bool EncodeGetDeviceInfoParams(const GetDeviceInfoParams& input, TlvWriter& writer, ErrorCode* error);
 bool DecodeGetDeviceInfoParams(TlvReader& reader, GetDeviceInfoParams* output, ErrorCode* error);

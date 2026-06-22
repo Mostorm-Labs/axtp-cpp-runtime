@@ -12,12 +12,14 @@
 - [Capability Discovery](#capability-discovery)
 - [Methods](#methods)
   - [audio Methods](#audio-methods)
+  - [cast Methods](#cast-methods)
   - [device Methods](#device-methods)
   - [firmware Methods](#firmware-methods)
   - [network Methods](#network-methods)
   - [video Methods](#video-methods)
 - [Events](#events)
   - [audio Events](#audio-events)
+  - [cast Events](#cast-events)
   - [firmware Events](#firmware-events)
   - [network Events](#network-events)
   - [video Events](#video-events)
@@ -30,6 +32,7 @@
 | Domain | Methods | Events |
 | ---- | ---- | ---- |
 | audio | 9 | 4 |
+| cast | 18 | 13 |
 | device | 1 | 0 |
 | firmware | 4 | 2 |
 | network | 18 | 8 |
@@ -187,6 +190,13 @@ Generated capabilities are the feature-level switches that runtimes and devices 
 | 0x0E02 | network.ip | network | draft | object | NetworkIpCapability | Device supports IP configuration query, update, and change notification. |
 | 0x0E03 | network.wifi | network | draft | object | NetworkWifiCapabilities | Device supports Wi-Fi station profile, scan, connection, and state operations. |
 | 0x0E04 | network.ap | network | draft | object | NetworkApCapabilities | Device supports Wi-Fi AP configuration, runtime state, and client observation. |
+| 0x1601 | cast.session | cast | draft | object | CastSessionCapability | Device supports cast receiver session phase, AirPlay name, and session stop control. |
+| 0x1602 | cast.audio | cast | draft | object | CastAudioCapability | Device supports local cast audio playback and mute control. |
+| 0x1603 | cast.pinCode | cast | draft | object | CastPinCodeCapability | Device supports cast PIN protection, PIN state, and authentication events. |
+| 0x1604 | cast.window | cast | draft | object | CastWindowCapability | Device supports cast window state query and mode control. |
+| 0x1605 | cast.backend | cast | draft | object | CastBackendCapability | Device supports cast backend status query and restart control. |
+| 0x1606 | cast.flowControl | cast | draft | object | CastFlowControlCapability | Device supports receiver-local cast render fps, queue, drop, overlay, and diagnostics control. |
+| 0x1607 | cast.status | cast | draft | object | CastStatusCapability | Device supports low-frequency aggregate cast receiver status query and change events. |
 
 ## Generated Method Index
 
@@ -195,6 +205,7 @@ The generated registry groups methods by domain. Each method keeps a stable `bit
 | Domain | Methods |
 | ---- | ---- |
 | audio | 1: audio.getAlgorithmConfig<br>2: audio.setAlgorithmConfig<br>0: audio.getAlgorithmCapabilities<br>3: audio.resetAlgorithmConfig<br>4: audio.getStreamCapabilities<br>5: audio.openStream<br>6: audio.closeStream<br>7: audio.getStreamState<br>8: audio.getStreamSourceState |
+| cast | 0: cast.getSession<br>1: cast.stopSession<br>2: cast.getAirPlayName<br>3: cast.setAirPlayName<br>4: cast.getAudio<br>5: cast.setAudio<br>6: cast.setMuted<br>7: cast.getPinCodeConfig<br>8: cast.setPinCodeConfig<br>9: cast.setPinCode<br>10: cast.getWindowState<br>11: cast.setWindowState<br>12: cast.getBackendStatus<br>13: cast.restartBackend<br>14: cast.getFlowControlState<br>15: cast.setRenderFps<br>16: cast.setFlowPolicy<br>17: cast.getStatus |
 | device | 0: device.getInfo |
 | firmware | 0: firmware.getUpdateCapabilities<br>1: firmware.beginUpdate<br>3: firmware.getUpdateState<br>2: firmware.finishUpdate |
 | network | 2: network.getIpConfig<br>3: network.setIpConfig<br>5: network.getWifiConfig<br>6: network.setWifiConfig<br>7: network.scanWifi<br>8: network.connectWifi<br>9: network.disconnectWifi<br>10: network.getWifiState<br>12: network.getApConfig<br>13: network.setApConfig<br>15: network.startAp<br>16: network.stopAp<br>14: network.getApState<br>0: network.getInterfaces<br>1: network.getInterfaceInfo<br>4: network.getWifiCapabilities<br>11: network.getApCapabilities<br>17: network.getApClients |
@@ -574,6 +585,802 @@ Type: `AudioStreamSourceState`
 | ?available | Boolean | 0x04 | Whether the source is available for openStream. | None | Omit if not used. |
 | ?activeStreamId | UInt32 | 0x05 | Active downstream stream id, if any. | None | Omit if not used. |
 | ?lastOpenRejectedReason | Enum | 0x06 | Last open rejection reason. | None | Omit if not used. |
+
+---
+
+## cast Methods
+
+### Methods in this domain
+
+- [cast.getSession](#castgetsession)
+- [cast.stopSession](#caststopsession)
+- [cast.getAirPlayName](#castgetairplayname)
+- [cast.setAirPlayName](#castsetairplayname)
+- [cast.getAudio](#castgetaudio)
+- [cast.setAudio](#castsetaudio)
+- [cast.setMuted](#castsetmuted)
+- [cast.getPinCodeConfig](#castgetpincodeconfig)
+- [cast.setPinCodeConfig](#castsetpincodeconfig)
+- [cast.setPinCode](#castsetpincode)
+- [cast.getWindowState](#castgetwindowstate)
+- [cast.setWindowState](#castsetwindowstate)
+- [cast.getBackendStatus](#castgetbackendstatus)
+- [cast.restartBackend](#castrestartbackend)
+- [cast.getFlowControlState](#castgetflowcontrolstate)
+- [cast.setRenderFps](#castsetrenderfps)
+- [cast.setFlowPolicy](#castsetflowpolicy)
+- [cast.getStatus](#castgetstatus)
+
+---
+
+### cast.getSession
+
+Return the current cast receiver phase and active session summary.
+
+- Method ID: `0x1601`
+- Domain: `cast`
+- bitOffset: `0`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `cast.session`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `CastGetSessionParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?include | Array<String> | 0x01 | Optional summary sections, such as source, media, or airPlayName. | array.itemType=string | Omit if not used. |
+| ?sessionId | String | 0x02 | Optional receiver-local session id to query. | maxLength=128 | Omit if not used. |
+
+#### Response Fields
+
+Type: `CastSessionState`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| receiverState | Enum | 0x01 | Receiver service availability state. | enum=disabled/starting/ready/busy/failed | N/A |
+| ?sessionId | String | 0x02 | Receiver-local active session id. | maxLength=128 | Omit if not used. |
+| receiverPhase | Enum | 0x03 | Protocol-neutral receiver phase used by UI and reconnection calibration. | enum=idle/incoming/authenticating/streamStarting/streaming/rendering/interrupted/stopping/ended/failed | N/A |
+| ?sessionState | Enum | 0x04 | AirPlay or backend-specific session state detail. | enum=idle/incoming/waitingForPassword/authenticated/preparing/casting/interrupted/stopping/ended/failed | Omit if not used. |
+| ?protocol | Enum | 0x05 | Cast protocol path currently represented by this state. | enum=airplay/hid/unknown | Omit if not used. |
+| ?airPlayName | String | 0x06 | Current published AirPlay receiver display name. | maxLength=128 | Omit if not used. |
+| ?source | CastSourceSummary | 0x07 | Source device summary. | None | Omit if not used. |
+| ?media | CastMediaSummary | 0x08 | Low-frequency media summary. | None | Omit if not used. |
+| ?backendState | Enum | 0x09 | Current backend state summary. | enum=starting/ready/restarting/exited/failed/disabled | Omit if not used. |
+| ?reason | Enum | 0x0A | Last state transition reason. | enum=sessionStarted/mediaFlowStarted/externalRequest/sourceClosed/backendRestart/backendExited/authFailed/error/unknown | Omit if not used. |
+| ?authRequired | Boolean | 0x0B | Whether this session path currently requires authentication. | None | Omit if not used. |
+| ?updatedAt | String | 0x0C | Timestamp for this state snapshot. | maxLength=64 | Omit if not used. |
+
+---
+
+### cast.stopSession
+
+Stop the current cast session when one is active.
+
+- Method ID: `0x1602`
+- Domain: `cast`
+- bitOffset: `1`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `cast.session`
+- Possible Events: `cast.sessionStateChanged`, `cast.sessionStopped`
+- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `INVALID_STATE`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `CastStopSessionParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?sessionId | String | 0x01 | Optional receiver-local session id; omitted means current active session. | maxLength=128 | Omit if not used. |
+| ?reason | Enum | 0x02 | Caller-visible reason for stopping the session. | enum=externalRequest/localUi/backendRestart/shutdown/unknown | Omit if not used. |
+| ?force | Boolean | 0x03 | Whether the receiver may force backend/session cleanup. | None | Default: false |
+
+#### Response Fields
+
+Type: `CastStopSessionResult`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| accepted | Boolean | 0x01 | Whether the receiver accepted the stop request. | None | N/A |
+| ?sessionId | String | 0x02 | Session affected by the request. | maxLength=128 | Omit if not used. |
+| ?previousReceiverPhase | Enum | 0x03 | Receiver phase before the stop transition. | enum=idle/incoming/authenticating/streamStarting/streaming/rendering/interrupted/stopping/ended/failed | Omit if not used. |
+| receiverPhase | Enum | 0x04 | Receiver phase after accepting the stop request. | enum=idle/incoming/authenticating/streamStarting/streaming/rendering/interrupted/stopping/ended/failed | N/A |
+| ?previousState | Enum | 0x05 | Backend-specific state before the stop transition. | enum=idle/incoming/waitingForPassword/authenticated/preparing/casting/interrupted/stopping/ended/failed | Omit if not used. |
+| ?sessionState | Enum | 0x06 | Backend-specific state after accepting the stop request. | enum=idle/incoming/waitingForPassword/authenticated/preparing/casting/interrupted/stopping/ended/failed | Omit if not used. |
+| ?reason | Enum | 0x07 | Applied stop reason. | enum=externalRequest/sourceClosed/backendRestart/backendExited/shutdown/unknown | Omit if not used. |
+| ?noActiveSession | Boolean | 0x08 | Whether no active session existed when the request was processed. | None | Omit if not used. |
+| ?updatedAt | String | 0x09 | Timestamp for the result. | maxLength=64 | Omit if not used. |
+
+---
+
+### cast.getAirPlayName
+
+Return the AirPlay receiver display name and publish state.
+
+- Method ID: `0x1603`
+- Domain: `cast`
+- bitOffset: `2`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `cast.session`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `Empty`
+
+No fields.
+
+#### Response Fields
+
+Type: `CastAirPlayNameState`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| displayName | String | 0x01 | Current AirPlay display name. | maxLength=128 | N/A |
+| ?previousDisplayName | String | 0x02 | Previous display name when a change was applied. | maxLength=128 | Omit if not used. |
+| ?source | Enum | 0x03 | Source of the current display name. | enum=configured/default/backend/unknown | Omit if not used. |
+| ?apply | Enum | 0x04 | Apply timing used for the latest update. | enum=immediate/onNextBackendStart | Omit if not used. |
+| publishState | Enum | 0x05 | Bonjour or backend service publish state. | enum=published/republishing/pending/failed/unpublished | N/A |
+| ?backendType | Enum | 0x06 | Backend that owns the published name. | enum=uxplay/unknown | Omit if not used. |
+| ?updatedAt | String | 0x07 | Timestamp for this name state. | maxLength=64 | Omit if not used. |
+
+---
+
+### cast.setAirPlayName
+
+Set the AirPlay receiver display name and request service rediscovery.
+
+- Method ID: `0x1604`
+- Domain: `cast`
+- bitOffset: `3`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `cast.session`
+- Possible Events: `cast.sessionStateChanged`
+- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `CastSetAirPlayNameParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| displayName | String | 0x01 | Target AirPlay display name. | maxLength=128 | N/A |
+| ?apply | Enum | 0x02 | Requested backend apply timing. | enum=immediate/onNextBackendStart | Omit if not used. |
+
+#### Response Fields
+
+Type: `CastAirPlayNameState`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| displayName | String | 0x01 | Current AirPlay display name. | maxLength=128 | N/A |
+| ?previousDisplayName | String | 0x02 | Previous display name when a change was applied. | maxLength=128 | Omit if not used. |
+| ?source | Enum | 0x03 | Source of the current display name. | enum=configured/default/backend/unknown | Omit if not used. |
+| ?apply | Enum | 0x04 | Apply timing used for the latest update. | enum=immediate/onNextBackendStart | Omit if not used. |
+| publishState | Enum | 0x05 | Bonjour or backend service publish state. | enum=published/republishing/pending/failed/unpublished | N/A |
+| ?backendType | Enum | 0x06 | Backend that owns the published name. | enum=uxplay/unknown | Omit if not used. |
+| ?updatedAt | String | 0x07 | Timestamp for this name state. | maxLength=64 | Omit if not used. |
+
+---
+
+### cast.getAudio
+
+Return local cast audio playback and mute state.
+
+- Method ID: `0x1605`
+- Domain: `cast`
+- bitOffset: `4`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `cast.audio`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `CastGetAudioParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?includeEffective | Boolean | 0x01 | Whether to include effective local playback state. | None | Default: true |
+| ?sessionId | String | 0x02 | Optional receiver-local session id. | maxLength=128 | Omit if not used. |
+
+#### Response Fields
+
+Type: `CastAudioState`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| enabled | Boolean | 0x01 | Whether local receiver playback is enabled. | None | Default: false |
+| muted | Boolean | 0x02 | Whether local receiver output is muted. | None | Default: false |
+| effectivePlayback | Boolean | 0x03 | Whether audio is effectively playing locally after state and session conditions are applied. | None | N/A |
+| ?scope | Enum | 0x04 | State target hint represented by this snapshot. | enum=currentSession/default | Omit if not used. |
+| ?sessionId | String | 0x05 | Receiver-local session id for session-specific state. | maxLength=128 | Omit if not used. |
+| ?source | Enum | 0x06 | Source of the latest state value. | enum=defaultConfig/externalSet/localUi/sessionStarted/sessionStopped/unknown | Omit if not used. |
+| ?reason | Enum | 0x07 | Latest audio state transition reason. | enum=receiverDefault/externalSet/localUi/sessionStarted/sessionStopped/unknown | Omit if not used. |
+| ?changedFields | Array<String> | 0x08 | Field names changed by the latest operation or event. | array.itemType=string | Omit if not used. |
+| ?updatedAt | String | 0x09 | Timestamp for this audio state. | maxLength=64 | Omit if not used. |
+
+---
+
+### cast.setAudio
+
+Enable or disable local playback of received cast audio.
+
+- Method ID: `0x1606`
+- Domain: `cast`
+- bitOffset: `5`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `cast.audio`
+- Possible Events: `cast.audioChanged`
+- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `CastSetAudioParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| enabled | Boolean | 0x01 | Whether local receiver playback is enabled. | None | N/A |
+| ?sessionId | String | 0x02 | Optional receiver-local session id. | maxLength=128 | Omit if not used. |
+| ?scope | Enum | 0x03 | State target hint; this is not an authorization scope. | enum=currentSession/default | Omit if not used. |
+
+#### Response Fields
+
+Type: `CastAudioState`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| enabled | Boolean | 0x01 | Whether local receiver playback is enabled. | None | Default: false |
+| muted | Boolean | 0x02 | Whether local receiver output is muted. | None | Default: false |
+| effectivePlayback | Boolean | 0x03 | Whether audio is effectively playing locally after state and session conditions are applied. | None | N/A |
+| ?scope | Enum | 0x04 | State target hint represented by this snapshot. | enum=currentSession/default | Omit if not used. |
+| ?sessionId | String | 0x05 | Receiver-local session id for session-specific state. | maxLength=128 | Omit if not used. |
+| ?source | Enum | 0x06 | Source of the latest state value. | enum=defaultConfig/externalSet/localUi/sessionStarted/sessionStopped/unknown | Omit if not used. |
+| ?reason | Enum | 0x07 | Latest audio state transition reason. | enum=receiverDefault/externalSet/localUi/sessionStarted/sessionStopped/unknown | Omit if not used. |
+| ?changedFields | Array<String> | 0x08 | Field names changed by the latest operation or event. | array.itemType=string | Omit if not used. |
+| ?updatedAt | String | 0x09 | Timestamp for this audio state. | maxLength=64 | Omit if not used. |
+
+---
+
+### cast.setMuted
+
+Mute or unmute local cast audio output.
+
+- Method ID: `0x1607`
+- Domain: `cast`
+- bitOffset: `6`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `cast.audio`
+- Possible Events: `cast.audioChanged`
+- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `CastSetMutedParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| muted | Boolean | 0x01 | Whether local receiver output is muted. | None | N/A |
+| ?sessionId | String | 0x02 | Optional receiver-local session id. | maxLength=128 | Omit if not used. |
+| ?scope | Enum | 0x03 | State target hint; this is not an authorization scope. | enum=currentSession/default | Omit if not used. |
+
+#### Response Fields
+
+Type: `CastAudioState`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| enabled | Boolean | 0x01 | Whether local receiver playback is enabled. | None | Default: false |
+| muted | Boolean | 0x02 | Whether local receiver output is muted. | None | Default: false |
+| effectivePlayback | Boolean | 0x03 | Whether audio is effectively playing locally after state and session conditions are applied. | None | N/A |
+| ?scope | Enum | 0x04 | State target hint represented by this snapshot. | enum=currentSession/default | Omit if not used. |
+| ?sessionId | String | 0x05 | Receiver-local session id for session-specific state. | maxLength=128 | Omit if not used. |
+| ?source | Enum | 0x06 | Source of the latest state value. | enum=defaultConfig/externalSet/localUi/sessionStarted/sessionStopped/unknown | Omit if not used. |
+| ?reason | Enum | 0x07 | Latest audio state transition reason. | enum=receiverDefault/externalSet/localUi/sessionStarted/sessionStopped/unknown | Omit if not used. |
+| ?changedFields | Array<String> | 0x08 | Field names changed by the latest operation or event. | array.itemType=string | Omit if not used. |
+| ?updatedAt | String | 0x09 | Timestamp for this audio state. | maxLength=64 | Omit if not used. |
+
+---
+
+### cast.getPinCodeConfig
+
+Return cast PIN protection state, visibility, and optional secret material.
+
+- Method ID: `0x1608`
+- Domain: `cast`
+- bitOffset: `7`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `cast.pinCode`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `CastGetPinCodeConfigParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?includeSecret | Boolean | 0x01 | Whether authorized clients request plaintext PIN material. | None | Default: false |
+
+#### Response Fields
+
+Type: `CastPinCodeConfig`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| enabled | Boolean | 0x01 | Whether PIN protection is enabled. | None | Default: true |
+| hasPinCode | Boolean | 0x02 | Whether a current PIN exists. | None | N/A |
+| ?pinCode | String | 0x03 | Plaintext PIN value when visible to the caller. | None | Omit if not used. |
+| ?pinDisplay | Enum | 0x04 | Where the current PIN may be displayed. | enum=hidden/authorizedClients/localUi/both | Omit if not used. |
+| ?generatedBy | Enum | 0x05 | Component or actor that generated the current PIN. | enum=nearcast/uxplay/external/unknown | Omit if not used. |
+| ?visibility | Enum | 0x06 | Visibility policy for the PIN value. | enum=hidden/authorizedOnly/localUi/both | Omit if not used. |
+| ?expiresAt | String | 0x07 | Expiration timestamp when applicable. | maxLength=64 | Omit if not used. |
+| ?redactionRequired | Boolean | 0x08 | Whether logs, diagnostics, and error summaries must redact the PIN. | None | Default: true |
+| ?changedFields | Array<String> | 0x09 | Field names changed by the latest operation or event. | array.itemType=string | Omit if not used. |
+| ?updatedAt | String | 0x0A | Timestamp for this PIN state. | maxLength=64 | Omit if not used. |
+| ?redacted | Boolean | 0x0B | Whether sensitive fields were withheld in this snapshot. | None | Omit if not used. |
+
+---
+
+### cast.setPinCodeConfig
+
+Enable or disable cast PIN protection and update display policy.
+
+- Method ID: `0x1609`
+- Domain: `cast`
+- bitOffset: `8`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `cast.pinCode`
+- Possible Events: `cast.pinCodeChanged`
+- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `INVALID_STATE`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `CastSetPinCodeConfigParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?enabled | Boolean | 0x01 | Whether PIN protection is enabled. | None | Omit if not used. |
+| ?pinDisplay | Enum | 0x02 | Where the current PIN may be displayed. | enum=hidden/authorizedClients/localUi/both | Omit if not used. |
+| ?rotatePin | Boolean | 0x03 | Whether the receiver should rotate or regenerate the PIN. | None | Default: false |
+| ?visibility | Enum | 0x04 | Visibility policy for responses and events. | enum=hidden/authorizedOnly/localUi/both | Omit if not used. |
+
+#### Response Fields
+
+Type: `CastPinCodeConfig`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| enabled | Boolean | 0x01 | Whether PIN protection is enabled. | None | Default: true |
+| hasPinCode | Boolean | 0x02 | Whether a current PIN exists. | None | N/A |
+| ?pinCode | String | 0x03 | Plaintext PIN value when visible to the caller. | None | Omit if not used. |
+| ?pinDisplay | Enum | 0x04 | Where the current PIN may be displayed. | enum=hidden/authorizedClients/localUi/both | Omit if not used. |
+| ?generatedBy | Enum | 0x05 | Component or actor that generated the current PIN. | enum=nearcast/uxplay/external/unknown | Omit if not used. |
+| ?visibility | Enum | 0x06 | Visibility policy for the PIN value. | enum=hidden/authorizedOnly/localUi/both | Omit if not used. |
+| ?expiresAt | String | 0x07 | Expiration timestamp when applicable. | maxLength=64 | Omit if not used. |
+| ?redactionRequired | Boolean | 0x08 | Whether logs, diagnostics, and error summaries must redact the PIN. | None | Default: true |
+| ?changedFields | Array<String> | 0x09 | Field names changed by the latest operation or event. | array.itemType=string | Omit if not used. |
+| ?updatedAt | String | 0x0A | Timestamp for this PIN state. | maxLength=64 | Omit if not used. |
+| ?redacted | Boolean | 0x0B | Whether sensitive fields were withheld in this snapshot. | None | Omit if not used. |
+
+---
+
+### cast.setPinCode
+
+Set the current cast PIN value according to receiver policy.
+
+- Method ID: `0x160A`
+- Domain: `cast`
+- bitOffset: `9`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `cast.pinCode`
+- Possible Events: `cast.pinCodeChanged`
+- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `INVALID_STATE`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `CastSetPinCodeParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| pinCode | String | 0x01 | Opaque PIN value; concrete format is backend or product policy. | None | N/A |
+| ?expirePrevious | Boolean | 0x02 | Whether prior PIN material should stop being accepted. | None | Default: true |
+| ?visibility | Enum | 0x03 | Visibility policy for the new PIN. | enum=hidden/authorizedOnly/localUi/both | Omit if not used. |
+
+#### Response Fields
+
+Type: `CastPinCodeConfig`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| enabled | Boolean | 0x01 | Whether PIN protection is enabled. | None | Default: true |
+| hasPinCode | Boolean | 0x02 | Whether a current PIN exists. | None | N/A |
+| ?pinCode | String | 0x03 | Plaintext PIN value when visible to the caller. | None | Omit if not used. |
+| ?pinDisplay | Enum | 0x04 | Where the current PIN may be displayed. | enum=hidden/authorizedClients/localUi/both | Omit if not used. |
+| ?generatedBy | Enum | 0x05 | Component or actor that generated the current PIN. | enum=nearcast/uxplay/external/unknown | Omit if not used. |
+| ?visibility | Enum | 0x06 | Visibility policy for the PIN value. | enum=hidden/authorizedOnly/localUi/both | Omit if not used. |
+| ?expiresAt | String | 0x07 | Expiration timestamp when applicable. | maxLength=64 | Omit if not used. |
+| ?redactionRequired | Boolean | 0x08 | Whether logs, diagnostics, and error summaries must redact the PIN. | None | Default: true |
+| ?changedFields | Array<String> | 0x09 | Field names changed by the latest operation or event. | array.itemType=string | Omit if not used. |
+| ?updatedAt | String | 0x0A | Timestamp for this PIN state. | maxLength=64 | Omit if not used. |
+| ?redacted | Boolean | 0x0B | Whether sensitive fields were withheld in this snapshot. | None | Omit if not used. |
+
+---
+
+### cast.getWindowState
+
+Return cast window visibility, mode, and bounds summary.
+
+- Method ID: `0x160B`
+- Domain: `cast`
+- bitOffset: `10`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `cast.window`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `Empty`
+
+No fields.
+
+#### Response Fields
+
+Type: `CastWindowState`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| hasWindow | Boolean | 0x01 | Whether a cast window currently exists. | None | N/A |
+| visible | Boolean | 0x02 | Whether the cast window is visible. | None | N/A |
+| mode | Enum | 0x03 | Current cast window mode. | enum=normal/fullscreen | N/A |
+| fullscreen | Boolean | 0x04 | Whether the cast window is fullscreen. | None | N/A |
+| alwaysOnTop | Boolean | 0x05 | Whether the cast window is topmost. | None | N/A |
+| ?sessionId | String | 0x06 | Receiver-local session id associated with the window. | maxLength=128 | Omit if not used. |
+| ?bounds | CastRect | 0x07 | Current window bounds when available. | None | Omit if not used. |
+| ?previousNormalBounds | CastRect | 0x08 | Normal-mode bounds recorded before fullscreen or topmost mode. | None | Omit if not used. |
+| ?restoredBounds | CastRect | 0x09 | Bounds restored by the latest transition. | None | Omit if not used. |
+| ?changedFields | Array<String> | 0x0A | Field names changed by the latest operation or event. | array.itemType=string | Omit if not used. |
+| ?updatedAt | String | 0x0B | Timestamp for this window state. | maxLength=64 | Omit if not used. |
+
+---
+
+### cast.setWindowState
+
+Set cast window mode, fullscreen state, or always-on-top state.
+
+- Method ID: `0x160C`
+- Domain: `cast`
+- bitOffset: `11`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `cast.window`
+- Possible Events: `cast.windowChanged`
+- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `INVALID_STATE`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `CastSetWindowStateParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?mode | Enum | 0x01 | Target cast window mode. | enum=normal/fullscreen | Omit if not used. |
+| ?fullscreen | Boolean | 0x02 | Whether the cast window should be fullscreen. | None | Omit if not used. |
+| ?alwaysOnTop | Boolean | 0x03 | Whether the cast window should stay above normal windows. | None | Omit if not used. |
+| ?bounds | CastRect | 0x04 | Optional target normal-mode window bounds. | None | Omit if not used. |
+
+#### Response Fields
+
+Type: `CastWindowState`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| hasWindow | Boolean | 0x01 | Whether a cast window currently exists. | None | N/A |
+| visible | Boolean | 0x02 | Whether the cast window is visible. | None | N/A |
+| mode | Enum | 0x03 | Current cast window mode. | enum=normal/fullscreen | N/A |
+| fullscreen | Boolean | 0x04 | Whether the cast window is fullscreen. | None | N/A |
+| alwaysOnTop | Boolean | 0x05 | Whether the cast window is topmost. | None | N/A |
+| ?sessionId | String | 0x06 | Receiver-local session id associated with the window. | maxLength=128 | Omit if not used. |
+| ?bounds | CastRect | 0x07 | Current window bounds when available. | None | Omit if not used. |
+| ?previousNormalBounds | CastRect | 0x08 | Normal-mode bounds recorded before fullscreen or topmost mode. | None | Omit if not used. |
+| ?restoredBounds | CastRect | 0x09 | Bounds restored by the latest transition. | None | Omit if not used. |
+| ?changedFields | Array<String> | 0x0A | Field names changed by the latest operation or event. | array.itemType=string | Omit if not used. |
+| ?updatedAt | String | 0x0B | Timestamp for this window state. | maxLength=64 | Omit if not used. |
+
+---
+
+### cast.getBackendStatus
+
+Return cast backend process, discoverability, and last-error state.
+
+- Method ID: `0x160D`
+- Domain: `cast`
+- bitOffset: `12`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `cast.backend`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `CastGetBackendStatusParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?includeLastError | Boolean | 0x01 | Whether to include the last backend error summary. | None | Default: false |
+
+#### Response Fields
+
+Type: `CastBackendStatus`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| backendType | Enum | 0x01 | Backend implementation type. | enum=uxplay/unknown | N/A |
+| state | Enum | 0x02 | Backend runtime state. | enum=starting/ready/restarting/exited/failed/disabled | N/A |
+| discoverable | Boolean | 0x03 | Whether the cast service is discoverable by sources. | None | N/A |
+| ?pid | UInt32 | 0x04 | Backend process id when available. | None | Omit if not used. |
+| ?version | String | 0x05 | Backend version or build identifier. | maxLength=128 | Omit if not used. |
+| ?activeSessionId | String | 0x06 | Active cast session id currently owned by the backend. | maxLength=128 | Omit if not used. |
+| restartInProgress | Boolean | 0x07 | Whether a backend restart is currently in progress. | None | Default: false |
+| ?lastError | CastLastError | 0x08 | Last backend error summary when requested and available. | None | Omit if not used. |
+| ?updatedAt | String | 0x09 | Timestamp for this backend status. | maxLength=64 | Omit if not used. |
+
+---
+
+### cast.restartBackend
+
+Restart the cast backend without restarting the receiver application or device.
+
+- Method ID: `0x160E`
+- Domain: `cast`
+- bitOffset: `13`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `cast.backend`
+- Possible Events: `cast.backendChanged`, `cast.sessionStopped`
+- Possible Errors: `SUCCESS`, `BUSY`, `INVALID_STATE`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `CastRestartBackendParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?reason | Enum | 0x01 | Caller-visible restart reason. | enum=manualRecovery/configChanged/backendUnhealthy/unknown | Omit if not used. |
+| ?force | Boolean | 0x02 | Whether the backend adapter may force cleanup before restart. | None | Default: false |
+
+#### Response Fields
+
+Type: `CastRestartBackendResult`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| accepted | Boolean | 0x01 | Whether the receiver accepted the restart request. | None | N/A |
+| backendType | Enum | 0x02 | Backend implementation affected by the restart. | enum=uxplay/unknown | N/A |
+| state | Enum | 0x03 | Backend state after accepting the restart request. | enum=starting/ready/restarting/exited/failed/disabled | N/A |
+| ?restartId | String | 0x04 | Receiver-local restart operation id. | maxLength=128 | Omit if not used. |
+| activeSessionEnded | Boolean | 0x05 | Whether an active cast session was ended by the restart. | None | N/A |
+| ?endedSessionId | String | 0x06 | Session ended by the restart. | maxLength=128 | Omit if not used. |
+| ?sessionStopReason | Enum | 0x07 | Session stop reason reported for the ended session. | enum=backendRestart/backendExited/error/unknown | Omit if not used. |
+| ?estimatedReadyInMs | UInt32 | 0x08 | Estimated backend recovery time in milliseconds. | None | Omit if not used. |
+| ?updatedAt | String | 0x09 | Timestamp for this restart result. | maxLength=64 | Omit if not used. |
+
+---
+
+### cast.getFlowControlState
+
+Return local cast render fps, queue policy, and low-frequency diagnostics.
+
+- Method ID: `0x160F`
+- Domain: `cast`
+- bitOffset: `14`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `cast.flowControl`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `CastGetFlowControlStateParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?includeStats | Boolean | 0x01 | Whether to include low-frequency diagnostic counters. | None | Default: true |
+| ?includePolicy | Boolean | 0x02 | Whether to include current flow policy fields. | None | Default: true |
+| ?sessionId | String | 0x03 | Optional receiver-local session id. | maxLength=128 | Omit if not used. |
+
+#### Response Fields
+
+Type: `CastFlowControlState`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| targetRenderFps | Number | 0x01 | Configured target render fps; zero means uncapped. | min=0 | N/A |
+| ?inputFps | Number | 0x02 | Estimated incoming media frame rate. | min=0 | Omit if not used. |
+| ?renderFps | Number | 0x03 | Estimated local render frame rate. | min=0 | Omit if not used. |
+| dropMode | Enum | 0x04 | Local frame drop policy. | enum=drop-late/drop-oldest/render-latest | N/A |
+| videoQueueFrames | UInt32 | 0x05 | Maximum queued video frames. | min=1 | N/A |
+| ?videoQueueDepth | UInt32 | 0x06 | Current queued video frame depth. | None | Omit if not used. |
+| ?audioQueueDepth | UInt32 | 0x07 | Current queued audio frame depth when known. | None | Omit if not used. |
+| lateFrameThresholdMs | UInt32 | 0x08 | Late-frame threshold in milliseconds. | None | N/A |
+| overlayEnabled | Boolean | 0x09 | Whether diagnostics overlay is enabled. | None | N/A |
+| ?droppedFrames | UInt64 | 0x0A | Low-frequency dropped-frame counter. | None | Omit if not used. |
+| ?lateFrames | UInt64 | 0x0B | Low-frequency late-frame counter. | None | Omit if not used. |
+| ?keyframeRequestCount | UInt32 | 0x0C | Internal keyframe requests triggered by receiver policy. | None | Omit if not used. |
+| ?keyFrameOnDropBurst | Boolean | 0x0D | Whether the receiver may internally request a keyframe after a drop burst. | None | Omit if not used. |
+| ?changedFields | Array<String> | 0x0E | Field names changed by the latest operation or event. | array.itemType=string | Omit if not used. |
+| ?sampledAt | String | 0x0F | Timestamp for this flow sample. | maxLength=64 | Omit if not used. |
+
+---
+
+### cast.setRenderFps
+
+Set the receiver-local target render fps for cast media.
+
+- Method ID: `0x1610`
+- Domain: `cast`
+- bitOffset: `15`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `cast.flowControl`
+- Possible Events: `cast.flowControlChanged`
+- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `OUT_OF_RANGE`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `CastSetRenderFpsParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| fps | Number | 0x01 | Target local render fps; zero means uncapped. | min=0 | N/A |
+| ?sessionId | String | 0x02 | Optional receiver-local session id. | maxLength=128 | Omit if not used. |
+| ?scope | Enum | 0x03 | State target hint; this is not an authorization scope. | enum=currentSession/default | Omit if not used. |
+
+#### Response Fields
+
+Type: `CastFlowControlState`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| targetRenderFps | Number | 0x01 | Configured target render fps; zero means uncapped. | min=0 | N/A |
+| ?inputFps | Number | 0x02 | Estimated incoming media frame rate. | min=0 | Omit if not used. |
+| ?renderFps | Number | 0x03 | Estimated local render frame rate. | min=0 | Omit if not used. |
+| dropMode | Enum | 0x04 | Local frame drop policy. | enum=drop-late/drop-oldest/render-latest | N/A |
+| videoQueueFrames | UInt32 | 0x05 | Maximum queued video frames. | min=1 | N/A |
+| ?videoQueueDepth | UInt32 | 0x06 | Current queued video frame depth. | None | Omit if not used. |
+| ?audioQueueDepth | UInt32 | 0x07 | Current queued audio frame depth when known. | None | Omit if not used. |
+| lateFrameThresholdMs | UInt32 | 0x08 | Late-frame threshold in milliseconds. | None | N/A |
+| overlayEnabled | Boolean | 0x09 | Whether diagnostics overlay is enabled. | None | N/A |
+| ?droppedFrames | UInt64 | 0x0A | Low-frequency dropped-frame counter. | None | Omit if not used. |
+| ?lateFrames | UInt64 | 0x0B | Low-frequency late-frame counter. | None | Omit if not used. |
+| ?keyframeRequestCount | UInt32 | 0x0C | Internal keyframe requests triggered by receiver policy. | None | Omit if not used. |
+| ?keyFrameOnDropBurst | Boolean | 0x0D | Whether the receiver may internally request a keyframe after a drop burst. | None | Omit if not used. |
+| ?changedFields | Array<String> | 0x0E | Field names changed by the latest operation or event. | array.itemType=string | Omit if not used. |
+| ?sampledAt | String | 0x0F | Timestamp for this flow sample. | maxLength=64 | Omit if not used. |
+
+---
+
+### cast.setFlowPolicy
+
+Set receiver-local cast queue, late-frame, drop, and overlay policy.
+
+- Method ID: `0x1611`
+- Domain: `cast`
+- bitOffset: `16`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `cast.flowControl`
+- Possible Events: `cast.flowControlChanged`
+- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `OUT_OF_RANGE`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `CastSetFlowPolicyParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?videoQueueFrames | UInt32 | 0x01 | Maximum queued video frames. | min=1 | Omit if not used. |
+| ?lateFrameThresholdMs | UInt32 | 0x02 | Late-frame threshold in milliseconds. | None | Omit if not used. |
+| ?dropMode | Enum | 0x03 | Local frame drop policy. | enum=drop-late/drop-oldest/render-latest | Omit if not used. |
+| ?overlayEnabled | Boolean | 0x04 | Whether receiver diagnostics overlay is enabled. | None | Omit if not used. |
+| ?sessionId | String | 0x05 | Optional receiver-local session id. | maxLength=128 | Omit if not used. |
+| ?scope | Enum | 0x06 | State target hint; this is not an authorization scope. | enum=currentSession/default | Omit if not used. |
+
+#### Response Fields
+
+Type: `CastFlowControlState`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| targetRenderFps | Number | 0x01 | Configured target render fps; zero means uncapped. | min=0 | N/A |
+| ?inputFps | Number | 0x02 | Estimated incoming media frame rate. | min=0 | Omit if not used. |
+| ?renderFps | Number | 0x03 | Estimated local render frame rate. | min=0 | Omit if not used. |
+| dropMode | Enum | 0x04 | Local frame drop policy. | enum=drop-late/drop-oldest/render-latest | N/A |
+| videoQueueFrames | UInt32 | 0x05 | Maximum queued video frames. | min=1 | N/A |
+| ?videoQueueDepth | UInt32 | 0x06 | Current queued video frame depth. | None | Omit if not used. |
+| ?audioQueueDepth | UInt32 | 0x07 | Current queued audio frame depth when known. | None | Omit if not used. |
+| lateFrameThresholdMs | UInt32 | 0x08 | Late-frame threshold in milliseconds. | None | N/A |
+| overlayEnabled | Boolean | 0x09 | Whether diagnostics overlay is enabled. | None | N/A |
+| ?droppedFrames | UInt64 | 0x0A | Low-frequency dropped-frame counter. | None | Omit if not used. |
+| ?lateFrames | UInt64 | 0x0B | Low-frequency late-frame counter. | None | Omit if not used. |
+| ?keyframeRequestCount | UInt32 | 0x0C | Internal keyframe requests triggered by receiver policy. | None | Omit if not used. |
+| ?keyFrameOnDropBurst | Boolean | 0x0D | Whether the receiver may internally request a keyframe after a drop burst. | None | Omit if not used. |
+| ?changedFields | Array<String> | 0x0E | Field names changed by the latest operation or event. | array.itemType=string | Omit if not used. |
+| ?sampledAt | String | 0x0F | Timestamp for this flow sample. | maxLength=64 | Omit if not used. |
+
+---
+
+### cast.getStatus
+
+Return a low-frequency aggregate cast receiver status summary.
+
+- Method ID: `0x1612`
+- Domain: `cast`
+- bitOffset: `17`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `cast.status`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `CastGetStatusParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?include | Array<String> | 0x01 | Optional status sections to include. | array.itemType=string | Omit if not used. |
+| ?includeSensitive | Boolean | 0x02 | Whether authorized callers request sensitive summary fields. | None | Default: false |
+
+#### Response Fields
+
+Type: `CastStatus`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| receiver | CastReceiverSummary | 0x01 | Receiver role and phase summary. | None | N/A |
+| ?session | CastSessionStatusSummary | 0x02 | Active session summary. | None | Omit if not used. |
+| ?pinCode | CastPinCodeStatusSummary | 0x03 | PIN protection summary. | None | Omit if not used. |
+| ?audio | CastAudioState | 0x04 | Local audio summary. | None | Omit if not used. |
+| ?window | CastWindowState | 0x05 | Cast window summary. | None | Omit if not used. |
+| ?backend | CastBackendStatus | 0x06 | Backend summary. | None | Omit if not used. |
+| ?flowControl | CastFlowControlState | 0x07 | Flow control summary. | None | Omit if not used. |
+| sampledAt | String | 0x08 | Timestamp for this aggregate snapshot. | maxLength=64 | N/A |
+| ?redacted | Boolean | 0x09 | Whether any sensitive aggregate fields were withheld. | None | Omit if not used. |
 
 ---
 
@@ -1823,6 +2630,388 @@ Type: `AudioStreamStatsReportedEvent`
 
 ---
 
+## cast Events
+
+### Events in this domain
+
+- [cast.sessionIncoming](#castsessionincoming)
+- [cast.sessionStateChanged](#castsessionstatechanged)
+- [cast.sessionStarted](#castsessionstarted)
+- [cast.sessionStopped](#castsessionstopped)
+- [cast.sessionFailed](#castsessionfailed)
+- [cast.audioChanged](#castaudiochanged)
+- [cast.pinCodeChanged](#castpincodechanged)
+- [cast.pinCodeRequired](#castpincoderequired)
+- [cast.pinCodeAuthFailed](#castpincodeauthfailed)
+- [cast.windowChanged](#castwindowchanged)
+- [cast.backendChanged](#castbackendchanged)
+- [cast.flowControlChanged](#castflowcontrolchanged)
+- [cast.statusChanged](#caststatuschanged)
+
+---
+
+### cast.sessionIncoming
+
+Emitted when a cast source initiates a receiver session.
+
+- Event ID: `0x1601`
+- Domain: `cast`
+- bitOffset: `0`
+- Status: `draft`
+- Severity: `info`
+- Added in v1.0.0
+- Trigger: `source connected`, `backend incoming session`
+- Required Capabilities: `cast.session`
+
+#### Payload Fields
+
+Type: `CastSessionIncomingEvent`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?sessionId | String | 0x01 | Receiver-local session id assigned to the incoming session. | maxLength=128 | Omit if not used. |
+| receiverPhase | Enum | 0x02 | Receiver phase entered for the incoming session. | enum=incoming/authenticating | N/A |
+| ?protocol | Enum | 0x03 | Protocol path used by the incoming session. | enum=airplay/hid/unknown | Omit if not used. |
+| ?source | CastSourceSummary | 0x04 | Source summary when available. | None | Omit if not used. |
+| ?authRequired | Boolean | 0x05 | Whether this incoming session requires authentication. | None | Omit if not used. |
+| ?incomingAt | String | 0x06 | Timestamp when the incoming session was observed. | maxLength=64 | Omit if not used. |
+
+---
+
+### cast.sessionStateChanged
+
+Emitted when receiver phase, protocol state, or low-frequency session media state changes.
+
+- Event ID: `0x1602`
+- Domain: `cast`
+- bitOffset: `1`
+- Status: `draft`
+- Severity: `info`
+- Added in v1.0.0
+- Trigger: `incoming session`, `authentication`, `stream starting`, `media flow started`, `interruption`, `stopping`
+- Required Capabilities: `cast.session`
+
+#### Payload Fields
+
+Type: `CastSessionStateChangedEvent`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?sessionId | String | 0x01 | Receiver-local session id. | maxLength=128 | Omit if not used. |
+| ?previousReceiverPhase | Enum | 0x02 | Previous receiver phase. | enum=idle/incoming/authenticating/streamStarting/streaming/rendering/interrupted/stopping/ended/failed | Omit if not used. |
+| receiverPhase | Enum | 0x03 | New receiver phase. | enum=idle/incoming/authenticating/streamStarting/streaming/rendering/interrupted/stopping/ended/failed | N/A |
+| ?previousState | Enum | 0x04 | Previous backend-specific session state. | enum=idle/incoming/waitingForPassword/authenticated/preparing/casting/interrupted/stopping/ended/failed | Omit if not used. |
+| ?sessionState | Enum | 0x05 | New backend-specific session state. | enum=idle/incoming/waitingForPassword/authenticated/preparing/casting/interrupted/stopping/ended/failed | Omit if not used. |
+| ?protocol | Enum | 0x06 | Protocol path represented by this event. | enum=airplay/hid/unknown | Omit if not used. |
+| ?authRequired | Boolean | 0x07 | Whether the current session phase requires authentication. | None | Omit if not used. |
+| ?media | CastMediaSummary | 0x08 | Low-frequency media summary at the time of transition. | None | Omit if not used. |
+| ?reason | Enum | 0x09 | Transition reason. | enum=sessionStarted/mediaFlowStarted/externalRequest/sourceClosed/backendRestart/backendExited/authFailed/error/unknown | Omit if not used. |
+| ?updatedAt | String | 0x0A | Timestamp for the transition. | maxLength=64 | Omit if not used. |
+
+---
+
+### cast.sessionStarted
+
+Emitted when a cast session becomes user-visible after first frame or local playback starts.
+
+- Event ID: `0x1603`
+- Domain: `cast`
+- bitOffset: `2`
+- Status: `draft`
+- Severity: `info`
+- Added in v1.0.0
+- Trigger: `first frame rendered`, `local playback started`
+- Required Capabilities: `cast.session`
+
+#### Payload Fields
+
+Type: `CastSessionStartedEvent`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| sessionId | String | 0x01 | Receiver-local started session id. | maxLength=128 | N/A |
+| receiverPhase | Enum | 0x02 | Receiver phase after first visible frame or local playback starts. | enum=rendering | N/A |
+| ?sessionState | Enum | 0x03 | Backend-specific state after session start. | enum=casting | Omit if not used. |
+| ?protocol | Enum | 0x04 | Protocol path represented by the started session. | enum=airplay/hid/unknown | Omit if not used. |
+| ?source | CastSourceSummary | 0x05 | Source summary when available. | None | Omit if not used. |
+| ?media | CastMediaSummary | 0x06 | Media summary at session start. | None | Omit if not used. |
+| ?startedAt | String | 0x07 | Timestamp when the session became user-visible. | maxLength=64 | Omit if not used. |
+
+---
+
+### cast.sessionStopped
+
+Emitted when a cast session ends normally or is forced to stop.
+
+- Event ID: `0x1604`
+- Domain: `cast`
+- bitOffset: `3`
+- Status: `draft`
+- Severity: `info`
+- Added in v1.0.0
+- Trigger: `cast.stopSession`, `source closed`, `backend restart`, `backend exited`
+- Required Capabilities: `cast.session`
+
+#### Payload Fields
+
+Type: `CastSessionStoppedEvent`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?sessionId | String | 0x01 | Receiver-local stopped session id. | maxLength=128 | Omit if not used. |
+| ?previousReceiverPhase | Enum | 0x02 | Receiver phase before stop completion. | enum=idle/incoming/authenticating/streamStarting/streaming/rendering/interrupted/stopping/ended/failed | Omit if not used. |
+| receiverPhase | Enum | 0x03 | Receiver phase after stop completion. | enum=ended/failed/idle | N/A |
+| ?previousState | Enum | 0x04 | Backend-specific state before stop completion. | enum=idle/incoming/waitingForPassword/authenticated/preparing/casting/interrupted/stopping/ended/failed | Omit if not used. |
+| ?sessionState | Enum | 0x05 | Backend-specific state after stop completion. | enum=ended/failed/idle | Omit if not used. |
+| ?reason | Enum | 0x06 | Stop reason. | enum=externalRequest/sourceClosed/backendRestart/backendExited/shutdown/error/unknown | Omit if not used. |
+| ?backendType | Enum | 0x07 | Backend type associated with the stopped session. | enum=uxplay/unknown | Omit if not used. |
+| ?stoppedAt | String | 0x08 | Timestamp when the stop was observed. | maxLength=64 | Omit if not used. |
+
+---
+
+### cast.sessionFailed
+
+Emitted when cast connection, authentication, negotiation, or backend handling fails.
+
+- Event ID: `0x1605`
+- Domain: `cast`
+- bitOffset: `4`
+- Status: `draft`
+- Severity: `error`
+- Added in v1.0.0
+- Trigger: `connection failed`, `authentication failed`, `media negotiation failed`, `backend failed`
+- Required Capabilities: `cast.session`
+
+#### Payload Fields
+
+Type: `CastSessionFailedEvent`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?sessionId | String | 0x01 | Receiver-local failed session id when assigned. | maxLength=128 | Omit if not used. |
+| receiverPhase | Enum | 0x02 | Receiver phase after failure. | enum=failed | N/A |
+| ?sessionState | Enum | 0x03 | Backend-specific failed state. | enum=failed | Omit if not used. |
+| ?protocol | Enum | 0x04 | Protocol path represented by the failed session. | enum=airplay/hid/unknown | Omit if not used. |
+| ?source | CastSourceSummary | 0x05 | Source summary when available. | None | Omit if not used. |
+| ?reason | Enum | 0x06 | Failure reason. | enum=connectionFailed/authFailed/negotiationFailed/backendFailed/mediaFailed/unknown | Omit if not used. |
+| ?error | CastLastError | 0x07 | Redactable error summary. | None | Omit if not used. |
+| ?failedAt | String | 0x08 | Timestamp when the failure was observed. | maxLength=64 | Omit if not used. |
+
+---
+
+### cast.audioChanged
+
+Emitted when local cast audio playback or mute state changes.
+
+- Event ID: `0x1606`
+- Domain: `cast`
+- bitOffset: `5`
+- Status: `draft`
+- Severity: `info`
+- Added in v1.0.0
+- Trigger: `cast.setAudio`, `cast.setMuted`, `local UI`, `session started`, `session stopped`
+- Required Capabilities: `cast.audio`
+
+#### Payload Fields
+
+Type: `CastAudioChangedEvent`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| changedFields | Array<String> | 0x01 | Field names changed by this event. | array.itemType=string | N/A |
+| state | CastAudioState | 0x02 | State after the change. | None | N/A |
+| ?reason | Enum | 0x03 | Change reason. | enum=externalSet/localUi/sessionStarted/sessionStopped/unknown | Omit if not used. |
+| ?updatedAt | String | 0x04 | Timestamp for this event. | maxLength=64 | Omit if not used. |
+
+---
+
+### cast.pinCodeChanged
+
+Emitted when cast PIN protection configuration or current PIN state changes.
+
+- Event ID: `0x1607`
+- Domain: `cast`
+- bitOffset: `6`
+- Status: `draft`
+- Severity: `info`
+- Added in v1.0.0
+- Trigger: `cast.setPinCodeConfig`, `cast.setPinCode`, `generated PIN changed`
+- Required Capabilities: `cast.pinCode`
+
+#### Payload Fields
+
+Type: `CastPinCodeChangedEvent`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| changedFields | Array<String> | 0x01 | Field names changed by this event. | array.itemType=string | N/A |
+| config | CastPinCodeConfig | 0x02 | PIN state after the change. | None | N/A |
+| ?reason | Enum | 0x03 | Change reason. | enum=externalSet/localUi/generated/backendChanged/unknown | Omit if not used. |
+| ?updatedAt | String | 0x04 | Timestamp for this event. | maxLength=64 | Omit if not used. |
+
+---
+
+### cast.pinCodeRequired
+
+Emitted when a cast source is waiting for PIN authentication.
+
+- Event ID: `0x1608`
+- Domain: `cast`
+- bitOffset: `7`
+- Status: `draft`
+- Severity: `info`
+- Added in v1.0.0
+- Trigger: `incoming session requires PIN`
+- Required Capabilities: `cast.pinCode`
+
+#### Payload Fields
+
+Type: `CastPinCodeRequiredEvent`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?sessionId | String | 0x01 | Receiver-local session id. | maxLength=128 | Omit if not used. |
+| ?source | CastSourceSummary | 0x02 | Source waiting for authentication. | None | Omit if not used. |
+| ?pinCode | String | 0x03 | Plaintext PIN value when visible to the event subscriber. | None | Omit if not used. |
+| ?visibility | Enum | 0x04 | Visibility policy for this event payload. | enum=hidden/authorizedOnly/localUi/both | Omit if not used. |
+| ?redactionRequired | Boolean | 0x05 | Whether logs and diagnostics must redact this PIN value. | None | Default: true |
+| ?requestedAt | String | 0x06 | Timestamp when PIN input was requested. | maxLength=64 | Omit if not used. |
+
+---
+
+### cast.pinCodeAuthFailed
+
+Emitted when PIN authentication fails, times out, or is cancelled.
+
+- Event ID: `0x1609`
+- Domain: `cast`
+- bitOffset: `8`
+- Status: `draft`
+- Severity: `warning`
+- Added in v1.0.0
+- Trigger: `wrong PIN`, `authentication timeout`, `authentication cancelled`, `too many attempts`
+- Required Capabilities: `cast.pinCode`
+
+#### Payload Fields
+
+Type: `CastPinCodeAuthFailedEvent`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?sessionId | String | 0x01 | Receiver-local session id. | maxLength=128 | Omit if not used. |
+| ?source | CastSourceSummary | 0x02 | Source that failed authentication. | None | Omit if not used. |
+| ?authFailureReason | Enum | 0x03 | Authentication failure reason. | enum=wrongPin/timeout/cancelled/tooManyAttempts/unknown | Omit if not used. |
+| ?attemptCount | UInt16 | 0x04 | Attempt count visible to the receiver. | None | Omit if not used. |
+| ?failedAt | String | 0x05 | Timestamp when authentication failed. | maxLength=64 | Omit if not used. |
+
+---
+
+### cast.windowChanged
+
+Emitted when cast window visibility, mode, topmost state, or bounds changes.
+
+- Event ID: `0x160A`
+- Domain: `cast`
+- bitOffset: `9`
+- Status: `draft`
+- Severity: `info`
+- Added in v1.0.0
+- Trigger: `cast.setWindowState`, `local UI`, `session started`, `session stopped`
+- Required Capabilities: `cast.window`
+
+#### Payload Fields
+
+Type: `CastWindowChangedEvent`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| changedFields | Array<String> | 0x01 | Field names changed by this event. | array.itemType=string | N/A |
+| state | CastWindowState | 0x02 | Window state after the change. | None | N/A |
+| ?reason | Enum | 0x03 | Change reason. | enum=externalSet/localUi/sessionStarted/sessionStopped/unknown | Omit if not used. |
+| ?updatedAt | String | 0x04 | Timestamp for this event. | maxLength=64 | Omit if not used. |
+
+---
+
+### cast.backendChanged
+
+Emitted when cast backend ready, restart, exit, failed, or discoverable state changes.
+
+- Event ID: `0x160B`
+- Domain: `cast`
+- bitOffset: `10`
+- Status: `draft`
+- Severity: `info`
+- Added in v1.0.0
+- Trigger: `backend started`, `backend restarting`, `backend exited`, `backend failed`, `discovery changed`
+- Required Capabilities: `cast.backend`
+
+#### Payload Fields
+
+Type: `CastBackendChangedEvent`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| changedFields | Array<String> | 0x01 | Field names changed by this event. | array.itemType=string | N/A |
+| state | CastBackendStatus | 0x02 | Backend status after the change. | None | N/A |
+| ?reason | Enum | 0x03 | Change reason. | enum=manualRecovery/configChanged/backendUnhealthy/backendExited/unknown | Omit if not used. |
+| ?restartId | String | 0x04 | Restart operation id when this event is restart-related. | maxLength=128 | Omit if not used. |
+| ?activeSessionEnded | Boolean | 0x05 | Whether this backend change ended an active session. | None | Omit if not used. |
+| ?endedSessionId | String | 0x06 | Session ended by this backend change. | maxLength=128 | Omit if not used. |
+| ?updatedAt | String | 0x07 | Timestamp for this event. | maxLength=64 | Omit if not used. |
+
+---
+
+### cast.flowControlChanged
+
+Emitted when receiver-local cast flow policy or low-frequency flow statistics change.
+
+- Event ID: `0x160C`
+- Domain: `cast`
+- bitOffset: `11`
+- Status: `draft`
+- Severity: `info`
+- Added in v1.0.0
+- Trigger: `cast.setRenderFps`, `cast.setFlowPolicy`, `diagnostics sample`
+- Required Capabilities: `cast.flowControl`
+
+#### Payload Fields
+
+Type: `CastFlowControlChangedEvent`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| changedFields | Array<String> | 0x01 | Field names changed or sampled by this event. | array.itemType=string | N/A |
+| state | CastFlowControlState | 0x02 | Flow control state after the change or sample. | None | N/A |
+| ?reason | Enum | 0x03 | Change or sampling reason. | enum=manualFlowControl/diagnosticsSample/sessionStarted/sessionStopped/unknown | Omit if not used. |
+| ?sampledAt | String | 0x04 | Timestamp for this event. | maxLength=64 | Omit if not used. |
+
+---
+
+### cast.statusChanged
+
+Emitted when low-frequency aggregate cast status sections change.
+
+- Event ID: `0x160D`
+- Domain: `cast`
+- bitOffset: `12`
+- Status: `draft`
+- Severity: `info`
+- Added in v1.0.0
+- Trigger: `session changed`, `audio changed`, `PIN changed`, `window changed`, `backend changed`, `flow control changed`
+- Required Capabilities: `cast.status`
+
+#### Payload Fields
+
+Type: `CastStatusChangedEvent`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| changedSections | Array<String> | 0x01 | Status section names changed by this event. | array.itemType=string | N/A |
+| status | CastStatus | 0x02 | Aggregate status after the change. | None | N/A |
+| sampledAt | String | 0x03 | Timestamp for this aggregate event. | maxLength=64 | N/A |
+
+---
+
 ## firmware Events
 
 ### Events in this domain
@@ -2459,6 +3648,104 @@ Voice activity detection configuration object.
 | ?enabled | Boolean | 0x01 | Whether voice activity detection is enabled. | None | Omit if not used. |
 | ?sensitivity | UInt8 | 0x02 | Detection sensitivity. | min=0, max=3 | Omit if not used. |
 | ?hangoverMs | UInt32 | 0x03 | Speech-end hangover time in milliseconds. | min=0, max=2000 | Omit if not used. |
+
+---
+
+## CastLastError
+
+Redactable backend or receiver error summary.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?code | String | 0x01 | Backend-local or AXTP-visible error code. | maxLength=64 | Omit if not used. |
+| ?message | String | 0x02 | Human-readable error summary suitable for authorized clients. | maxLength=512 | Omit if not used. |
+| ?occurredAt | String | 0x03 | Timestamp when the error was observed. | maxLength=64 | Omit if not used. |
+| ?redacted | Boolean | 0x04 | Whether sensitive details were removed from this summary. | None | Default: false |
+
+---
+
+## CastMediaSummary
+
+Low-frequency media summary for a cast session.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?firstFrame | Boolean | 0x01 | Whether the first visible frame has rendered. | None | Omit if not used. |
+| ?width | UInt32 | 0x02 | Current media width in pixels. | None | Omit if not used. |
+| ?height | UInt32 | 0x03 | Current media height in pixels. | None | Omit if not used. |
+| ?orientation | Enum | 0x04 | Current media orientation summary. | enum=landscape/portrait/unknown | Omit if not used. |
+| ?inputFps | Number | 0x05 | Estimated incoming media frame rate. | min=0 | Omit if not used. |
+| ?renderFps | Number | 0x06 | Estimated local render frame rate. | min=0 | Omit if not used. |
+| ?audioActive | Boolean | 0x07 | Whether local receiver audio output is active. | None | Omit if not used. |
+
+---
+
+## CastPinCodeStatusSummary
+
+Aggregate PIN summary for status views.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| enabled | Boolean | 0x01 | Whether PIN protection is enabled. | None | N/A |
+| hasPinCode | Boolean | 0x02 | Whether a current PIN exists. | None | N/A |
+| ?pinDisplay | Enum | 0x03 | Where the current PIN may be displayed. | enum=hidden/authorizedClients/localUi/both | Omit if not used. |
+| ?pinCode | String | 0x04 | Plaintext PIN value when visible to the caller. | None | Omit if not used. |
+| ?redacted | Boolean | 0x05 | Whether sensitive fields were withheld. | None | Omit if not used. |
+| ?visibility | Enum | 0x06 | Visibility policy applied to this summary. | enum=hidden/authorizedOnly/localUi/both | Omit if not used. |
+
+---
+
+## CastReceiverSummary
+
+Aggregate receiver role and protocol-neutral phase summary.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| role | Enum | 0x01 | Cast endpoint role. | enum=receiver | N/A |
+| protocols | Array<String> | 0x02 | Supported or active cast protocol paths. | array.itemType=string | N/A |
+| state | Enum | 0x03 | Receiver service availability state. | enum=disabled/starting/ready/busy/failed | N/A |
+| receiverPhase | Enum | 0x04 | Protocol-neutral receiver phase. | enum=idle/incoming/authenticating/streamStarting/streaming/rendering/interrupted/stopping/ended/failed | N/A |
+
+---
+
+## CastRect
+
+Cast window rectangle in screen coordinates.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| x | Int32 | 0x01 | Rectangle left coordinate. | None | N/A |
+| y | Int32 | 0x02 | Rectangle top coordinate. | None | N/A |
+| width | UInt32 | 0x03 | Rectangle width in pixels. | None | N/A |
+| height | UInt32 | 0x04 | Rectangle height in pixels. | None | N/A |
+
+---
+
+## CastSessionStatusSummary
+
+Aggregate active session summary for status views.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?sessionId | String | 0x01 | Receiver-local session id. | maxLength=128 | Omit if not used. |
+| ?receiverPhase | Enum | 0x02 | Protocol-neutral receiver phase. | enum=idle/incoming/authenticating/streamStarting/streaming/rendering/interrupted/stopping/ended/failed | Omit if not used. |
+| ?sessionState | Enum | 0x03 | Backend-specific session state. | enum=idle/incoming/waitingForPassword/authenticated/preparing/casting/interrupted/stopping/ended/failed | Omit if not used. |
+| ?protocol | Enum | 0x04 | Protocol path represented by the active session. | enum=airplay/hid/unknown | Omit if not used. |
+| ?sourceName | String | 0x05 | User-visible source name. | maxLength=128 | Omit if not used. |
+
+---
+
+## CastSourceSummary
+
+Summary of a cast source device or local AXTP sender.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?name | String | 0x01 | User-visible source name when known. | maxLength=128 | Omit if not used. |
+| ?model | String | 0x02 | Source model identifier when known. | maxLength=128 | Omit if not used. |
+| ?address | String | 0x03 | Network or transport address summary when safe to expose. | maxLength=128 | Omit if not used. |
+| ?sourceId | String | 0x04 | Receiver-local source identifier. | maxLength=128 | Omit if not used. |
+| ?protocol | Enum | 0x05 | Protocol path that produced the source summary. | enum=airplay/hid/unknown | Omit if not used. |
 
 ---
 
