@@ -167,10 +167,12 @@ export async function loadProtocolSources(specRoot: string): Promise<ProtocolSou
     });
   }
   const spec = await loadSpec(specRoot);
-  const protocolMetaPath = path.join(contractRoot, "registry", "core", "protocol_meta.yaml");
+  const registryDir = path.join(contractRoot, "registry");
+  const protocolMetaPath = path.join(registryDir, "core", "protocol_meta.yaml");
+  const domainRegistryPath = path.join(registryDir, "core", "domain_registry.yaml");
   const protocolMeta = await loadYamlFile(protocolMetaPath);
-  const domainFiles = await listYamlFiles(path.join(contractRoot, "registry", "domains"));
-  const sourceFiles = [protocolMetaPath, ...domainFiles];
+  const domainFiles = await listYamlFiles(path.join(registryDir, "domains"));
+  const sourceFiles = [protocolMetaPath, ...(existsSync(domainRegistryPath) ? [domainRegistryPath] : []), ...domainFiles];
   const profiles: Array<Record<string, unknown>> = [];
 
   for (const file of domainFiles) {

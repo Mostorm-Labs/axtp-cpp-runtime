@@ -19,6 +19,7 @@ function baseSpec(): SpecModel {
     rpcBodyEncodings: [{ id: 1, value: 1, name: "TLV8", domain: "rpc", status: "mvp" }],
     rpcOps: [{ id: 7, value: 7, name: "REQUEST", domain: "rpc", status: "mvp" }],
     streamProfiles: [],
+    domainRegistry: [],
     methods: [{
       id: 0x0902,
       name: "audio.setAlgorithmConfig",
@@ -117,6 +118,29 @@ describe("validateSpec", () => {
     const spec = baseSpec();
     spec.capabilities[0].id = 0x0301;
     expect(() => validateSpec(spec)).toThrow(/Domain Registry/);
+  });
+
+  it("accepts a domain high byte declared by source registry entries", () => {
+    const spec = baseSpec();
+    spec.methods.push({
+      ...spec.methods[0],
+      id: 0x1701,
+      name: "widget.getState",
+      domain: "widget",
+      bitOffset: 0,
+      capabilities: [],
+      events: ["widget.stateChanged"]
+    });
+    spec.events.push({
+      ...spec.events[0],
+      id: 0x1701,
+      name: "widget.stateChanged",
+      domain: "widget",
+      bitOffset: 0,
+      capabilities: []
+    });
+
+    expect(validateSpec(spec)).toContain("[OK] method_registry.yaml: 2 methods checked");
   });
 
   it("rejects reserved references", () => {

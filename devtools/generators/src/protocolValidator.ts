@@ -1,4 +1,5 @@
 import { GeneratorError } from "./errors.js";
+import { buildProtocolDomainByHighByte, type DomainByHighByte } from "./domainRegistry.js";
 import type { ErrorDefinition, EventDefinition, MethodDefinition, ProtocolModel, SchemaDefinition } from "./protocolModel.js";
 import { hex } from "./util.js";
 
@@ -182,41 +183,19 @@ function assertEmptySchemaUsage(model: ProtocolModel): void {
   }
 }
 
-function allowedErrorCategories(code: number): string[] {
-  const domainByHighByte: Record<number, string> = {
-    0x01: "device",
-    0x02: "capability",
-    0x03: "system",
-    0x04: "firmware",
-    0x05: "stream",
-    0x06: "display",
-    0x07: "camera",
-    0x08: "video",
-    0x09: "audio",
-    0x0a: "input",
-    0x0b: "output",
-    0x0c: "room",
-    0x0d: "signage",
-    0x0e: "network",
-    0x0f: "storage",
-    0x10: "file",
-    0x11: "log",
-    0x12: "diagnostic",
-    0x13: "sensor",
-    0x14: "auth",
-    0x15: "privacy"
-  };
+function allowedErrorCategories(code: number, domainByHighByte: DomainByHighByte): string[] {
   if (code <= 0x00ff) return ["common", "frame", "control", "rpc"];
   const highByte = code >> 8;
-  if (domainByHighByte[highByte]) return [domainByHighByte[highByte]];
+  const domain = domainByHighByte.get(highByte);
+  if (domain) return [domain];
   if (highByte >= 0x70 && highByte <= 0x7e) return ["vendor"];
   if (highByte === 0x7f) return ["legacy"];
   return [];
 }
 
-function assertErrorRanges(errors: ErrorDefinition[]): void {
+function assertErrorRanges(errors: ErrorDefinition[], domainByHighByte: DomainByHighByte): void {
   for (const error of errors) {
-    const allowed = allowedErrorCategories(error.code);
+    const allowed = allowedErrorCategories(error.code, domainByHighByte);
     if (allowed.length === 0) fail(error.name, "code", `error code must be in a registered error range`);
     if (!allowed.includes(error.category)) {
       fail(error.name, "category", `error category must be ${allowed.join(" / ")} for code ${hex(error.code)}`);
@@ -328,6 +307,8 @@ function assertCurrentTransportPolicy(model: ProtocolModel): void {
 }
 
 export function validateProtocolDefinition(model: ProtocolModel): string[] {
+  const domainByHighByte = buildProtocolDomainByHighByte(model);
+
   assertNoForbiddenKeys(model.raw);
   assertNoUnsupportedProfileKeys(model.raw);
   assertWireByteOrder(model);
@@ -351,7 +332,7 @@ export function validateProtocolDefinition(model: ProtocolModel): string[] {
   assertDomainIdAlignment(model.methods, model.events);
   assertSchemaDefinitions(model.schemas);
   assertEmptySchemaUsage(model);
-  assertErrorRanges(model.errors);
+  assertErrorRanges(model.errors, domainByHighByte);
   assertCurrentTransportPolicy(model);
 
   const typeNames = new Set(model.schemas.map((item) => item.name));

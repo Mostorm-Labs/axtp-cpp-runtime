@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import YAML from "yaml";
+import { buildSourceDomainByHighByte, type DomainByHighByte } from "./domainRegistry.js";
 import type { Capability, ErrorCode, Event, Field, Method, Schema } from "./models.js";
 import type { ProtocolModel, TypeDefinition, TypeField } from "./protocolModel.js";
 import { loadProtocolDefinitionFromRaw } from "./protocolLoader.js";
@@ -102,33 +103,11 @@ function eventToProtocol(event: Event, emptyNames: Set<string>): Record<string, 
   };
 }
 
-function errorCategory(code: number): string {
-  const domainByHighByte: Record<number, string> = {
-    0x01: "device",
-    0x02: "capability",
-    0x03: "system",
-    0x04: "firmware",
-    0x05: "stream",
-    0x06: "display",
-    0x07: "camera",
-    0x08: "video",
-    0x09: "audio",
-    0x0a: "input",
-    0x0b: "output",
-    0x0c: "room",
-    0x0d: "signage",
-    0x0e: "network",
-    0x0f: "storage",
-    0x10: "file",
-    0x11: "log",
-    0x12: "diagnostic",
-    0x13: "sensor",
-    0x14: "auth",
-    0x15: "privacy"
-  };
+function errorCategory(code: number, domainByHighByte: DomainByHighByte): string {
   if (code <= 0x00ff) return "common";
   const highByte = code >> 8;
-  if (domainByHighByte[highByte]) return domainByHighByte[highByte];
+  const domain = domainByHighByte.get(highByte);
+  if (domain) return domain;
   if (highByte >= 0x70 && highByte <= 0x7e) return "vendor";
   if (highByte === 0x7f) return "legacy";
   return "reserved";
@@ -139,11 +118,11 @@ function errorSeverity(error: ErrorCode): string {
   return error.retryable ? "warning" : "error";
 }
 
-function errorToProtocol(error: ErrorCode): Record<string, unknown> {
+function errorToProtocol(error: ErrorCode, domainByHighByte: DomainByHighByte): Record<string, unknown> {
   return {
     name: error.name,
     code: error.id,
-    category: error.category ?? error.domain ?? errorCategory(error.id),
+    category: error.category ?? error.domain ?? errorCategory(error.id, domainByHighByte),
     since: error.since ?? "1.0.0",
     status: protocolStatus(error.status),
     severity: error.severity ?? errorSeverity(error),
@@ -196,12 +175,13 @@ function defaultProfiles(source: ProtocolSourceModel): Array<Record<string, unkn
 
 export function buildProtocolDefinitionRaw(source: ProtocolSourceModel): Record<string, unknown> {
   const emptyNames = emptySchemaNames(source.schemas);
+  const domainByHighByte = buildSourceDomainByHighByte(source);
   return {
     ...source.protocolMeta,
     schemas: buildSchemas(source.schemas),
     methods: source.methods.map((method) => methodToProtocol(method, emptyNames)),
     events: source.events.map((event) => eventToProtocol(event, emptyNames)),
-    errors: source.errors.map(errorToProtocol),
+    errors: source.errors.map((error) => errorToProtocol(error, domainByHighByte)),
     capabilities: source.capabilities.map(capabilityToProtocol),
     profiles: [...defaultProfiles(source), ...source.profiles]
   };

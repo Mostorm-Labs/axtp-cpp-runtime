@@ -10,6 +10,15 @@ export interface RegistryItem {
   deprecated?: boolean;
 }
 
+export interface DomainRange {
+  highByte: number;
+  domain: string;
+  status: Status;
+  description?: string;
+  since?: string;
+  deprecated?: boolean;
+}
+
 export interface Method extends RegistryItem {
   bitOffset: number;
   rpcOp: string;
@@ -94,6 +103,7 @@ export interface SpecModel {
   rpcBodyEncodings: CommonRegistryItem[];
   rpcOps: CommonRegistryItem[];
   streamProfiles: CommonRegistryItem[];
+  domainRegistry: DomainRange[];
   methods: Method[];
   events: Event[];
   errors: ErrorCode[];

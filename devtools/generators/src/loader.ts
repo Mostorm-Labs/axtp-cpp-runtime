@@ -6,6 +6,7 @@ import { GeneratorError } from "./errors.js";
 import type {
   Capability,
   CommonRegistryItem,
+  DomainRange,
   ErrorCode,
   Event,
   Field,
@@ -73,6 +74,17 @@ function mapCommon(items: any[], file: string): CommonRegistryItem[] {
     name: String(item.name),
     domain: String(item.domain ?? "protocol"),
     status: item.status ?? "mvp",
+    description: item.description,
+    since: item.since,
+    deprecated: Boolean(item.deprecated)
+  }));
+}
+
+function mapDomainRanges(items: any[], file: string): DomainRange[] {
+  return items.map((item) => ({
+    highByte: normalizeId(item.high_byte ?? item.highByte, `${file}:${item.domain}`),
+    domain: String(item.domain),
+    status: item.status ?? "stable",
     description: item.description,
     since: item.since,
     deprecated: Boolean(item.deprecated)
@@ -208,6 +220,7 @@ export async function loadSpec(specRoot: string): Promise<SpecModel> {
     rpcBodyEncodingDoc,
     rpcOpDoc,
     streamProfileDoc,
+    domainRegistryDoc,
     methodDoc,
     eventDoc,
     errorDoc,
@@ -230,6 +243,7 @@ export async function loadSpec(specRoot: string): Promise<SpecModel> {
     loadYamlFile(path.join(registryDir, "core", "rpc_body_encoding.yaml")),
     loadYamlFile(path.join(registryDir, "core", "rpc_op.yaml")),
     loadOptionalYamlFile(path.join(registryDir, "core", "stream_profile.yaml")),
+    loadOptionalYamlFile(path.join(registryDir, "core", "domain_registry.yaml")),
     loadOptionalYamlFile(path.join(registryDir, "method", "method_registry.yaml")),
     loadOptionalYamlFile(path.join(registryDir, "event", "event_registry.yaml")),
     loadYamlFile(path.join(registryDir, "error", "error_code.yaml")),
@@ -257,6 +271,7 @@ export async function loadSpec(specRoot: string): Promise<SpecModel> {
     rpcBodyEncodings: mapCommon(asArray(rpcBodyEncodingDoc.rpc_body_encodings), "rpc_body_encoding.yaml"),
     rpcOps: mapCommon(asArray(rpcOpDoc.rpc_ops), "rpc_op.yaml"),
     streamProfiles: mapCommon(asArray(streamProfileDoc.stream_profiles), "stream_profile.yaml"),
+    domainRegistry: mapDomainRanges(asArray(domainRegistryDoc.domains), "domain_registry.yaml"),
     methods: asArray(methodDoc.methods).map((item) => mapMethod(item, "method_registry.yaml")),
     events: asArray(eventDoc.events).map((item) => mapEvent(item, "event_registry.yaml")),
     errors: asArray(errorDoc.errors).map((item) => mapErrorCode(item, "error_code.yaml")),
