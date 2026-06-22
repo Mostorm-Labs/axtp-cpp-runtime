@@ -1,6 +1,8 @@
 struct VideoSize {
     std::uint32_t width = 0;
     std::uint32_t height = 0;
+    std::uint32_t codedWidth = 0;
+    std::uint32_t codedHeight = 0;
 };
 
 class BitReader {
@@ -225,8 +227,10 @@ std::optional<VideoSize> parseSps(const Byte* nal, std::size_t size) {
         cropUnitY = 2U - frameMbsOnlyFlag;
     }
     VideoSize result;
-    result.width = (widthInMbsMinus1 + 1U) * 16U - (cropLeft + cropRight) * cropUnitX;
-    result.height = frameHeightInMbs * 16U - (cropTop + cropBottom) * cropUnitY;
+    result.codedWidth = (widthInMbsMinus1 + 1U) * 16U;
+    result.codedHeight = frameHeightInMbs * 16U;
+    result.width = result.codedWidth - (cropLeft + cropRight) * cropUnitX;
+    result.height = result.codedHeight - (cropTop + cropBottom) * cropUnitY;
     if (result.width == 0 || result.height == 0) {
         return std::nullopt;
     }
