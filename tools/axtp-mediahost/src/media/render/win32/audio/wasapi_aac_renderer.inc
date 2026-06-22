@@ -1,3 +1,348 @@
+std::uint32_t defaultChannelMask(const PcmFormat& format) {
+    if (format.channels == 1) {
+        return SPEAKER_FRONT_CENTER;
+    }
+    if (format.channels == 2) {
+        return SPEAKER_FRONT_LEFT | SPEAKER_FRONT_RIGHT;
+    }
+    return 0;
+}
+
+bool supportedPcmForRenderConversion(const PcmFormat& format) {
+    return format.sampleRate != 0 && format.channels != 0 && format.blockAlign != 0 &&
+           ((format.floatingPoint && format.bitsPerSample == 32) ||
+            (!format.floatingPoint &&
+             (format.bitsPerSample == 16 || format.bitsPerSample == 32))) &&
+           bytesPerSample(format) != 0;
+}
+
+HRESULT createPcmMediaType(const PcmFormat& format, IMFMediaType** mediaType) {
+    if (mediaType == nullptr) {
+        return E_POINTER;
+    }
+    *mediaType = nullptr;
+    if (!supportedPcmForRenderConversion(format)) {
+        return MF_E_INVALIDMEDIATYPE;
+    }
+
+    ComPtr<IMFMediaType> type;
+    HRESULT hr = MFCreateMediaType(&type);
+    if (FAILED(hr)) {
+        return hr;
+    }
+    type->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Audio);
+    type->SetGUID(MF_MT_SUBTYPE,
+                  format.floatingPoint ? MFAudioFormat_Float : MFAudioFormat_PCM);
+    type->SetUINT32(MF_MT_AUDIO_SAMPLES_PER_SECOND, format.sampleRate);
+    type->SetUINT32(MF_MT_AUDIO_NUM_CHANNELS, format.channels);
+    type->SetUINT32(MF_MT_AUDIO_BITS_PER_SAMPLE, format.bitsPerSample);
+    type->SetUINT32(MF_MT_AUDIO_BLOCK_ALIGNMENT, format.blockAlign);
+    type->SetUINT32(MF_MT_AUDIO_AVG_BYTES_PER_SECOND, format.sampleRate * format.blockAlign);
+    type->SetUINT32(MF_MT_ALL_SAMPLES_INDEPENDENT, TRUE);
+    if (const auto channelMask = defaultChannelMask(format); channelMask != 0) {
+        type->SetUINT32(MF_MT_AUDIO_CHANNEL_MASK, channelMask);
+    }
+
+    *mediaType = type.Detach();
+    return S_OK;
+}
+
+HRESULT createPcmSample(const Byte* data,
+                        std::size_t size,
+                        const PcmFormat& format,
+                        IMFSample** sample) {
+    if (sample == nullptr) {
+        return E_POINTER;
+    }
+    *sample = nullptr;
+    if (data == nullptr || size == 0 || size > 0xFFFFFFFFULL) {
+        return E_INVALIDARG;
+    }
+
+    ComPtr<IMFMediaBuffer> buffer;
+    HRESULT hr = MFCreateMemoryBuffer(static_cast<DWORD>(size), &buffer);
+    if (FAILED(hr)) {
+        return hr;
+    }
+    Byte* destination = nullptr;
+    DWORD maxLength = 0;
+    hr = buffer->Lock(&destination, &maxLength, nullptr);
+    if (FAILED(hr)) {
+        return hr;
+    }
+    if (size > maxLength) {
+        buffer->Unlock();
+        return E_UNEXPECTED;
+    }
+    std::memcpy(destination, data, size);
+    buffer->Unlock();
+    hr = buffer->SetCurrentLength(static_cast<DWORD>(size));
+    if (FAILED(hr)) {
+        return hr;
+    }
+
+    ComPtr<IMFSample> createdSample;
+    hr = MFCreateSample(&createdSample);
+    if (FAILED(hr)) {
+        return hr;
+    }
+    hr = createdSample->AddBuffer(buffer.Get());
+    if (FAILED(hr)) {
+        return hr;
+    }
+    if (format.blockAlign != 0 && format.sampleRate != 0) {
+        const auto frames = size / format.blockAlign;
+        const auto duration =
+            static_cast<LONGLONG>((frames * 10000000ULL) / format.sampleRate);
+        createdSample->SetSampleDuration(duration);
+    }
+
+    *sample = createdSample.Detach();
+    return S_OK;
+}
+
+HRESULT appendSampleBytes(IMFSample* sample, std::vector<Byte>& output) {
+    if (sample == nullptr) {
+        return E_POINTER;
+    }
+    ComPtr<IMFMediaBuffer> buffer;
+    HRESULT hr = sample->ConvertToContiguousBuffer(&buffer);
+    if (FAILED(hr)) {
+        return hr;
+    }
+    Byte* data = nullptr;
+    DWORD maxLength = 0;
+    DWORD currentLength = 0;
+    hr = buffer->Lock(&data, &maxLength, &currentLength);
+    if (FAILED(hr)) {
+        return hr;
+    }
+    const auto originalSize = output.size();
+    output.resize(originalSize + currentLength);
+    if (currentLength != 0) {
+        std::memcpy(output.data() + originalSize, data, currentLength);
+    }
+    buffer->Unlock();
+    return S_OK;
+}
+
+class PcmResampler {
+public:
+    bool initialize(const PcmFormat& inputFormat, const PcmFormat& outputFormat, LogFn log) {
+        reset();
+        if (!supportedPcmForRenderConversion(inputFormat) ||
+            !supportedPcmForRenderConversion(outputFormat)) {
+            logLine(log,
+                    "WASAPI resampler unsupported format source=" +
+                        describePcmFormat(inputFormat) +
+                        " mix=" + describePcmFormat(outputFormat));
+            return false;
+        }
+
+        ComPtr<IUnknown> unknown;
+        HRESULT hr = CoCreateInstance(
+            CLSID_CResamplerMediaObject, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&unknown));
+        if (failed(hr, log, "CoCreateInstance(CResamplerMediaObject)")) {
+            return false;
+        }
+        ComPtr<IWMResamplerProps> resamplerProps;
+        if (SUCCEEDED(unknown.As(&resamplerProps))) {
+            resamplerProps->SetHalfFilterLength(60);
+        }
+        hr = unknown.As(&_transform);
+        if (failed(hr, log, "Query IMFTransform(CResamplerMediaObject)")) {
+            return false;
+        }
+
+        ComPtr<IMFMediaType> inputType;
+        ComPtr<IMFMediaType> outputType;
+        hr = createPcmMediaType(inputFormat, &inputType);
+        if (failed(hr, log, "createPcmMediaType(resampler input)")) {
+            return false;
+        }
+        hr = createPcmMediaType(outputFormat, &outputType);
+        if (failed(hr, log, "createPcmMediaType(resampler output)")) {
+            return false;
+        }
+        hr = _transform->SetInputType(0, inputType.Get(), 0);
+        if (failed(hr, log, "IMFTransform::SetInputType(resampler)")) {
+            return false;
+        }
+        hr = _transform->SetOutputType(0, outputType.Get(), 0);
+        if (failed(hr, log, "IMFTransform::SetOutputType(resampler)")) {
+            return false;
+        }
+        hr = _transform->GetOutputStreamInfo(0, &_outputInfo);
+        if (failed(hr, log, "IMFTransform::GetOutputStreamInfo(resampler)")) {
+            return false;
+        }
+        _transform->ProcessMessage(MFT_MESSAGE_COMMAND_FLUSH, 0);
+        hr = _transform->ProcessMessage(MFT_MESSAGE_NOTIFY_BEGIN_STREAMING, 0);
+        if (failed(hr, log, "IMFTransform::BEGIN_STREAMING(resampler)")) {
+            return false;
+        }
+        hr = _transform->ProcessMessage(MFT_MESSAGE_NOTIFY_START_OF_STREAM, 0);
+        if (failed(hr, log, "IMFTransform::START_OF_STREAM(resampler)")) {
+            return false;
+        }
+
+        _inputFormat = inputFormat;
+        _outputFormat = outputFormat;
+        _valid = true;
+        logLine(log,
+                "WASAPI PCM resampler enabled source=" +
+                    describePcmFormat(inputFormat) +
+                    " mix=" + describePcmFormat(outputFormat));
+        return true;
+    }
+
+    void reset() {
+        _transform.Reset();
+        _outputInfo = {};
+        _inputFormat = {};
+        _outputFormat = {};
+        _valid = false;
+    }
+
+    bool matches(const PcmFormat& inputFormat, const PcmFormat& outputFormat) const {
+        return _valid && samePcmFormat(_inputFormat, inputFormat) &&
+               samePcmFormat(_outputFormat, outputFormat);
+    }
+
+    bool process(const Byte* data, std::size_t size, std::vector<Byte>& output, LogFn log) {
+        output.clear();
+        if (!_valid || _transform == nullptr || data == nullptr || size == 0) {
+            return false;
+        }
+
+        ComPtr<IMFSample> inputSample;
+        HRESULT hr = createPcmSample(data, size, _inputFormat, &inputSample);
+        if (failed(hr, log, "createPcmSample(resampler input)")) {
+            return false;
+        }
+        hr = _transform->ProcessInput(0, inputSample.Get(), 0);
+        if (hr == MF_E_NOTACCEPTING) {
+            if (!drain(output, log)) {
+                return false;
+            }
+            hr = _transform->ProcessInput(0, inputSample.Get(), 0);
+        }
+        if (failed(hr, log, "IMFTransform::ProcessInput(resampler)")) {
+            return false;
+        }
+        return drain(output, log);
+    }
+
+private:
+    bool drain(std::vector<Byte>& output, LogFn log) {
+        while (true) {
+            const DWORD estimatedBytes = std::max<DWORD>(
+                _outputFormat.blockAlign * 1024U,
+                ((_outputFormat.sampleRate * _outputFormat.blockAlign) / 10U +
+                 _outputFormat.blockAlign - 1U) /
+                    _outputFormat.blockAlign * _outputFormat.blockAlign);
+            const DWORD bufferBytes = std::max<DWORD>(_outputInfo.cbSize, estimatedBytes);
+
+            ComPtr<IMFMediaBuffer> outputBuffer;
+            HRESULT hr = MFCreateMemoryBuffer(bufferBytes, &outputBuffer);
+            if (failed(hr, log, "MFCreateMemoryBuffer(resampler output)")) {
+                return false;
+            }
+            ComPtr<IMFSample> outputSample;
+            hr = MFCreateSample(&outputSample);
+            if (failed(hr, log, "MFCreateSample(resampler output)")) {
+                return false;
+            }
+            outputSample->AddBuffer(outputBuffer.Get());
+
+            MFT_OUTPUT_DATA_BUFFER outputData = {};
+            outputData.dwStreamID = 0;
+            outputData.pSample = outputSample.Get();
+            DWORD status = 0;
+            hr = _transform->ProcessOutput(0, 1, &outputData, &status);
+            if (outputData.pEvents != nullptr) {
+                outputData.pEvents->Release();
+            }
+            if (hr == MF_E_TRANSFORM_NEED_MORE_INPUT) {
+                return true;
+            }
+            if (failed(hr, log, "IMFTransform::ProcessOutput(resampler)")) {
+                return false;
+            }
+            hr = appendSampleBytes(outputSample.Get(), output);
+            if (failed(hr, log, "appendSampleBytes(resampler output)")) {
+                return false;
+            }
+        }
+    }
+
+    ComPtr<IMFTransform> _transform;
+    MFT_OUTPUT_STREAM_INFO _outputInfo = {};
+    PcmFormat _inputFormat;
+    PcmFormat _outputFormat;
+    bool _valid = false;
+};
+
+class DefaultRenderDeviceNotifier final : public IMMNotificationClient {
+public:
+    explicit DefaultRenderDeviceNotifier(std::atomic_bool& changed) : _changed(changed) {}
+
+    HRESULT STDMETHODCALLTYPE QueryInterface(REFIID iid, void** object) override {
+        if (object == nullptr) {
+            return E_POINTER;
+        }
+        if (iid == __uuidof(IUnknown) || iid == __uuidof(IMMNotificationClient)) {
+            *object = static_cast<IMMNotificationClient*>(this);
+            AddRef();
+            return S_OK;
+        }
+        *object = nullptr;
+        return E_NOINTERFACE;
+    }
+
+    ULONG STDMETHODCALLTYPE AddRef() override {
+        return ++_refs;
+    }
+
+    ULONG STDMETHODCALLTYPE Release() override {
+        const auto refs = --_refs;
+        if (refs == 0) {
+            delete this;
+        }
+        return refs;
+    }
+
+    HRESULT STDMETHODCALLTYPE OnDefaultDeviceChanged(EDataFlow flow,
+                                                     ERole,
+                                                     LPCWSTR) override {
+        if (flow == eRender) {
+            _changed.store(true);
+        }
+        return S_OK;
+    }
+
+    HRESULT STDMETHODCALLTYPE OnDeviceStateChanged(LPCWSTR, DWORD) override {
+        return S_OK;
+    }
+
+    HRESULT STDMETHODCALLTYPE OnDeviceAdded(LPCWSTR) override {
+        return S_OK;
+    }
+
+    HRESULT STDMETHODCALLTYPE OnDeviceRemoved(LPCWSTR) override {
+        _changed.store(true);
+        return S_OK;
+    }
+
+    HRESULT STDMETHODCALLTYPE OnPropertyValueChanged(LPCWSTR, const PROPERTYKEY) override {
+        return S_OK;
+    }
+
+private:
+    std::atomic_ulong _refs{1};
+    std::atomic_bool& _changed;
+};
+
 class WasapiRenderer {
 public:
     explicit WasapiRenderer(LogFn log) : _log(std::move(log)) {}
@@ -7,9 +352,15 @@ public:
     }
 
     bool initialize() {
-        if (_audioClient != nullptr) {
+        if (_audioClient != nullptr && !_endpointChangeRequested.load()) {
             return true;
         }
+        if (_audioClient != nullptr) {
+            logLine(_log, "WASAPI default render endpoint changed; reopening audio client");
+            stopEndpoint();
+            _endpointChangeRequested.store(false);
+        }
+
         ComPtr<IMMDeviceEnumerator> enumerator;
         HRESULT hr = CoCreateInstance(
             __uuidof(MMDeviceEnumerator), nullptr, CLSCTX_ALL, IID_PPV_ARGS(&enumerator));
@@ -20,6 +371,12 @@ public:
         hr = enumerator->GetDefaultAudioEndpoint(eRender, eConsole, &device);
         if (failed(hr, _log, "GetDefaultAudioEndpoint(render)")) {
             return false;
+        }
+        std::wstring endpointId;
+        LPWSTR rawEndpointId = nullptr;
+        if (SUCCEEDED(device->GetId(&rawEndpointId)) && rawEndpointId != nullptr) {
+            endpointId = rawEndpointId;
+            CoTaskMemFree(rawEndpointId);
         }
         hr = device->Activate(__uuidof(IAudioClient),
                               CLSCTX_ALL,
@@ -58,6 +415,16 @@ public:
             << " blockAlign=" << _mixFormat->nBlockAlign
             << " format=" << describePcmFormat(_mixPcmFormat);
         logLine(_log, out.str());
+
+        _deviceEnumerator = enumerator;
+        _deviceNotifier.Attach(new DefaultRenderDeviceNotifier(_endpointChangeRequested));
+        hr = _deviceEnumerator->RegisterEndpointNotificationCallback(_deviceNotifier.Get());
+        if (FAILED(hr)) {
+            logLine(_log, "WASAPI endpoint notification registration failed: " + hresultToString(hr));
+            _deviceNotifier.Reset();
+            _deviceEnumerator.Reset();
+        }
+        _endpointId = std::move(endpointId);
         return true;
     }
 
@@ -73,6 +440,134 @@ public:
     }
 
     void stop() {
+        stopEndpoint();
+        _endpointChangeRequested.store(false);
+    }
+
+    void writePcmConverted(const Byte* data, std::size_t size, const PcmFormat& sourceFormat) {
+        if (data == nullptr || size == 0) {
+            return;
+        }
+        if (!initialize() || !_mixPcmFormatValid) {
+            return;
+        }
+        if (samePcmFormat(sourceFormat, _mixPcmFormat)) {
+            writePcm(data, size);
+            return;
+        }
+        if (!supportedPcmForRenderConversion(sourceFormat) ||
+            !supportedPcmForRenderConversion(_mixPcmFormat)) {
+            if (!_formatMismatchLogged) {
+                _formatMismatchLogged = true;
+                logLine(_log,
+                        "WASAPI PCM conversion unsupported source=" +
+                            describePcmFormat(sourceFormat) +
+                            " mix=" + describePcmFormat(_mixPcmFormat));
+            }
+            return;
+        }
+
+        std::vector<Byte> converted;
+        if (!_resampler.matches(sourceFormat, _mixPcmFormat) &&
+            !_resampler.initialize(sourceFormat, _mixPcmFormat, _log)) {
+            manualConvertAndWrite(data, size, sourceFormat);
+            return;
+        }
+        if (!_resampler.process(data, size, converted, _log)) {
+            if (!_resamplerProcessFailureLogged) {
+                _resamplerProcessFailureLogged = true;
+                logLine(_log,
+                        "WASAPI PCM resampler failed during processing source=" +
+                            describePcmFormat(sourceFormat) +
+                            " mix=" + describePcmFormat(_mixPcmFormat));
+            }
+            _resampler.reset();
+            manualConvertAndWrite(data, size, sourceFormat);
+            return;
+        }
+        _resamplerProcessFailureLogged = false;
+        if (!converted.empty()) {
+            writePcm(converted.data(), converted.size());
+        }
+    }
+
+    void writePcm(const Byte* data, std::size_t size) {
+        if (_endpointChangeRequested.load()) {
+            initialize();
+        }
+        if (_audioClient == nullptr || _renderClient == nullptr || _mixFormat == nullptr ||
+            size == 0) {
+            return;
+        }
+        const auto blockAlign = _mixFormat->nBlockAlign;
+        if (blockAlign == 0) {
+            return;
+        }
+        UINT32 frames = static_cast<UINT32>(size / blockAlign);
+        if (frames == 0) {
+            return;
+        }
+        UINT32 padding = 0;
+        HRESULT hr = _audioClient->GetCurrentPadding(&padding);
+        if (FAILED(hr)) {
+            logLine(_log, "WASAPI GetCurrentPadding failed: " + hresultToString(hr));
+            requestEndpointReopenIfNeeded(hr);
+            return;
+        }
+        const UINT32 available = _bufferFrames > padding ? _bufferFrames - padding : 0;
+        if (available == 0) {
+            logLine(_log, "WASAPI render buffer full; dropping PCM chunk");
+            return;
+        }
+        if (frames > available) {
+            frames = available;
+        }
+        BYTE* output = nullptr;
+        hr = _renderClient->GetBuffer(frames, &output);
+        if (FAILED(hr)) {
+            logLine(_log, "WASAPI GetBuffer failed: " + hresultToString(hr));
+            requestEndpointReopenIfNeeded(hr);
+            return;
+        }
+        const auto bytesToWrite = static_cast<std::size_t>(frames) * blockAlign;
+        if (_muted.load()) {
+            std::memset(output, 0, bytesToWrite);
+        } else {
+            std::memcpy(output, data, bytesToWrite);
+        }
+        hr = _renderClient->ReleaseBuffer(frames, 0);
+        if (FAILED(hr)) {
+            logLine(_log, "WASAPI ReleaseBuffer failed: " + hresultToString(hr));
+            requestEndpointReopenIfNeeded(hr);
+            return;
+        }
+        if (!_started) {
+            hr = _audioClient->Start();
+            if (FAILED(hr)) {
+                logLine(_log, "WASAPI start failed: " + hresultToString(hr));
+                requestEndpointReopenIfNeeded(hr);
+                return;
+            }
+            _started = true;
+            logLine(_log, "WASAPI start");
+        }
+    }
+
+private:
+    struct WaveFormatDeleter {
+        void operator()(WAVEFORMATEX* value) const {
+            if (value != nullptr) {
+                CoTaskMemFree(value);
+            }
+        }
+    };
+
+    void stopEndpoint() {
+        if (_deviceEnumerator != nullptr && _deviceNotifier != nullptr) {
+            _deviceEnumerator->UnregisterEndpointNotificationCallback(_deviceNotifier.Get());
+        }
+        _deviceNotifier.Reset();
+        _deviceEnumerator.Reset();
         if (_audioClient != nullptr && _started) {
             _audioClient->Stop();
         }
@@ -82,33 +577,23 @@ public:
         _mixFormat.reset();
         _mixPcmFormat = {};
         _mixPcmFormatValid = false;
+        _endpointId.clear();
+        _resampler.reset();
         _conversionLogged = false;
         _formatMismatchLogged = false;
+        _resamplerProcessFailureLogged = false;
         _bufferFrames = 0;
     }
 
-    void writePcmConverted(const Byte* data, std::size_t size, const PcmFormat& sourceFormat) {
-        if (!_mixPcmFormatValid || data == nullptr || size == 0) {
-            return;
-        }
-        if (samePcmFormat(sourceFormat, _mixPcmFormat)) {
-            writePcm(data, size);
-            return;
-        }
+    void manualConvertAndWrite(const Byte* data, std::size_t size, const PcmFormat& sourceFormat) {
         const auto inputBytesPerSample = bytesPerSample(sourceFormat);
         const auto outputBytesPerSample = bytesPerSample(_mixPcmFormat);
-        const bool supportedInput =
-            (sourceFormat.floatingPoint && sourceFormat.bitsPerSample == 32) ||
-            (!sourceFormat.floatingPoint &&
-             (sourceFormat.bitsPerSample == 16 || sourceFormat.bitsPerSample == 32));
-        const bool supportedOutput =
-            (_mixPcmFormat.floatingPoint && _mixPcmFormat.bitsPerSample == 32) ||
-            (!_mixPcmFormat.floatingPoint &&
-             (_mixPcmFormat.bitsPerSample == 16 || _mixPcmFormat.bitsPerSample == 32));
-        if (sourceFormat.sampleRate != _mixPcmFormat.sampleRate || sourceFormat.channels == 0 ||
-            _mixPcmFormat.channels == 0 || sourceFormat.blockAlign == 0 ||
-            _mixPcmFormat.blockAlign == 0 || inputBytesPerSample == 0 ||
-            outputBytesPerSample == 0 || !supportedInput || !supportedOutput) {
+        if (sourceFormat.sampleRate != _mixPcmFormat.sampleRate ||
+            sourceFormat.channels == 0 || _mixPcmFormat.channels == 0 ||
+            sourceFormat.blockAlign == 0 || _mixPcmFormat.blockAlign == 0 ||
+            inputBytesPerSample == 0 || outputBytesPerSample == 0 ||
+            !supportedPcmForRenderConversion(sourceFormat) ||
+            !supportedPcmForRenderConversion(_mixPcmFormat)) {
             if (!_formatMismatchLogged) {
                 _formatMismatchLogged = true;
                 logLine(_log,
@@ -156,79 +641,31 @@ public:
         writePcm(converted.data(), converted.size());
     }
 
-    void writePcm(const Byte* data, std::size_t size) {
-        if (_audioClient == nullptr || _renderClient == nullptr || _mixFormat == nullptr ||
-            size == 0) {
-            return;
-        }
-        const auto blockAlign = _mixFormat->nBlockAlign;
-        if (blockAlign == 0) {
-            return;
-        }
-        UINT32 frames = static_cast<UINT32>(size / blockAlign);
-        if (frames == 0) {
-            return;
-        }
-        UINT32 padding = 0;
-        HRESULT hr = _audioClient->GetCurrentPadding(&padding);
-        if (FAILED(hr)) {
-            logLine(_log, "WASAPI GetCurrentPadding failed: " + hresultToString(hr));
-            return;
-        }
-        const UINT32 available = _bufferFrames > padding ? _bufferFrames - padding : 0;
-        if (available == 0) {
-            logLine(_log, "WASAPI render buffer full; dropping PCM chunk");
-            return;
-        }
-        if (frames > available) {
-            frames = available;
-        }
-        BYTE* output = nullptr;
-        hr = _renderClient->GetBuffer(frames, &output);
-        if (FAILED(hr)) {
-            logLine(_log, "WASAPI GetBuffer failed: " + hresultToString(hr));
-            return;
-        }
-        const auto bytesToWrite = static_cast<std::size_t>(frames) * blockAlign;
-        if (_muted.load()) {
-            std::memset(output, 0, bytesToWrite);
-        } else {
-            std::memcpy(output, data, bytesToWrite);
-        }
-        hr = _renderClient->ReleaseBuffer(frames, 0);
-        if (FAILED(hr)) {
-            logLine(_log, "WASAPI ReleaseBuffer failed: " + hresultToString(hr));
-            return;
-        }
-        if (!_started) {
-            hr = _audioClient->Start();
-            if (FAILED(hr)) {
-                logLine(_log, "WASAPI start failed: " + hresultToString(hr));
-                return;
-            }
-            _started = true;
-            logLine(_log, "WASAPI start");
+    void requestEndpointReopenIfNeeded(HRESULT hr) {
+        if (hr == AUDCLNT_E_DEVICE_INVALIDATED || hr == AUDCLNT_E_SERVICE_NOT_RUNNING
+#ifdef AUDCLNT_E_RESOURCES_INVALIDATED
+            || hr == AUDCLNT_E_RESOURCES_INVALIDATED
+#endif
+        ) {
+            _endpointChangeRequested.store(true);
         }
     }
 
-private:
-    struct WaveFormatDeleter {
-        void operator()(WAVEFORMATEX* value) const {
-            if (value != nullptr) {
-                CoTaskMemFree(value);
-            }
-        }
-    };
-
     LogFn _log;
     std::atomic_bool _muted{false};
+    std::atomic_bool _endpointChangeRequested{false};
     bool _started = false;
     UINT32 _bufferFrames = 0;
+    std::wstring _endpointId;
     std::unique_ptr<WAVEFORMATEX, WaveFormatDeleter> _mixFormat;
     PcmFormat _mixPcmFormat;
     bool _mixPcmFormatValid = false;
     bool _conversionLogged = false;
     bool _formatMismatchLogged = false;
+    bool _resamplerProcessFailureLogged = false;
+    PcmResampler _resampler;
+    ComPtr<IMMDeviceEnumerator> _deviceEnumerator;
+    ComPtr<DefaultRenderDeviceNotifier> _deviceNotifier;
     ComPtr<IAudioClient> _audioClient;
     ComPtr<IAudioRenderClient> _renderClient;
 };

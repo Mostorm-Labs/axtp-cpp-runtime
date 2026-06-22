@@ -49,6 +49,10 @@ public:
         return _stopCastingRequested.exchange(false);
     }
 
+    bool consumeOpenStreamsRequested() {
+        return _openStreamsRequested.exchange(false);
+    }
+
     void stop() {
         _running.store(false);
         HWND hwnd = nullptr;
@@ -67,6 +71,7 @@ public:
         _assembler.reset();
         _hasPresentedVideo.store(false);
         _stopCastingRequested.store(false);
+        _openStreamsRequested.store(false);
         _mainHwnd = nullptr;
         _videoHwnd = nullptr;
         _windowReady = false;
@@ -285,6 +290,13 @@ private:
         setStatusText("Stopping current casting streams...");
     }
 
+    void requestOpenStreams() {
+        if (!_openStreamsRequested.exchange(true)) {
+            logLine(_log, "renderer UI: open media streams requested");
+        }
+        setStatusText("Opening media streams...");
+    }
+
     void toggleMuteFromUi() {
         bool muted = !_muted.load();
         if (_toggleMuted) {
@@ -347,6 +359,9 @@ private:
         case WM_COMMAND:
             if (HIWORD(wParam) == BN_CLICKED) {
                 switch (LOWORD(wParam)) {
+                case kOverlayButtonOpenStreams:
+                    self->requestOpenStreams();
+                    return 0;
                 case kOverlayButtonMute:
                     self->toggleMuteFromUi();
                     return 0;
@@ -670,6 +685,7 @@ private:
     std::atomic_bool _running{false};
     std::atomic_bool _hasPresentedVideo{false};
     std::atomic_bool _stopCastingRequested{false};
+    std::atomic_bool _openStreamsRequested{false};
     std::atomic_bool _muted{false};
     std::thread _thread;
     mutable std::mutex _mutex;

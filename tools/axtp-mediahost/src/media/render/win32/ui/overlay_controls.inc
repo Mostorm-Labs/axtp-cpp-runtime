@@ -9,12 +9,14 @@ RECT buttonRectForIndex(const RECT& client, int index) {
 
 RECT buttonRectForCommand(const RECT& client, int commandId) {
     switch (commandId) {
-    case kOverlayButtonMute:
+    case kOverlayButtonOpenStreams:
         return buttonRectForIndex(client, 0);
-    case kOverlayButtonMaxRestore:
+    case kOverlayButtonMute:
         return buttonRectForIndex(client, 1);
-    case kOverlayButtonStop:
+    case kOverlayButtonMaxRestore:
         return buttonRectForIndex(client, 2);
+    case kOverlayButtonStop:
+        return buttonRectForIndex(client, 3);
     default:
         return RECT{};
     }
@@ -22,6 +24,7 @@ RECT buttonRectForCommand(const RECT& client, int commandId) {
 
 int commandForPoint(const RECT& client, POINT point) {
     constexpr int kCommands[] = {
+        kOverlayButtonOpenStreams,
         kOverlayButtonMute,
         kOverlayButtonMaxRestore,
         kOverlayButtonStop,
@@ -44,6 +47,7 @@ void updateOverlayRegion(HWND hwnd, int width, int height) {
     client.right = width;
     client.bottom = height;
     constexpr int kCommands[] = {
+        kOverlayButtonOpenStreams,
         kOverlayButtonMute,
         kOverlayButtonMaxRestore,
         kOverlayButtonStop,
@@ -157,6 +161,23 @@ void drawStopIcon(HDC dc, const RECT& rect) {
     SelectObject(dc, oldBrush);
 }
 
+void drawOpenStreamsIcon(HDC dc, const RECT& rect) {
+    const int cx = (rect.left + rect.right) / 2;
+    const int cy = (rect.top + rect.bottom) / 2;
+    ScopedGdiObject greenBrush(CreateSolidBrush(RGB(87, 214, 132)));
+    ScopedGdiObject greenPen(CreatePen(PS_SOLID, 3, RGB(87, 214, 132)));
+    const auto oldBrush = SelectObject(dc, greenBrush.object);
+    const auto oldPen = SelectObject(dc, greenPen.object);
+    POINT triangle[] = {
+        {cx - 10, cy - 18},
+        {cx - 10, cy + 18},
+        {cx + 18, cy},
+    };
+    Polygon(dc, triangle, static_cast<int>(std::size(triangle)));
+    SelectObject(dc, oldPen);
+    SelectObject(dc, oldBrush);
+}
+
 class OverlayControls {
 public:
     bool create(HWND parent, HINSTANCE instance) {
@@ -197,7 +218,7 @@ public:
         constexpr int kOverlayPadding = 12;
         constexpr int kRightMargin = 18;
         const int width = kButtonSize + kOverlayPadding * 2;
-        const int height = kButtonSize * 3 + kButtonGap * 2 + kOverlayPadding * 2;
+        const int height = kButtonSize * 4 + kButtonGap * 3 + kOverlayPadding * 2;
         const int parentWidth = parentClient.right - parentClient.left;
         const int parentHeight = parentClient.bottom - parentClient.top;
         const int x = std::max(0, parentWidth - width - kRightMargin);
@@ -303,6 +324,7 @@ private:
         RECT client{};
         GetClientRect(hwnd, &client);
         constexpr int kCommands[] = {
+            kOverlayButtonOpenStreams,
             kOverlayButtonMute,
             kOverlayButtonMaxRestore,
             kOverlayButtonStop,
@@ -312,6 +334,9 @@ private:
             const bool danger = command == kOverlayButtonStop;
             drawButtonShell(dc, rect, _hoverCommand == command, _pressedCommand == command, danger);
             switch (command) {
+            case kOverlayButtonOpenStreams:
+                drawOpenStreamsIcon(dc, rect);
+                break;
             case kOverlayButtonMute:
                 drawVolumeIcon(dc, rect, _muted);
                 break;
