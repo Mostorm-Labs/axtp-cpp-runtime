@@ -1,4 +1,5 @@
 import { GeneratorError } from "./errors.js";
+import { buildSourceDomainByHighByte, type DomainByHighByte } from "./domainRegistry.js";
 import type { Capability, ErrorCode, Event, Method, Schema, SpecModel } from "./models.js";
 import { hex } from "./util.js";
 
@@ -109,40 +110,17 @@ function assertDomainBitOffsets<T extends { name: string; domain: string; bitOff
   }
 }
 
-const domainByHighByte: Record<number, string> = {
-  0x01: "device",
-  0x02: "capability",
-  0x03: "system",
-  0x04: "firmware",
-  0x05: "stream",
-  0x06: "display",
-  0x07: "camera",
-  0x08: "video",
-  0x09: "audio",
-  0x0a: "input",
-  0x0b: "output",
-  0x0c: "room",
-  0x0d: "signage",
-  0x0e: "network",
-  0x0f: "storage",
-  0x10: "file",
-  0x11: "log",
-  0x12: "diagnostic",
-  0x13: "sensor",
-  0x14: "auth",
-  0x15: "privacy"
-};
-
 function assertRegistryDomainRanges<T extends { id: number; name: string; domain: string }>(
   items: T[],
   label: string,
   file: string,
-  zeroByteDomains: string[]
+  zeroByteDomains: string[],
+  domainByHighByte: DomainByHighByte
 ): void {
   const zeroByte = new Set(zeroByteDomains);
   for (const item of items) {
     const highByte = item.id >> 8;
-    const expected = domainByHighByte[highByte];
+    const expected = domainByHighByte.get(highByte);
     if (expected) {
       if (item.domain !== expected) {
         throw new GeneratorError({
@@ -297,20 +275,22 @@ function assertLegacyMappings(spec: SpecModel): void {
 }
 
 export function validateSpec(spec: SpecModel): string[] {
+  const domainByHighByte = buildSourceDomainByHighByte(spec);
+
   assertUniqueIds(spec.methods, "methodId", "method_registry.yaml");
   assertUniqueNames(spec.methods, "method", "method_registry.yaml");
   assertUniqueIds(spec.events, "eventId", "event_registry.yaml");
   assertUniqueNames(spec.events, "event", "event_registry.yaml");
-  assertRegistryDomainRanges(spec.methods, "methodId", "method_registry.yaml", []);
-  assertRegistryDomainRanges(spec.events, "eventId", "event_registry.yaml", []);
+  assertRegistryDomainRanges(spec.methods, "methodId", "method_registry.yaml", [], domainByHighByte);
+  assertRegistryDomainRanges(spec.events, "eventId", "event_registry.yaml", [], domainByHighByte);
   assertDomainBitOffsets(spec.methods, "method", "method_registry.yaml");
   assertDomainBitOffsets(spec.events, "event", "event_registry.yaml");
   assertUniqueIds(spec.errors, "errorCode", "error_code.yaml");
   assertUniqueNames(spec.errors, "error", "error_code.yaml");
   assertUniqueIds(spec.capabilities, "capabilityId", "capability_registry.yaml");
   assertUniqueNames(spec.capabilities, "capability", "capability_registry.yaml");
-  assertRegistryDomainRanges(spec.errors, "errorCode", "error_code.yaml", ["common", "frame", "control", "rpc"]);
-  assertRegistryDomainRanges(spec.capabilities, "capabilityId", "capability_registry.yaml", ["protocol", "common", "reserved"]);
+  assertRegistryDomainRanges(spec.errors, "errorCode", "error_code.yaml", ["common", "frame", "control", "rpc"], domainByHighByte);
+  assertRegistryDomainRanges(spec.capabilities, "capabilityId", "capability_registry.yaml", ["protocol", "common", "reserved"], domainByHighByte);
   assertUniqueNames(spec.schemas, "schema", "schema/*.yaml");
 
   for (const schema of spec.schemas) assertSchemaFields(schema);
