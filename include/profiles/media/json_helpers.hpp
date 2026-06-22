@@ -9,8 +9,8 @@
 #include <nlohmann/json.hpp>
 
 #include "axtp_core.hpp"
-#include "media/model/format.hpp"
-#include "media/model/media_types.hpp"
+#include "profiles/media/format.hpp"
+#include "profiles/media/media_types.hpp"
 
 namespace axtp::mediahost {
 

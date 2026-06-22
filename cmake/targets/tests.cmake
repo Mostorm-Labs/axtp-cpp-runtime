@@ -101,20 +101,28 @@ if(TARGET axtpctl)
     set_tests_properties(axtpctl_invalid_usage_page PROPERTIES WILL_FAIL TRUE)
 endif()
 
-if(TARGET axtp_mediahost_protocol)
-    add_executable(axtp_mediahost_protocol_test
-        ${AXTP_CPP_RUNTIME_ROOT}/tests/tools/axtp-mediahost/mediahost_protocol_test.cpp
+if(TARGET axtp_stream)
+    add_executable(axtp_stream_test
+        ${AXTP_CPP_RUNTIME_ROOT}/tests/stream/stream_test.cpp
     )
 
-    target_include_directories(axtp_mediahost_protocol_test PRIVATE
-        ${AXTP_CPP_RUNTIME_ROOT}/tools/axtp-mediahost/src
+    target_link_libraries(axtp_stream_test PRIVATE
+        axtp_stream
     )
 
-    target_link_libraries(axtp_mediahost_protocol_test PRIVATE
-        axtp_mediahost_protocol
+    add_test(NAME axtp_stream_test COMMAND axtp_stream_test)
+endif()
+
+if(TARGET axtp_media_profile)
+    add_executable(axtp_media_profile_test
+        ${AXTP_CPP_RUNTIME_ROOT}/tests/profiles/media_profile_test.cpp
     )
 
-    add_test(NAME axtp_mediahost_protocol_test COMMAND axtp_mediahost_protocol_test)
+    target_link_libraries(axtp_media_profile_test PRIVATE
+        axtp_media_profile
+    )
+
+    add_test(NAME axtp_media_profile_test COMMAND axtp_media_profile_test)
 endif()
 
 if(TARGET axtp-mediahost)

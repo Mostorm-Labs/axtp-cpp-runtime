@@ -9,7 +9,7 @@
 #include "core/protocol/wire/inbound_processor.hpp"
 #include "core/protocol/wire/outbound_processor.hpp"
 #include "core/support/io/byte_writer_sink.hpp"
-#include "media/protocol/media_host.hpp"
+#include "profiles/media/media_host.hpp"
 #include "core/runtime/testing/mock_transport.hpp"
 
 namespace {

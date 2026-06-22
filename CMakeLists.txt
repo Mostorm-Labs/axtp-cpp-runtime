@@ -59,6 +59,8 @@ if(AXTP_CPP_RUNTIME_BUILD_TESTS)
 endif()
 
 include(cmake/targets/core.cmake)
+include(cmake/targets/stream.cmake)
+include(cmake/targets/media_profile.cmake)
 
 set(AXTP_CPP_RUNTIME_NEEDS_SDK ${AXTP_CPP_RUNTIME_BUILD_SDK})
 if(AXTP_CPP_RUNTIME_BUILD_TESTS OR
@@ -85,7 +87,7 @@ if(AXTP_CPP_RUNTIME_BUILD_TESTS OR AXTP_CPP_RUNTIME_BUILD_TOOLS)
     include(cmake/targets/axtpctl.cmake)
 endif()
 
-if(AXTP_CPP_RUNTIME_BUILD_TESTS OR AXTP_CPP_RUNTIME_BUILD_MEDIAHOST)
+if(AXTP_CPP_RUNTIME_BUILD_MEDIAHOST)
     include(cmake/targets/mediahost.cmake)
 endif()
 
@@ -109,6 +111,8 @@ if(AXTP_CPP_RUNTIME_ENABLE_INSTALL)
         axtp_core
         axtp_broker
         axtp_runtime
+        axtp_stream
+        axtp_media_profile
         axtp_transport_tcp_native
     )
     if(TARGET axtp_sdk)
