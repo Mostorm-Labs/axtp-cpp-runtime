@@ -9,31 +9,44 @@
 
 #include <nlohmann/json.hpp>
 
-#include "media/protocol/media_stream_registry.hpp"
+#include "stream/stream_registry.hpp"
+#include "core/protocol/generated/registry_lookup.h"
 
-namespace axtp::mediahost {
+namespace axtp::stream {
 
-class MediaCloseCoordinator {
+struct StreamCloseRequest {
+    std::uint16_t methodId = 0;
+    std::string methodName;
+    std::uint32_t streamId = 0;
+    std::string source;
+};
+
+inline const char* streamErrorName(ErrorCode code) {
+    const auto* descriptor = RegistryLookup::errorByCode(code);
+    return descriptor != nullptr ? descriptor->name : "UNKNOWN_ERROR";
+}
+
+class StreamCloseCoordinator {
 public:
-    MediaCloseCoordinator(std::string sid,
-                          std::chrono::milliseconds requestTimeout,
-                          LogFn log = {})
+    StreamCloseCoordinator(std::string sid,
+                           std::chrono::milliseconds requestTimeout,
+                           LogFn log = {})
         : _sid(std::move(sid)), _requestTimeout(requestTimeout), _log(std::move(log)) {}
 
     void setSid(std::string sid) {
         _sid = std::move(sid);
     }
 
-    template <typename Endpoint> void sendClose(Endpoint& endpoint, const ActiveMediaStream& stream) {
+    template <typename Endpoint> void sendClose(Endpoint& endpoint, const StreamCloseRequest& close) {
         if (_sid.empty()) {
             logLine("closeStream skipped: session sid is empty");
             return;
         }
-        if (stream.streamId == 0) {
+        if (close.streamId == 0 || close.methodId == 0 || close.methodName.empty()) {
             return;
         }
 
-        const auto params = closeParamsFor(stream.streamId);
+        const auto params = closeParamsFor(close.streamId);
         const auto paramsText = params.dump();
 
         RpcPayload request;
@@ -43,26 +56,26 @@ public:
         if (_nextRequestId == 0) {
             _nextRequestId = 0x40000000U;
         }
-        request.methodOrEventId = methodIdFor(stream.kind);
+        request.methodOrEventId = close.methodId;
         request.statusCode = ErrorCode::Success;
         request.bodyEncoding = RpcBodyEncoding::None;
         request.meta.sourceProtocol = SourceProtocol::JsonRpc;
         request.meta.jsonSid = _sid;
-        request.meta.jsonMethodOrEventName = methodNameFor(stream.kind);
+        request.meta.jsonMethodOrEventName = close.methodName;
         request.body.assign(paramsText.begin(), paramsText.end());
 
         PendingClose pending;
-        pending.kind = stream.kind;
-        pending.streamId = stream.streamId;
-        pending.source = stream.source;
+        pending.methodName = close.methodName;
+        pending.streamId = close.streamId;
+        pending.source = close.source;
         pending.requestId = request.requestId;
         pending.sentAt = std::chrono::steady_clock::now();
         _pending.emplace(pending.requestId, pending);
 
         logLine("closeStream send: requestId=" + std::to_string(pending.requestId) +
-                " method=" + methodNameFor(stream.kind) +
-                " streamId=" + toHexU32(stream.streamId) +
-                (stream.source.empty() ? "" : " source=" + stream.source) +
+                " method=" + close.methodName +
+                " streamId=" + toHexU32(close.streamId) +
+                (close.source.empty() ? "" : " source=" + close.source) +
                 " payload=" + paramsText);
         endpoint.sendRpcRequest(std::move(request));
     }
@@ -75,16 +88,16 @@ public:
             if (auto response = endpoint.tryTakeRpcResponse(pending.requestId)) {
                 const auto bodyText = std::string(response->body.begin(), response->body.end());
                 logLine("closeStream response: requestId=" + std::to_string(pending.requestId) +
-                        " method=" + methodNameFor(pending.kind) +
+                        " method=" + pending.methodName +
                         " streamId=" + toHexU32(pending.streamId) +
-                        " status=" + errorName(response->statusCode) +
+                        " status=" + streamErrorName(response->statusCode) +
                         (bodyText.empty() ? "" : " body=" + bodyText));
                 eraseIds.push_back(entry.first);
                 continue;
             }
             if (now - pending.sentAt >= _requestTimeout) {
                 logLine("closeStream timeout: requestId=" + std::to_string(pending.requestId) +
-                        " method=" + methodNameFor(pending.kind) +
+                        " method=" + pending.methodName +
                         " streamId=" + toHexU32(pending.streamId));
                 eraseIds.push_back(entry.first);
             }
@@ -104,21 +117,12 @@ public:
 
 private:
     struct PendingClose {
-        MediaKind kind = MediaKind::Video;
+        std::string methodName;
         std::uint32_t streamId = 0;
         std::string source;
         std::uint32_t requestId = 0;
         std::chrono::steady_clock::time_point sentAt{};
     };
-
-    static std::uint16_t methodIdFor(MediaKind kind) {
-        return static_cast<std::uint16_t>(kind == MediaKind::Video ? MethodId::VideoCloseStream
-                                                                   : MethodId::AudioCloseStream);
-    }
-
-    static const char* methodNameFor(MediaKind kind) {
-        return kind == MediaKind::Video ? "video.closeStream" : "audio.closeStream";
-    }
 
     void logLine(const std::string& line) const {
         if (_log) {
@@ -133,4 +137,4 @@ private:
     std::uint32_t _nextRequestId = 0x40000000U;
 };
 
-} // namespace axtp::mediahost
+} // namespace axtp::stream

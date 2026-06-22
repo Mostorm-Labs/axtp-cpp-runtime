@@ -13,7 +13,7 @@
 
 #include <nlohmann/json.hpp>
 
-#include "media/protocol/media_stream_registry.hpp"
+#include "profiles/media/media_stream_registry.hpp"
 
 namespace axtp::mediahost {
 

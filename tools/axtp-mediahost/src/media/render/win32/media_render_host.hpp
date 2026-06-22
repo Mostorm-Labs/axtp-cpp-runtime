@@ -6,7 +6,7 @@
 #include <string>
 #include <string_view>
 
-#include "media/model/media_types.hpp"
+#include "profiles/media/media_types.hpp"
 
 namespace axtp::mediahost {
 

@@ -1,4 +1,4 @@
-#include "media/protocol/media_host.hpp"
+#include "profiles/media/media_host.hpp"
 
 #ifndef NOMINMAX
 #define NOMINMAX

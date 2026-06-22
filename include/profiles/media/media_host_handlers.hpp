@@ -1,6 +1,6 @@
 #pragma once
 
-#include "media/protocol/media_stream_registry.hpp"
+#include "profiles/media/media_stream_registry.hpp"
 #include "core/runtime/broker/basic_broker.hpp"
 
 namespace axtp::mediahost {

@@ -3,6 +3,10 @@
 #include <cstdint>
 #include "core/protocol/generated/axtp_ids_generated.h"
 
+#ifdef ERROR
+#undef ERROR
+#endif
+
 namespace axtp {
 
 class TlvWriter;

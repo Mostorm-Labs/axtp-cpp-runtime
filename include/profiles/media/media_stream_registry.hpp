@@ -1,28 +1,28 @@
 #pragma once
 
-#include <cstddef>
+#include <cstdint>
 #include <exception>
-#include <filesystem>
-#include <fstream>
-#include <map>
 #include <mutex>
+#include <optional>
 #include <string>
 #include <string_view>
-#include <system_error>
 #include <utility>
 #include <vector>
 
 #include <nlohmann/json.hpp>
 
-#include "media/model/media_types.hpp"
-#include "media/protocol/json_helpers.hpp"
+#include "profiles/media/json_helpers.hpp"
+#include "profiles/media/media_types.hpp"
+#include "stream/stream_registry.hpp"
 
 namespace axtp::mediahost {
 
-class MediaStreamRegistry {
+class MediaStreamRegistry : private axtp::stream::IStreamSink {
 public:
     explicit MediaStreamRegistry(MediaHostOptions options = {}, LogFn log = {})
-        : _options(std::move(options)), _log(std::move(log)) {}
+        : _options(std::move(options)),
+          _log(std::move(log)),
+          _streams(axtp::stream::StreamCoreOptions{_options.dumpDir, this}, _log) {}
 
     OpenMode openMode() const {
         return _options.openMode;
@@ -60,18 +60,11 @@ public:
     }
 
     static bool shouldLogChunkCount(std::uint64_t count) {
-        return count <= 50 || (count % 100) == 0;
+        return axtp::stream::StreamRegistry::shouldLogChunkCount(count);
     }
 
     bool hasOpenStream(MediaKind kind, std::string_view source) const {
-        std::lock_guard<std::mutex> lock(_mutex);
-        for (const auto& entry : _streams) {
-            const auto& context = entry.second;
-            if (context.kind == kind && context.source == source) {
-                return true;
-            }
-        }
-        return false;
+        return _streams.hasOpenStream(kindName(kind), source);
     }
 
     OpenStreamResult acceptProducerOpen(MediaKind kind, std::string_view paramsText) {
@@ -159,9 +152,7 @@ public:
 
     OpenStreamResult registerPulledOpen(MediaKind kind, std::string_view responseText) {
         if (!mediaEnabled(kind)) {
-            return error(kind == MediaKind::Video ? ErrorCode::NotSupported
-                                                  : ErrorCode::NotSupported,
-                         kindName(kind) + " disabled");
+            return error(ErrorCode::NotSupported, kindName(kind) + " disabled");
         }
 
         nlohmann::json result = nlohmann::json::object();
@@ -250,19 +241,12 @@ public:
         }
 
         bool alreadyClosed = true;
-        {
-            std::lock_guard<std::mutex> lock(_mutex);
-            auto it = _streams.find(streamId);
-            if (it != _streams.end()) {
-                alreadyClosed = false;
-                if (it->second.kind != kind) {
-                    return error(ErrorCode::StreamNotFound, "stream kind mismatch");
-                }
-                if (it->second.dump.is_open()) {
-                    it->second.dump.close();
-                }
-                _streams.erase(it);
+        if (auto info = _streams.findStream(streamId)) {
+            alreadyClosed = false;
+            if (kindFromStreamInfo(*info) != kind) {
+                return error(ErrorCode::StreamNotFound, "stream kind mismatch");
             }
+            _streams.close(streamId);
         }
 
         nlohmann::json body = {
@@ -270,92 +254,39 @@ public:
             {"state", "closed"},
             {"alreadyClosed", alreadyClosed},
         };
-        logLine(kindName(kind) + " closeStream streamId=" + toHexU32(streamId) +
+        logLine(kindName(kind) + " closeStream streamId=" + axtp::stream::toHexU32(streamId) +
                 (alreadyClosed ? " alreadyClosed=true" : " closed"));
-        if (!alreadyClosed && _options.streamSink != nullptr) {
-            _options.streamSink->onStreamClosed(kind, streamId);
-        }
         return {ErrorCode::Success, std::move(body)};
     }
 
     void handleStream(const StreamPayload& stream) {
-        MediaKind kind = MediaKind::Video;
-        bool knownStream = false;
-        {
-            std::lock_guard<std::mutex> lock(_mutex);
-            auto it = _streams.find(stream.streamId);
-            if (it == _streams.end()) {
-                ++_stats.unknownChunks;
-                logLine("STREAM unknown streamId=" + toHexU32(stream.streamId) +
-                        " seq=" + std::to_string(stream.seqId) +
-                        " bytes=" + std::to_string(stream.data.size()));
-                return;
-            }
-
-            auto& context = it->second;
-            kind = context.kind;
-            knownStream = true;
-            if (context.hasSeq) {
-                if (stream.seqId == context.expectedSeq - 1U) {
-                    ++_stats.duplicateSeq;
-                } else if (stream.seqId != context.expectedSeq) {
-                    ++_stats.seqGaps;
-                    logLine(kindName(context.kind) +
-                            " seq gap streamId=" + toHexU32(stream.streamId) +
-                            " expected=" + std::to_string(context.expectedSeq) +
-                            " got=" + std::to_string(stream.seqId));
-                }
-            }
-            context.hasSeq = true;
-            context.expectedSeq = stream.seqId + 1U;
-            context.lastCursor = stream.cursor;
-            context.chunks += 1;
-            context.bytes += stream.data.size();
-
-            if (context.kind == MediaKind::Video) {
-                ++_stats.videoChunks;
-                _stats.videoBytes += stream.data.size();
-            } else {
-                ++_stats.audioChunks;
-                _stats.audioBytes += stream.data.size();
-            }
-
-            if (context.dump.is_open() && !stream.data.empty()) {
-                context.dump.write(reinterpret_cast<const char*>(stream.data.data()),
-                                   static_cast<std::streamsize>(stream.data.size()));
-            }
-
-            if (shouldLogChunkCount(context.chunks)) {
-                logLine(kindName(context.kind) + " STREAM streamId=" + toHexU32(stream.streamId) +
-                        " seq=" + std::to_string(stream.seqId) +
-                        " chunkBytes=" + std::to_string(stream.data.size()) +
-                        " chunks=" + std::to_string(context.chunks) +
-                        " totalBytes=" + std::to_string(context.bytes) +
-                        " cursor=" + std::to_string(stream.cursor));
-            }
-        }
-        if (knownStream && _options.streamSink != nullptr) {
-            _options.streamSink->onStreamChunk(kind, stream);
-        }
+        _streams.handleStream(stream);
     }
 
     MediaStreamStats stats() const {
-        std::lock_guard<std::mutex> lock(_mutex);
-        return _stats;
+        MediaStreamStats output;
+        {
+            std::lock_guard<std::mutex> lock(_statsMutex);
+            output = _mediaStats;
+        }
+        const auto streamStats = _streams.stats();
+        output.unknownChunks = streamStats.unknownChunks;
+        output.seqGaps = streamStats.seqGaps;
+        output.duplicateSeq = streamStats.duplicateSeq;
+        return output;
     }
 
     std::size_t activeStreamCount() const {
-        std::lock_guard<std::mutex> lock(_mutex);
-        return _streams.size();
+        return _streams.activeStreamCount();
     }
 
     std::vector<ActiveMediaStream> activeStreamsSnapshot() const {
         std::vector<ActiveMediaStream> snapshot;
-        std::lock_guard<std::mutex> lock(_mutex);
-        snapshot.reserve(_streams.size());
-        for (const auto& entry : _streams) {
+        const auto active = _streams.activeStreamsSnapshot();
+        snapshot.reserve(active.size());
+        for (const auto& stream : active) {
             snapshot.push_back(
-                ActiveMediaStream{entry.second.kind, entry.second.streamId, entry.second.source});
+                ActiveMediaStream{kindFromName(stream.kind), stream.streamId, stream.source});
         }
         return snapshot;
     }
@@ -369,21 +300,30 @@ public:
     }
 
 private:
-    struct StreamContext {
-        MediaKind kind = MediaKind::Video;
-        std::uint32_t streamId = 0;
-        std::string source;
-        std::string codec;
-        std::string streamProfile;
-        std::string cursorUnit;
-        std::string syncGroupId;
-        std::uint32_t expectedSeq = 0;
-        bool hasSeq = false;
-        std::uint64_t lastCursor = 0;
-        std::uint64_t chunks = 0;
-        std::uint64_t bytes = 0;
-        std::ofstream dump;
-    };
+    static MediaKind kindFromName(std::string_view kind) {
+        return kind == "audio" ? MediaKind::Audio : MediaKind::Video;
+    }
+
+    static MediaKind kindFromStreamInfo(const axtp::stream::StreamInfo& info) {
+        return kindFromName(info.kind);
+    }
+
+    static MediaStreamInfo toMediaInfo(const axtp::stream::StreamInfo& info) {
+        MediaStreamInfo media;
+        media.kind = kindFromStreamInfo(info);
+        media.streamId = info.streamId;
+        media.source = info.source;
+        media.codec = info.payloadFormat;
+        media.streamProfile = info.streamProfile;
+        media.cursorUnit = info.cursorUnit;
+        media.metadata = info.metadata;
+        media.width = jsonU32Or(info.metadata, "width", jsonU32Or(info.metadata, "codedWidth", 0));
+        media.height =
+            jsonU32Or(info.metadata, "height", jsonU32Or(info.metadata, "codedHeight", 0));
+        media.sampleRate = jsonU32Or(info.metadata, "sampleRate", 0);
+        media.channels = jsonU32Or(info.metadata, "channels", 0);
+        return media;
+    }
 
     OpenStreamResult openAccepted(MediaKind kind,
                                   std::uint32_t streamId,
@@ -397,55 +337,17 @@ private:
                                   std::uint32_t requestedMaxDataSize,
                                   nlohmann::json extra,
                                   std::string logAction) {
-        {
-            std::lock_guard<std::mutex> lock(_mutex);
-            if (_streams.find(streamId) != _streams.end()) {
-                return error(ErrorCode::StreamAlreadyOpen,
-                             "streamId already open: " + toHexU32(streamId));
-            }
-            for (const auto& entry : _streams) {
-                const auto& existing = entry.second;
-                if (existing.kind == kind && existing.source == source) {
-                    return error(ErrorCode::StreamAlreadyOpen,
-                                 kindName(kind) + " source already open: " + source);
-                }
-            }
-        }
-
-        StreamContext context;
-        context.kind = kind;
-        context.streamId = streamId;
-        context.source = std::move(source);
-        context.codec = std::move(codec);
-        context.streamProfile = std::move(streamProfile);
-        context.cursorUnit = std::move(cursorUnit);
-        context.syncGroupId = std::move(syncGroupId);
-
-        if (!_options.dumpDir.empty()) {
-            std::error_code ec;
-            std::filesystem::create_directories(_options.dumpDir, ec);
-            const auto path =
-                _options.dumpDir / (kindName(kind) + "-" + toHexU32(context.streamId) +
-                                    (kind == MediaKind::Video ? ".h264" : ".aac"));
-            context.dump.open(path, std::ios::binary);
-            if (context.dump.is_open()) {
-                logLine(kindName(kind) + " dump=" + path.string());
-            } else {
-                logLine(kindName(kind) + " dump open failed: " + path.string());
-            }
-        }
-
         nlohmann::json body = {
-            {"streamId", context.streamId},
+            {"streamId", streamId},
             {"state", "streaming"},
-            {"source", context.source},
+            {"source", source},
             {"peerRole", std::move(peerRole)},
-            {"codec", context.codec},
-            {"streamProfile", context.streamProfile},
-            {"cursorUnit", context.cursorUnit},
+            {"codec", codec},
+            {"streamProfile", streamProfile},
+            {"cursorUnit", cursorUnit},
         };
-        if (!context.syncGroupId.empty()) {
-            body["syncGroupId"] = context.syncGroupId;
+        if (!syncGroupId.empty()) {
+            body["syncGroupId"] = syncGroupId;
         }
         if (!castSessionId.empty()) {
             body["castSessionId"] = castSessionId;
@@ -457,32 +359,33 @@ private:
             body[it.key()] = it.value();
         }
 
-        MediaStreamInfo info;
-        info.kind = kind;
-        info.streamId = context.streamId;
+        axtp::stream::StreamInfo info;
+        info.kind = kindName(kind);
+        info.streamId = streamId;
         info.source = body.value("source", std::string());
-        info.codec = body.value("codec", std::string());
+        info.payloadFormat = body.value("codec", std::string());
         info.streamProfile = body.value("streamProfile", std::string());
         info.cursorUnit = body.value("cursorUnit", std::string());
-        info.width = jsonU32Or(body, "width", jsonU32Or(body, "codedWidth", 0));
-        info.height = jsonU32Or(body, "height", jsonU32Or(body, "codedHeight", 0));
-        info.sampleRate = jsonU32Or(body, "sampleRate", 0);
-        info.channels = jsonU32Or(body, "channels", 0);
         info.metadata = body;
 
-        const auto logName = kindName(kind);
-        {
-            std::lock_guard<std::mutex> lock(_mutex);
-            _streams.emplace(context.streamId, std::move(context));
+        const auto status = _streams.registerStream(
+            info,
+            axtp::stream::StreamRegisterOptions{
+                kindName(kind),
+                kind == MediaKind::Video ? ".h264" : ".aac",
+                true,
+            });
+        if (status != ErrorCode::Success) {
+            return error(status, "stream open rejected by axtp_stream");
         }
-        logLine(logName + " " + logAction + " streamId=" + toHexU32(streamId) +
+
+        logLine(kindName(kind) + " " + logAction +
+                " streamId=" + axtp::stream::toHexU32(streamId) +
                 " source=" + body.value("source", std::string()) +
                 " codec=" + body.value("codec", std::string()) +
-                " streamProfile=" + body.value("streamProfile", std::string()) + " cursorUnit=" +
-                body.value("cursorUnit", std::string()) + " result=" + body.dump());
-        if (_options.streamSink != nullptr) {
-            _options.streamSink->onStreamOpened(info);
-        }
+                " streamProfile=" + body.value("streamProfile", std::string()) +
+                " cursorUnit=" + body.value("cursorUnit", std::string()) +
+                " result=" + body.dump());
         return {ErrorCode::Success, std::move(body)};
     }
 
@@ -501,6 +404,36 @@ private:
         return _nextAudioStreamId++;
     }
 
+    void onStreamOpened(const axtp::stream::StreamInfo& info) override {
+        if (_options.streamSink != nullptr) {
+            _options.streamSink->onStreamOpened(toMediaInfo(info));
+        }
+    }
+
+    void onStreamChunk(const axtp::stream::StreamInfo& info,
+                       const StreamPayload& stream) override {
+        const auto kind = kindFromStreamInfo(info);
+        {
+            std::lock_guard<std::mutex> lock(_statsMutex);
+            if (kind == MediaKind::Video) {
+                ++_mediaStats.videoChunks;
+                _mediaStats.videoBytes += stream.data.size();
+            } else {
+                ++_mediaStats.audioChunks;
+                _mediaStats.audioBytes += stream.data.size();
+            }
+        }
+        if (_options.streamSink != nullptr) {
+            _options.streamSink->onStreamChunk(kind, stream);
+        }
+    }
+
+    void onStreamClosed(const axtp::stream::StreamInfo& info) override {
+        if (_options.streamSink != nullptr) {
+            _options.streamSink->onStreamClosed(kindFromStreamInfo(info), info.streamId);
+        }
+    }
+
     void logLine(const std::string& line) const {
         if (_log) {
             _log(line);
@@ -509,9 +442,9 @@ private:
 
     MediaHostOptions _options;
     LogFn _log;
-    mutable std::mutex _mutex;
-    std::map<std::uint32_t, StreamContext> _streams;
-    MediaStreamStats _stats;
+    axtp::stream::StreamRegistry _streams;
+    mutable std::mutex _statsMutex;
+    MediaStreamStats _mediaStats;
     std::uint32_t _nextVideoStreamId = 0x00001001;
     std::uint32_t _nextAudioStreamId = 0x00002001;
 };

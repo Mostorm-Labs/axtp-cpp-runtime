@@ -1,5 +1,5 @@
 #include "media/render/win32/media_render_host.hpp"
-#include "media/model/format.hpp"
+#include "profiles/media/format.hpp"
 
 #ifndef NOMINMAX
 #define NOMINMAX
