@@ -189,7 +189,7 @@ public:
         resizeLocked();
     }
 
-    bool present(IMFSample* sample) {
+    bool present(IMFSample* sample, UINT visibleWidth, UINT visibleHeight) {
         std::lock_guard<std::mutex> lock(_mutex);
         if (_swapChain == nullptr || _videoDevice == nullptr || _videoContext == nullptr) {
             logLine(_log, "renderer present failed: D3D11 swap chain is not ready");
@@ -223,6 +223,12 @@ public:
         if (!ensureVideoProcessorLocked(inputDesc.Width, inputDesc.Height)) {
             return false;
         }
+        if (visibleWidth == 0 || visibleWidth > inputDesc.Width) {
+            visibleWidth = inputDesc.Width;
+        }
+        if (visibleHeight == 0 || visibleHeight > inputDesc.Height) {
+            visibleHeight = inputDesc.Height;
+        }
 
         ComPtr<ID3D11Texture2D> backBuffer;
         hr = _swapChain->GetBuffer(0, IID_PPV_ARGS(&backBuffer));
@@ -253,6 +259,12 @@ public:
 
         RECT dest = {};
         GetClientRect(_hwnd, &dest);
+        const RECT source = {
+            0,
+            0,
+            static_cast<LONG>(visibleWidth),
+            static_cast<LONG>(visibleHeight),
+        };
         D3D11_VIDEO_PROCESSOR_STREAM stream = {};
         stream.Enable = TRUE;
         stream.OutputIndex = 0;
@@ -260,6 +272,7 @@ public:
         stream.PastFrames = 0;
         stream.FutureFrames = 0;
         stream.pInputSurface = inputView.Get();
+        _videoContext->VideoProcessorSetStreamSourceRect(_processor.Get(), 0, TRUE, &source);
         _videoContext->VideoProcessorSetStreamDestRect(_processor.Get(), 0, TRUE, &dest);
         hr = _videoContext->VideoProcessorBlt(_processor.Get(), outputView.Get(), 0, 1, &stream);
         if (failed(hr, _log, "ID3D11VideoContext::VideoProcessorBlt")) {

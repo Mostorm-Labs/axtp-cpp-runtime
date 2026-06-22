@@ -134,7 +134,7 @@ public:
             if (now - pull.sentAt >= _requestTimeout) {
                 logLine("pull timeout: " + MediaStreamRegistry::kindName(pull.kind) +
                         " source=" + pull.source + " requestId=" + std::to_string(pull.requestId));
-                eraseKeys.push_back(entry.first);
+                scheduleRetry(pull, ErrorCode::RpcResponseTimeout, "");
             }
         }
         for (const auto& key : eraseKeys) {
@@ -147,7 +147,12 @@ public:
                 if (pull.stage != PullStage::Queued || pull.kind != kind) {
                     continue;
                 }
-                if (pull.kind == MediaKind::Audio && hasUnfinishedVideoPull()) {
+                if (pull.retryAfter.time_since_epoch().count() != 0 && now < pull.retryAfter) {
+                    continue;
+                }
+                if (pull.kind == MediaKind::Audio &&
+                    _registry.mediaEnabled(MediaKind::Video) &&
+                    (!hasOpenVideoStream() || hasUnfinishedVideoPull())) {
                     if (!pull.waitingVideoLogged) {
                         pull.waitingVideoLogged = true;
                         logLine("pull waiting: audio source=" + pull.source +
@@ -205,9 +210,11 @@ private:
         std::string source;
         PullStage stage = PullStage::Queued;
         std::uint32_t requestId = 0;
+        std::uint32_t attempts = 0;
         bool waitingSidLogged = false;
         bool waitingVideoLogged = false;
         std::chrono::steady_clock::time_point sentAt{};
+        std::chrono::steady_clock::time_point retryAfter{};
     };
 
     static std::optional<MediaKind> kindFromSourceEvent(const RpcPayload& event) {
@@ -285,10 +292,12 @@ private:
         request.body.assign(paramsText.begin(), paramsText.end());
 
         pull.requestId = request.requestId;
+        ++pull.attempts;
         pull.sentAt = std::chrono::steady_clock::now();
         pull.stage = PullStage::Pending;
         logLine("pull send: requestId=" + std::to_string(pull.requestId) + " method=" +
-                methodNameFor(pull.kind) + " source=" + pull.source + " payload=" + paramsText);
+                methodNameFor(pull.kind) + " source=" + pull.source +
+                " attempt=" + std::to_string(pull.attempts) + " payload=" + paramsText);
         endpoint.sendRpcRequest(std::move(request));
     }
 
@@ -300,6 +309,10 @@ private:
             logLine("pull failed: requestId=" + std::to_string(pull.requestId) +
                     " method=" + methodNameFor(pull.kind) + " source=" + pull.source + " status=" +
                     errorName(response.statusCode) + (bodyText.empty() ? "" : " body=" + bodyText));
+            if (isRetryableOpenStatus(response.statusCode)) {
+                scheduleRetry(pull, response.statusCode, bodyText);
+                return;
+            }
             eraseKeys->push_back(keyFor(pull.kind, pull.source));
             return;
         }
@@ -313,15 +326,64 @@ private:
             return;
         }
         pull.stage = PullStage::Open;
+        pull.retryAfter = {};
         logLine("pull success: requestId=" + std::to_string(pull.requestId) +
                 " method=" + methodNameFor(pull.kind) + " source=" + pull.source +
                 (bodyText.empty() ? "" : " result=" + bodyText));
+    }
+
+    static bool isRetryableOpenStatus(ErrorCode status) {
+        return status == ErrorCode::Unavailable ||
+               status == ErrorCode::MediaSourceUnavailable ||
+               status == ErrorCode::Busy ||
+               status == ErrorCode::DeviceResourceBusy ||
+               status == ErrorCode::Timeout ||
+               status == ErrorCode::RpcResponseTimeout;
+    }
+
+    static std::chrono::milliseconds retryDelayForAttempt(std::uint32_t attempts) {
+        if (attempts <= 1) {
+            return std::chrono::milliseconds(500);
+        }
+        if (attempts == 2) {
+            return std::chrono::milliseconds(1000);
+        }
+        if (attempts == 3) {
+            return std::chrono::milliseconds(2000);
+        }
+        return std::chrono::milliseconds(3000);
+    }
+
+    void scheduleRetry(PullRequest& pull, ErrorCode status, std::string_view bodyText) {
+        const auto delay = retryDelayForAttempt(pull.attempts);
+        pull.stage = PullStage::Queued;
+        pull.requestId = 0;
+        pull.retryAfter = std::chrono::steady_clock::now() + delay;
+        pull.waitingSidLogged = false;
+        if (pull.kind == MediaKind::Video) {
+            pull.waitingVideoLogged = false;
+        }
+        logLine("pull retry scheduled: method=" + std::string(methodNameFor(pull.kind)) +
+                " source=" + pull.source +
+                " status=" + errorName(status) +
+                " attempt=" + std::to_string(pull.attempts) +
+                " retryDelayMs=" + std::to_string(delay.count()) +
+                (bodyText.empty() ? "" : " body=" + std::string(bodyText)));
     }
 
     bool hasUnfinishedVideoPull() const {
         for (const auto& entry : _pulls) {
             const auto& pull = entry.second;
             if (pull.kind == MediaKind::Video && pull.stage != PullStage::Open) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool hasOpenVideoStream() const {
+        for (const auto& stream : _registry.activeStreamsSnapshot()) {
+            if (stream.kind == MediaKind::Video) {
                 return true;
             }
         }

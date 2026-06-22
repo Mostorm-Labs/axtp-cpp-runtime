@@ -76,6 +76,15 @@ public:
         return _running.load();
     }
 
+    void resetDecoder(std::string_view reason) {
+        std::lock_guard<std::mutex> lock(_streamMutex);
+        _assembler.reset();
+        _decoder.reset();
+        _firstDecodedLogged = false;
+        _waitingLogged = false;
+        logLine(_log, std::string("renderer video decoder reset reason=") + std::string(reason));
+    }
+
     void setStatusText(std::string text) {
         HWND hwnd = nullptr;
         {
@@ -134,7 +143,7 @@ public:
         ++_videoChunkCount;
         if (_feedMode == H264FeedMode::StreamChunk) {
             const auto unit = inspectH264AccessUnit(stream.data);
-            {
+            if (shouldLogFrameCount(_videoChunkCount) || unit.keyframe || unit.nalCount == 0) {
                 std::ostringstream out;
                 out << "renderer video chunk streamId=" << toHexU32(stream.streamId)
                     << " seq=" << stream.seqId
@@ -147,12 +156,21 @@ public:
                     << " cursor=" << stream.cursor;
                 logLine(_log, out.str());
             }
+            if (unit.nalCount == 0) {
+                logLine(_log,
+                        "renderer video chunk dropped: missing Annex-B start code"
+                            " streamId=" + toHexU32(stream.streamId) +
+                            " seq=" + std::to_string(stream.seqId) +
+                            " bytes=" + std::to_string(stream.data.size()) +
+                            " cursor=" + std::to_string(stream.cursor));
+                return;
+            }
             processH264Sample(stream.data, unit, stream.cursor, "stream-chunk");
             return;
         }
 
         auto units = _assembler.pushChunk(stream.data);
-        {
+        if (shouldLogFrameCount(_videoChunkCount)) {
             std::ostringstream out;
             out << "renderer video chunk streamId=" << toHexU32(stream.streamId)
                 << " seq=" << stream.seqId
@@ -216,6 +234,10 @@ private:
             _height = unit.spsSize->height;
             std::ostringstream out;
             out << "renderer video SPS size=" << _width << "x" << _height;
+            if (unit.spsSize->codedWidth != 0 && unit.spsSize->codedHeight != 0 &&
+                (unit.spsSize->codedWidth != _width || unit.spsSize->codedHeight != _height)) {
+                out << " coded=" << unit.spsSize->codedWidth << "x" << unit.spsSize->codedHeight;
+            }
             logLine(_log, out.str());
         }
         if (_width == 0 || _height == 0) {
@@ -242,7 +264,7 @@ private:
                         "DXVA/NV12");
                 return;
             }
-            if (_presenter.present(sample)) {
+            if (_presenter.present(sample, _width, _height)) {
                 const auto presented = _presentCount.fetch_add(1) + 1;
                 _hasPresentedVideo.store(true);
                 if (!_firstPresentLogged) {
@@ -421,6 +443,8 @@ private:
         case WM_PAINT:
             self->paint(hwnd);
             return 0;
+        case WM_NCHITTEST:
+            return HTTRANSPARENT;
         default:
             return DefWindowProcW(hwnd, message, wParam, lParam);
         }
@@ -581,10 +605,7 @@ private:
         if (bottom) {
             return HTBOTTOM;
         }
-        if (screenPoint.y < window.top + 44) {
-            return HTCAPTION;
-        }
-        return HTCLIENT;
+        return HTCAPTION;
     }
 
     void paint(HWND hwnd) {

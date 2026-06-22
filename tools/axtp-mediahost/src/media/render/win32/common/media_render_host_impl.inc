@@ -194,6 +194,12 @@ bool MediaRenderHost::consumeStopCastingRequested() {
     return _video->consumeStopCastingRequested();
 }
 
+void MediaRenderHost::resetVideoDecoder(std::string_view reason) {
+    if (_video != nullptr) {
+        _video->resetDecoder(reason);
+    }
+}
+
 void MediaRenderHost::onStreamOpened(const MediaStreamInfo& info) {
     if (info.kind == MediaKind::Video && _video != nullptr) {
         _video->onStreamOpened(info);

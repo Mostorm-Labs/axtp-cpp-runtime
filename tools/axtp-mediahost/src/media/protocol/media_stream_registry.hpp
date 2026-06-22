@@ -59,6 +59,10 @@ public:
         return kind == MediaKind::Video ? "video" : "audio";
     }
 
+    static bool shouldLogChunkCount(std::uint64_t count) {
+        return count <= 50 || (count % 100) == 0;
+    }
+
     bool hasOpenStream(MediaKind kind, std::string_view source) const {
         std::lock_guard<std::mutex> lock(_mutex);
         for (const auto& entry : _streams) {
@@ -321,8 +325,7 @@ public:
                                    static_cast<std::streamsize>(stream.data.size()));
             }
 
-            if (context.kind == MediaKind::Video || context.chunks == 1 ||
-                (context.chunks % 100) == 0) {
+            if (shouldLogChunkCount(context.chunks)) {
                 logLine(kindName(context.kind) + " STREAM streamId=" + toHexU32(stream.streamId) +
                         " seq=" + std::to_string(stream.seqId) +
                         " chunkBytes=" + std::to_string(stream.data.size()) +
