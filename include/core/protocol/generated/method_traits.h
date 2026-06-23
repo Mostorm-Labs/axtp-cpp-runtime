@@ -19,6 +19,30 @@ struct MethodTraits<MethodId::DeviceGetInfo> {
 };
 
 template <>
+struct MethodTraits<MethodId::DeviceGetPairingCode> {
+    using Request = DeviceGetPairingCodeParams;
+    using Response = DevicePairingCodeInfo;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::DeviceGetPairingCode);
+    static constexpr const char* name = "device.getPairingCode";
+};
+
+template <>
+struct MethodTraits<MethodId::DeviceGetEnrollmentState> {
+    using Request = DeviceGetEnrollmentStateParams;
+    using Response = DeviceEnrollmentInfo;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::DeviceGetEnrollmentState);
+    static constexpr const char* name = "device.getEnrollmentState";
+};
+
+template <>
+struct MethodTraits<MethodId::DeviceSetEnrollmentState> {
+    using Request = DeviceSetEnrollmentStateParams;
+    using Response = DeviceSetEnrollmentStateResult;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::DeviceSetEnrollmentState);
+    static constexpr const char* name = "device.setEnrollmentState";
+};
+
+template <>
 struct MethodTraits<MethodId::FirmwareGetUpdateCapabilities> {
     using Request = Empty;
     using Response = FirmwareUpdateCapabilities;
@@ -168,6 +192,46 @@ struct MethodTraits<MethodId::AudioGetStreamSourceState> {
     using Response = AudioStreamSourceState;
     static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::AudioGetStreamSourceState);
     static constexpr const char* name = "audio.getStreamSourceState";
+};
+
+template <>
+struct MethodTraits<MethodId::SignageGetPlaylistCapabilities> {
+    using Request = SignageGetPlaylistCapabilitiesParams;
+    using Response = SignagePlaylistCapabilitiesResult;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::SignageGetPlaylistCapabilities);
+    static constexpr const char* name = "signage.getPlaylistCapabilities";
+};
+
+template <>
+struct MethodTraits<MethodId::SignageGetPlaylistConfig> {
+    using Request = SignageGetPlaylistConfigParams;
+    using Response = SignagePlaylistConfigResult;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::SignageGetPlaylistConfig);
+    static constexpr const char* name = "signage.getPlaylistConfig";
+};
+
+template <>
+struct MethodTraits<MethodId::SignageSetPlaylistConfig> {
+    using Request = SignageSetPlaylistConfigParams;
+    using Response = SignageSetPlaylistConfigResult;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::SignageSetPlaylistConfig);
+    static constexpr const char* name = "signage.setPlaylistConfig";
+};
+
+template <>
+struct MethodTraits<MethodId::SignageResetPlaylistConfig> {
+    using Request = SignageResetPlaylistConfigParams;
+    using Response = SignagePlaylistConfigResult;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::SignageResetPlaylistConfig);
+    static constexpr const char* name = "signage.resetPlaylistConfig";
+};
+
+template <>
+struct MethodTraits<MethodId::SignageGetPlaylistItemUrl> {
+    using Request = SignageGetPlaylistItemUrlParams;
+    using Response = SignageGetPlaylistItemUrlResult;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::SignageGetPlaylistItemUrl);
+    static constexpr const char* name = "signage.getPlaylistItemUrl";
 };
 
 template <>
@@ -458,8 +522,63 @@ struct MethodTraits<MethodId::CastGetStatus> {
     static constexpr const char* name = "cast.getStatus";
 };
 
+template <>
+struct MethodTraits<MethodId::SoftwareGetConfig> {
+    using Request = SoftwareGetConfigParams;
+    using Response = SoftwareConfig;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::SoftwareGetConfig);
+    static constexpr const char* name = "software.getConfig";
+};
+
+template <>
+struct MethodTraits<MethodId::SoftwareSetConfig> {
+    using Request = SoftwareSetConfigParams;
+    using Response = SoftwareSetConfigResult;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::SoftwareSetConfig);
+    static constexpr const char* name = "software.setConfig";
+};
+
+template <>
+struct MethodTraits<MethodId::SoftwareResetConfig> {
+    using Request = SoftwareResetConfigParams;
+    using Response = SoftwareConfig;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::SoftwareResetConfig);
+    static constexpr const char* name = "software.resetConfig";
+};
+
+template <>
+struct MethodTraits<MethodId::SoftwareGetUpdatePolicy> {
+    using Request = SoftwareGetUpdatePolicyParams;
+    using Response = SoftwareUpdatePolicy;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::SoftwareGetUpdatePolicy);
+    static constexpr const char* name = "software.getUpdatePolicy";
+};
+
+template <>
+struct MethodTraits<MethodId::SoftwareSetUpdatePolicy> {
+    using Request = SoftwareSetUpdatePolicyParams;
+    using Response = SoftwareSetUpdatePolicyResult;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::SoftwareSetUpdatePolicy);
+    static constexpr const char* name = "software.setUpdatePolicy";
+};
+
+template <>
+struct MethodTraits<MethodId::SoftwareResetUpdatePolicy> {
+    using Request = SoftwareResetUpdatePolicyParams;
+    using Response = SoftwareUpdatePolicy;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::SoftwareResetUpdatePolicy);
+    static constexpr const char* name = "software.resetUpdatePolicy";
+};
+
 template <EventId Id>
 struct EventTraits;
+
+template <>
+struct EventTraits<EventId::DeviceEnrollmentStateChanged> {
+    using Event = DeviceEnrollmentStateChangedEvent;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(EventId::DeviceEnrollmentStateChanged);
+    static constexpr const char* name = "device.enrollmentStateChanged";
+};
 
 template <>
 struct EventTraits<EventId::FirmwareUpdateProgressReported> {
@@ -522,6 +641,13 @@ struct EventTraits<EventId::AudioStreamStatsReported> {
     using Event = AudioStreamStatsReportedEvent;
     static constexpr std::uint16_t id = static_cast<std::uint16_t>(EventId::AudioStreamStatsReported);
     static constexpr const char* name = "audio.streamStatsReported";
+};
+
+template <>
+struct EventTraits<EventId::SignagePlaylistConfigChanged> {
+    using Event = SignagePlaylistConfigChangedEvent;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(EventId::SignagePlaylistConfigChanged);
+    static constexpr const char* name = "signage.playlistConfigChanged";
 };
 
 template <>
@@ -669,6 +795,20 @@ struct EventTraits<EventId::CastStatusChanged> {
     using Event = CastStatusChangedEvent;
     static constexpr std::uint16_t id = static_cast<std::uint16_t>(EventId::CastStatusChanged);
     static constexpr const char* name = "cast.statusChanged";
+};
+
+template <>
+struct EventTraits<EventId::SoftwareConfigChanged> {
+    using Event = SoftwareConfigChangedEvent;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(EventId::SoftwareConfigChanged);
+    static constexpr const char* name = "software.configChanged";
+};
+
+template <>
+struct EventTraits<EventId::SoftwareUpdatePolicyChanged> {
+    using Event = SoftwareUpdatePolicyChangedEvent;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(EventId::SoftwareUpdatePolicyChanged);
+    static constexpr const char* name = "software.updatePolicyChanged";
 };
 
 } // namespace axtp

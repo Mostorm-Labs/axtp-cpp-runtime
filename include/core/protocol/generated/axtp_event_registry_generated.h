@@ -13,6 +13,7 @@ struct EventDescriptor {
 };
 
 inline constexpr EventDescriptor kEventRegistry[] = {
+    { 0x0102, "device.enrollmentStateChanged", "device", "DeviceEnrollmentStateChangedEvent" },
     { 0x0402, "firmware.updateProgressReported", "firmware", "FirmwareUpdateProgressEvent" },
     { 0x0403, "firmware.updateStateChanged", "firmware", "FirmwareUpdateStateChangedEvent" },
     { 0x0806, "video.streamStateChanged", "video", "VideoStreamStateChangedEvent" },
@@ -22,6 +23,7 @@ inline constexpr EventDescriptor kEventRegistry[] = {
     { 0x0902, "audio.streamStateChanged", "audio", "AudioStreamStateChangedEvent" },
     { 0x0903, "audio.streamSourceStateChanged", "audio", "AudioStreamSourceStateChangedEvent" },
     { 0x0904, "audio.streamStatsReported", "audio", "AudioStreamStatsReportedEvent" },
+    { 0x0D01, "signage.playlistConfigChanged", "signage", "SignagePlaylistConfigChangedEvent" },
     { 0x0E01, "network.interfaceStateChanged", "network", "NetworkInterfaceStateChangedEvent" },
     { 0x0E02, "network.ipConfigChanged", "network", "NetworkIpConfigChangedEvent" },
     { 0x0E03, "network.wifiConfigChanged", "network", "NetworkWifiConfigChangedEvent" },
@@ -43,8 +45,10 @@ inline constexpr EventDescriptor kEventRegistry[] = {
     { 0x160B, "cast.backendChanged", "cast", "CastBackendChangedEvent" },
     { 0x160C, "cast.flowControlChanged", "cast", "CastFlowControlChangedEvent" },
     { 0x160D, "cast.statusChanged", "cast", "CastStatusChangedEvent" },
+    { 0x1701, "software.configChanged", "software", "SoftwareConfigChangedEvent" },
+    { 0x1702, "software.updatePolicyChanged", "software", "SoftwareUpdatePolicyChangedEvent" },
 };
 
-inline constexpr std::size_t kEventRegistryCount = 30;
+inline constexpr std::size_t kEventRegistryCount = 34;
 
 } // namespace axtp

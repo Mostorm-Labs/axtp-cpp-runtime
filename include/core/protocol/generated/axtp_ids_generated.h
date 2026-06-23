@@ -60,6 +60,9 @@ enum class RpcOp : std::uint8_t {
 
 enum class MethodId : std::uint16_t {
     DeviceGetInfo = 0x0101,
+    DeviceGetPairingCode = 0x0102,
+    DeviceGetEnrollmentState = 0x0103,
+    DeviceSetEnrollmentState = 0x0104,
     FirmwareGetUpdateCapabilities = 0x0401,
     FirmwareBeginUpdate = 0x0402,
     FirmwareGetUpdateState = 0x0408,
@@ -79,6 +82,11 @@ enum class MethodId : std::uint16_t {
     AudioCloseStream = 0x0911,
     AudioGetStreamState = 0x0912,
     AudioGetStreamSourceState = 0x0913,
+    SignageGetPlaylistCapabilities = 0x0D01,
+    SignageGetPlaylistConfig = 0x0D02,
+    SignageSetPlaylistConfig = 0x0D03,
+    SignageResetPlaylistConfig = 0x0D04,
+    SignageGetPlaylistItemUrl = 0x0D05,
     NetworkGetIpConfig = 0x0E02,
     NetworkSetIpConfig = 0x0E03,
     NetworkGetWifiConfig = 0x0E04,
@@ -115,9 +123,16 @@ enum class MethodId : std::uint16_t {
     CastSetRenderFps = 0x1610,
     CastSetFlowPolicy = 0x1611,
     CastGetStatus = 0x1612,
+    SoftwareGetConfig = 0x1701,
+    SoftwareSetConfig = 0x1702,
+    SoftwareResetConfig = 0x1703,
+    SoftwareGetUpdatePolicy = 0x1704,
+    SoftwareSetUpdatePolicy = 0x1705,
+    SoftwareResetUpdatePolicy = 0x1706,
 };
 
 enum class EventId : std::uint16_t {
+    DeviceEnrollmentStateChanged = 0x0102,
     FirmwareUpdateProgressReported = 0x0402,
     FirmwareUpdateStateChanged = 0x0403,
     VideoStreamStateChanged = 0x0806,
@@ -127,6 +142,7 @@ enum class EventId : std::uint16_t {
     AudioStreamStateChanged = 0x0902,
     AudioStreamSourceStateChanged = 0x0903,
     AudioStreamStatsReported = 0x0904,
+    SignagePlaylistConfigChanged = 0x0D01,
     NetworkInterfaceStateChanged = 0x0E01,
     NetworkIpConfigChanged = 0x0E02,
     NetworkWifiConfigChanged = 0x0E03,
@@ -148,6 +164,8 @@ enum class EventId : std::uint16_t {
     CastBackendChanged = 0x160B,
     CastFlowControlChanged = 0x160C,
     CastStatusChanged = 0x160D,
+    SoftwareConfigChanged = 0x1701,
+    SoftwareUpdatePolicyChanged = 0x1702,
 };
 
 enum class ErrorCode : std::uint16_t {
@@ -219,6 +237,8 @@ enum class ErrorCode : std::uint16_t {
     DeviceModeConflict = 0x0107,
     DeviceResourceBusy = 0x0108,
     DeviceHardwareFailure = 0x0109,
+    EnrollmentCodeExpired = 0x010A,
+    EnrollmentCodeAlreadyUsed = 0x010B,
     CapabilityNotFound = 0x0201,
     CapabilityDomainNotFound = 0x0202,
     CapabilityMethodUnsupported = 0x0203,
@@ -313,10 +333,12 @@ enum class CapabilityId : std::uint16_t {
     ProtocolPayloadStream = 0x0003,
     ProtocolReservedRequestIdWidth = 0x0009,
     DeviceInfo = 0x0101,
+    DeviceEnrollment = 0x0102,
     FirmwareUpdate = 0x0401,
     VideoStream = 0x0801,
     AudioAlgorithm = 0x0901,
     AudioStream = 0x0902,
+    SignagePlaylist = 0x0D01,
     NetworkInterface = 0x0E01,
     NetworkIp = 0x0E02,
     NetworkWifi = 0x0E03,
@@ -328,6 +350,8 @@ enum class CapabilityId : std::uint16_t {
     CastBackend = 0x1605,
     CastFlowControl = 0x1606,
     CastStatus = 0x1607,
+    SoftwareConfig = 0x1701,
+    SoftwareUpdatePolicy = 0x1702,
 };
 
 } // namespace axtp

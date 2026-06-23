@@ -81,6 +81,8 @@ inline constexpr ErrorDescriptor kErrorRegistry[] = {
     { 0x0107, "DEVICE_MODE_CONFLICT", "device", false },
     { 0x0108, "DEVICE_RESOURCE_BUSY", "device", true },
     { 0x0109, "DEVICE_HARDWARE_FAILURE", "device", false },
+    { 0x010A, "ENROLLMENT_CODE_EXPIRED", "device", true },
+    { 0x010B, "ENROLLMENT_CODE_ALREADY_USED", "device", false },
     { 0x0201, "CAPABILITY_NOT_FOUND", "capability", false },
     { 0x0202, "CAPABILITY_DOMAIN_NOT_FOUND", "capability", false },
     { 0x0203, "CAPABILITY_METHOD_UNSUPPORTED", "capability", false },
@@ -169,6 +171,6 @@ inline constexpr ErrorDescriptor kErrorRegistry[] = {
     { 0x7F08, "LEGACY_RESPONSE_TIMEOUT", "legacy", true },
 };
 
-inline constexpr std::size_t kErrorRegistryCount = 154;
+inline constexpr std::size_t kErrorRegistryCount = 156;
 
 } // namespace axtp

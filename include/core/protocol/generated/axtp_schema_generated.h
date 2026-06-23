@@ -917,6 +917,70 @@ inline constexpr FieldDescriptor kDeviceInfoCapabilityFields[] = {
     { 0x03, "identityMerged", FieldType::Bool, false, 0, 0 },
 };
 
+inline constexpr FieldDescriptor kDeviceGetPairingCodeParamsFields[] = {
+    { 0x01, "refresh", FieldType::Bool, false, 0, 0 },
+    { 0x02, "purpose", FieldType::Enum, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kDevicePairingCodeInfoFields[] = {
+    { 0x01, "code", FieldType::String, true, 0, 0 },
+    { 0x02, "expiresAt", FieldType::String, false, 0, 0 },
+    { 0x03, "expiresInSeconds", FieldType::Uint32, false, 1, 0 },
+    { 0x04, "state", FieldType::Enum, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kDeviceGetEnrollmentStateParamsFields[] = {
+    { 0x01, "includeEndpoint", FieldType::Bool, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kDeviceEnrollmentInfoFields[] = {
+    { 0x01, "state", FieldType::Enum, true, 0, 0 },
+    { 0x02, "deviceId", FieldType::String, false, 0, 0 },
+    { 0x03, "workspaceId", FieldType::String, false, 0, 0 },
+    { 0x04, "endpoint", FieldType::Object, false, 0, 0 },
+    { 0x05, "enrolledAt", FieldType::String, false, 0, 0 },
+    { 0x06, "updatedAt", FieldType::String, false, 0, 0 },
+    { 0x07, "message", FieldType::String, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kDeviceEnrollmentEndpointSummaryFields[] = {
+    { 0x01, "endpointId", FieldType::String, true, 0, 0 },
+    { 0x02, "type", FieldType::Enum, true, 0, 0 },
+    { 0x03, "displayName", FieldType::String, false, 0, 0 },
+    { 0x04, "profileId", FieldType::String, false, 0, 0 },
+    { 0x05, "workspaceId", FieldType::String, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kDeviceSetEnrollmentStateParamsFields[] = {
+    { 0x01, "desiredState", FieldType::Enum, true, 0, 0 },
+    { 0x02, "reason", FieldType::Enum, false, 0, 0 },
+    { 0x03, "endpoint", FieldType::Object, false, 0, 0 },
+    { 0x04, "message", FieldType::String, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kDeviceSetEnrollmentStateResultFields[] = {
+    { 0x01, "state", FieldType::Object, true, 0, 0 },
+    { 0x02, "disconnectExpected", FieldType::Bool, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kDeviceEnrollmentStateChangedEventFields[] = {
+    { 0x01, "state", FieldType::Object, true, 0, 0 },
+    { 0x02, "previousState", FieldType::Enum, false, 0, 0 },
+    { 0x03, "reason", FieldType::Enum, false, 0, 0 },
+    { 0x04, "triggerMethod", FieldType::Enum, false, 0, 0 },
+    { 0x05, "triggerId", FieldType::String, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kDeviceEnrollmentCapabilityFields[] = {
+    { 0x01, "supportsPairingCode", FieldType::Bool, false, 0, 0 },
+    { 0x02, "pairingCodeTtlSeconds", FieldType::Uint32, false, 0, 0 },
+    { 0x03, "supportsUnenroll", FieldType::Bool, false, 0, 0 },
+    { 0x04, "endpointTypes", FieldType::Array, false, 0, 0 },
+    { 0x05, "supportedPurposes", FieldType::Array, false, 0, 0 },
+    { 0x06, "maxActivePairingCodes", FieldType::Uint32, false, 0, 0 },
+    { 0x07, "pairingCodeLength", FieldType::Uint32, false, 6, 8 },
+};
+
 inline constexpr FieldDescriptor kFirmwareUpdateCapabilitiesFields[] = {
     { 0x01, "supported", FieldType::Bool, true, 0, 0 },
     { 0x02, "supportsMultiFile", FieldType::Bool, true, 0, 0 },
@@ -1305,6 +1369,204 @@ inline constexpr FieldDescriptor kNetworkIpCapabilityFields[] = {
     { 0x03, "applyPolicies", FieldType::Array, false, 0, 0 },
 };
 
+inline constexpr FieldDescriptor kSignageGetPlaylistCapabilitiesParamsFields[] = {
+
+};
+
+inline constexpr FieldDescriptor kSignageGetPlaylistConfigParamsFields[] = {
+
+};
+
+inline constexpr FieldDescriptor kSignageResetPlaylistConfigParamsFields[] = {
+
+};
+
+inline constexpr FieldDescriptor kSignageSetPlaylistConfigResultFields[] = {
+
+};
+
+inline constexpr FieldDescriptor kSignagePlaylistCapabilitiesResultFields[] = {
+    { 0x01, "supportedItemTypes", FieldType::Array, true, 0, 0 },
+    { 0x02, "maxPlaylists", FieldType::Uint32, false, 0, 0 },
+    { 0x03, "maxItemsPerPlaylist", FieldType::Uint32, false, 0, 0 },
+    { 0x04, "supportsScheduledPlaylist", FieldType::Bool, true, 0, 0 },
+    { 0x05, "supportsUrlRefresh", FieldType::Bool, true, 0, 0 },
+    { 0x06, "supportsReset", FieldType::Bool, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kSignagePlaylistConfigResultFields[] = {
+    { 0x01, "playlists", FieldType::Array, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kSignageSetPlaylistConfigParamsFields[] = {
+    { 0x01, "playlists", FieldType::Array, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kSignageGetPlaylistItemUrlParamsFields[] = {
+    { 0x01, "itemId", FieldType::String, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kSignageGetPlaylistItemUrlResultFields[] = {
+    { 0x01, "type", FieldType::Enum, true, 0, 0 },
+    { 0x02, "settings", FieldType::Object, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kSignagePlaylistConfigChangedEventFields[] = {
+    { 0x01, "reason", FieldType::Enum, true, 0, 0 },
+    { 0x02, "playlists", FieldType::Array, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kSignagePlaylistFields[] = {
+    { 0x01, "id", FieldType::String, true, 0, 0 },
+    { 0x02, "type", FieldType::Enum, true, 0, 0 },
+    { 0x03, "startDate", FieldType::String, false, 0, 0 },
+    { 0x04, "endDate", FieldType::String, false, 0, 0 },
+    { 0x05, "startTime", FieldType::String, false, 0, 0 },
+    { 0x06, "endTime", FieldType::String, false, 0, 0 },
+    { 0x07, "days", FieldType::Array, false, 0, 0 },
+    { 0x08, "items", FieldType::Array, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kSignagePlaylistItemFields[] = {
+    { 0x01, "id", FieldType::String, true, 0, 0 },
+    { 0x02, "type", FieldType::Enum, true, 0, 0 },
+    { 0x03, "duration", FieldType::Uint32, true, 1, 86400 },
+    { 0x04, "sort", FieldType::Uint32, true, 0, 0 },
+    { 0x05, "settings", FieldType::Object, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kSignagePlaylistItemSettingsFields[] = {
+    { 0x01, "urls", FieldType::Array, false, 0, 0 },
+    { 0x02, "delaySeconds", FieldType::Uint32, false, 1, 0 },
+    { 0x03, "expiresAt", FieldType::Uint64, false, 0, 0 },
+    { 0x04, "url", FieldType::String, false, 0, 0 },
+    { 0x05, "muted", FieldType::Bool, false, 0, 0 },
+    { 0x06, "ignoreCertificateError", FieldType::Bool, false, 0, 0 },
+    { 0x07, "refreshIntervalSecs", FieldType::Uint32, false, 1, 0 },
+    { 0x08, "clocks", FieldType::Array, false, 0, 0 },
+    { 0x09, "photos", FieldType::Array, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kSignagePlaylistClockEntryFields[] = {
+    { 0x01, "timezone", FieldType::String, true, 0, 0 },
+    { 0x02, "label", FieldType::String, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kSignagePlaylistUnsplashPhotoFields[] = {
+    { 0x01, "url", FieldType::String, true, 0, 0 },
+    { 0x02, "userName", FieldType::String, true, 0, 0 },
+    { 0x03, "userLink", FieldType::String, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kSignagePlaylistCapabilityFields[] = {
+    { 0x01, "supportedItemTypes", FieldType::Array, true, 0, 0 },
+    { 0x02, "maxPlaylists", FieldType::Uint32, false, 0, 0 },
+    { 0x03, "maxItemsPerPlaylist", FieldType::Uint32, false, 0, 0 },
+    { 0x04, "supportsScheduledPlaylist", FieldType::Bool, true, 0, 0 },
+    { 0x05, "supportsUrlRefresh", FieldType::Bool, true, 0, 0 },
+    { 0x06, "supportsReset", FieldType::Bool, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kSoftwareGetConfigParamsFields[] = {
+    { 0x01, "target", FieldType::String, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kSoftwareConfigFields[] = {
+    { 0x01, "target", FieldType::String, true, 0, 0 },
+    { 0x02, "config", FieldType::Object, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kSoftwareSetConfigParamsFields[] = {
+    { 0x01, "target", FieldType::String, true, 0, 0 },
+    { 0x02, "config", FieldType::Object, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kSoftwareResetConfigParamsFields[] = {
+    { 0x01, "target", FieldType::String, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kSoftwareSetConfigResultFields[] = {
+
+};
+
+inline constexpr FieldDescriptor kSoftwareConfigChangedEventFields[] = {
+    { 0x01, "target", FieldType::String, true, 0, 0 },
+    { 0x02, "config", FieldType::Object, true, 0, 0 },
+    { 0x03, "changedFields", FieldType::Array, false, 0, 0 },
+    { 0x04, "reason", FieldType::Enum, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kLauncherConfigFields[] = {
+    { 0x01, "displayName", FieldType::String, false, 0, 0 },
+    { 0x02, "appearance", FieldType::Object, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kLauncherAppearanceFields[] = {
+    { 0x01, "panelLayout", FieldType::Enum, false, 0, 0 },
+    { 0x02, "autoHidePanel", FieldType::Bool, false, 0, 0 },
+    { 0x03, "autoHideDelay", FieldType::Uint32, false, 1, 0 },
+};
+
+inline constexpr FieldDescriptor kSoftwareConfigCapabilityFields[] = {
+    { 0x01, "supportedTargets", FieldType::Array, true, 0, 0 },
+    { 0x02, "supportsReset", FieldType::Bool, false, 0, 0 },
+    { 0x03, "resetMayRestartSoftware", FieldType::Bool, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kSoftwareGetUpdatePolicyParamsFields[] = {
+    { 0x01, "target", FieldType::String, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kSoftwareUpdatePolicyFields[] = {
+    { 0x01, "target", FieldType::String, true, 0, 0 },
+    { 0x02, "policy", FieldType::Object, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kSoftwareSetUpdatePolicyParamsFields[] = {
+    { 0x01, "target", FieldType::String, true, 0, 0 },
+    { 0x02, "policy", FieldType::Object, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kSoftwareResetUpdatePolicyParamsFields[] = {
+    { 0x01, "target", FieldType::String, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kSoftwareSetUpdatePolicyResultFields[] = {
+
+};
+
+inline constexpr FieldDescriptor kSoftwareUpdatePolicyChangedEventFields[] = {
+    { 0x01, "target", FieldType::String, true, 0, 0 },
+    { 0x02, "policy", FieldType::Object, true, 0, 0 },
+    { 0x03, "changedFields", FieldType::Array, false, 0, 0 },
+    { 0x04, "reason", FieldType::Enum, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kLauncherUpdatePolicyFields[] = {
+    { 0x01, "updateMode", FieldType::Enum, true, 0, 0 },
+    { 0x02, "schedule", FieldType::Object, false, 0, 0 },
+    { 0x03, "channel", FieldType::Enum, true, 0, 0 },
+    { 0x04, "conditions", FieldType::Object, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kUpdateScheduleFields[] = {
+    { 0x01, "start", FieldType::String, true, 0, 0 },
+    { 0x02, "end", FieldType::String, true, 0, 0 },
+    { 0x03, "timezone", FieldType::String, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kUpdateConditionsFields[] = {
+    { 0x01, "requireIdle", FieldType::Bool, false, 0, 0 },
+    { 0x02, "requireWifi", FieldType::Bool, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kSoftwareUpdatePolicyCapabilityFields[] = {
+    { 0x01, "supportedTargets", FieldType::Array, true, 0, 0 },
+    { 0x02, "supportedChannels", FieldType::Array, false, 0, 0 },
+    { 0x03, "supportsSchedule", FieldType::Bool, false, 0, 0 },
+    { 0x04, "supportsReset", FieldType::Bool, false, 0, 0 },
+};
+
 inline constexpr FieldDescriptor kVideoGetStreamCapabilitiesParamsFields[] = {
     { 0x01, "source", FieldType::String, false, 0, 0 },
     { 0x02, "includeRuntimeState", FieldType::Bool, false, 0, 0 },
@@ -1556,6 +1818,15 @@ inline constexpr SchemaDescriptor kSoftwareComponentSchema = { "SoftwareComponen
 inline constexpr SchemaDescriptor kDeviceAxtpRuntimeSchema = { "DeviceAxtpRuntime", kDeviceAxtpRuntimeFields, 3 };
 inline constexpr SchemaDescriptor kDeviceCapabilitySummarySchema = { "DeviceCapabilitySummary", kDeviceCapabilitySummaryFields, 3 };
 inline constexpr SchemaDescriptor kDeviceInfoCapabilitySchema = { "DeviceInfoCapability", kDeviceInfoCapabilityFields, 3 };
+inline constexpr SchemaDescriptor kDeviceGetPairingCodeParamsSchema = { "DeviceGetPairingCodeParams", kDeviceGetPairingCodeParamsFields, 2 };
+inline constexpr SchemaDescriptor kDevicePairingCodeInfoSchema = { "DevicePairingCodeInfo", kDevicePairingCodeInfoFields, 4 };
+inline constexpr SchemaDescriptor kDeviceGetEnrollmentStateParamsSchema = { "DeviceGetEnrollmentStateParams", kDeviceGetEnrollmentStateParamsFields, 1 };
+inline constexpr SchemaDescriptor kDeviceEnrollmentInfoSchema = { "DeviceEnrollmentInfo", kDeviceEnrollmentInfoFields, 7 };
+inline constexpr SchemaDescriptor kDeviceEnrollmentEndpointSummarySchema = { "DeviceEnrollmentEndpointSummary", kDeviceEnrollmentEndpointSummaryFields, 5 };
+inline constexpr SchemaDescriptor kDeviceSetEnrollmentStateParamsSchema = { "DeviceSetEnrollmentStateParams", kDeviceSetEnrollmentStateParamsFields, 4 };
+inline constexpr SchemaDescriptor kDeviceSetEnrollmentStateResultSchema = { "DeviceSetEnrollmentStateResult", kDeviceSetEnrollmentStateResultFields, 2 };
+inline constexpr SchemaDescriptor kDeviceEnrollmentStateChangedEventSchema = { "DeviceEnrollmentStateChangedEvent", kDeviceEnrollmentStateChangedEventFields, 5 };
+inline constexpr SchemaDescriptor kDeviceEnrollmentCapabilitySchema = { "DeviceEnrollmentCapability", kDeviceEnrollmentCapabilityFields, 7 };
 inline constexpr SchemaDescriptor kFirmwareUpdateCapabilitiesSchema = { "FirmwareUpdateCapabilities", kFirmwareUpdateCapabilitiesFields, 7 };
 inline constexpr SchemaDescriptor kBeginUpdateParamsSchema = { "BeginUpdateParams", kBeginUpdateParamsFields, 1 };
 inline constexpr SchemaDescriptor kBeginUpdateResultSchema = { "BeginUpdateResult", kBeginUpdateResultFields, 4 };
@@ -1617,6 +1888,41 @@ inline constexpr SchemaDescriptor kNetworkApStateChangedEventSchema = { "Network
 inline constexpr SchemaDescriptor kNetworkApClientChangedEventSchema = { "NetworkApClientChangedEvent", kNetworkApClientChangedEventFields, 3 };
 inline constexpr SchemaDescriptor kNetworkInterfaceCapabilitySchema = { "NetworkInterfaceCapability", kNetworkInterfaceCapabilityFields, 2 };
 inline constexpr SchemaDescriptor kNetworkIpCapabilitySchema = { "NetworkIpCapability", kNetworkIpCapabilityFields, 3 };
+inline constexpr SchemaDescriptor kSignageGetPlaylistCapabilitiesParamsSchema = { "SignageGetPlaylistCapabilitiesParams", kSignageGetPlaylistCapabilitiesParamsFields, 0 };
+inline constexpr SchemaDescriptor kSignageGetPlaylistConfigParamsSchema = { "SignageGetPlaylistConfigParams", kSignageGetPlaylistConfigParamsFields, 0 };
+inline constexpr SchemaDescriptor kSignageResetPlaylistConfigParamsSchema = { "SignageResetPlaylistConfigParams", kSignageResetPlaylistConfigParamsFields, 0 };
+inline constexpr SchemaDescriptor kSignageSetPlaylistConfigResultSchema = { "SignageSetPlaylistConfigResult", kSignageSetPlaylistConfigResultFields, 0 };
+inline constexpr SchemaDescriptor kSignagePlaylistCapabilitiesResultSchema = { "SignagePlaylistCapabilitiesResult", kSignagePlaylistCapabilitiesResultFields, 6 };
+inline constexpr SchemaDescriptor kSignagePlaylistConfigResultSchema = { "SignagePlaylistConfigResult", kSignagePlaylistConfigResultFields, 1 };
+inline constexpr SchemaDescriptor kSignageSetPlaylistConfigParamsSchema = { "SignageSetPlaylistConfigParams", kSignageSetPlaylistConfigParamsFields, 1 };
+inline constexpr SchemaDescriptor kSignageGetPlaylistItemUrlParamsSchema = { "SignageGetPlaylistItemUrlParams", kSignageGetPlaylistItemUrlParamsFields, 1 };
+inline constexpr SchemaDescriptor kSignageGetPlaylistItemUrlResultSchema = { "SignageGetPlaylistItemUrlResult", kSignageGetPlaylistItemUrlResultFields, 2 };
+inline constexpr SchemaDescriptor kSignagePlaylistConfigChangedEventSchema = { "SignagePlaylistConfigChangedEvent", kSignagePlaylistConfigChangedEventFields, 2 };
+inline constexpr SchemaDescriptor kSignagePlaylistSchema = { "SignagePlaylist", kSignagePlaylistFields, 8 };
+inline constexpr SchemaDescriptor kSignagePlaylistItemSchema = { "SignagePlaylistItem", kSignagePlaylistItemFields, 5 };
+inline constexpr SchemaDescriptor kSignagePlaylistItemSettingsSchema = { "SignagePlaylistItemSettings", kSignagePlaylistItemSettingsFields, 9 };
+inline constexpr SchemaDescriptor kSignagePlaylistClockEntrySchema = { "SignagePlaylistClockEntry", kSignagePlaylistClockEntryFields, 2 };
+inline constexpr SchemaDescriptor kSignagePlaylistUnsplashPhotoSchema = { "SignagePlaylistUnsplashPhoto", kSignagePlaylistUnsplashPhotoFields, 3 };
+inline constexpr SchemaDescriptor kSignagePlaylistCapabilitySchema = { "SignagePlaylistCapability", kSignagePlaylistCapabilityFields, 6 };
+inline constexpr SchemaDescriptor kSoftwareGetConfigParamsSchema = { "SoftwareGetConfigParams", kSoftwareGetConfigParamsFields, 1 };
+inline constexpr SchemaDescriptor kSoftwareConfigSchema = { "SoftwareConfig", kSoftwareConfigFields, 2 };
+inline constexpr SchemaDescriptor kSoftwareSetConfigParamsSchema = { "SoftwareSetConfigParams", kSoftwareSetConfigParamsFields, 2 };
+inline constexpr SchemaDescriptor kSoftwareResetConfigParamsSchema = { "SoftwareResetConfigParams", kSoftwareResetConfigParamsFields, 1 };
+inline constexpr SchemaDescriptor kSoftwareSetConfigResultSchema = { "SoftwareSetConfigResult", kSoftwareSetConfigResultFields, 0 };
+inline constexpr SchemaDescriptor kSoftwareConfigChangedEventSchema = { "SoftwareConfigChangedEvent", kSoftwareConfigChangedEventFields, 4 };
+inline constexpr SchemaDescriptor kLauncherConfigSchema = { "LauncherConfig", kLauncherConfigFields, 2 };
+inline constexpr SchemaDescriptor kLauncherAppearanceSchema = { "LauncherAppearance", kLauncherAppearanceFields, 3 };
+inline constexpr SchemaDescriptor kSoftwareConfigCapabilitySchema = { "SoftwareConfigCapability", kSoftwareConfigCapabilityFields, 3 };
+inline constexpr SchemaDescriptor kSoftwareGetUpdatePolicyParamsSchema = { "SoftwareGetUpdatePolicyParams", kSoftwareGetUpdatePolicyParamsFields, 1 };
+inline constexpr SchemaDescriptor kSoftwareUpdatePolicySchema = { "SoftwareUpdatePolicy", kSoftwareUpdatePolicyFields, 2 };
+inline constexpr SchemaDescriptor kSoftwareSetUpdatePolicyParamsSchema = { "SoftwareSetUpdatePolicyParams", kSoftwareSetUpdatePolicyParamsFields, 2 };
+inline constexpr SchemaDescriptor kSoftwareResetUpdatePolicyParamsSchema = { "SoftwareResetUpdatePolicyParams", kSoftwareResetUpdatePolicyParamsFields, 1 };
+inline constexpr SchemaDescriptor kSoftwareSetUpdatePolicyResultSchema = { "SoftwareSetUpdatePolicyResult", kSoftwareSetUpdatePolicyResultFields, 0 };
+inline constexpr SchemaDescriptor kSoftwareUpdatePolicyChangedEventSchema = { "SoftwareUpdatePolicyChangedEvent", kSoftwareUpdatePolicyChangedEventFields, 4 };
+inline constexpr SchemaDescriptor kLauncherUpdatePolicySchema = { "LauncherUpdatePolicy", kLauncherUpdatePolicyFields, 4 };
+inline constexpr SchemaDescriptor kUpdateScheduleSchema = { "UpdateSchedule", kUpdateScheduleFields, 3 };
+inline constexpr SchemaDescriptor kUpdateConditionsSchema = { "UpdateConditions", kUpdateConditionsFields, 2 };
+inline constexpr SchemaDescriptor kSoftwareUpdatePolicyCapabilitySchema = { "SoftwareUpdatePolicyCapability", kSoftwareUpdatePolicyCapabilityFields, 4 };
 inline constexpr SchemaDescriptor kVideoGetStreamCapabilitiesParamsSchema = { "VideoGetStreamCapabilitiesParams", kVideoGetStreamCapabilitiesParamsFields, 2 };
 inline constexpr SchemaDescriptor kVideoStreamCapabilitiesSchema = { "VideoStreamCapabilities", kVideoStreamCapabilitiesFields, 8 };
 inline constexpr SchemaDescriptor kVideoStreamSourceSchema = { "VideoStreamSource", kVideoStreamSourceFields, 6 };

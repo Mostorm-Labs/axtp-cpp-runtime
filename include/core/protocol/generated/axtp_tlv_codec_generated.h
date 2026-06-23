@@ -887,6 +887,70 @@ constexpr std::uint8_t SUPPORTS_CAPABILITY_SUMMARY = 0x02;
 constexpr std::uint8_t IDENTITY_MERGED = 0x03;
 }
 
+namespace fields::device_get_pairing_code_params {
+constexpr std::uint8_t REFRESH = 0x01;
+constexpr std::uint8_t PURPOSE = 0x02;
+}
+
+namespace fields::device_pairing_code_info {
+constexpr std::uint8_t CODE = 0x01;
+constexpr std::uint8_t EXPIRES_AT = 0x02;
+constexpr std::uint8_t EXPIRES_IN_SECONDS = 0x03;
+constexpr std::uint8_t STATE = 0x04;
+}
+
+namespace fields::device_get_enrollment_state_params {
+constexpr std::uint8_t INCLUDE_ENDPOINT = 0x01;
+}
+
+namespace fields::device_enrollment_info {
+constexpr std::uint8_t STATE = 0x01;
+constexpr std::uint8_t DEVICE_ID = 0x02;
+constexpr std::uint8_t WORKSPACE_ID = 0x03;
+constexpr std::uint8_t ENDPOINT = 0x04;
+constexpr std::uint8_t ENROLLED_AT = 0x05;
+constexpr std::uint8_t UPDATED_AT = 0x06;
+constexpr std::uint8_t MESSAGE = 0x07;
+}
+
+namespace fields::device_enrollment_endpoint_summary {
+constexpr std::uint8_t ENDPOINT_ID = 0x01;
+constexpr std::uint8_t TYPE = 0x02;
+constexpr std::uint8_t DISPLAY_NAME = 0x03;
+constexpr std::uint8_t PROFILE_ID = 0x04;
+constexpr std::uint8_t WORKSPACE_ID = 0x05;
+}
+
+namespace fields::device_set_enrollment_state_params {
+constexpr std::uint8_t DESIRED_STATE = 0x01;
+constexpr std::uint8_t REASON = 0x02;
+constexpr std::uint8_t ENDPOINT = 0x03;
+constexpr std::uint8_t MESSAGE = 0x04;
+}
+
+namespace fields::device_set_enrollment_state_result {
+constexpr std::uint8_t STATE = 0x01;
+constexpr std::uint8_t DISCONNECT_EXPECTED = 0x02;
+}
+
+namespace fields::device_enrollment_state_changed_event {
+constexpr std::uint8_t STATE = 0x01;
+constexpr std::uint8_t PREVIOUS_STATE = 0x02;
+constexpr std::uint8_t REASON = 0x03;
+constexpr std::uint8_t TRIGGER_METHOD = 0x04;
+constexpr std::uint8_t TRIGGER_ID = 0x05;
+}
+
+namespace fields::device_enrollment_capability {
+constexpr std::uint8_t SUPPORTS_PAIRING_CODE = 0x01;
+constexpr std::uint8_t PAIRING_CODE_TTL_SECONDS = 0x02;
+constexpr std::uint8_t SUPPORTS_UNENROLL = 0x03;
+constexpr std::uint8_t ENDPOINT_TYPES = 0x04;
+constexpr std::uint8_t SUPPORTED_PURPOSES = 0x05;
+constexpr std::uint8_t MAX_ACTIVE_PAIRING_CODES = 0x06;
+constexpr std::uint8_t PAIRING_CODE_LENGTH = 0x07;
+}
+
 namespace fields::firmware_update_capabilities {
 constexpr std::uint8_t SUPPORTED = 0x01;
 constexpr std::uint8_t SUPPORTS_MULTI_FILE = 0x02;
@@ -1273,6 +1337,204 @@ namespace fields::network_ip_capability {
 constexpr std::uint8_t FAMILIES = 0x01;
 constexpr std::uint8_t MODES = 0x02;
 constexpr std::uint8_t APPLY_POLICIES = 0x03;
+}
+
+namespace fields::signage_get_playlist_capabilities_params {
+
+}
+
+namespace fields::signage_get_playlist_config_params {
+
+}
+
+namespace fields::signage_reset_playlist_config_params {
+
+}
+
+namespace fields::signage_set_playlist_config_result {
+
+}
+
+namespace fields::signage_playlist_capabilities_result {
+constexpr std::uint8_t SUPPORTED_ITEM_TYPES = 0x01;
+constexpr std::uint8_t MAX_PLAYLISTS = 0x02;
+constexpr std::uint8_t MAX_ITEMS_PER_PLAYLIST = 0x03;
+constexpr std::uint8_t SUPPORTS_SCHEDULED_PLAYLIST = 0x04;
+constexpr std::uint8_t SUPPORTS_URL_REFRESH = 0x05;
+constexpr std::uint8_t SUPPORTS_RESET = 0x06;
+}
+
+namespace fields::signage_playlist_config_result {
+constexpr std::uint8_t PLAYLISTS = 0x01;
+}
+
+namespace fields::signage_set_playlist_config_params {
+constexpr std::uint8_t PLAYLISTS = 0x01;
+}
+
+namespace fields::signage_get_playlist_item_url_params {
+constexpr std::uint8_t ITEM_ID = 0x01;
+}
+
+namespace fields::signage_get_playlist_item_url_result {
+constexpr std::uint8_t TYPE = 0x01;
+constexpr std::uint8_t SETTINGS = 0x02;
+}
+
+namespace fields::signage_playlist_config_changed_event {
+constexpr std::uint8_t REASON = 0x01;
+constexpr std::uint8_t PLAYLISTS = 0x02;
+}
+
+namespace fields::signage_playlist {
+constexpr std::uint8_t ID = 0x01;
+constexpr std::uint8_t TYPE = 0x02;
+constexpr std::uint8_t START_DATE = 0x03;
+constexpr std::uint8_t END_DATE = 0x04;
+constexpr std::uint8_t START_TIME = 0x05;
+constexpr std::uint8_t END_TIME = 0x06;
+constexpr std::uint8_t DAYS = 0x07;
+constexpr std::uint8_t ITEMS = 0x08;
+}
+
+namespace fields::signage_playlist_item {
+constexpr std::uint8_t ID = 0x01;
+constexpr std::uint8_t TYPE = 0x02;
+constexpr std::uint8_t DURATION = 0x03;
+constexpr std::uint8_t SORT = 0x04;
+constexpr std::uint8_t SETTINGS = 0x05;
+}
+
+namespace fields::signage_playlist_item_settings {
+constexpr std::uint8_t URLS = 0x01;
+constexpr std::uint8_t DELAY_SECONDS = 0x02;
+constexpr std::uint8_t EXPIRES_AT = 0x03;
+constexpr std::uint8_t URL = 0x04;
+constexpr std::uint8_t MUTED = 0x05;
+constexpr std::uint8_t IGNORE_CERTIFICATE_ERROR = 0x06;
+constexpr std::uint8_t REFRESH_INTERVAL_SECS = 0x07;
+constexpr std::uint8_t CLOCKS = 0x08;
+constexpr std::uint8_t PHOTOS = 0x09;
+}
+
+namespace fields::signage_playlist_clock_entry {
+constexpr std::uint8_t TIMEZONE = 0x01;
+constexpr std::uint8_t LABEL = 0x02;
+}
+
+namespace fields::signage_playlist_unsplash_photo {
+constexpr std::uint8_t URL = 0x01;
+constexpr std::uint8_t USER_NAME = 0x02;
+constexpr std::uint8_t USER_LINK = 0x03;
+}
+
+namespace fields::signage_playlist_capability {
+constexpr std::uint8_t SUPPORTED_ITEM_TYPES = 0x01;
+constexpr std::uint8_t MAX_PLAYLISTS = 0x02;
+constexpr std::uint8_t MAX_ITEMS_PER_PLAYLIST = 0x03;
+constexpr std::uint8_t SUPPORTS_SCHEDULED_PLAYLIST = 0x04;
+constexpr std::uint8_t SUPPORTS_URL_REFRESH = 0x05;
+constexpr std::uint8_t SUPPORTS_RESET = 0x06;
+}
+
+namespace fields::software_get_config_params {
+constexpr std::uint8_t TARGET = 0x01;
+}
+
+namespace fields::software_config {
+constexpr std::uint8_t TARGET = 0x01;
+constexpr std::uint8_t CONFIG = 0x02;
+}
+
+namespace fields::software_set_config_params {
+constexpr std::uint8_t TARGET = 0x01;
+constexpr std::uint8_t CONFIG = 0x02;
+}
+
+namespace fields::software_reset_config_params {
+constexpr std::uint8_t TARGET = 0x01;
+}
+
+namespace fields::software_set_config_result {
+
+}
+
+namespace fields::software_config_changed_event {
+constexpr std::uint8_t TARGET = 0x01;
+constexpr std::uint8_t CONFIG = 0x02;
+constexpr std::uint8_t CHANGED_FIELDS = 0x03;
+constexpr std::uint8_t REASON = 0x04;
+}
+
+namespace fields::launcher_config {
+constexpr std::uint8_t DISPLAY_NAME = 0x01;
+constexpr std::uint8_t APPEARANCE = 0x02;
+}
+
+namespace fields::launcher_appearance {
+constexpr std::uint8_t PANEL_LAYOUT = 0x01;
+constexpr std::uint8_t AUTO_HIDE_PANEL = 0x02;
+constexpr std::uint8_t AUTO_HIDE_DELAY = 0x03;
+}
+
+namespace fields::software_config_capability {
+constexpr std::uint8_t SUPPORTED_TARGETS = 0x01;
+constexpr std::uint8_t SUPPORTS_RESET = 0x02;
+constexpr std::uint8_t RESET_MAY_RESTART_SOFTWARE = 0x03;
+}
+
+namespace fields::software_get_update_policy_params {
+constexpr std::uint8_t TARGET = 0x01;
+}
+
+namespace fields::software_update_policy {
+constexpr std::uint8_t TARGET = 0x01;
+constexpr std::uint8_t POLICY = 0x02;
+}
+
+namespace fields::software_set_update_policy_params {
+constexpr std::uint8_t TARGET = 0x01;
+constexpr std::uint8_t POLICY = 0x02;
+}
+
+namespace fields::software_reset_update_policy_params {
+constexpr std::uint8_t TARGET = 0x01;
+}
+
+namespace fields::software_set_update_policy_result {
+
+}
+
+namespace fields::software_update_policy_changed_event {
+constexpr std::uint8_t TARGET = 0x01;
+constexpr std::uint8_t POLICY = 0x02;
+constexpr std::uint8_t CHANGED_FIELDS = 0x03;
+constexpr std::uint8_t REASON = 0x04;
+}
+
+namespace fields::launcher_update_policy {
+constexpr std::uint8_t UPDATE_MODE = 0x01;
+constexpr std::uint8_t SCHEDULE = 0x02;
+constexpr std::uint8_t CHANNEL = 0x03;
+constexpr std::uint8_t CONDITIONS = 0x04;
+}
+
+namespace fields::update_schedule {
+constexpr std::uint8_t START = 0x01;
+constexpr std::uint8_t END = 0x02;
+constexpr std::uint8_t TIMEZONE = 0x03;
+}
+
+namespace fields::update_conditions {
+constexpr std::uint8_t REQUIRE_IDLE = 0x01;
+constexpr std::uint8_t REQUIRE_WIFI = 0x02;
+}
+
+namespace fields::software_update_policy_capability {
+constexpr std::uint8_t SUPPORTED_TARGETS = 0x01;
+constexpr std::uint8_t SUPPORTED_CHANNELS = 0x02;
+constexpr std::uint8_t SUPPORTS_SCHEDULE = 0x03;
+constexpr std::uint8_t SUPPORTS_RESET = 0x04;
 }
 
 namespace fields::video_get_stream_capabilities_params {
@@ -2681,6 +2943,100 @@ struct DeviceInfoCapability {
     bool has_identityMerged = false;
 };
 
+struct DeviceGetPairingCodeParams {
+    bool refresh = false;
+    bool has_refresh = false;
+    std::uint32_t purpose = 0;
+    bool has_purpose = false;
+};
+
+struct DevicePairingCodeInfo {
+    const char* code = nullptr;
+    const char* expiresAt = nullptr;
+    bool has_expiresAt = false;
+    std::uint32_t expiresInSeconds = 0;
+    bool has_expiresInSeconds = false;
+    std::uint32_t state = 0;
+    bool has_state = false;
+};
+
+struct DeviceGetEnrollmentStateParams {
+    bool includeEndpoint = false;
+    bool has_includeEndpoint = false;
+};
+
+struct DeviceEnrollmentInfo {
+    std::uint32_t state = 0;
+    const char* deviceId = nullptr;
+    bool has_deviceId = false;
+    const char* workspaceId = nullptr;
+    bool has_workspaceId = false;
+    std::uint32_t endpoint = 0;
+    bool has_endpoint = false;
+    const char* enrolledAt = nullptr;
+    bool has_enrolledAt = false;
+    const char* updatedAt = nullptr;
+    bool has_updatedAt = false;
+    const char* message = nullptr;
+    bool has_message = false;
+};
+
+struct DeviceEnrollmentEndpointSummary {
+    const char* endpointId = nullptr;
+    std::uint32_t type = 0;
+    const char* displayName = nullptr;
+    bool has_displayName = false;
+    const char* profileId = nullptr;
+    bool has_profileId = false;
+    const char* workspaceId = nullptr;
+    bool has_workspaceId = false;
+};
+
+struct DeviceSetEnrollmentStateParams {
+    std::uint32_t desiredState = 0;
+    std::uint32_t reason = 0;
+    bool has_reason = false;
+    std::uint32_t endpoint = 0;
+    bool has_endpoint = false;
+    const char* message = nullptr;
+    bool has_message = false;
+};
+
+struct DeviceSetEnrollmentStateResult {
+    std::uint32_t state = 0;
+    bool disconnectExpected = false;
+    bool has_disconnectExpected = false;
+};
+
+struct DeviceEnrollmentStateChangedEvent {
+    std::uint32_t state = 0;
+    std::uint32_t previousState = 0;
+    bool has_previousState = false;
+    std::uint32_t reason = 0;
+    bool has_reason = false;
+    std::uint32_t triggerMethod = 0;
+    bool has_triggerMethod = false;
+    const char* triggerId = nullptr;
+    bool has_triggerId = false;
+};
+
+struct DeviceEnrollmentCapability {
+    bool supportsPairingCode = false;
+    bool has_supportsPairingCode = false;
+    std::uint32_t pairingCodeTtlSeconds = 0;
+    bool has_pairingCodeTtlSeconds = false;
+    bool supportsUnenroll = false;
+    bool has_supportsUnenroll = false;
+    std::uint32_t endpointTypes = 0;
+    bool has_endpointTypes = false;
+    std::uint32_t supportedPurposes = 0;
+    bool has_supportedPurposes = false;
+    std::uint32_t maxActivePairingCodes = 0;
+    bool has_maxActivePairingCodes = false;
+    std::uint32_t pairingCodeLength = 0;
+    bool has_pairingCodeLength = false;
+};
+
 struct FirmwareUpdateCapabilities {
     bool supported = false;
     bool supportsMultiFile = false;
@@ -3196,6 +3552,242 @@ struct NetworkIpCapability {
     bool has_modes = false;
     std::uint32_t applyPolicies = 0;
     bool has_applyPolicies = false;
+};
+
+struct SignageGetPlaylistCapabilitiesParams {
+
+};
+
+struct SignageGetPlaylistConfigParams {
+
+};
+
+struct SignageResetPlaylistConfigParams {
+
+};
+
+struct SignageSetPlaylistConfigResult {
+
+};
+
+struct SignagePlaylistCapabilitiesResult {
+    std::uint32_t supportedItemTypes = 0;
+    std::uint32_t maxPlaylists = 0;
+    bool has_maxPlaylists = false;
+    std::uint32_t maxItemsPerPlaylist = 0;
+    bool has_maxItemsPerPlaylist = false;
+    bool supportsScheduledPlaylist = false;
+    bool supportsUrlRefresh = false;
+    bool supportsReset = false;
+};
+
+struct SignagePlaylistConfigResult {
+    std::uint32_t playlists = 0;
+};
+
+struct SignageSetPlaylistConfigParams {
+    std::uint32_t playlists = 0;
+};
+
+struct SignageGetPlaylistItemUrlParams {
+    const char* itemId = nullptr;
+};
+
+struct SignageGetPlaylistItemUrlResult {
+    std::uint32_t type = 0;
+    std::uint32_t settings = 0;
+};
+
+struct SignagePlaylistConfigChangedEvent {
+    std::uint32_t reason = 0;
+    std::uint32_t playlists = 0;
+    bool has_playlists = false;
+};
+
+struct SignagePlaylist {
+    const char* id = nullptr;
+    std::uint32_t type = 0;
+    const char* startDate = nullptr;
+    bool has_startDate = false;
+    const char* endDate = nullptr;
+    bool has_endDate = false;
+    const char* startTime = nullptr;
+    bool has_startTime = false;
+    const char* endTime = nullptr;
+    bool has_endTime = false;
+    std::uint32_t days = 0;
+    bool has_days = false;
+    std::uint32_t items = 0;
+};
+
+struct SignagePlaylistItem {
+    const char* id = nullptr;
+    std::uint32_t type = 0;
+    std::uint32_t duration = 0;
+    std::uint32_t sort = 0;
+    std::uint32_t settings = 0;
+};
+
+struct SignagePlaylistItemSettings {
+    std::uint32_t urls = 0;
+    bool has_urls = false;
+    std::uint32_t delaySeconds = 0;
+    bool has_delaySeconds = false;
+    std::uint64_t expiresAt = 0;
+    bool has_expiresAt = false;
+    const char* url = nullptr;
+    bool has_url = false;
+    bool muted = false;
+    bool has_muted = false;
+    bool ignoreCertificateError = false;
+    bool has_ignoreCertificateError = false;
+    std::uint32_t refreshIntervalSecs = 0;
+    bool has_refreshIntervalSecs = false;
+    std::uint32_t clocks = 0;
+    bool has_clocks = false;
+    std::uint32_t photos = 0;
+    bool has_photos = false;
+};
+
+struct SignagePlaylistClockEntry {
+    const char* timezone = nullptr;
+    const char* label = nullptr;
+};
+
+struct SignagePlaylistUnsplashPhoto {
+    const char* url = nullptr;
+    const char* userName = nullptr;
+    const char* userLink = nullptr;
+};
+
+struct SignagePlaylistCapability {
+    std::uint32_t supportedItemTypes = 0;
+    std::uint32_t maxPlaylists = 0;
+    bool has_maxPlaylists = false;
+    std::uint32_t maxItemsPerPlaylist = 0;
+    bool has_maxItemsPerPlaylist = false;
+    bool supportsScheduledPlaylist = false;
+    bool supportsUrlRefresh = false;
+    bool supportsReset = false;
+};
+
+struct SoftwareGetConfigParams {
+    const char* target = nullptr;
+};
+
+struct SoftwareConfig {
+    const char* target = nullptr;
+    std::uint32_t config = 0;
+};
+
+struct SoftwareSetConfigParams {
+    const char* target = nullptr;
+    std::uint32_t config = 0;
+};
+
+struct SoftwareResetConfigParams {
+    const char* target = nullptr;
+};
+
+struct SoftwareSetConfigResult {
+
+};
+
+struct SoftwareConfigChangedEvent {
+    const char* target = nullptr;
+    std::uint32_t config = 0;
+    std::uint32_t changedFields = 0;
+    bool has_changedFields = false;
+    std::uint32_t reason = 0;
+    bool has_reason = false;
+};
+
+struct LauncherConfig {
+    const char* displayName = nullptr;
+    bool has_displayName = false;
+    std::uint32_t appearance = 0;
+    bool has_appearance = false;
+};
+
+struct LauncherAppearance {
+    std::uint32_t panelLayout = 0;
+    bool has_panelLayout = false;
+    bool autoHidePanel = false;
+    bool has_autoHidePanel = false;
+    std::uint32_t autoHideDelay = 0;
+    bool has_autoHideDelay = false;
+};
+
+struct SoftwareConfigCapability {
+    std::uint32_t supportedTargets = 0;
+    bool supportsReset = false;
+    bool has_supportsReset = false;
+    bool resetMayRestartSoftware = false;
+    bool has_resetMayRestartSoftware = false;
+};
+
+struct SoftwareGetUpdatePolicyParams {
+    const char* target = nullptr;
+};
+
+struct SoftwareUpdatePolicy {
+    const char* target = nullptr;
+    std::uint32_t policy = 0;
+};
+
+struct SoftwareSetUpdatePolicyParams {
+    const char* target = nullptr;
+    std::uint32_t policy = 0;
+};
+
+struct SoftwareResetUpdatePolicyParams {
+    const char* target = nullptr;
+};
+
+struct SoftwareSetUpdatePolicyResult {
+
+};
+
+struct SoftwareUpdatePolicyChangedEvent {
+    const char* target = nullptr;
+    std::uint32_t policy = 0;
+    std::uint32_t changedFields = 0;
+    bool has_changedFields = false;
+    std::uint32_t reason = 0;
+    bool has_reason = false;
+};
+
+struct LauncherUpdatePolicy {
+    std::uint32_t updateMode = 0;
+    std::uint32_t schedule = 0;
+    bool has_schedule = false;
+    std::uint32_t channel = 0;
+    std::uint32_t conditions = 0;
+    bool has_conditions = false;
+};
+
+struct UpdateSchedule {
+    const char* start = nullptr;
+    const char* end = nullptr;
+    const char* timezone = nullptr;
+    bool has_timezone = false;
+};
+
+struct UpdateConditions {
+    bool requireIdle = false;
+    bool has_requireIdle = false;
+    bool requireWifi = false;
+    bool has_requireWifi = false;
+};
+
+struct SoftwareUpdatePolicyCapability {
+    std::uint32_t supportedTargets = 0;
+    std::uint32_t supportedChannels = 0;
+    bool has_supportedChannels = false;
+    bool supportsSchedule = false;
+    bool has_supportsSchedule = false;
+    bool supportsReset = false;
+    bool has_supportsReset = false;
 };
 
 struct VideoGetStreamCapabilitiesParams {
@@ -3722,6 +4314,33 @@ bool DecodeDeviceCapabilitySummary(TlvReader& reader, DeviceCapabilitySummary* o
 bool EncodeDeviceInfoCapability(const DeviceInfoCapability& input, TlvWriter& writer, ErrorCode* error);
 bool DecodeDeviceInfoCapability(TlvReader& reader, DeviceInfoCapability* output, ErrorCode* error);
 
+bool EncodeDeviceGetPairingCodeParams(const DeviceGetPairingCodeParams& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeDeviceGetPairingCodeParams(TlvReader& reader, DeviceGetPairingCodeParams* output, ErrorCode* error);
+
+bool EncodeDevicePairingCodeInfo(const DevicePairingCodeInfo& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeDevicePairingCodeInfo(TlvReader& reader, DevicePairingCodeInfo* output, ErrorCode* error);
+
+bool EncodeDeviceGetEnrollmentStateParams(const DeviceGetEnrollmentStateParams& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeDeviceGetEnrollmentStateParams(TlvReader& reader, DeviceGetEnrollmentStateParams* output, ErrorCode* error);
+
+bool EncodeDeviceEnrollmentInfo(const DeviceEnrollmentInfo& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeDeviceEnrollmentInfo(TlvReader& reader, DeviceEnrollmentInfo* output, ErrorCode* error);
+
+bool EncodeDeviceEnrollmentEndpointSummary(const DeviceEnrollmentEndpointSummary& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeDeviceEnrollmentEndpointSummary(TlvReader& reader, DeviceEnrollmentEndpointSummary* output, ErrorCode* error);
+
+bool EncodeDeviceSetEnrollmentStateParams(const DeviceSetEnrollmentStateParams& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeDeviceSetEnrollmentStateParams(TlvReader& reader, DeviceSetEnrollmentStateParams* output, ErrorCode* error);
+
+bool EncodeDeviceSetEnrollmentStateResult(const DeviceSetEnrollmentStateResult& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeDeviceSetEnrollmentStateResult(TlvReader& reader, DeviceSetEnrollmentStateResult* output, ErrorCode* error);
+
+bool EncodeDeviceEnrollmentStateChangedEvent(const DeviceEnrollmentStateChangedEvent& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeDeviceEnrollmentStateChangedEvent(TlvReader& reader, DeviceEnrollmentStateChangedEvent* output, ErrorCode* error);
+
+bool EncodeDeviceEnrollmentCapability(const DeviceEnrollmentCapability& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeDeviceEnrollmentCapability(TlvReader& reader, DeviceEnrollmentCapability* output, ErrorCode* error);
+
 bool EncodeFirmwareUpdateCapabilities(const FirmwareUpdateCapabilities& input, TlvWriter& writer, ErrorCode* error);
 bool DecodeFirmwareUpdateCapabilities(TlvReader& reader, FirmwareUpdateCapabilities* output, ErrorCode* error);
 
@@ -3904,6 +4523,111 @@ bool DecodeNetworkInterfaceCapability(TlvReader& reader, NetworkInterfaceCapabil
 
 bool EncodeNetworkIpCapability(const NetworkIpCapability& input, TlvWriter& writer, ErrorCode* error);
 bool DecodeNetworkIpCapability(TlvReader& reader, NetworkIpCapability* output, ErrorCode* error);
+
+bool EncodeSignageGetPlaylistCapabilitiesParams(const SignageGetPlaylistCapabilitiesParams& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeSignageGetPlaylistCapabilitiesParams(TlvReader& reader, SignageGetPlaylistCapabilitiesParams* output, ErrorCode* error);
+
+bool EncodeSignageGetPlaylistConfigParams(const SignageGetPlaylistConfigParams& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeSignageGetPlaylistConfigParams(TlvReader& reader, SignageGetPlaylistConfigParams* output, ErrorCode* error);
+
+bool EncodeSignageResetPlaylistConfigParams(const SignageResetPlaylistConfigParams& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeSignageResetPlaylistConfigParams(TlvReader& reader, SignageResetPlaylistConfigParams* output, ErrorCode* error);
+
+bool EncodeSignageSetPlaylistConfigResult(const SignageSetPlaylistConfigResult& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeSignageSetPlaylistConfigResult(TlvReader& reader, SignageSetPlaylistConfigResult* output, ErrorCode* error);
+
+bool EncodeSignagePlaylistCapabilitiesResult(const SignagePlaylistCapabilitiesResult& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeSignagePlaylistCapabilitiesResult(TlvReader& reader, SignagePlaylistCapabilitiesResult* output, ErrorCode* error);
+
+bool EncodeSignagePlaylistConfigResult(const SignagePlaylistConfigResult& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeSignagePlaylistConfigResult(TlvReader& reader, SignagePlaylistConfigResult* output, ErrorCode* error);
+
+bool EncodeSignageSetPlaylistConfigParams(const SignageSetPlaylistConfigParams& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeSignageSetPlaylistConfigParams(TlvReader& reader, SignageSetPlaylistConfigParams* output, ErrorCode* error);
+
+bool EncodeSignageGetPlaylistItemUrlParams(const SignageGetPlaylistItemUrlParams& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeSignageGetPlaylistItemUrlParams(TlvReader& reader, SignageGetPlaylistItemUrlParams* output, ErrorCode* error);
+
+bool EncodeSignageGetPlaylistItemUrlResult(const SignageGetPlaylistItemUrlResult& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeSignageGetPlaylistItemUrlResult(TlvReader& reader, SignageGetPlaylistItemUrlResult* output, ErrorCode* error);
+
+bool EncodeSignagePlaylistConfigChangedEvent(const SignagePlaylistConfigChangedEvent& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeSignagePlaylistConfigChangedEvent(TlvReader& reader, SignagePlaylistConfigChangedEvent* output, ErrorCode* error);
+
+bool EncodeSignagePlaylist(const SignagePlaylist& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeSignagePlaylist(TlvReader& reader, SignagePlaylist* output, ErrorCode* error);
+
+bool EncodeSignagePlaylistItem(const SignagePlaylistItem& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeSignagePlaylistItem(TlvReader& reader, SignagePlaylistItem* output, ErrorCode* error);
+
+bool EncodeSignagePlaylistItemSettings(const SignagePlaylistItemSettings& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeSignagePlaylistItemSettings(TlvReader& reader, SignagePlaylistItemSettings* output, ErrorCode* error);
+
+bool EncodeSignagePlaylistClockEntry(const SignagePlaylistClockEntry& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeSignagePlaylistClockEntry(TlvReader& reader, SignagePlaylistClockEntry* output, ErrorCode* error);
+
+bool EncodeSignagePlaylistUnsplashPhoto(const SignagePlaylistUnsplashPhoto& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeSignagePlaylistUnsplashPhoto(TlvReader& reader, SignagePlaylistUnsplashPhoto* output, ErrorCode* error);
+
+bool EncodeSignagePlaylistCapability(const SignagePlaylistCapability& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeSignagePlaylistCapability(TlvReader& reader, SignagePlaylistCapability* output, ErrorCode* error);
+
+bool EncodeSoftwareGetConfigParams(const SoftwareGetConfigParams& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeSoftwareGetConfigParams(TlvReader& reader, SoftwareGetConfigParams* output, ErrorCode* error);
+
+bool EncodeSoftwareConfig(const SoftwareConfig& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeSoftwareConfig(TlvReader& reader, SoftwareConfig* output, ErrorCode* error);
+
+bool EncodeSoftwareSetConfigParams(const SoftwareSetConfigParams& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeSoftwareSetConfigParams(TlvReader& reader, SoftwareSetConfigParams* output, ErrorCode* error);
+
+bool EncodeSoftwareResetConfigParams(const SoftwareResetConfigParams& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeSoftwareResetConfigParams(TlvReader& reader, SoftwareResetConfigParams* output, ErrorCode* error);
+
+bool EncodeSoftwareSetConfigResult(const SoftwareSetConfigResult& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeSoftwareSetConfigResult(TlvReader& reader, SoftwareSetConfigResult* output, ErrorCode* error);
+
+bool EncodeSoftwareConfigChangedEvent(const SoftwareConfigChangedEvent& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeSoftwareConfigChangedEvent(TlvReader& reader, SoftwareConfigChangedEvent* output, ErrorCode* error);
+
+bool EncodeLauncherConfig(const LauncherConfig& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeLauncherConfig(TlvReader& reader, LauncherConfig* output, ErrorCode* error);
+
+bool EncodeLauncherAppearance(const LauncherAppearance& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeLauncherAppearance(TlvReader& reader, LauncherAppearance* output, ErrorCode* error);
+
+bool EncodeSoftwareConfigCapability(const SoftwareConfigCapability& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeSoftwareConfigCapability(TlvReader& reader, SoftwareConfigCapability* output, ErrorCode* error);
+
+bool EncodeSoftwareGetUpdatePolicyParams(const SoftwareGetUpdatePolicyParams& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeSoftwareGetUpdatePolicyParams(TlvReader& reader, SoftwareGetUpdatePolicyParams* output, ErrorCode* error);
+
+bool EncodeSoftwareUpdatePolicy(const SoftwareUpdatePolicy& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeSoftwareUpdatePolicy(TlvReader& reader, SoftwareUpdatePolicy* output, ErrorCode* error);
+
+bool EncodeSoftwareSetUpdatePolicyParams(const SoftwareSetUpdatePolicyParams& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeSoftwareSetUpdatePolicyParams(TlvReader& reader, SoftwareSetUpdatePolicyParams* output, ErrorCode* error);
+
+bool EncodeSoftwareResetUpdatePolicyParams(const SoftwareResetUpdatePolicyParams& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeSoftwareResetUpdatePolicyParams(TlvReader& reader, SoftwareResetUpdatePolicyParams* output, ErrorCode* error);
+
+bool EncodeSoftwareSetUpdatePolicyResult(const SoftwareSetUpdatePolicyResult& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeSoftwareSetUpdatePolicyResult(TlvReader& reader, SoftwareSetUpdatePolicyResult* output, ErrorCode* error);
+
+bool EncodeSoftwareUpdatePolicyChangedEvent(const SoftwareUpdatePolicyChangedEvent& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeSoftwareUpdatePolicyChangedEvent(TlvReader& reader, SoftwareUpdatePolicyChangedEvent* output, ErrorCode* error);
+
+bool EncodeLauncherUpdatePolicy(const LauncherUpdatePolicy& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeLauncherUpdatePolicy(TlvReader& reader, LauncherUpdatePolicy* output, ErrorCode* error);
+
+bool EncodeUpdateSchedule(const UpdateSchedule& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeUpdateSchedule(TlvReader& reader, UpdateSchedule* output, ErrorCode* error);
+
+bool EncodeUpdateConditions(const UpdateConditions& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeUpdateConditions(TlvReader& reader, UpdateConditions* output, ErrorCode* error);
+
+bool EncodeSoftwareUpdatePolicyCapability(const SoftwareUpdatePolicyCapability& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeSoftwareUpdatePolicyCapability(TlvReader& reader, SoftwareUpdatePolicyCapability* output, ErrorCode* error);
 
 bool EncodeVideoGetStreamCapabilitiesParams(const VideoGetStreamCapabilitiesParams& input, TlvWriter& writer, ErrorCode* error);
 bool DecodeVideoGetStreamCapabilitiesParams(TlvReader& reader, VideoGetStreamCapabilitiesParams* output, ErrorCode* error);
