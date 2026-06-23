@@ -7,10 +7,14 @@
 #include "core/support/io/byte_sink.hpp"
 #include "core/runtime/transport/transport_profile.hpp"
 
+#include <utility>
+
 namespace axtp {
 
 class InboundProcessor : public IByteSink {
 public:
+    using NameLookup = JsonRpcDecoder::NameLookup;
+
     explicit InboundProcessor(IPayloadSink& sink)
         : _payloadDecoder(sink)
         , _messageReassembler(_payloadDecoder)
@@ -27,6 +31,14 @@ public:
 
     void setWireMode(AxtpWireMode wireMode) {
         _wireMode = wireMode;
+    }
+
+    void setJsonRpcMethodLookup(NameLookup lookup) {
+        _jsonRpcDecoder.setMethodLookup(std::move(lookup));
+    }
+
+    void setJsonRpcEventLookup(NameLookup lookup) {
+        _jsonRpcDecoder.setEventLookup(std::move(lookup));
     }
 
 private:

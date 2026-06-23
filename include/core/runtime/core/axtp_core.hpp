@@ -25,6 +25,8 @@ namespace axtp {
 
 class AxtpCore {
 public:
+    using JsonRpcNameLookup = InboundProcessor::NameLookup;
+
     AxtpCore()
         : _byteSink(*this)
         , _payloadSink(*this)
@@ -43,6 +45,14 @@ public:
 
     IByteSink& byteSink() {
         return _byteSink;
+    }
+
+    void setJsonRpcMethodLookup(JsonRpcNameLookup lookup) {
+        _inbound.setJsonRpcMethodLookup(std::move(lookup));
+    }
+
+    void setJsonRpcEventLookup(JsonRpcNameLookup lookup) {
+        _inbound.setJsonRpcEventLookup(std::move(lookup));
     }
 
     std::optional<CoreEvent> pollEvent() {

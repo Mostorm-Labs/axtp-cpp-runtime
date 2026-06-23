@@ -6,6 +6,7 @@
 #include <nlohmann/json.hpp>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <utility>
 
 #include "core/runtime/core/axtp_core.hpp"
@@ -23,6 +24,9 @@ public:
         : _core(&endpoint.core())
         , _writer(writer)
         , _pollEndpoint([&endpoint] { endpoint.poll(); }) {
+        _core->setJsonRpcMethodLookup([&endpoint](std::string_view methodName) {
+            return endpoint.broker().registry().findMethodId(methodName);
+        });
         _core->configure(jsonRpcProfile(writer.profile()));
     }
 

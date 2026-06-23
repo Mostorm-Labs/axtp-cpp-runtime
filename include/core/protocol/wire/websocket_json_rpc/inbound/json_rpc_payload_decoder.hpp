@@ -2,11 +2,13 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <limits>
 #include <nlohmann/json.hpp>
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <utility>
 
 #include "core/protocol/wire/payload_sink.hpp"
@@ -16,10 +18,14 @@ namespace axtp {
 
 class JsonRpcPayloadDecoder {
 public:
+    using NameLookup = std::function<std::optional<std::uint32_t>(std::string_view)>;
+
     static void decode(const Byte* data,
                        std::size_t size,
                        IPayloadSink& sink,
-                       SourceProtocol sourceProtocol) {
+                       SourceProtocol sourceProtocol,
+                       const NameLookup& methodLookup = {},
+                       const NameLookup& eventLookup = {}) {
         try {
             const std::string text(reinterpret_cast<const char*>(data), size);
             const auto object = nlohmann::json::parse(text);
@@ -30,7 +36,7 @@ public:
             }
 
             if (op == RpcOp::Request) {
-                decodeRequest(object, d, sink, sourceProtocol);
+                decodeRequest(object, d, sink, sourceProtocol, methodLookup);
                 return;
             }
             if (op == RpcOp::RequestResponse) {
@@ -42,7 +48,7 @@ public:
                 return;
             }
             if (op == RpcOp::Event) {
-                decodeEvent(object, d, sink, sourceProtocol);
+                decodeEvent(object, d, sink, sourceProtocol, eventLookup);
                 return;
             }
             if (op == RpcOp::Identify || op == RpcOp::Reidentify ||
@@ -58,6 +64,26 @@ public:
     }
 
 private:
+    static std::optional<std::uint32_t> resolveName(std::string_view name,
+                                                    const NameLookup& lookup,
+                                                    bool eventName) {
+        if (lookup) {
+            if (auto id = lookup(name)) {
+                return id;
+            }
+        }
+        if (eventName) {
+            if (auto id = RegistryLookup::eventIdByName(name)) {
+                return static_cast<std::uint32_t>(*id);
+            }
+        } else {
+            if (auto id = RegistryLookup::methodIdByName(name)) {
+                return static_cast<std::uint32_t>(*id);
+            }
+        }
+        return std::nullopt;
+    }
+
     static RpcOp parseOp(const nlohmann::json& object) {
         const auto raw = object.at("op").get<std::int64_t>();
         if (raw < 0 || raw > std::numeric_limits<std::uint8_t>::max()) {
@@ -151,12 +177,13 @@ private:
     static void decodeRequest(const nlohmann::json& object,
                               const nlohmann::json& d,
                               IPayloadSink& sink,
-                              SourceProtocol sourceProtocol) {
+                              SourceProtocol sourceProtocol,
+                              const NameLookup& methodLookup) {
         if (!d.contains("method") || !d.at("method").is_string()) {
             throw std::invalid_argument("missing method");
         }
         const auto method = d.at("method").get<std::string>();
-        const auto methodId = RegistryLookup::methodIdByName(method);
+        const auto methodId = resolveName(method, methodLookup, false);
         if (!methodId.has_value()) {
             RpcPayload error;
             error.encoding = RpcEncoding::Json;
@@ -207,12 +234,13 @@ private:
     static void decodeEvent(const nlohmann::json& object,
                             const nlohmann::json& d,
                             IPayloadSink& sink,
-                            SourceProtocol sourceProtocol) {
+                            SourceProtocol sourceProtocol,
+                            const NameLookup& eventLookup) {
         if (!d.contains("event") || !d.at("event").is_string()) {
             throw std::invalid_argument("missing event");
         }
         const auto eventName = d.at("event").get<std::string>();
-        const auto eventId = RegistryLookup::eventIdByName(eventName);
+        const auto eventId = resolveName(eventName, eventLookup, true);
         if (!eventId.has_value()) {
             return;
         }
