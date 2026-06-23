@@ -15,6 +15,9 @@ struct MethodDescriptor {
 
 inline constexpr MethodDescriptor kMethodRegistry[] = {
     { 0x0101, "device.getInfo", "device", "GetDeviceInfoParams", "DeviceInfo" },
+    { 0x0102, "device.getPairingCode", "device", "DeviceGetPairingCodeParams", "DevicePairingCodeInfo" },
+    { 0x0103, "device.getEnrollmentState", "device", "DeviceGetEnrollmentStateParams", "DeviceEnrollmentInfo" },
+    { 0x0104, "device.setEnrollmentState", "device", "DeviceSetEnrollmentStateParams", "DeviceSetEnrollmentStateResult" },
     { 0x0401, "firmware.getUpdateCapabilities", "firmware", "Empty", "FirmwareUpdateCapabilities" },
     { 0x0402, "firmware.beginUpdate", "firmware", "BeginUpdateParams", "BeginUpdateResult" },
     { 0x0408, "firmware.getUpdateState", "firmware", "GetUpdateStateParams", "FirmwareUpdateState" },
@@ -34,6 +37,11 @@ inline constexpr MethodDescriptor kMethodRegistry[] = {
     { 0x0911, "audio.closeStream", "audio", "AudioCloseStreamParams", "AudioCloseStreamResult" },
     { 0x0912, "audio.getStreamState", "audio", "AudioGetStreamStateParams", "AudioStreamState" },
     { 0x0913, "audio.getStreamSourceState", "audio", "AudioGetStreamSourceStateParams", "AudioStreamSourceState" },
+    { 0x0D01, "signage.getPlaylistCapabilities", "signage", "SignageGetPlaylistCapabilitiesParams", "SignagePlaylistCapabilitiesResult" },
+    { 0x0D02, "signage.getPlaylistConfig", "signage", "SignageGetPlaylistConfigParams", "SignagePlaylistConfigResult" },
+    { 0x0D03, "signage.setPlaylistConfig", "signage", "SignageSetPlaylistConfigParams", "SignageSetPlaylistConfigResult" },
+    { 0x0D04, "signage.resetPlaylistConfig", "signage", "SignageResetPlaylistConfigParams", "SignagePlaylistConfigResult" },
+    { 0x0D05, "signage.getPlaylistItemUrl", "signage", "SignageGetPlaylistItemUrlParams", "SignageGetPlaylistItemUrlResult" },
     { 0x0E02, "network.getIpConfig", "network", "NetworkGetIpConfigParams", "NetworkIpConfig" },
     { 0x0E03, "network.setIpConfig", "network", "NetworkSetIpConfigParams", "NetworkSetIpConfigResult" },
     { 0x0E04, "network.getWifiConfig", "network", "NetworkGetWifiConfigParams", "NetworkWifiConfig" },
@@ -70,8 +78,14 @@ inline constexpr MethodDescriptor kMethodRegistry[] = {
     { 0x1610, "cast.setRenderFps", "cast", "CastSetRenderFpsParams", "CastFlowControlState" },
     { 0x1611, "cast.setFlowPolicy", "cast", "CastSetFlowPolicyParams", "CastFlowControlState" },
     { 0x1612, "cast.getStatus", "cast", "CastGetStatusParams", "CastStatus" },
+    { 0x1701, "software.getConfig", "software", "SoftwareGetConfigParams", "SoftwareConfig" },
+    { 0x1702, "software.setConfig", "software", "SoftwareSetConfigParams", "SoftwareSetConfigResult" },
+    { 0x1703, "software.resetConfig", "software", "SoftwareResetConfigParams", "SoftwareConfig" },
+    { 0x1704, "software.getUpdatePolicy", "software", "SoftwareGetUpdatePolicyParams", "SoftwareUpdatePolicy" },
+    { 0x1705, "software.setUpdatePolicy", "software", "SoftwareSetUpdatePolicyParams", "SoftwareSetUpdatePolicyResult" },
+    { 0x1706, "software.resetUpdatePolicy", "software", "SoftwareResetUpdatePolicyParams", "SoftwareUpdatePolicy" },
 };
 
-inline constexpr std::size_t kMethodRegistryCount = 56;
+inline constexpr std::size_t kMethodRegistryCount = 70;
 
 } // namespace axtp

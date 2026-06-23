@@ -5721,6 +5721,352 @@
       ]
     },
     {
+      "name": "DeviceGetPairingCodeParams",
+      "kind": "object",
+      "description": "Request for device.getPairingCode; selects refresh behavior and the pairing code purpose.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "refresh",
+          "type": "bool",
+          "required": false,
+          "default": false,
+          "description": "Whether to force a fresh pairing code. false (default) returns the current valid code; true generates a new code and invalidates the previous one."
+        },
+        {
+          "fieldId": 2,
+          "name": "purpose",
+          "type": "enum",
+          "required": false,
+          "description": "Pairing code usage scenario; candidate values include initial_enrollment (first-time enrollment of a new device, default), re_enrollment (re-enrollment such as workspace migration), and service_repair (service/repair pairing, may have a different TTL or permission). Unsupported purpose returns NOT_SUPPORTED."
+        }
+      ]
+    },
+    {
+      "name": "DevicePairingCodeInfo",
+      "kind": "object",
+      "description": "Pairing code snapshot returned by device.getPairingCode. The code field carries a displayable or inputtable code; expiresAt is the authoritative absolute expiry while expiresInSeconds is retained for legacy device-sdk compatibility.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "code",
+          "type": "string",
+          "required": true,
+          "maxLength": 8,
+          "description": "Displayable pairing code, 6-8 uppercase alphanumeric characters excluding confusable characters (0/O, 1/I/L); MUST match the regex ^[A-HJ-NP-Z2-9]{6,8}$."
+        },
+        {
+          "fieldId": 2,
+          "name": "expiresAt",
+          "type": "string",
+          "required": false,
+          "description": "Absolute expiry time as an RFC 3339 timestamp. Authoritative when present. Legacy GetBindCode returned a Unix timestamp integer here; the adapter MUST convert integer to RFC 3339 string."
+        },
+        {
+          "fieldId": 3,
+          "name": "expiresInSeconds",
+          "type": "uint32",
+          "required": false,
+          "min": 1,
+          "description": "Relative expiry in seconds, retained for legacy device-sdk compatibility (observed value 1800). MUST be greater than 0 when present."
+        },
+        {
+          "fieldId": 4,
+          "name": "state",
+          "type": "enum",
+          "required": false,
+          "description": "Pairing code lifecycle state; candidate values include available (default), expired (TTL reached), used (consumed by the cloud), and disabled (revoked by the server)."
+        }
+      ]
+    },
+    {
+      "name": "DeviceGetEnrollmentStateParams",
+      "kind": "object",
+      "description": "Request for device.getEnrollmentState; controls whether the post-enrollment endpoint summary is returned.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "includeEndpoint",
+          "type": "bool",
+          "required": false,
+          "default": true,
+          "description": "Whether to include the post-enrollment endpoint summary. Defaults to true since the most common caller (the cloud management backend) needs endpoint info; set to false for lightweight polling or when the endpoint is already cached."
+        }
+      ]
+    },
+    {
+      "name": "DeviceEnrollmentInfo",
+      "kind": "object",
+      "description": "Enrollment state snapshot. Shared by the device.getEnrollmentState result, DeviceSetEnrollmentStateResult.state, and DeviceEnrollmentStateChangedEvent.state. workspaceId, endpoint, and enrolledAt are populated only when state is enrolled or unenrolling.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "state",
+          "type": "enum",
+          "required": true,
+          "description": "Current enrollment state; candidate values include unmanaged, pairing_available, pending, enrolled, failed, and unenrolling. Valid transitions follow the enrollment state machine; invalid transitions return INVALID_STATE."
+        },
+        {
+          "fieldId": 2,
+          "name": "deviceId",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "Server-assigned device identifier, stable across sessions."
+        },
+        {
+          "fieldId": 3,
+          "name": "workspaceId",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "Enrolled workspace identifier. Populated only when state is enrolled or unenrolling. Privacy-sensitive; exposure policy to be confirmed. [REVIEW-ADOPTED-SCOPED] 待确认后走 amend"
+        },
+        {
+          "fieldId": 4,
+          "name": "endpoint",
+          "type": "DeviceEnrollmentEndpointSummary",
+          "required": false,
+          "description": "Post-enrollment backend endpoint. Populated only when state is enrolled or unenrolling and subject to includeEndpoint."
+        },
+        {
+          "fieldId": 5,
+          "name": "enrolledAt",
+          "type": "string",
+          "required": false,
+          "description": "RFC 3339 timestamp of when the state became enrolled. Present only when state is enrolled or unenrolling. [REVIEW-ADOPTED-SCOPED]"
+        },
+        {
+          "fieldId": 6,
+          "name": "updatedAt",
+          "type": "string",
+          "required": false,
+          "description": "RFC 3339 timestamp of the most recent state update."
+        },
+        {
+          "fieldId": 7,
+          "name": "message",
+          "type": "string",
+          "required": false,
+          "maxLength": 512,
+          "description": "Human-readable detail, populated when state is failed or pending, optional when unenrolling."
+        }
+      ]
+    },
+    {
+      "name": "DeviceEnrollmentEndpointSummary",
+      "kind": "object",
+      "description": "Backend endpoint summary associated with enrollment. Nested in DeviceEnrollmentInfo and DeviceSetEnrollmentStateParams. When type is room, profileId is required.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "endpointId",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Backend endpoint identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "type",
+          "type": "enum",
+          "required": true,
+          "description": "Endpoint type; candidate values include room, device, and asset. Operations such as room.setName only allow type=room."
+        },
+        {
+          "fieldId": 3,
+          "name": "displayName",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "Endpoint display name, non-empty and trimmed. Max length aligned with device.info product.displayName (128) as a scoped default. [REVIEW-ADOPTED-SCOPED] 待产品确认后走 amend"
+        },
+        {
+          "fieldId": 4,
+          "name": "profileId",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "Room profile or business profile identifier. MUST be present when type is room; other types allow omission."
+        },
+        {
+          "fieldId": 5,
+          "name": "workspaceId",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "Endpoint workspace identifier. Takes precedence over the parent DeviceEnrollmentInfo.workspaceId when both are present. [REVIEW-ADOPTED-SCOPED]"
+        }
+      ]
+    },
+    {
+      "name": "DeviceSetEnrollmentStateParams",
+      "kind": "object",
+      "description": "Request for device.setEnrollmentState. Validation rules follow the enrollment state machine. For desiredState enrolled, only reachable from pending, endpoint and reason required, and endpoint.profileId required when endpoint.type is room. For desiredState unmanaged, reachable from enrolled/failed/pairing_available, reason recommended. For desiredState failed, only reachable from pending, message required. For desiredState pending, reachable from failed (retry) or pairing_available (code submitted). Transitions must follow the state machine; violations return INVALID_STATE.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "desiredState",
+          "type": "enum",
+          "required": true,
+          "description": "Target state; candidate values include enrolled, unmanaged, failed, and pending."
+        },
+        {
+          "fieldId": 2,
+          "name": "reason",
+          "type": "enum",
+          "required": false,
+          "description": "Change reason; candidate values include pairing_code_used, server_claimed, user_unenrolled, admin_reset, and unknown (default)."
+        },
+        {
+          "fieldId": 3,
+          "name": "endpoint",
+          "type": "DeviceEnrollmentEndpointSummary",
+          "required": false,
+          "description": "Endpoint summary associated with a successful enrollment. Required when desiredState is enrolled."
+        },
+        {
+          "fieldId": 4,
+          "name": "message",
+          "type": "string",
+          "required": false,
+          "maxLength": 512,
+          "description": "Failure, unbind, or repair detail. Required when desiredState is failed."
+        }
+      ]
+    },
+    {
+      "name": "DeviceSetEnrollmentStateResult",
+      "kind": "object",
+      "description": "Result of device.setEnrollmentState; carries the post-operation enrollment snapshot.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "state",
+          "type": "DeviceEnrollmentInfo",
+          "required": true,
+          "description": "Enrollment state after the operation."
+        },
+        {
+          "fieldId": 2,
+          "name": "disconnectExpected",
+          "type": "bool",
+          "required": false,
+          "default": false,
+          "description": "Whether the unbind or reset is expected to cause a connection change. true only when desiredState is unmanaged and the device needs to close the management session; false for all other transitions."
+        }
+      ]
+    },
+    {
+      "name": "DeviceEnrollmentStateChangedEvent",
+      "kind": "object",
+      "description": "Event payload emitted when the enrollment state changes.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "state",
+          "type": "DeviceEnrollmentInfo",
+          "required": true,
+          "description": "Enrollment state after the change."
+        },
+        {
+          "fieldId": 2,
+          "name": "previousState",
+          "type": "enum",
+          "required": false,
+          "description": "State enum value (not a full object) before the change; candidate values are the same DeviceEnrollmentInfo.state set."
+        },
+        {
+          "fieldId": 3,
+          "name": "reason",
+          "type": "enum",
+          "required": false,
+          "description": "Change reason; candidate values include pairing_code_used, server_claimed, user_unenrolled, admin_reset, and unknown (default)."
+        },
+        {
+          "fieldId": 4,
+          "name": "triggerMethod",
+          "type": "enum",
+          "required": false,
+          "description": "Operation type that triggered the change; candidate values include setEnrollmentState (explicit call), getPairingCode (indirect, for code-expiry fallback), and server_sync (device-internal such as code-expiry rollback or server-side revoke). triggerId MUST be omitted when triggerMethod is server_sync. [REVIEW-ADOPTED-SCOPED]"
+        },
+        {
+          "fieldId": 5,
+          "name": "triggerId",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "RPC request id of the triggering operation. Omitted when triggerMethod is server_sync. [REVIEW-ADOPTED-SCOPED]"
+        }
+      ]
+    },
+    {
+      "name": "DeviceEnrollmentCapability",
+      "kind": "object",
+      "description": "Capability descriptor for device.enrollment.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "supportsPairingCode",
+          "type": "bool",
+          "required": false,
+          "description": "Whether pairing code is supported."
+        },
+        {
+          "fieldId": 2,
+          "name": "pairingCodeTtlSeconds",
+          "type": "uint32",
+          "required": false,
+          "description": "Default code TTL in seconds; MUST be greater than 0."
+        },
+        {
+          "fieldId": 3,
+          "name": "supportsUnenroll",
+          "type": "bool",
+          "required": false,
+          "description": "Whether remote unbind or enrollment state clear is supported."
+        },
+        {
+          "fieldId": 4,
+          "name": "endpointTypes",
+          "type": "array",
+          "required": false,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Endpoint type strings that enrollment may produce; candidate values include room, device, and asset. P0 only requires room. [REVIEW-ADOPTED-SCOPED]"
+        },
+        {
+          "fieldId": 5,
+          "name": "supportedPurposes",
+          "type": "array",
+          "required": false,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Supported pairing code purpose strings; candidate values include initial_enrollment, re_enrollment, and service_repair. Omission means only initial_enrollment is supported. [REVIEW-ADOPTED-SCOPED]"
+        },
+        {
+          "fieldId": 6,
+          "name": "maxActivePairingCodes",
+          "type": "uint32",
+          "required": false,
+          "default": 1,
+          "description": "Maximum number of simultaneously valid pairing codes. Default 1. [REVIEW-ADOPTED-SCOPED]"
+        },
+        {
+          "fieldId": 7,
+          "name": "pairingCodeLength",
+          "type": "uint32",
+          "required": false,
+          "min": 6,
+          "max": 8,
+          "default": 6,
+          "description": "Pairing code character length. Default 6. [REVIEW-ADOPTED-SCOPED]"
+        }
+      ]
+    },
+    {
       "name": "FirmwareUpdateCapabilities",
       "kind": "object",
       "description": "P0 firmware update capability and upload constraints.",
@@ -7757,6 +8103,912 @@
       ]
     },
     {
+      "name": "SignagePlaylistCapabilitiesResult",
+      "kind": "object",
+      "description": "Capability scope for signage.playlist.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "supportedItemTypes",
+          "type": "array",
+          "required": true,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Supported playlist item type strings; candidate values include image, website, video, clock, and unsplash."
+        },
+        {
+          "fieldId": 2,
+          "name": "maxPlaylists",
+          "type": "uint32",
+          "required": false,
+          "description": "Maximum number of playlists; product-defined."
+        },
+        {
+          "fieldId": 3,
+          "name": "maxItemsPerPlaylist",
+          "type": "uint32",
+          "required": false,
+          "description": "Maximum number of playlist items per playlist; product-defined."
+        },
+        {
+          "fieldId": 4,
+          "name": "supportsScheduledPlaylist",
+          "type": "bool",
+          "required": true,
+          "description": "Whether scheduled playlists are supported."
+        },
+        {
+          "fieldId": 5,
+          "name": "supportsUrlRefresh",
+          "type": "bool",
+          "required": true,
+          "description": "Whether playlist item URL refresh (getPlaylistItemUrl) is supported."
+        },
+        {
+          "fieldId": 6,
+          "name": "supportsReset",
+          "type": "bool",
+          "required": true,
+          "description": "Whether resetting the playlist to default (resetPlaylistConfig) is supported."
+        }
+      ]
+    },
+    {
+      "name": "SignagePlaylistConfigResult",
+      "kind": "object",
+      "description": "Current playlist configuration snapshot.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "playlists",
+          "type": "array",
+          "required": true,
+          "schema": "SignagePlaylist",
+          "array": {
+            "itemType": "SignagePlaylist",
+            "itemSchema": "SignagePlaylist"
+          },
+          "description": "Playlist objects. An empty array means no playlist is configured and is not an error."
+        }
+      ]
+    },
+    {
+      "name": "SignageSetPlaylistConfigParams",
+      "kind": "object",
+      "description": "Full replacement payload for signage.setPlaylistConfig.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "playlists",
+          "type": "array",
+          "required": true,
+          "schema": "SignagePlaylist",
+          "array": {
+            "itemType": "SignagePlaylist",
+            "itemSchema": "SignagePlaylist"
+          },
+          "description": "Playlist objects. MUST be non-empty; an empty array returns INVALID_ARGUMENT."
+        }
+      ]
+    },
+    {
+      "name": "SignageGetPlaylistItemUrlParams",
+      "kind": "object",
+      "description": "Request to refresh a playlist item URL by itemId.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "itemId",
+          "type": "string",
+          "required": true,
+          "maxLength": 64,
+          "description": "Playlist item unique identifier (UUID)."
+        }
+      ]
+    },
+    {
+      "name": "SignageGetPlaylistItemUrlResult",
+      "kind": "object",
+      "description": "Refreshed playlist item URL result. The internal structure of settings depends on type.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "type",
+          "type": "enum",
+          "required": true,
+          "description": "Playlist item type used to discriminate the settings structure; candidate values include image, video, website, and unsplash. Clock is excluded from URL refresh."
+        },
+        {
+          "fieldId": 2,
+          "name": "settings",
+          "type": "SignagePlaylistItemSettings",
+          "required": true,
+          "description": "Refreshed complete settings; the device may replace the locally cached settings with this value."
+        }
+      ]
+    },
+    {
+      "name": "SignagePlaylistConfigChangedEvent",
+      "kind": "object",
+      "description": "Event payload emitted when the playlist configuration changes.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "reason",
+          "type": "enum",
+          "required": true,
+          "description": "Change reason; candidate values include set_config (triggered by setPlaylistConfig) and reset_config (triggered by resetPlaylistConfig)."
+        },
+        {
+          "fieldId": 2,
+          "name": "playlists",
+          "type": "array",
+          "required": false,
+          "schema": "SignagePlaylist",
+          "array": {
+            "itemType": "SignagePlaylist",
+            "itemSchema": "SignagePlaylist"
+          },
+          "description": "Optional playlist objects representing the full post-change configuration. The device MAY omit it to shrink the payload; when omitted the client MUST call signage.getPlaylistConfig to reconcile."
+        }
+      ]
+    },
+    {
+      "name": "SignagePlaylist",
+      "kind": "object",
+      "description": "One playlist definition.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "id",
+          "type": "string",
+          "required": true,
+          "maxLength": 64,
+          "description": "Playlist unique identifier (UUID)."
+        },
+        {
+          "fieldId": 2,
+          "name": "type",
+          "type": "enum",
+          "required": true,
+          "description": "Playlist type; candidate values include default (always-on default playlist) and scheduled (time-windowed playlist)."
+        },
+        {
+          "fieldId": 3,
+          "name": "startDate",
+          "type": "string",
+          "required": false,
+          "maxLength": 16,
+          "description": "Start date (YYYY-MM-DD). Required only when type is scheduled; MUST satisfy startDate <= endDate."
+        },
+        {
+          "fieldId": 4,
+          "name": "endDate",
+          "type": "string",
+          "required": false,
+          "maxLength": 16,
+          "description": "End date (YYYY-MM-DD). Required only when type is scheduled; MUST satisfy startDate <= endDate."
+        },
+        {
+          "fieldId": 5,
+          "name": "startTime",
+          "type": "string",
+          "required": false,
+          "maxLength": 16,
+          "description": "Start time (HH:mm:ss). Required only when type is scheduled. When startDate equals endDate, startTime MUST be <= endTime; when startDate < endDate, crossing midnight is allowed (startTime > endTime means D-day startTime to D+1 endTime)."
+        },
+        {
+          "fieldId": 6,
+          "name": "endTime",
+          "type": "string",
+          "required": false,
+          "maxLength": 16,
+          "description": "End time (HH:mm:ss). Required only when type is scheduled; see startTime for the cross-midnight rule."
+        },
+        {
+          "fieldId": 7,
+          "name": "days",
+          "type": "array",
+          "required": false,
+          "array": {
+            "itemType": "uint8"
+          },
+          "description": "Optional active weekday numbers (1-7, 1=Monday). Required only when type is scheduled and MUST be non-empty."
+        },
+        {
+          "fieldId": 8,
+          "name": "items",
+          "type": "array",
+          "required": true,
+          "schema": "SignagePlaylistItem",
+          "array": {
+            "itemType": "SignagePlaylistItem",
+            "itemSchema": "SignagePlaylistItem"
+          },
+          "description": "Playlist item objects. MUST be non-empty; an empty items array returns INVALID_ARGUMENT."
+        }
+      ]
+    },
+    {
+      "name": "SignagePlaylistItem",
+      "kind": "object",
+      "description": "One playlist item.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "id",
+          "type": "string",
+          "required": true,
+          "maxLength": 64,
+          "description": "Playlist item unique identifier (UUID)."
+        },
+        {
+          "fieldId": 2,
+          "name": "type",
+          "type": "enum",
+          "required": true,
+          "description": "Playlist item type; candidate values include image, website, video, clock, and unsplash."
+        },
+        {
+          "fieldId": 3,
+          "name": "duration",
+          "type": "uint32",
+          "required": true,
+          "min": 1,
+          "max": 86400,
+          "default": 60,
+          "description": "Single playback duration in seconds; MUST be greater than 0."
+        },
+        {
+          "fieldId": 4,
+          "name": "sort",
+          "type": "uint32",
+          "required": true,
+          "default": 0,
+          "description": "Playback order, ascending by sort. The sort value MUST be unique within the same playlist; duplicate sort values return INVALID_ARGUMENT."
+        },
+        {
+          "fieldId": 5,
+          "name": "settings",
+          "type": "SignagePlaylistItemSettings",
+          "required": true,
+          "description": "Playlist item settings; structure varies by type."
+        }
+      ]
+    },
+    {
+      "name": "SignagePlaylistItemSettings",
+      "kind": "object",
+      "description": "Aggregated playlist item settings spanning all item types. Only the subset matching the enclosing item type is meaningful; see the per-type rules in the signage.playlist draft.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "urls",
+          "type": "array",
+          "required": false,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "image type: non-empty image URLs."
+        },
+        {
+          "fieldId": 2,
+          "name": "delaySeconds",
+          "type": "uint32",
+          "required": false,
+          "min": 1,
+          "default": 5,
+          "description": "image and unsplash types: per-image display interval in seconds."
+        },
+        {
+          "fieldId": 3,
+          "name": "expiresAt",
+          "type": "uint64",
+          "required": false,
+          "description": "image, video, and unsplash types: Unix timestamp URL expiry. 0 or absent means never expires."
+        },
+        {
+          "fieldId": 4,
+          "name": "url",
+          "type": "string",
+          "required": false,
+          "maxLength": 2048,
+          "description": "video and website types: media or page URL."
+        },
+        {
+          "fieldId": 5,
+          "name": "muted",
+          "type": "bool",
+          "required": false,
+          "default": false,
+          "description": "video type: whether to play muted."
+        },
+        {
+          "fieldId": 6,
+          "name": "ignoreCertificateError",
+          "type": "bool",
+          "required": false,
+          "default": false,
+          "description": "website type: whether to ignore TLS certificate errors. Enabling bypasses certificate validation and carries MITM risk; the default policy and caller permission requirements are product-defined."
+        },
+        {
+          "fieldId": 7,
+          "name": "refreshIntervalSecs",
+          "type": "uint32",
+          "required": false,
+          "min": 1,
+          "description": "website type: page refresh interval in seconds. 0 or absent means no refresh."
+        },
+        {
+          "fieldId": 8,
+          "name": "clocks",
+          "type": "array",
+          "required": false,
+          "schema": "SignagePlaylistClockEntry",
+          "array": {
+            "itemType": "SignagePlaylistClockEntry",
+            "itemSchema": "SignagePlaylistClockEntry"
+          },
+          "description": "clock type: non-empty playlist clock entry objects."
+        },
+        {
+          "fieldId": 9,
+          "name": "photos",
+          "type": "array",
+          "required": false,
+          "schema": "SignagePlaylistUnsplashPhoto",
+          "array": {
+            "itemType": "SignagePlaylistUnsplashPhoto",
+            "itemSchema": "SignagePlaylistUnsplashPhoto"
+          },
+          "description": "unsplash type: non-empty playlist unsplash photo objects."
+        }
+      ]
+    },
+    {
+      "name": "SignagePlaylistClockEntry",
+      "kind": "object",
+      "description": "One clock entry for the clock item type.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "timezone",
+          "type": "string",
+          "required": true,
+          "maxLength": 64,
+          "description": "IANA timezone identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "label",
+          "type": "string",
+          "required": true,
+          "maxLength": 64,
+          "description": "City label for the clock."
+        }
+      ]
+    },
+    {
+      "name": "SignagePlaylistUnsplashPhoto",
+      "kind": "object",
+      "description": "One Unsplash photo entry, including photographer attribution.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "url",
+          "type": "string",
+          "required": true,
+          "maxLength": 2048,
+          "description": "Photo URL."
+        },
+        {
+          "fieldId": 2,
+          "name": "userName",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Photographer name."
+        },
+        {
+          "fieldId": 3,
+          "name": "userLink",
+          "type": "string",
+          "required": true,
+          "maxLength": 2048,
+          "description": "Photographer Unsplash profile link."
+        }
+      ]
+    },
+    {
+      "name": "SignagePlaylistCapability",
+      "kind": "object",
+      "description": "Capability descriptor for signage.playlist.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "supportedItemTypes",
+          "type": "array",
+          "required": true,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Supported playlist item type strings; candidate values include image, website, video, clock, and unsplash."
+        },
+        {
+          "fieldId": 2,
+          "name": "maxPlaylists",
+          "type": "uint32",
+          "required": false,
+          "description": "Maximum number of playlists; product-defined."
+        },
+        {
+          "fieldId": 3,
+          "name": "maxItemsPerPlaylist",
+          "type": "uint32",
+          "required": false,
+          "description": "Maximum number of playlist items per playlist; product-defined."
+        },
+        {
+          "fieldId": 4,
+          "name": "supportsScheduledPlaylist",
+          "type": "bool",
+          "required": true,
+          "description": "Whether scheduled playlists are supported."
+        },
+        {
+          "fieldId": 5,
+          "name": "supportsUrlRefresh",
+          "type": "bool",
+          "required": true,
+          "description": "Whether playlist item URL refresh is supported."
+        },
+        {
+          "fieldId": 6,
+          "name": "supportsReset",
+          "type": "bool",
+          "required": true,
+          "description": "Whether resetting the playlist to default is supported."
+        }
+      ]
+    },
+    {
+      "name": "SoftwareGetConfigParams",
+      "kind": "object",
+      "description": "Request for software.getConfig; selects the software object to read by target.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "target",
+          "type": "string",
+          "required": true,
+          "maxLength": 64,
+          "description": "Software object to read. Currently defined value is launcher; other values such as signagePlayer and agent are reserved for future adoption and their config fields are not defined in this version."
+        }
+      ]
+    },
+    {
+      "name": "SoftwareConfig",
+      "kind": "object",
+      "description": "Runtime configuration snapshot of a software object. For the launcher target, config carries the LauncherConfig structure (displayName and appearance).",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "target",
+          "type": "string",
+          "required": true,
+          "maxLength": 64,
+          "description": "Software object this configuration belongs to. Currently defined value is launcher."
+        },
+        {
+          "fieldId": 2,
+          "name": "config",
+          "type": "LauncherConfig",
+          "required": true,
+          "description": "Target-specific configuration fragment. For the launcher target this is the LauncherConfig structure (displayName plus appearance); see the LauncherConfig and LauncherAppearance schemas."
+        }
+      ]
+    },
+    {
+      "name": "SoftwareSetConfigParams",
+      "kind": "object",
+      "description": "Request for software.setConfig; applies a partial update to the target software object. Fields absent from config are left unchanged; config itself must be a valid object and does not accept null.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "target",
+          "type": "string",
+          "required": true,
+          "maxLength": 64,
+          "description": "Software object to configure."
+        },
+        {
+          "fieldId": 2,
+          "name": "config",
+          "type": "LauncherConfig",
+          "required": true,
+          "description": "Target-specific configuration fragment to apply (partial update). For the launcher target this is the LauncherConfig structure; see SoftwareConfig.config and LauncherAppearance."
+        }
+      ]
+    },
+    {
+      "name": "SoftwareResetConfigParams",
+      "kind": "object",
+      "description": "Request for software.resetConfig; restores the specified software object to its current-version defaults.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "target",
+          "type": "string",
+          "required": true,
+          "maxLength": 64,
+          "description": "Software object to reset."
+        }
+      ]
+    },
+    {
+      "name": "SoftwareConfigChangedEvent",
+      "kind": "object",
+      "description": "Event payload emitted when a software object configuration changes.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "target",
+          "type": "string",
+          "required": true,
+          "maxLength": 64,
+          "description": "Software object whose configuration changed."
+        },
+        {
+          "fieldId": 2,
+          "name": "config",
+          "type": "LauncherConfig",
+          "required": true,
+          "description": "Full post-change configuration fragment (not a patch). For the launcher target this is the LauncherConfig structure; see SoftwareConfig.config."
+        },
+        {
+          "fieldId": 3,
+          "name": "changedFields",
+          "type": "array",
+          "required": false,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Optional changed field paths using dot notation for nested levels, e.g. appearance.panelLayout. Omitted when the device cannot compute the diff."
+        },
+        {
+          "fieldId": 4,
+          "name": "reason",
+          "type": "enum",
+          "required": false,
+          "description": "Change reason; candidate values include user_request (triggered by setConfig), restore_default (triggered by resetConfig), device_policy (triggered by device-internal policy), and unknown (default when the reason is not reported)."
+        }
+      ]
+    },
+    {
+      "name": "LauncherConfig",
+      "kind": "object",
+      "description": "Configuration fragment for target launcher. Referenced by SoftwareConfig.config, SoftwareSetConfigParams.config, and SoftwareConfigChangedEvent.config when target is launcher.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "displayName",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "User-visible device display name. Overrides the device factory name returned read-only by device.info product.displayName. MUST be non-empty; an empty string or value exceeding the max length returns INVALID_ARGUMENT. Omitted means keep current value on set, or the device factory name on get/reset."
+        },
+        {
+          "fieldId": 2,
+          "name": "appearance",
+          "type": "LauncherAppearance",
+          "required": false,
+          "description": "Appearance configuration for the launcher panel."
+        }
+      ]
+    },
+    {
+      "name": "LauncherAppearance",
+      "kind": "object",
+      "description": "Appearance configuration for the launcher panel, nested under LauncherConfig.appearance.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "panelLayout",
+          "type": "enum",
+          "required": false,
+          "description": "Panel layout mode; candidate values are focus (focus mode) and sidebar (sidebar mode, default)."
+        },
+        {
+          "fieldId": 2,
+          "name": "autoHidePanel",
+          "type": "bool",
+          "required": false,
+          "description": "Whether to auto-hide the panel. Default is false."
+        },
+        {
+          "fieldId": 3,
+          "name": "autoHideDelay",
+          "type": "uint32",
+          "required": false,
+          "min": 1,
+          "default": 5,
+          "description": "Auto-hide delay in seconds; MUST be greater than 0. Only effective when autoHidePanel is true. The value is preserved and persisted even when autoHidePanel is false and takes effect again once autoHidePanel switches back to true."
+        }
+      ]
+    },
+    {
+      "name": "SoftwareConfigCapability",
+      "kind": "object",
+      "description": "Capability descriptor for software.config.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "supportedTargets",
+          "type": "array",
+          "required": true,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Supported software object target strings; candidate values include launcher, signagePlayer, and agent."
+        },
+        {
+          "fieldId": 2,
+          "name": "supportsReset",
+          "type": "bool",
+          "required": false,
+          "description": "Whether restoring defaults via resetConfig is supported."
+        },
+        {
+          "fieldId": 3,
+          "name": "resetMayRestartSoftware",
+          "type": "bool",
+          "required": false,
+          "description": "Whether reset may restart the software object (not the device). System-level factory reset is handled by system.restoreFactorySettings."
+        }
+      ]
+    },
+    {
+      "name": "SoftwareGetUpdatePolicyParams",
+      "kind": "object",
+      "description": "Request for software.getUpdatePolicy; selects the software object to read by target.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "target",
+          "type": "string",
+          "required": true,
+          "maxLength": 64,
+          "description": "Software object to read the update policy of. Currently defined value is launcher; other values such as signagePlayer and agent are reserved for future adoption and their policy fields are not defined in this version."
+        }
+      ]
+    },
+    {
+      "name": "SoftwareUpdatePolicy",
+      "kind": "object",
+      "description": "Update policy snapshot of a software object. For the launcher target, policy carries the LauncherUpdatePolicy structure (updateMode, schedule, channel, conditions). When target is launcher, schedule and conditions may be null to explicitly clear the time window or prerequisites; null is distinct from omitted.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "target",
+          "type": "string",
+          "required": true,
+          "maxLength": 64,
+          "description": "Software object this update policy belongs to."
+        },
+        {
+          "fieldId": 2,
+          "name": "policy",
+          "type": "LauncherUpdatePolicy",
+          "required": true,
+          "description": "Target-specific update policy fragment. For the launcher target this is the LauncherUpdatePolicy structure (updateMode plus schedule, channel, conditions); see the LauncherUpdatePolicy, UpdateSchedule, and UpdateConditions schemas."
+        }
+      ]
+    },
+    {
+      "name": "SoftwareSetUpdatePolicyParams",
+      "kind": "object",
+      "description": "Request for software.setUpdatePolicy; applies a partial update to the target software object. Fields absent from policy are left unchanged; policy itself must be a valid object and does not accept null. Within the launcher policy fragment, schedule null explicitly clears the time window and conditions null explicitly clears all prerequisites; omitted means keep current value.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "target",
+          "type": "string",
+          "required": true,
+          "maxLength": 64,
+          "description": "Software object to configure the update policy of."
+        },
+        {
+          "fieldId": 2,
+          "name": "policy",
+          "type": "LauncherUpdatePolicy",
+          "required": true,
+          "description": "Target-specific update policy fragment to apply (partial update). For the launcher target this is the LauncherUpdatePolicy structure; see SoftwareUpdatePolicy.policy. Within the fragment, schedule null or conditions null explicitly clears those sub-objects while omitted keeps them unchanged."
+        }
+      ]
+    },
+    {
+      "name": "SoftwareResetUpdatePolicyParams",
+      "kind": "object",
+      "description": "Request for software.resetUpdatePolicy; restores the specified software object update policy to its current-version defaults.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "target",
+          "type": "string",
+          "required": true,
+          "maxLength": 64,
+          "description": "Software object to reset the update policy of."
+        }
+      ]
+    },
+    {
+      "name": "SoftwareUpdatePolicyChangedEvent",
+      "kind": "object",
+      "description": "Event payload emitted when a software object update policy changes.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "target",
+          "type": "string",
+          "required": true,
+          "maxLength": 64,
+          "description": "Software object whose update policy changed."
+        },
+        {
+          "fieldId": 2,
+          "name": "policy",
+          "type": "LauncherUpdatePolicy",
+          "required": true,
+          "description": "Full post-change update policy fragment (not a patch). For the launcher target this is the LauncherUpdatePolicy structure; see SoftwareUpdatePolicy.policy."
+        },
+        {
+          "fieldId": 3,
+          "name": "changedFields",
+          "type": "array",
+          "required": false,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Optional changed field paths using dot notation for nested levels, e.g. schedule.start. Omitted when the device cannot compute the diff."
+        },
+        {
+          "fieldId": 4,
+          "name": "reason",
+          "type": "enum",
+          "required": false,
+          "description": "Change reason; candidate values include user_request (triggered by setUpdatePolicy), restore_default (triggered by resetUpdatePolicy), device_policy (triggered by device-internal policy), and unknown (default when the reason is not reported)."
+        }
+      ]
+    },
+    {
+      "name": "LauncherUpdatePolicy",
+      "kind": "object",
+      "description": "Update policy fragment for target launcher. Referenced by SoftwareUpdatePolicy.policy, SoftwareSetUpdatePolicyParams.policy, and SoftwareUpdatePolicyChangedEvent.policy when target is launcher. schedule null means no update time restriction (any time) and conditions null means no prerequisites; both are valid persisted values and the reset default sets both to null. When updateMode is manual or notify, schedule may still be set and persisted but the device does not automatically perform updates in the window; the schedule value is preserved across updateMode changes.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "updateMode",
+          "type": "enum",
+          "required": true,
+          "description": "Update behavior mode; candidate values are auto (fully automatic download and install), manual (manual trigger only), and notify (notify only when an update is available)."
+        },
+        {
+          "fieldId": 2,
+          "name": "schedule",
+          "type": "UpdateSchedule",
+          "required": false,
+          "description": "Automatic update time window. Only effective when updateMode is auto. null means no time restriction (any time of day). In setUpdatePolicy partial update, null explicitly clears the window while omitted keeps the current value. See UpdateSchedule."
+        },
+        {
+          "fieldId": 3,
+          "name": "channel",
+          "type": "enum",
+          "required": true,
+          "description": "Update channel; candidate values are release (stable), beta (test), and alpha (development)."
+        },
+        {
+          "fieldId": 4,
+          "name": "conditions",
+          "type": "UpdateConditions",
+          "required": false,
+          "description": "Automatic update prerequisites. null means no prerequisites (no restriction). In setUpdatePolicy partial update, null explicitly clears all conditions while omitted keeps the current value. See UpdateConditions."
+        }
+      ]
+    },
+    {
+      "name": "UpdateSchedule",
+      "kind": "object",
+      "description": "Automatic update time window, nested under LauncherUpdatePolicy.schedule.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "start",
+          "type": "string",
+          "required": true,
+          "description": "Window start time in local time, matching the regex ^([01]\\d|2[0-3]):[0-5]\\d$ (HH:mm). A value that does not match returns INVALID_ARGUMENT."
+        },
+        {
+          "fieldId": 2,
+          "name": "end",
+          "type": "string",
+          "required": true,
+          "description": "Window end time in local time, matching the regex ^([01]\\d|2[0-3]):[0-5]\\d$ (HH:mm). A value that does not match returns INVALID_ARGUMENT. When end is earlier than start it denotes a cross-midnight window (from start on the current day to end on the next day)."
+        },
+        {
+          "fieldId": 3,
+          "name": "timezone",
+          "type": "string",
+          "required": false,
+          "description": "IANA timezone ID. Omitted means the device local timezone."
+        }
+      ]
+    },
+    {
+      "name": "UpdateConditions",
+      "kind": "object",
+      "description": "Automatic update prerequisites, nested under LauncherUpdatePolicy.conditions.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "requireIdle",
+          "type": "bool",
+          "required": false,
+          "default": true,
+          "description": "Whether the device must be idle before performing an update."
+        },
+        {
+          "fieldId": 2,
+          "name": "requireWifi",
+          "type": "bool",
+          "required": false,
+          "default": false,
+          "description": "Whether updates may only be downloaded over a Wi-Fi network."
+        }
+      ]
+    },
+    {
+      "name": "SoftwareUpdatePolicyCapability",
+      "kind": "object",
+      "description": "Capability descriptor for software.updatePolicy.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "supportedTargets",
+          "type": "array",
+          "required": true,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Supported software object target strings; candidate values include launcher, signagePlayer, and agent."
+        },
+        {
+          "fieldId": 2,
+          "name": "supportedChannels",
+          "type": "array",
+          "required": false,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Optional supported update channel strings; candidate values include release, beta, and alpha."
+        },
+        {
+          "fieldId": 3,
+          "name": "supportsSchedule",
+          "type": "bool",
+          "required": false,
+          "description": "Whether configuring an update time window via schedule is supported."
+        },
+        {
+          "fieldId": 4,
+          "name": "supportsReset",
+          "type": "bool",
+          "required": false,
+          "description": "Whether restoring defaults via resetUpdatePolicy is supported."
+        }
+      ]
+    },
+    {
       "name": "VideoGetStreamCapabilitiesParams",
       "kind": "object",
       "description": "Selector for video stream capability.",
@@ -9386,6 +10638,94 @@
       ]
     },
     {
+      "name": "device.getPairingCode",
+      "description": "Return a pairing code for on-site or backend-claimed device enrollment. With refresh=false (default) the current valid code is returned; with refresh=true the server generates a new code and invalidates the previous one.",
+      "methodId": 258,
+      "bitOffset": 1,
+      "domain": "device",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "DeviceGetPairingCodeParams"
+      },
+      "response": {
+        "type": "DevicePairingCodeInfo"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "device.enrollment"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "PERMISSION_DENIED",
+        "INTERNAL_ERROR"
+      ]
+    },
+    {
+      "name": "device.getEnrollmentState",
+      "description": "Query whether the device is enrolled and return the associated backend object summary when enrolled.",
+      "methodId": 259,
+      "bitOffset": 2,
+      "domain": "device",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "DeviceGetEnrollmentStateParams"
+      },
+      "response": {
+        "type": "DeviceEnrollmentInfo"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "device.enrollment"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED"
+      ]
+    },
+    {
+      "name": "device.setEnrollmentState",
+      "description": "Set the enrollment state (bind success, unbind, clear failure, or sync server claim). State transitions must follow the enrollment state machine; an invalid transition returns INVALID_STATE. Emitted after the state actually changes by the device.enrollmentStateChanged event.",
+      "methodId": 260,
+      "bitOffset": 3,
+      "domain": "device",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "DeviceSetEnrollmentStateParams"
+      },
+      "response": {
+        "type": "DeviceSetEnrollmentStateResult"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "device.enrollment"
+      ],
+      "events": [
+        "device.enrollmentStateChanged"
+      ],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "INVALID_ARGUMENT",
+        "INVALID_STATE",
+        "PERMISSION_DENIED"
+      ]
+    },
+    {
       "name": "firmware.getUpdateCapabilities",
       "description": "Return P0 firmware update capability and upload constraints.",
       "methodId": 1025,
@@ -10086,6 +11426,333 @@
       ]
     },
     {
+      "name": "signage.getPlaylistCapabilities",
+      "description": "Return the signage.playlist capability scope, including supported playlist item types, quantity limits, and feature toggles.",
+      "methodId": 3329,
+      "bitOffset": 0,
+      "domain": "signage",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "Empty"
+      },
+      "response": {
+        "type": "SignagePlaylistCapabilitiesResult"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "signage.playlist"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "INTERNAL_ERROR"
+      ]
+    },
+    {
+      "name": "signage.getPlaylistConfig",
+      "description": "Return the current playlist configuration held by the device as the complete playlists array.",
+      "methodId": 3330,
+      "bitOffset": 1,
+      "domain": "signage",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "Empty"
+      },
+      "response": {
+        "type": "SignagePlaylistConfigResult"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "signage.playlist"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "INTERNAL_ERROR"
+      ]
+    },
+    {
+      "name": "signage.setPlaylistConfig",
+      "description": "Fully replace the playlist configuration. The server is the single source of truth; a second full sync removes playlist items absent from the new payload.",
+      "methodId": 3331,
+      "bitOffset": 2,
+      "domain": "signage",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "SignageSetPlaylistConfigParams"
+      },
+      "response": {
+        "type": "Empty"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "signage.playlist"
+      ],
+      "events": [
+        "signage.playlistConfigChanged"
+      ],
+      "errors": [
+        "SUCCESS",
+        "INVALID_ARGUMENT",
+        "NOT_SUPPORTED",
+        "PERMISSION_DENIED"
+      ]
+    },
+    {
+      "name": "signage.resetPlaylistConfig",
+      "description": "Restore the playlist configuration to the factory default state.",
+      "methodId": 3332,
+      "bitOffset": 3,
+      "domain": "signage",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "Empty"
+      },
+      "response": {
+        "type": "SignagePlaylistConfigResult"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "signage.playlist"
+      ],
+      "events": [
+        "signage.playlistConfigChanged"
+      ],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "INTERNAL_ERROR"
+      ]
+    },
+    {
+      "name": "signage.getPlaylistItemUrl",
+      "description": "Fetch the latest resource URL for a playlist item by itemId (URL refresh). The device calls this proactively when an item URL is about to expire. Clock items have no URL resource and return NOT_SUPPORTED.",
+      "methodId": 3333,
+      "bitOffset": 4,
+      "domain": "signage",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "SignageGetPlaylistItemUrlParams"
+      },
+      "response": {
+        "type": "SignageGetPlaylistItemUrlResult"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "signage.playlist"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "NOT_FOUND",
+        "INTERNAL_ERROR"
+      ]
+    },
+    {
+      "name": "software.getConfig",
+      "description": "Read the current runtime configuration of a software object identified by target.",
+      "methodId": 5889,
+      "bitOffset": 0,
+      "domain": "software",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "SoftwareGetConfigParams"
+      },
+      "response": {
+        "type": "SoftwareConfig"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "software.config"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "INVALID_ARGUMENT"
+      ]
+    },
+    {
+      "name": "software.setConfig",
+      "description": "Set a configuration fragment of a software object using partial update semantics; fields absent from the payload are left unchanged.",
+      "methodId": 5890,
+      "bitOffset": 1,
+      "domain": "software",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "SoftwareSetConfigParams"
+      },
+      "response": {
+        "type": "Empty"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "software.config"
+      ],
+      "events": [
+        "software.configChanged"
+      ],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "INVALID_ARGUMENT",
+        "PERMISSION_DENIED",
+        "INVALID_STATE"
+      ]
+    },
+    {
+      "name": "software.resetConfig",
+      "description": "Restore the runtime configuration of a software object to the current-version defaults for the given target. Only resets the specified software object; system-level factory reset is handled by system.restoreFactorySettings and does not trigger a device reboot.",
+      "methodId": 5891,
+      "bitOffset": 2,
+      "domain": "software",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "SoftwareResetConfigParams"
+      },
+      "response": {
+        "type": "SoftwareConfig"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "software.config"
+      ],
+      "events": [
+        "software.configChanged"
+      ],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "PERMISSION_DENIED",
+        "INVALID_STATE"
+      ]
+    },
+    {
+      "name": "software.getUpdatePolicy",
+      "description": "Read the current automatic update policy of a software object identified by target.",
+      "methodId": 5892,
+      "bitOffset": 3,
+      "domain": "software",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "SoftwareGetUpdatePolicyParams"
+      },
+      "response": {
+        "type": "SoftwareUpdatePolicy"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "software.updatePolicy"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED"
+      ]
+    },
+    {
+      "name": "software.setUpdatePolicy",
+      "description": "Set an update policy fragment of a software object using partial update semantics; fields absent from the payload are left unchanged.",
+      "methodId": 5893,
+      "bitOffset": 4,
+      "domain": "software",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "SoftwareSetUpdatePolicyParams"
+      },
+      "response": {
+        "type": "Empty"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "software.updatePolicy"
+      ],
+      "events": [
+        "software.updatePolicyChanged"
+      ],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "INVALID_ARGUMENT",
+        "PERMISSION_DENIED",
+        "INVALID_STATE"
+      ]
+    },
+    {
+      "name": "software.resetUpdatePolicy",
+      "description": "Restore the update policy of a software object to the current-version defaults for the given target. Only resets the update policy; it does not trigger a software or device reboot. System-level factory reset is handled by system.restoreFactorySettings.",
+      "methodId": 5894,
+      "bitOffset": 5,
+      "domain": "software",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "SoftwareResetUpdatePolicyParams"
+      },
+      "response": {
+        "type": "SoftwareUpdatePolicy"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "software.updatePolicy"
+      ],
+      "events": [
+        "software.updatePolicyChanged"
+      ],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "PERMISSION_DENIED",
+        "INVALID_STATE"
+      ]
+    },
+    {
       "name": "video.getStreamCapabilities",
       "description": "Return video stream sources, codecs, profiles, and open-mode support.",
       "methodId": 2066,
@@ -10649,6 +12316,25 @@
       ]
     },
     {
+      "name": "device.enrollmentStateChanged",
+      "description": "Emitted after device.setEnrollmentState actually changes the enrollment state, or after a device-internal policy modifies it (e.g. pairing code expiry fallback, server-side revoke).",
+      "eventId": 258,
+      "bitOffset": 0,
+      "domain": "device",
+      "since": "1.0.0",
+      "status": "draft",
+      "payload": {
+        "type": "DeviceEnrollmentStateChangedEvent"
+      },
+      "severity": "info",
+      "trigger": [
+        "device.setEnrollmentState"
+      ],
+      "capabilities": [
+        "device.enrollment"
+      ]
+    },
+    {
       "name": "firmware.updateProgressReported",
       "description": "Emitted when firmware receiving, verification, or install progress changes.",
       "eventId": 1026,
@@ -10856,6 +12542,66 @@
       ],
       "capabilities": [
         "network.ap"
+      ]
+    },
+    {
+      "name": "signage.playlistConfigChanged",
+      "description": "Emitted after setPlaylistConfig or resetPlaylistConfig successfully changes the playlist configuration.",
+      "eventId": 3329,
+      "bitOffset": 0,
+      "domain": "signage",
+      "since": "1.0.0",
+      "status": "draft",
+      "payload": {
+        "type": "SignagePlaylistConfigChangedEvent"
+      },
+      "severity": "info",
+      "trigger": [
+        "signage.setPlaylistConfig",
+        "signage.resetPlaylistConfig"
+      ],
+      "capabilities": [
+        "signage.playlist"
+      ]
+    },
+    {
+      "name": "software.configChanged",
+      "description": "Emitted after software.setConfig or software.resetConfig successfully changes a software object configuration, or after a device-internal policy modifies it.",
+      "eventId": 5889,
+      "bitOffset": 0,
+      "domain": "software",
+      "since": "1.0.0",
+      "status": "draft",
+      "payload": {
+        "type": "SoftwareConfigChangedEvent"
+      },
+      "severity": "info",
+      "trigger": [
+        "software.setConfig",
+        "software.resetConfig"
+      ],
+      "capabilities": [
+        "software.config"
+      ]
+    },
+    {
+      "name": "software.updatePolicyChanged",
+      "description": "Emitted after software.setUpdatePolicy or software.resetUpdatePolicy successfully changes a software object update policy, or after a device-internal policy modifies it.",
+      "eventId": 5890,
+      "bitOffset": 1,
+      "domain": "software",
+      "since": "1.0.0",
+      "status": "draft",
+      "payload": {
+        "type": "SoftwareUpdatePolicyChangedEvent"
+      },
+      "severity": "info",
+      "trigger": [
+        "software.setUpdatePolicy",
+        "software.resetUpdatePolicy"
+      ],
+      "capabilities": [
+        "software.updatePolicy"
       ]
     },
     {
@@ -11603,6 +13349,26 @@
       "severity": "error",
       "retryable": false,
       "message": "Device hardware failure."
+    },
+    {
+      "name": "ENROLLMENT_CODE_EXPIRED",
+      "code": 266,
+      "category": "device",
+      "since": "1.0.0",
+      "status": "draft",
+      "severity": "warning",
+      "retryable": true,
+      "message": "Pairing code has expired."
+    },
+    {
+      "name": "ENROLLMENT_CODE_ALREADY_USED",
+      "code": 267,
+      "category": "device",
+      "since": "1.0.0",
+      "status": "draft",
+      "severity": "error",
+      "retryable": false,
+      "message": "Pairing code has already been used."
     },
     {
       "name": "CAPABILITY_NOT_FOUND",
@@ -12603,6 +14369,16 @@
       "schema": "DeviceInfoCapability"
     },
     {
+      "name": "device.enrollment",
+      "description": "Device supports pairing-code-based enrollment into backend management, enrollment state query and change, and enrollment state change notifications.",
+      "capabilityId": 258,
+      "domain": "device",
+      "since": "1.0.0",
+      "status": "draft",
+      "type": "object",
+      "schema": "DeviceEnrollmentCapability"
+    },
+    {
       "name": "firmware.update",
       "description": "Device supports P0 STREAM-based firmware update sessions.",
       "capabilityId": 1025,
@@ -12651,6 +14427,36 @@
       "status": "draft",
       "type": "object",
       "schema": "NetworkApCapabilities"
+    },
+    {
+      "name": "signage.playlist",
+      "description": "Device supports digital signage playlist full sync, query, reset, playlist item URL refresh, and playlist config change notification.",
+      "capabilityId": 3329,
+      "domain": "signage",
+      "since": "1.0.0",
+      "status": "draft",
+      "type": "object",
+      "schema": "SignagePlaylistCapability"
+    },
+    {
+      "name": "software.config",
+      "description": "Device supports reading, setting, and resetting the runtime configuration of software objects (such as the Launcher) and emitting configuration change notifications.",
+      "capabilityId": 5889,
+      "domain": "software",
+      "since": "1.0.0",
+      "status": "draft",
+      "type": "object",
+      "schema": "SoftwareConfigCapability"
+    },
+    {
+      "name": "software.updatePolicy",
+      "description": "Device supports reading, setting, and resetting the automatic update policy of software objects (such as the Launcher) and emitting update policy change notifications.",
+      "capabilityId": 5890,
+      "domain": "software",
+      "since": "1.0.0",
+      "status": "draft",
+      "type": "object",
+      "schema": "SoftwareUpdatePolicyCapability"
     },
     {
       "name": "video.stream",
