@@ -5,6 +5,7 @@
 #include <memory>
 #include <mutex>
 #include <queue>
+#include <set>
 #include <string>
 
 #include <ixwebsocket/IXGetFreePort.h>
@@ -43,19 +44,30 @@ public:
         _server = std::make_unique<ix::WebSocketServer>(listenPort, _address);
         _server->disablePerMessageDeflate();
         _server->setOnClientMessageCallback(
-            [this](std::shared_ptr<ix::ConnectionState>,
+            [this](std::shared_ptr<ix::ConnectionState> connectionState,
                    ix::WebSocket&,
                    const ix::WebSocketMessagePtr& message) {
                 if (!message) {
                     return;
                 }
                 if (message->type == ix::WebSocketMessageType::Open) {
+                    {
+                        std::lock_guard<std::mutex> lock(_clientsMutex);
+                        _activeClients.insert(connectionId(connectionState));
+                    }
+                    _connectionGeneration.fetch_add(1, std::memory_order_relaxed);
                     _hasConnection.store(true);
                     return;
                 }
                 if (message->type == ix::WebSocketMessageType::Close ||
                     message->type == ix::WebSocketMessageType::Error) {
-                    _hasConnection.store(false);
+                    bool hasClients = false;
+                    {
+                        std::lock_guard<std::mutex> lock(_clientsMutex);
+                        _activeClients.erase(connectionId(connectionState));
+                        hasClients = !_activeClients.empty();
+                    }
+                    _hasConnection.store(hasClients);
                     return;
                 }
                 if (message->type != ix::WebSocketMessageType::Message || message->binary) {
@@ -79,6 +91,10 @@ public:
         }
         _localPort = 0;
         _hasConnection.store(false);
+        {
+            std::lock_guard<std::mutex> lock(_clientsMutex);
+            _activeClients.clear();
+        }
         {
             std::lock_guard<std::mutex> lock(_rxMutex);
             std::queue<std::string> empty;
@@ -141,7 +157,15 @@ public:
         return _server != nullptr && _hasConnection.load();
     }
 
+    std::uint64_t connectionGeneration() const {
+        return _connectionGeneration.load(std::memory_order_relaxed);
+    }
+
 private:
+    static std::string connectionId(const std::shared_ptr<ix::ConnectionState>& connectionState) {
+        return connectionState ? connectionState->getId() : std::string();
+    }
+
     std::uint16_t _port = 0;
     std::uint16_t _localPort = 0;
     std::string _address;
@@ -149,7 +173,10 @@ private:
     IByteSink* _sink = nullptr;
     std::atomic<bool> _open{false};
     std::atomic<bool> _hasConnection{false};
+    std::atomic<std::uint64_t> _connectionGeneration{0};
     bool _netInitialized = false;
+    mutable std::mutex _clientsMutex;
+    std::set<std::string> _activeClients;
     mutable std::mutex _rxMutex;
     std::queue<std::string> _rxMessages;
 };

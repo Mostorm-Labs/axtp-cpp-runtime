@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <type_traits>
 #include <utility>
 
 #include "core/runtime/core/axtp_core.hpp"
@@ -32,14 +33,20 @@ public:
 
     template <typename WebSocketLike>
     void poll(WebSocketLike& transport) {
-        const bool hadConnection = transport.hasConnection();
         transport.poll();
-        if (!hadConnection && transport.hasConnection()) {
+
+        const bool connected = transport.hasConnection();
+        const auto generation = connected ? currentConnectionGeneration(transport) : 0;
+        if (!connected) {
+            _activeConnectionGeneration = 0;
+        } else if (_activeConnectionGeneration != generation) {
+            _activeConnectionGeneration = generation;
             _helloSent = false;
             _identified = false;
             _sid = makeSessionId();
         }
-        if (transport.hasConnection()) {
+
+        if (connected) {
             sendHelloOnce();
         }
     }
@@ -173,12 +180,31 @@ private:
         return std::to_string(_nextSessionId++);
     }
 
+    template <typename Transport, typename = void>
+    struct HasConnectionGeneration : std::false_type {};
+
+    template <typename Transport>
+    struct HasConnectionGeneration<
+        Transport,
+        std::void_t<decltype(std::declval<const Transport&>().connectionGeneration())>>
+        : std::true_type {};
+
+    template <typename Transport>
+    static std::uint64_t currentConnectionGeneration(const Transport& transport) {
+        if constexpr (HasConnectionGeneration<Transport>::value) {
+            return transport.connectionGeneration();
+        } else {
+            return transport.hasConnection() ? 1 : 0;
+        }
+    }
+
     AxtpCore* _core = nullptr;
     ITransport& _writer;
     std::function<void()> _pollEndpoint;
     JsonRpcEncoder _encoder;
     bool _helloSent = false;
     bool _identified = false;
+    std::uint64_t _activeConnectionGeneration = 0;
     std::uint32_t _nextSessionId = 1;
     std::string _sid = makeSessionId();
 };

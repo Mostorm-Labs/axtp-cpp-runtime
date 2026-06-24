@@ -87,6 +87,47 @@ std::string jsonString(const nlohmann::json& object, const char* key) {
     return object.at(key).get<std::string>();
 }
 
+struct WebSocketProbe {
+    explicit WebSocketProbe(std::uint16_t port) {
+        ws.setUrl("ws://127.0.0.1:" + std::to_string(port) + "/");
+        ws.setOnMessageCallback([this](const ix::WebSocketMessagePtr& message) {
+            if (!message || message->type != ix::WebSocketMessageType::Message) {
+                return;
+            }
+            {
+                std::lock_guard<std::mutex> lock(mutex);
+                messages.push(message->str);
+            }
+            cv.notify_one();
+        });
+        ws.start();
+    }
+
+    ~WebSocketProbe() {
+        ws.stop();
+    }
+
+    std::string waitMessage() {
+        std::unique_lock<std::mutex> lock(mutex);
+        const auto ok = cv.wait_for(lock, std::chrono::seconds(5), [&] {
+            return !messages.empty();
+        });
+        assert(ok);
+        auto text = std::move(messages.front());
+        messages.pop();
+        return text;
+    }
+
+    void sendText(const std::string& text) {
+        ws.sendText(text);
+    }
+
+    std::mutex mutex;
+    std::condition_variable cv;
+    std::queue<std::string> messages;
+    ix::WebSocket ws;
+};
+
 }  // namespace
 
 int main() {
@@ -321,6 +362,54 @@ int main() {
         assert(d.at("id").get<int>() == 801);
         assert(d.at("status").at("ok").get<bool>());
         assert(d.at("result").at("ok").get<bool>());
+        server.close();
+    }
+
+    {
+        axtp::BasicBroker<> broker;
+        axtp::AxtpEndpoint endpoint(broker);
+        broker.registerMethod(0x0901, [](const axtp::RpcPayload&) {
+            const std::string result = R"({"ok":true})";
+            return axtp::Bytes(result.begin(), result.end());
+        });
+
+        axtp::WebSocketTransport server(0);
+        endpoint.attachTransport(server);
+        axtp::WebSocketJsonRpcAdapter adapter(endpoint, server);
+        server.bind(adapter);
+        server.open();
+        const auto port = server.localPort();
+        assert(port != 0);
+
+        std::atomic<bool> keepPolling{true};
+        std::thread poller([&] {
+            while (keepPolling.load()) {
+                adapter.poll(server);
+                std::this_thread::sleep_for(std::chrono::milliseconds(5));
+            }
+        });
+
+        WebSocketProbe first(port);
+        auto firstHello = nlohmann::json::parse(first.waitMessage());
+        assert(firstHello.at("op").get<int>() == static_cast<int>(axtp::RpcOp::Hello));
+        first.sendText(R"({"sid":"","op":2,"d":{"randomSeed":305419896}})");
+        auto firstIdentified = nlohmann::json::parse(first.waitMessage());
+        assert(firstIdentified.at("op").get<int>() == static_cast<int>(axtp::RpcOp::Identified));
+        const auto firstSid = firstIdentified.at("sid").get<std::string>();
+        assert(!firstSid.empty());
+
+        WebSocketProbe second(port);
+        auto secondHello = nlohmann::json::parse(second.waitMessage());
+        assert(secondHello.at("op").get<int>() == static_cast<int>(axtp::RpcOp::Hello));
+        second.sendText(R"({"sid":"","op":2,"d":{"randomSeed":305419897}})");
+        auto secondIdentified = nlohmann::json::parse(second.waitMessage());
+        assert(secondIdentified.at("op").get<int>() == static_cast<int>(axtp::RpcOp::Identified));
+        const auto secondSid = secondIdentified.at("sid").get<std::string>();
+        assert(!secondSid.empty());
+        assert(secondSid != firstSid);
+
+        keepPolling = false;
+        poller.join();
         server.close();
     }
 
