@@ -3,6 +3,9 @@
 #include <algorithm>
 #include <cwchar>
 #include <hidapi.h>
+#if defined(_WIN32)
+#include <hidapi_winapi.h>
+#endif
 #include <limits>
 #include <mutex>
 #include <sstream>
@@ -182,6 +185,9 @@ public:
         }
         _reportId = options.reportId;
         hid_set_nonblocking(_handle, 0);
+#if defined(_WIN32)
+        hid_winapi_set_write_timeout(_handle, options.writeTimeoutMs);
+#endif
         setLastError({});
         return true;
     }
