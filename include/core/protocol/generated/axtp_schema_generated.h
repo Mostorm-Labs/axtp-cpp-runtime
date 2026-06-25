@@ -648,8 +648,6 @@ inline constexpr FieldDescriptor kCastWindowStateFields[] = {
     { 0x05, "alwaysOnTop", FieldType::Bool, true, 0, 0 },
     { 0x06, "sessionId", FieldType::String, false, 0, 0 },
     { 0x07, "bounds", FieldType::Object, false, 0, 0 },
-    { 0x08, "previousNormalBounds", FieldType::Object, false, 0, 0 },
-    { 0x09, "restoredBounds", FieldType::Object, false, 0, 0 },
     { 0x0A, "changedFields", FieldType::Array, false, 0, 0 },
     { 0x0B, "updatedAt", FieldType::String, false, 0, 0 },
 };
@@ -791,12 +789,6 @@ inline constexpr FieldDescriptor kCastStatusFields[] = {
     { 0x09, "redacted", FieldType::Bool, false, 0, 0 },
 };
 
-inline constexpr FieldDescriptor kCastStatusChangedEventFields[] = {
-    { 0x01, "changedSections", FieldType::Array, true, 0, 0 },
-    { 0x02, "status", FieldType::Object, true, 0, 0 },
-    { 0x03, "sampledAt", FieldType::String, true, 0, 0 },
-};
-
 inline constexpr FieldDescriptor kCastSessionCapabilityFields[] = {
     { 0x01, "protocols", FieldType::Array, true, 0, 0 },
     { 0x02, "receiverPhases", FieldType::Array, true, 0, 0 },
@@ -844,7 +836,6 @@ inline constexpr FieldDescriptor kCastFlowControlCapabilityFields[] = {
 inline constexpr FieldDescriptor kCastStatusCapabilityFields[] = {
     { 0x01, "sections", FieldType::Array, true, 0, 0 },
     { 0x02, "supportsSensitiveRedaction", FieldType::Bool, false, 0, 0 },
-    { 0x03, "supportsStatusChangedEvent", FieldType::Bool, false, 0, 0 },
 };
 
 inline constexpr FieldDescriptor kGetDeviceInfoParamsFields[] = {
@@ -1782,7 +1773,7 @@ inline constexpr SchemaDescriptor kCastPinCodeRequiredEventSchema = { "CastPinCo
 inline constexpr SchemaDescriptor kCastPinCodeAuthFailedEventSchema = { "CastPinCodeAuthFailedEvent", kCastPinCodeAuthFailedEventFields, 5 };
 inline constexpr SchemaDescriptor kCastRectSchema = { "CastRect", kCastRectFields, 4 };
 inline constexpr SchemaDescriptor kCastSetWindowStateParamsSchema = { "CastSetWindowStateParams", kCastSetWindowStateParamsFields, 4 };
-inline constexpr SchemaDescriptor kCastWindowStateSchema = { "CastWindowState", kCastWindowStateFields, 11 };
+inline constexpr SchemaDescriptor kCastWindowStateSchema = { "CastWindowState", kCastWindowStateFields, 9 };
 inline constexpr SchemaDescriptor kCastWindowChangedEventSchema = { "CastWindowChangedEvent", kCastWindowChangedEventFields, 4 };
 inline constexpr SchemaDescriptor kCastGetBackendStatusParamsSchema = { "CastGetBackendStatusParams", kCastGetBackendStatusParamsFields, 1 };
 inline constexpr SchemaDescriptor kCastRestartBackendParamsSchema = { "CastRestartBackendParams", kCastRestartBackendParamsFields, 2 };
@@ -1799,14 +1790,13 @@ inline constexpr SchemaDescriptor kCastReceiverSummarySchema = { "CastReceiverSu
 inline constexpr SchemaDescriptor kCastSessionStatusSummarySchema = { "CastSessionStatusSummary", kCastSessionStatusSummaryFields, 5 };
 inline constexpr SchemaDescriptor kCastPinCodeStatusSummarySchema = { "CastPinCodeStatusSummary", kCastPinCodeStatusSummaryFields, 6 };
 inline constexpr SchemaDescriptor kCastStatusSchema = { "CastStatus", kCastStatusFields, 9 };
-inline constexpr SchemaDescriptor kCastStatusChangedEventSchema = { "CastStatusChangedEvent", kCastStatusChangedEventFields, 3 };
 inline constexpr SchemaDescriptor kCastSessionCapabilitySchema = { "CastSessionCapability", kCastSessionCapabilityFields, 5 };
 inline constexpr SchemaDescriptor kCastAudioCapabilitySchema = { "CastAudioCapability", kCastAudioCapabilityFields, 3 };
 inline constexpr SchemaDescriptor kCastPinCodeCapabilitySchema = { "CastPinCodeCapability", kCastPinCodeCapabilityFields, 5 };
 inline constexpr SchemaDescriptor kCastWindowCapabilitySchema = { "CastWindowCapability", kCastWindowCapabilityFields, 4 };
 inline constexpr SchemaDescriptor kCastBackendCapabilitySchema = { "CastBackendCapability", kCastBackendCapabilityFields, 4 };
 inline constexpr SchemaDescriptor kCastFlowControlCapabilitySchema = { "CastFlowControlCapability", kCastFlowControlCapabilityFields, 5 };
-inline constexpr SchemaDescriptor kCastStatusCapabilitySchema = { "CastStatusCapability", kCastStatusCapabilityFields, 3 };
+inline constexpr SchemaDescriptor kCastStatusCapabilitySchema = { "CastStatusCapability", kCastStatusCapabilityFields, 2 };
 inline constexpr SchemaDescriptor kGetDeviceInfoParamsSchema = { "GetDeviceInfoParams", kGetDeviceInfoParamsFields, 1 };
 inline constexpr SchemaDescriptor kDeviceInfoSchema = { "DeviceInfo", kDeviceInfoFields, 7 };
 inline constexpr SchemaDescriptor kDeviceIdentitySchema = { "DeviceIdentity", kDeviceIdentityFields, 4 };

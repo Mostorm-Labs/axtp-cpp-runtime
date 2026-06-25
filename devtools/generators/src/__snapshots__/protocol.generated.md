@@ -37,7 +37,7 @@
 | Domain | Methods | Events |
 | ---- | ---- | ---- |
 | audio | 9 | 4 |
-| cast | 18 | 13 |
+| cast | 18 | 12 |
 | device | 4 | 1 |
 | firmware | 4 | 2 |
 | network | 18 | 8 |
@@ -205,7 +205,7 @@ Generated capabilities are the feature-level switches that runtimes and devices 
 | 0x1604 | cast.window | cast | draft | object | CastWindowCapability | Device supports cast window state query and mode control. |
 | 0x1605 | cast.backend | cast | draft | object | CastBackendCapability | Device supports cast backend status query and restart control. |
 | 0x1606 | cast.flowControl | cast | draft | object | CastFlowControlCapability | Device supports receiver-local cast render fps, queue, drop, overlay, and diagnostics control. |
-| 0x1607 | cast.status | cast | draft | object | CastStatusCapability | Device supports low-frequency aggregate cast receiver status query and change events. |
+| 0x1607 | cast.status | cast | draft | object | CastStatusCapability | Device supports current cast receiver status snapshot query. |
 | 0x1701 | software.config | software | draft | object | SoftwareConfigCapability | Device supports reading, setting, and resetting the runtime configuration of software objects (such as the Launcher) and emitting configuration change notifications. |
 | 0x1702 | software.updatePolicy | software | draft | object | SoftwareUpdatePolicyCapability | Device supports reading, setting, and resetting the automatic update policy of software objects (such as the Launcher) and emitting update policy change notifications. |
 
@@ -1076,8 +1076,6 @@ Type: `CastWindowState`
 | alwaysOnTop | Boolean | 0x05 | Whether the cast window is topmost. | None | N/A |
 | ?sessionId | String | 0x06 | Receiver-local session id associated with the window. | maxLength=128 | Omit if not used. |
 | ?bounds | CastRect | 0x07 | Current window bounds when available. | None | Omit if not used. |
-| ?previousNormalBounds | CastRect | 0x08 | Normal-mode bounds recorded before fullscreen or topmost mode. | None | Omit if not used. |
-| ?restoredBounds | CastRect | 0x09 | Bounds restored by the latest transition. | None | Omit if not used. |
 | ?changedFields | Array<String> | 0x0A | Field names changed by the latest operation or event. | array.itemType=string | Omit if not used. |
 | ?updatedAt | String | 0x0B | Timestamp for this window state. | maxLength=64 | Omit if not used. |
 
@@ -1121,8 +1119,6 @@ Type: `CastWindowState`
 | alwaysOnTop | Boolean | 0x05 | Whether the cast window is topmost. | None | N/A |
 | ?sessionId | String | 0x06 | Receiver-local session id associated with the window. | maxLength=128 | Omit if not used. |
 | ?bounds | CastRect | 0x07 | Current window bounds when available. | None | Omit if not used. |
-| ?previousNormalBounds | CastRect | 0x08 | Normal-mode bounds recorded before fullscreen or topmost mode. | None | Omit if not used. |
-| ?restoredBounds | CastRect | 0x09 | Bounds restored by the latest transition. | None | Omit if not used. |
 | ?changedFields | Array<String> | 0x0A | Field names changed by the latest operation or event. | array.itemType=string | Omit if not used. |
 | ?updatedAt | String | 0x0B | Timestamp for this window state. | maxLength=64 | Omit if not used. |
 
@@ -1358,7 +1354,7 @@ Type: `CastFlowControlState`
 
 ### cast.getStatus
 
-Return a low-frequency aggregate cast receiver status summary.
+Return a current cast receiver snapshot for UI reload, reconnect, or event-loss recovery.
 
 - Method ID: `0x1612`
 - Domain: `cast`
@@ -1392,8 +1388,8 @@ Type: `CastStatus`
 | ?window | CastWindowState | 0x05 | Cast window summary. | None | Omit if not used. |
 | ?backend | CastBackendStatus | 0x06 | Backend summary. | None | Omit if not used. |
 | ?flowControl | CastFlowControlState | 0x07 | Flow control summary. | None | Omit if not used. |
-| sampledAt | String | 0x08 | Timestamp for this aggregate snapshot. | maxLength=64 | N/A |
-| ?redacted | Boolean | 0x09 | Whether any sensitive aggregate fields were withheld. | None | Omit if not used. |
+| sampledAt | String | 0x08 | Timestamp for this status snapshot. | maxLength=64 | N/A |
+| ?redacted | Boolean | 0x09 | Whether any sensitive snapshot fields were withheld. | None | Omit if not used. |
 
 ---
 
@@ -3149,7 +3145,6 @@ Type: `AudioStreamStatsReportedEvent`
 - [cast.windowChanged](#castwindowchanged)
 - [cast.backendChanged](#castbackendchanged)
 - [cast.flowControlChanged](#castflowcontrolchanged)
-- [cast.statusChanged](#caststatuschanged)
 
 ---
 
@@ -3487,31 +3482,6 @@ Type: `CastFlowControlChangedEvent`
 | state | CastFlowControlState | 0x02 | Flow control state after the change or sample. | None | N/A |
 | ?reason | Enum | 0x03 | Change or sampling reason. | enum=manualFlowControl/diagnosticsSample/sessionStarted/sessionStopped/unknown | Omit if not used. |
 | ?sampledAt | String | 0x04 | Timestamp for this event. | maxLength=64 | Omit if not used. |
-
----
-
-### cast.statusChanged
-
-Emitted when low-frequency aggregate cast status sections change.
-
-- Event ID: `0x160D`
-- Domain: `cast`
-- bitOffset: `12`
-- Status: `draft`
-- Severity: `info`
-- Added in v1.0.0
-- Trigger: `session changed`, `audio changed`, `PIN changed`, `window changed`, `backend changed`, `flow control changed`
-- Required Capabilities: `cast.status`
-
-#### Payload Fields
-
-Type: `CastStatusChangedEvent`
-
-| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
-| ---- | :---: | :---: | ---- | :---: | ---- |
-| changedSections | Array<String> | 0x01 | Status section names changed by this event. | array.itemType=string | N/A |
-| status | CastStatus | 0x02 | Aggregate status after the change. | None | N/A |
-| sampledAt | String | 0x03 | Timestamp for this aggregate event. | maxLength=64 | N/A |
 
 ---
 
@@ -4313,7 +4283,7 @@ Low-frequency media summary for a cast session.
 
 ## CastPinCodeStatusSummary
 
-Aggregate PIN summary for status views.
+Snapshot PIN summary for status views.
 
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
@@ -4328,7 +4298,7 @@ Aggregate PIN summary for status views.
 
 ## CastReceiverSummary
 
-Aggregate receiver role and protocol-neutral phase summary.
+Snapshot receiver role and protocol-neutral phase summary.
 
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
@@ -4354,7 +4324,7 @@ Cast window rectangle in screen coordinates.
 
 ## CastSessionStatusSummary
 
-Aggregate active session summary for status views.
+Snapshot active session summary for status views.
 
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |

@@ -791,13 +791,6 @@ struct EventTraits<EventId::CastFlowControlChanged> {
 };
 
 template <>
-struct EventTraits<EventId::CastStatusChanged> {
-    using Event = CastStatusChangedEvent;
-    static constexpr std::uint16_t id = static_cast<std::uint16_t>(EventId::CastStatusChanged);
-    static constexpr const char* name = "cast.statusChanged";
-};
-
-template <>
 struct EventTraits<EventId::SoftwareConfigChanged> {
     using Event = SoftwareConfigChangedEvent;
     static constexpr std::uint16_t id = static_cast<std::uint16_t>(EventId::SoftwareConfigChanged);
