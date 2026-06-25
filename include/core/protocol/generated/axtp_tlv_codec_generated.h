@@ -618,8 +618,6 @@ constexpr std::uint8_t FULLSCREEN = 0x04;
 constexpr std::uint8_t ALWAYS_ON_TOP = 0x05;
 constexpr std::uint8_t SESSION_ID = 0x06;
 constexpr std::uint8_t BOUNDS = 0x07;
-constexpr std::uint8_t PREVIOUS_NORMAL_BOUNDS = 0x08;
-constexpr std::uint8_t RESTORED_BOUNDS = 0x09;
 constexpr std::uint8_t CHANGED_FIELDS = 0x0A;
 constexpr std::uint8_t UPDATED_AT = 0x0B;
 }
@@ -761,12 +759,6 @@ constexpr std::uint8_t SAMPLED_AT = 0x08;
 constexpr std::uint8_t REDACTED = 0x09;
 }
 
-namespace fields::cast_status_changed_event {
-constexpr std::uint8_t CHANGED_SECTIONS = 0x01;
-constexpr std::uint8_t STATUS = 0x02;
-constexpr std::uint8_t SAMPLED_AT = 0x03;
-}
-
 namespace fields::cast_session_capability {
 constexpr std::uint8_t PROTOCOLS = 0x01;
 constexpr std::uint8_t RECEIVER_PHASES = 0x02;
@@ -814,7 +806,6 @@ constexpr std::uint8_t EXPOSES_EXTERNAL_KEYFRAME_REQUEST = 0x05;
 namespace fields::cast_status_capability {
 constexpr std::uint8_t SECTIONS = 0x01;
 constexpr std::uint8_t SUPPORTS_SENSITIVE_REDACTION = 0x02;
-constexpr std::uint8_t SUPPORTS_STATUS_CHANGED_EVENT = 0x03;
 }
 
 namespace fields::get_device_info_params {
@@ -2555,10 +2546,6 @@ struct CastWindowState {
     bool has_sessionId = false;
     std::uint32_t bounds = 0;
     bool has_bounds = false;
-    std::uint32_t previousNormalBounds = 0;
-    bool has_previousNormalBounds = false;
-    std::uint32_t restoredBounds = 0;
-    bool has_restoredBounds = false;
     std::uint32_t changedFields = 0;
     bool has_changedFields = false;
     const char* updatedAt = nullptr;
@@ -2763,12 +2750,6 @@ struct CastStatus {
     bool has_redacted = false;
 };
 
-struct CastStatusChangedEvent {
-    std::uint32_t changedSections = 0;
-    std::uint32_t status = 0;
-    const char* sampledAt = nullptr;
-};
-
 struct CastSessionCapability {
     std::uint32_t protocols = 0;
     std::uint32_t receiverPhases = 0;
@@ -2840,8 +2821,6 @@ struct CastStatusCapability {
     std::uint32_t sections = 0;
     bool supportsSensitiveRedaction = false;
     bool has_supportsSensitiveRedaction = false;
-    bool supportsStatusChangedEvent = false;
-    bool has_supportsStatusChangedEvent = false;
 };
 
 struct GetDeviceInfoParams {
@@ -4256,9 +4235,6 @@ bool DecodeCastPinCodeStatusSummary(TlvReader& reader, CastPinCodeStatusSummary*
 
 bool EncodeCastStatus(const CastStatus& input, TlvWriter& writer, ErrorCode* error);
 bool DecodeCastStatus(TlvReader& reader, CastStatus* output, ErrorCode* error);
-
-bool EncodeCastStatusChangedEvent(const CastStatusChangedEvent& input, TlvWriter& writer, ErrorCode* error);
-bool DecodeCastStatusChangedEvent(TlvReader& reader, CastStatusChangedEvent* output, ErrorCode* error);
 
 bool EncodeCastSessionCapability(const CastSessionCapability& input, TlvWriter& writer, ErrorCode* error);
 bool DecodeCastSessionCapability(TlvReader& reader, CastSessionCapability* output, ErrorCode* error);

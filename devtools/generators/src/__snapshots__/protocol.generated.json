@@ -4067,20 +4067,6 @@
           "description": "Current window bounds when available."
         },
         {
-          "fieldId": 8,
-          "name": "previousNormalBounds",
-          "type": "CastRect",
-          "required": false,
-          "description": "Normal-mode bounds recorded before fullscreen or topmost mode."
-        },
-        {
-          "fieldId": 9,
-          "name": "restoredBounds",
-          "type": "CastRect",
-          "required": false,
-          "description": "Bounds restored by the latest transition."
-        },
-        {
           "fieldId": 10,
           "name": "changedFields",
           "type": "array",
@@ -4734,7 +4720,7 @@
     {
       "name": "CastGetStatusParams",
       "kind": "object",
-      "description": "Selector for aggregate cast receiver status.",
+      "description": "Selector for current cast receiver snapshot.",
       "fields": [
         {
           "fieldId": 1,
@@ -4759,7 +4745,7 @@
     {
       "name": "CastReceiverSummary",
       "kind": "object",
-      "description": "Aggregate receiver role and protocol-neutral phase summary.",
+      "description": "Snapshot receiver role and protocol-neutral phase summary.",
       "fields": [
         {
           "fieldId": 1,
@@ -4819,7 +4805,7 @@
     {
       "name": "CastSessionStatusSummary",
       "kind": "object",
-      "description": "Aggregate active session summary for status views.",
+      "description": "Snapshot active session summary for status views.",
       "fields": [
         {
           "fieldId": 1,
@@ -4892,7 +4878,7 @@
     {
       "name": "CastPinCodeStatusSummary",
       "kind": "object",
-      "description": "Aggregate PIN summary for status views.",
+      "description": "Snapshot PIN summary for status views.",
       "fields": [
         {
           "fieldId": 1,
@@ -4953,7 +4939,7 @@
     {
       "name": "CastStatus",
       "kind": "object",
-      "description": "Low-frequency aggregate cast receiver status.",
+      "description": "Current cast receiver snapshot for reconnect and event-loss recovery.",
       "fields": [
         {
           "fieldId": 1,
@@ -5010,46 +4996,14 @@
           "type": "string",
           "required": true,
           "maxLength": 64,
-          "description": "Timestamp for this aggregate snapshot."
+          "description": "Timestamp for this status snapshot."
         },
         {
           "fieldId": 9,
           "name": "redacted",
           "type": "bool",
           "required": false,
-          "description": "Whether any sensitive aggregate fields were withheld."
-        }
-      ]
-    },
-    {
-      "name": "CastStatusChangedEvent",
-      "kind": "object",
-      "description": "Event payload for low-frequency aggregate status changes.",
-      "fields": [
-        {
-          "fieldId": 1,
-          "name": "changedSections",
-          "type": "array",
-          "required": true,
-          "array": {
-            "itemType": "string"
-          },
-          "description": "Status section names changed by this event."
-        },
-        {
-          "fieldId": 2,
-          "name": "status",
-          "type": "CastStatus",
-          "required": true,
-          "description": "Aggregate status after the change."
-        },
-        {
-          "fieldId": 3,
-          "name": "sampledAt",
-          "type": "string",
-          "required": true,
-          "maxLength": 64,
-          "description": "Timestamp for this aggregate event."
+          "description": "Whether any sensitive snapshot fields were withheld."
         }
       ]
     },
@@ -5213,7 +5167,7 @@
           "type": "bool",
           "required": false,
           "default": true,
-          "description": "Whether normal mode can restore previous normal bounds."
+          "description": "Whether normal mode can restore remembered normal-mode bounds."
         },
         {
           "fieldId": 4,
@@ -5320,7 +5274,7 @@
     {
       "name": "CastStatusCapability",
       "kind": "object",
-      "description": "Capability descriptor for cast.status.",
+      "description": "Capability descriptor for cast.status snapshot query.",
       "fields": [
         {
           "fieldId": 1,
@@ -5330,7 +5284,7 @@
           "array": {
             "itemType": "string"
           },
-          "description": "Aggregate status sections the receiver can report."
+          "description": "Status snapshot sections the receiver can report."
         },
         {
           "fieldId": 2,
@@ -5339,14 +5293,6 @@
           "required": false,
           "default": true,
           "description": "Whether sensitive status fields can be withheld and marked redacted."
-        },
-        {
-          "fieldId": 3,
-          "name": "supportsStatusChangedEvent",
-          "type": "bool",
-          "required": false,
-          "default": true,
-          "description": "Whether low-frequency aggregate status change events are supported."
         }
       ]
     },
@@ -10581,7 +10527,7 @@
     },
     {
       "name": "cast.getStatus",
-      "description": "Return a low-frequency aggregate cast receiver status summary.",
+      "description": "Return a current cast receiver snapshot for UI reload, reconnect, or event-loss recovery.",
       "methodId": 5650,
       "bitOffset": 17,
       "domain": "cast",
@@ -12289,30 +12235,6 @@
       ],
       "capabilities": [
         "cast.flowControl"
-      ]
-    },
-    {
-      "name": "cast.statusChanged",
-      "description": "Emitted when low-frequency aggregate cast status sections change.",
-      "eventId": 5645,
-      "bitOffset": 12,
-      "domain": "cast",
-      "since": "1.0.0",
-      "status": "draft",
-      "payload": {
-        "type": "CastStatusChangedEvent"
-      },
-      "severity": "info",
-      "trigger": [
-        "session changed",
-        "audio changed",
-        "PIN changed",
-        "window changed",
-        "backend changed",
-        "flow control changed"
-      ],
-      "capabilities": [
-        "cast.status"
       ]
     },
     {
@@ -14350,7 +14272,7 @@
     },
     {
       "name": "cast.status",
-      "description": "Device supports low-frequency aggregate cast receiver status query and change events.",
+      "description": "Device supports current cast receiver status snapshot query.",
       "capabilityId": 5639,
       "domain": "cast",
       "since": "1.0.0",

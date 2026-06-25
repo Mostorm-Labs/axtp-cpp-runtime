@@ -44,11 +44,10 @@ inline constexpr EventDescriptor kEventRegistry[] = {
     { 0x160A, "cast.windowChanged", "cast", "CastWindowChangedEvent" },
     { 0x160B, "cast.backendChanged", "cast", "CastBackendChangedEvent" },
     { 0x160C, "cast.flowControlChanged", "cast", "CastFlowControlChangedEvent" },
-    { 0x160D, "cast.statusChanged", "cast", "CastStatusChangedEvent" },
     { 0x1701, "software.configChanged", "software", "SoftwareConfigChangedEvent" },
     { 0x1702, "software.updatePolicyChanged", "software", "SoftwareUpdatePolicyChangedEvent" },
 };
 
-inline constexpr std::size_t kEventRegistryCount = 34;
+inline constexpr std::size_t kEventRegistryCount = 33;
 
 } // namespace axtp
