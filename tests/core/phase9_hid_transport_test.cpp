@@ -50,10 +50,15 @@ public:
         return copied;
     }
 
+    axtp::HidReportLengths reportLengths() const override {
+        return lengths;
+    }
+
     void enqueueRead(axtp::Bytes report) {
         reads.push(std::move(report));
     }
 
+    axtp::HidReportLengths lengths;
     bool _open = false;
     int openCount = 0;
     int closeCount = 0;
@@ -170,6 +175,42 @@ int main() {
     transport.poll();
     assert(backendPtr->writes.empty());
     assert(sink.chunks.empty());
+
+    axtp::HidTransportOptions autoOptions;
+    autoOptions.reportId = 0x05;
+    autoOptions.inputReportSize = 0;
+    autoOptions.outputReportSize = 0;
+    autoOptions.readBufferSize = 64;
+    autoOptions.maxReportsPerPoll = 1;
+    auto autoBackend = std::make_unique<MockHidBackend>();
+    autoBackend->lengths.inputReportSize = 4096;
+    autoBackend->lengths.outputReportSize = 4096;
+    autoBackend->lengths.featureReportSize = 33;
+    auto* autoBackendPtr = autoBackend.get();
+    axtp::HidTransport autoTransport(autoOptions, std::move(autoBackend));
+    CapturingByteSink autoSink;
+    autoTransport.bind(autoSink);
+    assert(autoTransport.profile().preferredFrameSize == 0);
+    autoTransport.open();
+    assert(autoTransport.isOpen());
+    assert(autoTransport.options().inputReportSize == 4096);
+    assert(autoTransport.options().outputReportSize == 4096);
+    assert(autoTransport.options().readBufferSize == 4096);
+    assert(autoTransport.profile().preferredFrameSize == 4095);
+    axtp::Bytes largePayload(4097, 0xA5);
+    autoTransport.sendBytes(largePayload.data(), largePayload.size());
+    assert(autoBackendPtr->writes.size() == 2);
+    assert(autoBackendPtr->writes[0].size() == 4096);
+    assert(autoBackendPtr->writes[1].size() == 4096);
+    assert(autoBackendPtr->writes[0][0] == autoOptions.reportId);
+    assert(autoBackendPtr->writes[1][0] == autoOptions.reportId);
+    assert(autoBackendPtr->writes[0][1] == 0xA5);
+    assert(autoBackendPtr->writes[1][1] == 0xA5);
+    autoBackendPtr->enqueueRead(axtp::Bytes(4096, 0x05));
+    autoTransport.poll();
+    assert(autoBackendPtr->readSizes.size() == 1);
+    assert(autoBackendPtr->readSizes[0] == 4096);
+    autoTransport.close();
 
     auto coreBackend = std::make_unique<MockHidBackend>();
     auto* coreBackendPtr = coreBackend.get();

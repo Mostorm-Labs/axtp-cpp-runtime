@@ -282,6 +282,9 @@ if(AXTP_BUILD_OPTIONAL_TRANSPORTS)
         PRIVATE
             ${AXTP_HIDAPI_TARGET}
     )
+    if(WIN32)
+        target_link_libraries(axtp_transport_hidapi PRIVATE hid)
+    endif()
     target_compile_features(axtp_transport_hidapi PUBLIC cxx_std_17)
     set_target_properties(axtp_transport_hidapi PROPERTIES EXPORT_NAME transport_hidapi)
     if(NOT TARGET axtp::transport_hidapi)

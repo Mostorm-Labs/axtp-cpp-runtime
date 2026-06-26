@@ -4,7 +4,15 @@
 #include <cwchar>
 #include <hidapi.h>
 #if defined(_WIN32)
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
 #include <hidapi_winapi.h>
+#include <windows.h>
+extern "C" {
+#include <hidsdi.h>
+#include <hidpi.h>
+}
 #endif
 #include <limits>
 #include <mutex>
@@ -138,6 +146,69 @@ std::optional<std::string> resolveHidPathFromFilters(const HidTransportOptions& 
     return std::nullopt;
 }
 
+#if defined(_WIN32)
+std::wstring utf8ToWide(const std::string& value) {
+    if (value.empty()) {
+        return {};
+    }
+    const auto required = MultiByteToWideChar(CP_UTF8,
+                                              MB_ERR_INVALID_CHARS,
+                                              value.c_str(),
+                                              -1,
+                                              nullptr,
+                                              0);
+    if (required <= 0) {
+        return {};
+    }
+    std::wstring output(static_cast<std::size_t>(required), L'\0');
+    const auto written = MultiByteToWideChar(CP_UTF8,
+                                             MB_ERR_INVALID_CHARS,
+                                             value.c_str(),
+                                             -1,
+                                             output.data(),
+                                             required);
+    if (written <= 0) {
+        return {};
+    }
+    if (!output.empty() && output.back() == L'\0') {
+        output.pop_back();
+    }
+    return output;
+}
+
+HidReportLengths readWindowsReportLengths(const std::string& path) {
+    HidReportLengths lengths;
+    const auto widePath = utf8ToWide(path);
+    if (widePath.empty()) {
+        return lengths;
+    }
+
+    HANDLE handle = CreateFileW(widePath.c_str(),
+                                0,
+                                FILE_SHARE_READ | FILE_SHARE_WRITE,
+                                nullptr,
+                                OPEN_EXISTING,
+                                FILE_ATTRIBUTE_NORMAL,
+                                nullptr);
+    if (handle == INVALID_HANDLE_VALUE) {
+        return lengths;
+    }
+
+    PHIDP_PREPARSED_DATA preparsedData = nullptr;
+    if (HidD_GetPreparsedData(handle, &preparsedData) != FALSE && preparsedData != nullptr) {
+        HIDP_CAPS caps{};
+        if (HidP_GetCaps(preparsedData, &caps) == HIDP_STATUS_SUCCESS) {
+            lengths.inputReportSize = caps.InputReportByteLength;
+            lengths.outputReportSize = caps.OutputReportByteLength;
+            lengths.featureReportSize = caps.FeatureReportByteLength;
+        }
+        HidD_FreePreparsedData(preparsedData);
+    }
+    CloseHandle(handle);
+    return lengths;
+}
+#endif
+
 class HidApiBackend : public IHidBackend {
 public:
     ~HidApiBackend() override {
@@ -184,6 +255,9 @@ public:
             return false;
         }
         _reportId = options.reportId;
+#if defined(_WIN32)
+        _reportLengths = pathToOpen.empty() ? HidReportLengths{} : readWindowsReportLengths(pathToOpen);
+#endif
         hid_set_nonblocking(_handle, 0);
 #if defined(_WIN32)
         hid_winapi_set_write_timeout(_handle, options.writeTimeoutMs);
@@ -197,6 +271,9 @@ public:
             hid_close(_handle);
             _handle = nullptr;
         }
+#if defined(_WIN32)
+        _reportLengths = {};
+#endif
         if (_initialized) {
             hid_exit();
             _initialized = false;
@@ -250,6 +327,10 @@ public:
         return _lastError;
     }
 
+    HidReportLengths reportLengths() const override {
+        return _reportLengths;
+    }
+
 private:
     void setLastError(std::string message) {
         std::lock_guard<std::mutex> lock(_lastErrorMutex);
@@ -259,6 +340,7 @@ private:
     hid_device* _handle = nullptr;
     bool _initialized = false;
     std::uint8_t _reportId = 0;
+    HidReportLengths _reportLengths;
     mutable std::mutex _lastErrorMutex;
     std::string _lastError;
 };
@@ -317,6 +399,16 @@ void HidTransport::open() {
     const bool opened = _backend != nullptr && _backend->open(_options);
     _open.store(opened);
     if (opened) {
+        const auto lengths = _backend->reportLengths();
+        if (_options.inputReportSize == 0 && lengths.inputReportSize > 0) {
+            _options.inputReportSize = lengths.inputReportSize;
+        }
+        if (_options.outputReportSize == 0 && lengths.outputReportSize > 0) {
+            _options.outputReportSize = lengths.outputReportSize;
+        }
+        if (_options.readBufferSize < _options.inputReportSize) {
+            _options.readBufferSize = _options.inputReportSize;
+        }
         startReadThread();
     }
 }

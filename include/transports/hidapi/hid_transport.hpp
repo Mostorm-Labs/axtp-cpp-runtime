@@ -81,6 +81,12 @@ struct HidTransportOptions {
     std::function<void(const HidReportTrace&)> reportTrace;
 };
 
+struct HidReportLengths {
+    std::size_t inputReportSize = 0;
+    std::size_t outputReportSize = 0;
+    std::size_t featureReportSize = 0;
+};
+
 class IHidBackend {
 public:
     virtual ~IHidBackend() = default;
@@ -90,6 +96,9 @@ public:
     virtual std::optional<std::size_t>
     readReport(Byte* data, std::size_t size, std::uint32_t timeoutMs) = 0;
     virtual std::string lastError() const {
+        return {};
+    }
+    virtual HidReportLengths reportLengths() const {
         return {};
     }
 };
