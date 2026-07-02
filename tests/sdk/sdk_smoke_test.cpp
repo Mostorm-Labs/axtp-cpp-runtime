@@ -10,8 +10,6 @@
 
 #include "core/runtime/endpoint/axtp_endpoint.hpp"
 #include "core/runtime/testing/mock_transport.hpp"
-#include "transports/tcp/native/tcp_transport.hpp"
-
 #include <axtp_sdk.hpp>
 
 namespace {
@@ -281,51 +279,8 @@ int main() {
         assert(transportPtr->sawBusinessRequest);
     }
 
-    {
-        axtp::BasicBroker<> broker;
-        axtp::AxtpEndpoint endpoint(broker);
-        broker.registerMethod(
-            static_cast<std::uint16_t>(axtp::MethodId::AudioGetAlgorithmConfig),
-            [](const axtp::RpcPayload&) {
-                const std::string body = R"({"noiseSuppression":{"enabled":true,"level":3}})";
-                return axtp::Bytes(body.begin(), body.end());
-            });
-
-        axtp::TcpServerTransport server(0);
-        endpoint.attachTransport(server);
-        server.open();
-        assert(server.isOpen());
-        const auto port = server.localPort();
-        assert(port != 0);
-
-        std::atomic<bool> running{true};
-        std::thread serverThread([&] {
-            while (running.load()) {
-                endpoint.poll();
-                std::this_thread::sleep_for(std::chrono::milliseconds(1));
-            }
-        });
-
-        axtp::sdk::AxtpClient tcpClient;
-        tcpClient.connect(axtp::sdk::TcpEndpoint{"127.0.0.1", port});
-        assert(tcpClient.isConnected());
-
-        axtp::sdk::AppReadyOptions options;
-        options.timeout = std::chrono::milliseconds(1000);
-        options.randomSeed = 0x01020304;
-        const auto ready = tcpClient.ensureAppReady(options);
-        assert(ready.ok);
-        assert(tcpClient.isAppReady());
-        assert(!tcpClient.sessionSid().empty());
-
-        axtp::sdk::CallOptions callOptions;
-        callOptions.timeout = std::chrono::milliseconds(1000);
-        const auto body = tcpClient.callJson("audio.getAlgorithmConfig", "{}", callOptions);
-        assert(body.find("noiseSuppression") != std::string::npos);
-
-        tcpClient.close();
-        running = false;
-        serverThread.join();
-        server.close();
-    }
+    axtp::sdk::AxtpClient tcpConnectorClient;
+    tcpConnectorClient.connect(axtp::sdk::TcpEndpoint{"127.0.0.1", 1});
+    assert(!tcpConnectorClient.isConnected());
+    assert(tcpConnectorClient.lastError().code == axtp::ErrorCode::NotSupported);
 }

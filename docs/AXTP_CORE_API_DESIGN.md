@@ -31,10 +31,10 @@ ITransport <-> AxtpEndpoint -> AxtpCore -> BasicBroker
 | `axtp_broker` | `INTERFACE` | `BasicBroker<>`、`BrokerTask`、`BrokerResult`、dynamic method dispatch helper |
 | `axtp_runtime` | `INTERFACE` | core + broker + endpoint glue，供普通应用使用 |
 | `axtp_json_rpc` | `INTERFACE` | WebSocket session helper adapter 和 JSON registry-file loader |
-| `axtp_transport_tcp_native` | `INTERFACE` | 默认 native TCP transport，public header 位于 `include/transports`，不依赖 Boost |
-| `axtp_transport_hidapi` | `STATIC` optional | HID report-level transport，public header 位于 `include/transports`，实现位于 `src/transports`，依赖 submodule `third_party/hidapi` |
+| `axtp_transport_tcp_native` | `INTERFACE` optional | Native TCP transport，public header 位于 `include/transports`，不依赖 Boost |
+| `axtp_transport_hidapi` | `STATIC` optional | HID report-level transport，public header 位于 `include/transports`，实现位于 `src/transports`，依赖顶层或工具解析出的 hidapi target |
 | `axtp_transport_tcp_boost` | `INTERFACE` optional | Legacy Boost.Asio TCP transport，Boost 可用时定义，位于 `include/transports` |
-| `axtp_transport_websocket_ix` | `INTERFACE` optional | 默认 IXWebSocket WebSocket transport，位于 `include/transports` |
+| `axtp_transport_websocket_ix` | `INTERFACE` optional | IXWebSocket WebSocket transport，位于 `include/transports`，依赖顶层或工具解析出的 IXWebSocket target |
 | `axtp_transport_websocket_websocketpp` | `INTERFACE` optional | 高级可选 websocketpp + standalone Asio WebSocket transport，位于 `include/transports` |
 | `axtp_transport_websocket_boost` | `INTERFACE` optional | Legacy optional Boost.Beast WebSocket transport，位于 `include/transports` |
 

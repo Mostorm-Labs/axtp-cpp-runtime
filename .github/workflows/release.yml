@@ -46,6 +46,7 @@ jobs:
           cmake -S . -B build/windows-tools -G "Visual Studio 17 2022" -A x64 `
             -DAXTP_CPP_RUNTIME_BUILD_TOOLS=ON `
             -DAXTP_CPP_RUNTIME_BUILD_MEDIAHOST=ON `
+            -DAXTP_CPP_RUNTIME_TOOLS_FETCH_DEPS=ON `
             -DAXTP_CPP_RUNTIME_BUILD_TESTS=OFF `
             -DAXTP_CPP_RUNTIME_ENABLE_INSTALL=OFF
 
