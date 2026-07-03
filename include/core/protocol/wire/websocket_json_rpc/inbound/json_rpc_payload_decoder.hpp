@@ -157,10 +157,10 @@ private:
         return static_cast<ErrorCode>(static_cast<std::uint16_t>(raw));
     }
 
-    static std::uint32_t parseRandomSeed(const nlohmann::json& d) {
+    static std::optional<std::uint32_t> parseRandomSeed(const nlohmann::json& d) {
         const auto randomSeed = d.find("randomSeed");
         if (randomSeed == d.end()) {
-            throw std::invalid_argument("missing randomSeed");
+            return std::nullopt;
         }
         std::uint64_t raw = 0;
         if (randomSeed->is_number_unsigned()) {
@@ -307,8 +307,10 @@ private:
             return;
         }
         if (op == RpcOp::Identify || op == RpcOp::Reidentify) {
-            payload.meta.hasRandomSeed = true;
-            payload.meta.randomSeed = parseRandomSeed(d);
+            if (auto randomSeed = parseRandomSeed(d)) {
+                payload.meta.hasRandomSeed = true;
+                payload.meta.randomSeed = *randomSeed;
+            }
         }
         payload.body = jsonToBytes(d);
         sink.onRpc(std::move(payload));

@@ -204,11 +204,19 @@ int main() {
                static_cast<int>(axtp::ErrorCode::ControlOpenRequired));
 
         injectJson(transport, R"({"sid":"","op":2,"d":{"resumeSid":"legacy-session"}})");
-        auto invalidIdentify = popJson(transport, "identify missing randomSeed");
-        assert(invalidIdentify.at("op").get<int>() ==
-               static_cast<int>(axtp::RpcOp::RequestResponse));
-        assert(invalidIdentify.at("d").at("status").at("code").get<int>() ==
-               static_cast<int>(axtp::ErrorCode::RpcPayloadInvalid));
+        auto legacyIdentified = popJson(transport, "legacy identify without randomSeed");
+        assert(legacyIdentified.at("op").get<int>() ==
+               static_cast<int>(axtp::RpcOp::Identified));
+        assert(legacyIdentified.at("sid").get<std::string>() == "legacy-session");
+
+        injectJson(
+            transport,
+            R"({"sid":"legacy-session","op":7,"d":{"id":706,"method":"audio.getAlgorithmConfig","params":{}}})");
+        auto legacyResponse = popJson(transport, "legacy request without randomSeed");
+        auto legacyD = legacyResponse.at("d");
+        assert(legacyD.at("id").get<int>() == 706);
+        assert(legacyD.at("status").at("ok").get<bool>());
+        assert(legacyD.at("result").contains("noiseSuppression"));
 
         injectJson(transport,
                    R"({"sid":"","op":2,"d":{"randomSeed":305419896,"eventMasks":"850101"}})");
@@ -267,11 +275,11 @@ int main() {
 
         injectJson(
             transport,
-            R"({"sid":"0x000003","op":7,"d":{"id":706,"method":"audio.getAlgorithmConfig","params":{}}})");
+            R"({"sid":"0x000003","op":7,"d":{"id":708,"method":"audio.getAlgorithmConfig","params":{}}})");
         response = popJson(transport, "invalid sid");
         d = response.at("d");
         assert(response.at("op").get<int>() == static_cast<int>(axtp::RpcOp::RequestResponse));
-        assert(d.at("id").get<int>() == 706);
+        assert(d.at("id").get<int>() == 708);
         assert(d.at("status").at("ok").get<bool>() == false);
         assert(d.at("status").at("code").get<int>() ==
                static_cast<int>(axtp::ErrorCode::RpcPayloadInvalid));

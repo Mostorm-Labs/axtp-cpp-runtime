@@ -294,8 +294,18 @@ int main() {
                                          R"({"sid":"","op":2,"d":{"eventMasks":""}})"));
         core.byteSink().onBytes(bytes.data(), bytes.size());
         auto identify = core.tryTakeSessionRpc(axtp::RpcOp::Identify);
-        assert(!identify.has_value());
-        assert(!core.tryPopOutboundBytes().has_value());
+        assert(identify.has_value());
+        assert(!identify->meta.hasRandomSeed);
+        auto identifiedBytes = core.tryPopOutboundBytes();
+        assert(identifiedBytes.has_value());
+
+        CapturingPayloadSink sink;
+        axtp::InboundProcessor inbound(sink);
+        inbound.onBytes(identifiedBytes->data(), identifiedBytes->size());
+        assert(sink.rpcs.size() == 1);
+        assert(sink.rpcs[0].op == axtp::RpcOp::Identified);
+        assert(std::regex_match(sink.rpcs[0].meta.jsonSid, std::regex("^[0-9A-F]{8}$")));
+        assert(sink.rpcs[0].meta.jsonSid != "00000000");
     }
 
     {

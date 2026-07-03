@@ -5,6 +5,7 @@
 #include <iomanip>
 #include <limits>
 #include <nlohmann/json.hpp>
+#include <optional>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -172,7 +173,7 @@ private:
             !resumeSid->get<std::string>().empty()) {
             _sid = resumeSid->get<std::string>();
         } else {
-            _sid = makeSessionId(randomSeed);
+            _sid = makeSessionId(randomSeed.value_or(0));
         }
         _identified = true;
         sendRpc(JsonRpcEncoder::makeIdentified(_sid));
@@ -192,10 +193,10 @@ private:
         sendRpc(std::move(response));
     }
 
-    static std::uint32_t parseRandomSeed(const nlohmann::json& d) {
+    static std::optional<std::uint32_t> parseRandomSeed(const nlohmann::json& d) {
         const auto field = d.find("randomSeed");
         if (field == d.end()) {
-            throw std::invalid_argument("missing randomSeed");
+            return std::nullopt;
         }
         std::uint64_t raw = 0;
         if (field->is_number_unsigned()) {

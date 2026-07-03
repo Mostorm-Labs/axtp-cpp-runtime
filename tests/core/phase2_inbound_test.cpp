@@ -187,7 +187,9 @@ int main() {
                       1,
                       makeJsonEnvelopePayload(R"({"sid":"","op":2,"d":{"eventMasks":""}})"));
         inbound.onBytes(frame.data(), frame.size());
-        assert(sink.rpcs.empty());
+        assert(sink.rpcs.size() == 1);
+        assert(sink.rpcs[0].op == axtp::RpcOp::Identify);
+        assert(!sink.rpcs[0].meta.hasRandomSeed);
     }
 
     return 0;
