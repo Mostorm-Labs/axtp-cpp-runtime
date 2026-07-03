@@ -332,6 +332,10 @@ public:
         _eventHandlers[eventId] = std::move(handler);
     }
 
+    void setStreamHandler(BasicBroker<>::StreamHandler handler) {
+        _broker.registerStreamHandler(std::move(handler));
+    }
+
     RpcPayload callRaw(RpcPayload request, CallOptions options = {}) {
         normalizeRequest(request, options);
 

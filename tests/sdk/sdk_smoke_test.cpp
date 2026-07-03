@@ -54,6 +54,13 @@ axtp::Bytes encodeRpc(axtp::RpcPayload payload) {
     return writer.bytes;
 }
 
+axtp::Bytes encodeStream(axtp::StreamPayload payload) {
+    CapturingByteWriter writer;
+    axtp::OutboundProcessor outbound(writer);
+    outbound.sendStream(std::move(payload));
+    return writer.bytes;
+}
+
 class ScriptedHandshakeTransport : public axtp::ITransport {
 public:
     void bind(axtp::IByteSink& sink) override {
@@ -283,4 +290,32 @@ int main() {
     tcpConnectorClient.connect(axtp::sdk::TcpEndpoint{"127.0.0.1", 1});
     assert(!tcpConnectorClient.isConnected());
     assert(tcpConnectorClient.lastError().code == axtp::ErrorCode::NotSupported);
+
+    {
+        axtp::sdk::AxtpClient client;
+        std::vector<axtp::StreamPayload> received;
+        client.setStreamHandler(
+            [&received](const axtp::BrokerContext&, const axtp::StreamPayload& stream) {
+                received.push_back(stream);
+            });
+
+        auto transport = std::make_unique<axtp::MockTransport>();
+        auto* rawTransport = transport.get();
+        client.attachTransport(std::move(transport));
+
+        axtp::StreamPayload stream;
+        stream.streamId = 0x1001;
+        stream.seqId = 7;
+        stream.cursor = 123456;
+        stream.data = {0x00, 0x00, 0x01, 0x65};
+        rawTransport->injectIncoming(encodeStream(stream));
+
+        client.poll();
+
+        assert(received.size() == 1);
+        assert(received.front().streamId == 0x1001);
+        assert(received.front().seqId == 7);
+        assert(received.front().cursor == 123456);
+        assert(received.front().data.size() == 4);
+    }
 }
