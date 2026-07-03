@@ -94,7 +94,7 @@ int main() {
         rpc.methodOrEventId = 0x0901;
         rpc.bodyEncoding = axtp::RpcBodyEncoding::None;
         rpc.meta.sourceProtocol = axtp::SourceProtocol::JsonRpc;
-        rpc.meta.jsonSid = "00000000";
+        rpc.meta.jsonSid = "1234abcd";
         rpc.meta.jsonMethodOrEventName = "audio.getAlgorithmConfig";
         const std::string body = "{}";
         rpc.body.assign(body.begin(), body.end());
@@ -108,7 +108,7 @@ int main() {
         assert(sink.rpcs[0].op == axtp::RpcOp::Request);
         assert(sink.rpcs[0].requestId == 44);
         assert(sink.rpcs[0].methodOrEventId == 0x0901);
-        assert(sink.rpcs[0].meta.jsonSid == "00000000");
+        assert(sink.rpcs[0].meta.jsonSid == "1234abcd");
         assert((sink.rpcs[0].body == axtp::Bytes{'{', '}'}));
     }
 
@@ -150,14 +150,14 @@ int main() {
     {
         CapturingByteWriter writer;
         axtp::OutboundProcessor outbound(writer);
-        outbound.sendRpc(axtp::JsonRpcEncoder::makeIdentified("12345678"));
+        outbound.sendRpc(axtp::JsonRpcEncoder::makeIdentified("1234abcd"));
 
         CapturingPayloadSink sink;
         axtp::InboundProcessor inbound(sink);
         inbound.onBytes(writer.bytes.data(), writer.bytes.size());
         assert(sink.rpcs.size() == 1);
         assert(sink.rpcs[0].op == axtp::RpcOp::Identified);
-        assert(sink.rpcs[0].meta.jsonSid == "12345678");
+        assert(sink.rpcs[0].meta.jsonSid == "1234abcd");
         const std::string body(sink.rpcs[0].body.begin(), sink.rpcs[0].body.end());
         assert(body == "{}");
         assert(body.find("negotiatedRpcVersion") == std::string::npos);

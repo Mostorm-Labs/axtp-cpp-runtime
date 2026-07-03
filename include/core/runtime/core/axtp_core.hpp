@@ -280,7 +280,7 @@ private:
             mixed = _nextSessionId;
         }
         std::ostringstream out;
-        out << std::hex << std::setw(8) << std::setfill('0') << mixed;
+        out << std::uppercase << std::hex << std::setw(8) << std::setfill('0') << mixed;
         return out.str();
     }
 };

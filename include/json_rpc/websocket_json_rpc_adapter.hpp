@@ -2,8 +2,10 @@
 
 #include <cstdint>
 #include <functional>
+#include <iomanip>
 #include <limits>
 #include <nlohmann/json.hpp>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -66,6 +68,13 @@ public:
                     parseSid(object), parseRequestId(object), ErrorCode::ControlOpenRequired, op);
                 return;
             }
+            if (_identified &&
+                (op == RpcOp::Request || op == RpcOp::RequestBatch || op == RpcOp::Event ||
+                 op == RpcOp::RequestResponse) &&
+                !isAcceptedSid(parseSid(object))) {
+                sendError(_sid, parseRequestId(object), ErrorCode::RpcPayloadInvalid, op);
+                return;
+            }
             if (op == RpcOp::RequestBatch) {
                 sendError(
                     parseSid(object), parseRequestId(object), ErrorCode::RpcBatchUnsupported, op);
@@ -116,6 +125,10 @@ private:
         return object.at("sid").get<std::string>();
     }
 
+    bool isAcceptedSid(const std::string& sid) const {
+        return !sid.empty() && sid == _sid;
+    }
+
     static std::uint32_t parseRequestId(const nlohmann::json& object) {
         if (!object.contains("d") || !object.at("d").is_object()) {
             return 0;
@@ -153,10 +166,13 @@ private:
         if (!d.is_object()) {
             throw std::invalid_argument("invalid d");
         }
+        const auto randomSeed = parseRandomSeed(d);
         if (const auto resumeSid = d.find("resumeSid");
             resumeSid != d.end() && resumeSid->is_string() &&
             !resumeSid->get<std::string>().empty()) {
             _sid = resumeSid->get<std::string>();
+        } else {
+            _sid = makeSessionId(randomSeed);
         }
         _identified = true;
         sendRpc(JsonRpcEncoder::makeIdentified(_sid));
@@ -176,8 +192,37 @@ private:
         sendRpc(std::move(response));
     }
 
-    std::string makeSessionId() {
-        return std::to_string(_nextSessionId++);
+    static std::uint32_t parseRandomSeed(const nlohmann::json& d) {
+        const auto field = d.find("randomSeed");
+        if (field == d.end()) {
+            throw std::invalid_argument("missing randomSeed");
+        }
+        std::uint64_t raw = 0;
+        if (field->is_number_unsigned()) {
+            raw = field->get<std::uint64_t>();
+        } else if (field->is_number_integer()) {
+            const auto signedValue = field->get<std::int64_t>();
+            if (signedValue < 0) {
+                throw std::invalid_argument("negative randomSeed");
+            }
+            raw = static_cast<std::uint64_t>(signedValue);
+        } else {
+            throw std::invalid_argument("invalid randomSeed");
+        }
+        if (raw > std::numeric_limits<std::uint32_t>::max()) {
+            throw std::invalid_argument("randomSeed out of range");
+        }
+        return static_cast<std::uint32_t>(raw);
+    }
+
+    std::string makeSessionId(std::uint32_t randomSeed = 0) {
+        auto mixed = randomSeed ^ (_nextSessionId++ * 0x9E3779B9U);
+        if (mixed == 0) {
+            mixed = _nextSessionId;
+        }
+        std::ostringstream out;
+        out << std::uppercase << std::hex << std::setw(8) << std::setfill('0') << mixed;
+        return out.str();
     }
 
     template <typename Transport, typename = void>
