@@ -346,6 +346,38 @@ int main() {
     {
         axtp::BasicBroker<> broker;
         axtp::AxtpEndpoint endpoint(broker);
+
+        axtp::MockTransport transport;
+        endpoint.attachTransport(transport);
+        axtp::WebSocketJsonRpcAdapter adapter(endpoint, transport);
+        transport.bind(adapter);
+        transport.open();
+
+        injectJson(transport, R"({"sid":"","op":2,"d":{"randomSeed":305419896}})");
+        auto identified = popJson(transport, "event sid identified");
+        assert(identified.at("op").get<int>() == static_cast<int>(axtp::RpcOp::Identified));
+        const auto sid = identified.at("sid").get<std::string>();
+        assert(std::regex_match(sid, std::regex("^[0-9A-F]{8}$")));
+
+        axtp::RpcPayload event;
+        event.encoding = axtp::RpcEncoding::Json;
+        event.op = axtp::RpcOp::Event;
+        event.methodOrEventId = 0x0901;
+        event.bodyEncoding = axtp::RpcBodyEncoding::None;
+        event.meta.sourceProtocol = axtp::SourceProtocol::JsonRpc;
+        const std::string body = R"({"state":"changed"})";
+        event.body = axtp::Bytes(body.begin(), body.end());
+
+        adapter.sendEvent(std::move(event));
+        auto emitted = popJson(transport, "event sid");
+        assert(emitted.at("op").get<int>() == static_cast<int>(axtp::RpcOp::Event));
+        assert(emitted.at("sid").get<std::string>() == sid);
+        assert(emitted.at("d").at("data").at("state").get<std::string>() == "changed");
+    }
+
+    {
+        axtp::BasicBroker<> broker;
+        axtp::AxtpEndpoint endpoint(broker);
         broker.registerMethod(0x0901, [](const axtp::RpcPayload&) {
             const std::string result = R"({"ok":true})";
             return axtp::Bytes(result.begin(), result.end());

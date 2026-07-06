@@ -98,6 +98,9 @@ public:
         payload.encoding = RpcEncoding::Json;
         payload.op = RpcOp::Event;
         payload.meta.sourceProtocol = SourceProtocol::JsonRpc;
+        if (_identified && payload.meta.jsonSid.empty()) {
+            payload.meta.jsonSid = _sid;
+        }
         sendRpc(std::move(payload));
     }
 
