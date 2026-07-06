@@ -78,6 +78,7 @@ inline constexpr MethodDescriptor kMethodRegistry[] = {
     { 0x1610, "cast.setRenderFps", "cast", "CastSetRenderFpsParams", "CastFlowControlState" },
     { 0x1611, "cast.setFlowPolicy", "cast", "CastSetFlowPolicyParams", "CastFlowControlState" },
     { 0x1612, "cast.getStatus", "cast", "CastGetStatusParams", "CastStatus" },
+    { 0x1613, "cast.setAudioDelay", "cast", "CastSetAudioDelayParams", "CastAudioState" },
     { 0x1701, "software.getConfig", "software", "SoftwareGetConfigParams", "SoftwareConfig" },
     { 0x1702, "software.setConfig", "software", "SoftwareSetConfigParams", "SoftwareSetConfigResult" },
     { 0x1703, "software.resetConfig", "software", "SoftwareResetConfigParams", "SoftwareConfig" },
@@ -86,6 +87,6 @@ inline constexpr MethodDescriptor kMethodRegistry[] = {
     { 0x1706, "software.resetUpdatePolicy", "software", "SoftwareResetUpdatePolicyParams", "SoftwareUpdatePolicy" },
 };
 
-inline constexpr std::size_t kMethodRegistryCount = 70;
+inline constexpr std::size_t kMethodRegistryCount = 71;
 
 } // namespace axtp

@@ -114,7 +114,7 @@
           "Send Identify using the JSON sid/op/d envelope.",
           "Wait for Identified.",
           "Load generated protocol registry for the current product build.",
-          "Start JSON RPC requests and receive JSON events."
+          "Start JSON RPC requests and receive JSON events; event payload data does not repeat sid, but every event message still carries sid in the JSON sid/op/d envelope."
         ]
       },
       {
@@ -3429,6 +3429,41 @@
       ]
     },
     {
+      "name": "CastSetAudioDelayParams",
+      "kind": "object",
+      "description": "Request to set receiver-local audio playback delay compensation.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "audioDelayMs",
+          "type": "uint32",
+          "required": true,
+          "min": 0,
+          "max": 1000,
+          "description": "Target local audio playback delay in milliseconds; zero disables delay compensation."
+        },
+        {
+          "fieldId": 2,
+          "name": "sessionId",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "Optional receiver-local session id."
+        },
+        {
+          "fieldId": 3,
+          "name": "scope",
+          "type": "enum",
+          "required": false,
+          "enumValues": [
+            "currentSession",
+            "default"
+          ],
+          "description": "State target hint; default persists the receiver delay for future sessions."
+        }
+      ]
+    },
+    {
       "name": "CastAudioState",
       "kind": "object",
       "description": "Local cast audio playback and mute state.",
@@ -3522,6 +3557,16 @@
           "required": false,
           "maxLength": 64,
           "description": "Timestamp for this audio state."
+        },
+        {
+          "fieldId": 10,
+          "name": "audioDelayMs",
+          "type": "uint32",
+          "required": false,
+          "min": 0,
+          "max": 1000,
+          "default": 250,
+          "description": "Configured receiver-local audio playback delay in milliseconds; zero disables compensation."
         }
       ]
     },
@@ -5088,6 +5133,33 @@
           "required": false,
           "default": true,
           "description": "Whether the receiver reports effective local playback state."
+        },
+        {
+          "fieldId": 4,
+          "name": "supportsAudioDelay",
+          "type": "bool",
+          "required": false,
+          "default": true,
+          "description": "Whether receiver-local audio playback delay compensation can be configured."
+        },
+        {
+          "fieldId": 5,
+          "name": "defaultAudioDelayMs",
+          "type": "uint32",
+          "required": false,
+          "min": 0,
+          "max": 1000,
+          "default": 250,
+          "description": "Default receiver-local audio playback delay in milliseconds."
+        },
+        {
+          "fieldId": 6,
+          "name": "maxAudioDelayMs",
+          "type": "uint32",
+          "required": false,
+          "min": 0,
+          "default": 1000,
+          "description": "Maximum supported receiver-local audio playback delay in milliseconds."
         }
       ]
     },
@@ -10228,6 +10300,37 @@
       ]
     },
     {
+      "name": "cast.setAudioDelay",
+      "description": "Set receiver-local audio playback delay compensation for cast audio.",
+      "methodId": 5651,
+      "bitOffset": 18,
+      "domain": "cast",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "CastSetAudioDelayParams"
+      },
+      "response": {
+        "type": "CastAudioState"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "cast.audio"
+      ],
+      "events": [
+        "cast.audioChanged"
+      ],
+      "errors": [
+        "SUCCESS",
+        "INVALID_ARGUMENT",
+        "OUT_OF_RANGE",
+        "UNAVAILABLE"
+      ]
+    },
+    {
       "name": "cast.getPinCodeConfig",
       "description": "Return cast PIN protection state, visibility, and optional secret material.",
       "methodId": 5640,
@@ -12088,7 +12191,7 @@
     },
     {
       "name": "cast.audioChanged",
-      "description": "Emitted when local cast audio playback or mute state changes.",
+      "description": "Emitted when local cast audio playback, mute, or delay compensation state changes.",
       "eventId": 5638,
       "bitOffset": 5,
       "domain": "cast",
@@ -12101,6 +12204,7 @@
       "trigger": [
         "cast.setAudio",
         "cast.setMuted",
+        "cast.setAudioDelay",
         "local UI",
         "session started",
         "session stopped"

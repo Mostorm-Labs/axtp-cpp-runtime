@@ -552,6 +552,12 @@ inline constexpr FieldDescriptor kCastSetMutedParamsFields[] = {
     { 0x03, "scope", FieldType::Enum, false, 0, 0 },
 };
 
+inline constexpr FieldDescriptor kCastSetAudioDelayParamsFields[] = {
+    { 0x01, "audioDelayMs", FieldType::Uint32, true, 0, 1000 },
+    { 0x02, "sessionId", FieldType::String, false, 0, 0 },
+    { 0x03, "scope", FieldType::Enum, false, 0, 0 },
+};
+
 inline constexpr FieldDescriptor kCastAudioStateFields[] = {
     { 0x01, "enabled", FieldType::Bool, true, 0, 0 },
     { 0x02, "muted", FieldType::Bool, true, 0, 0 },
@@ -562,6 +568,7 @@ inline constexpr FieldDescriptor kCastAudioStateFields[] = {
     { 0x07, "reason", FieldType::Enum, false, 0, 0 },
     { 0x08, "changedFields", FieldType::Array, false, 0, 0 },
     { 0x09, "updatedAt", FieldType::String, false, 0, 0 },
+    { 0x0A, "audioDelayMs", FieldType::Uint32, false, 0, 1000 },
 };
 
 inline constexpr FieldDescriptor kCastAudioChangedEventFields[] = {
@@ -801,6 +808,9 @@ inline constexpr FieldDescriptor kCastAudioCapabilityFields[] = {
     { 0x01, "defaultEnabled", FieldType::Bool, false, 0, 0 },
     { 0x02, "supportsMute", FieldType::Bool, false, 0, 0 },
     { 0x03, "reportsEffectivePlayback", FieldType::Bool, false, 0, 0 },
+    { 0x04, "supportsAudioDelay", FieldType::Bool, false, 0, 0 },
+    { 0x05, "defaultAudioDelayMs", FieldType::Uint32, false, 0, 1000 },
+    { 0x06, "maxAudioDelayMs", FieldType::Uint32, false, 0, 0 },
 };
 
 inline constexpr FieldDescriptor kCastPinCodeCapabilityFields[] = {
@@ -1762,7 +1772,8 @@ inline constexpr SchemaDescriptor kCastSessionFailedEventSchema = { "CastSession
 inline constexpr SchemaDescriptor kCastGetAudioParamsSchema = { "CastGetAudioParams", kCastGetAudioParamsFields, 2 };
 inline constexpr SchemaDescriptor kCastSetAudioParamsSchema = { "CastSetAudioParams", kCastSetAudioParamsFields, 3 };
 inline constexpr SchemaDescriptor kCastSetMutedParamsSchema = { "CastSetMutedParams", kCastSetMutedParamsFields, 3 };
-inline constexpr SchemaDescriptor kCastAudioStateSchema = { "CastAudioState", kCastAudioStateFields, 9 };
+inline constexpr SchemaDescriptor kCastSetAudioDelayParamsSchema = { "CastSetAudioDelayParams", kCastSetAudioDelayParamsFields, 3 };
+inline constexpr SchemaDescriptor kCastAudioStateSchema = { "CastAudioState", kCastAudioStateFields, 10 };
 inline constexpr SchemaDescriptor kCastAudioChangedEventSchema = { "CastAudioChangedEvent", kCastAudioChangedEventFields, 4 };
 inline constexpr SchemaDescriptor kCastGetPinCodeConfigParamsSchema = { "CastGetPinCodeConfigParams", kCastGetPinCodeConfigParamsFields, 1 };
 inline constexpr SchemaDescriptor kCastSetPinCodeConfigParamsSchema = { "CastSetPinCodeConfigParams", kCastSetPinCodeConfigParamsFields, 4 };
@@ -1791,7 +1802,7 @@ inline constexpr SchemaDescriptor kCastSessionStatusSummarySchema = { "CastSessi
 inline constexpr SchemaDescriptor kCastPinCodeStatusSummarySchema = { "CastPinCodeStatusSummary", kCastPinCodeStatusSummaryFields, 6 };
 inline constexpr SchemaDescriptor kCastStatusSchema = { "CastStatus", kCastStatusFields, 9 };
 inline constexpr SchemaDescriptor kCastSessionCapabilitySchema = { "CastSessionCapability", kCastSessionCapabilityFields, 5 };
-inline constexpr SchemaDescriptor kCastAudioCapabilitySchema = { "CastAudioCapability", kCastAudioCapabilityFields, 3 };
+inline constexpr SchemaDescriptor kCastAudioCapabilitySchema = { "CastAudioCapability", kCastAudioCapabilityFields, 6 };
 inline constexpr SchemaDescriptor kCastPinCodeCapabilitySchema = { "CastPinCodeCapability", kCastPinCodeCapabilityFields, 5 };
 inline constexpr SchemaDescriptor kCastWindowCapabilitySchema = { "CastWindowCapability", kCastWindowCapabilityFields, 4 };
 inline constexpr SchemaDescriptor kCastBackendCapabilitySchema = { "CastBackendCapability", kCastBackendCapabilityFields, 4 };
