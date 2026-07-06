@@ -523,6 +523,14 @@ struct MethodTraits<MethodId::CastGetStatus> {
 };
 
 template <>
+struct MethodTraits<MethodId::CastSetAudioDelay> {
+    using Request = CastSetAudioDelayParams;
+    using Response = CastAudioState;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::CastSetAudioDelay);
+    static constexpr const char* name = "cast.setAudioDelay";
+};
+
+template <>
 struct MethodTraits<MethodId::SoftwareGetConfig> {
     using Request = SoftwareGetConfigParams;
     using Response = SoftwareConfig;

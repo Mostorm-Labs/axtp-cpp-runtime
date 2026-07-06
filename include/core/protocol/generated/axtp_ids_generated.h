@@ -123,6 +123,7 @@ enum class MethodId : std::uint16_t {
     CastSetRenderFps = 0x1610,
     CastSetFlowPolicy = 0x1611,
     CastGetStatus = 0x1612,
+    CastSetAudioDelay = 0x1613,
     SoftwareGetConfig = 0x1701,
     SoftwareSetConfig = 0x1702,
     SoftwareResetConfig = 0x1703,

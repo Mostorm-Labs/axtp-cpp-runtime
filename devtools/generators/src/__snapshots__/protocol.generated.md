@@ -37,7 +37,7 @@
 | Domain | Methods | Events |
 | ---- | ---- | ---- |
 | audio | 9 | 4 |
-| cast | 18 | 12 |
+| cast | 19 | 12 |
 | device | 4 | 1 |
 | firmware | 4 | 2 |
 | network | 18 | 8 |
@@ -154,7 +154,7 @@ This profile is a formal RPC-only path. It skips the Frame and CONTROL layers, u
 - Send Identify using the JSON sid/op/d envelope.
 - Wait for Identified.
 - Load generated protocol registry for the current product build.
-- Start JSON RPC requests and receive JSON events.
+- Start JSON RPC requests and receive JSON events; event payload data does not repeat sid, but every event message still carries sid in the JSON sid/op/d envelope.
 
 | WebSocket Unframed JSON | Standard Framed AXTP |
 | --- | --- |
@@ -216,7 +216,7 @@ The generated registry groups methods by domain. Each method keeps a stable `bit
 | Domain | Methods |
 | ---- | ---- |
 | audio | 1: audio.getAlgorithmConfig<br>2: audio.setAlgorithmConfig<br>0: audio.getAlgorithmCapabilities<br>3: audio.resetAlgorithmConfig<br>4: audio.getStreamCapabilities<br>5: audio.openStream<br>6: audio.closeStream<br>7: audio.getStreamState<br>8: audio.getStreamSourceState |
-| cast | 0: cast.getSession<br>1: cast.stopSession<br>2: cast.getAirPlayName<br>3: cast.setAirPlayName<br>4: cast.getAudio<br>5: cast.setAudio<br>6: cast.setMuted<br>7: cast.getPinCodeConfig<br>8: cast.setPinCodeConfig<br>9: cast.setPinCode<br>10: cast.getWindowState<br>11: cast.setWindowState<br>12: cast.getBackendStatus<br>13: cast.restartBackend<br>14: cast.getFlowControlState<br>15: cast.setRenderFps<br>16: cast.setFlowPolicy<br>17: cast.getStatus |
+| cast | 0: cast.getSession<br>1: cast.stopSession<br>2: cast.getAirPlayName<br>3: cast.setAirPlayName<br>4: cast.getAudio<br>5: cast.setAudio<br>6: cast.setMuted<br>7: cast.getPinCodeConfig<br>8: cast.setPinCodeConfig<br>9: cast.setPinCode<br>10: cast.getWindowState<br>11: cast.setWindowState<br>12: cast.getBackendStatus<br>13: cast.restartBackend<br>14: cast.getFlowControlState<br>15: cast.setRenderFps<br>16: cast.setFlowPolicy<br>17: cast.getStatus<br>18: cast.setAudioDelay |
 | device | 0: device.getInfo<br>1: device.getPairingCode<br>2: device.getEnrollmentState<br>3: device.setEnrollmentState |
 | firmware | 0: firmware.getUpdateCapabilities<br>1: firmware.beginUpdate<br>3: firmware.getUpdateState<br>2: firmware.finishUpdate |
 | network | 2: network.getIpConfig<br>3: network.setIpConfig<br>5: network.getWifiConfig<br>6: network.setWifiConfig<br>7: network.scanWifi<br>8: network.connectWifi<br>9: network.disconnectWifi<br>10: network.getWifiState<br>12: network.getApConfig<br>13: network.setApConfig<br>15: network.startAp<br>16: network.stopAp<br>14: network.getApState<br>0: network.getInterfaces<br>1: network.getInterfaceInfo<br>4: network.getWifiCapabilities<br>11: network.getApCapabilities<br>17: network.getApClients |
@@ -623,6 +623,7 @@ Type: `AudioStreamSourceState`
 - [cast.setRenderFps](#castsetrenderfps)
 - [cast.setFlowPolicy](#castsetflowpolicy)
 - [cast.getStatus](#castgetstatus)
+- [cast.setAudioDelay](#castsetaudiodelay)
 
 ---
 
@@ -825,6 +826,7 @@ Type: `CastAudioState`
 | ?reason | Enum | 0x07 | Latest audio state transition reason. | enum=receiverDefault/externalSet/localUi/sessionStarted/sessionStopped/unknown | Omit if not used. |
 | ?changedFields | Array<String> | 0x08 | Field names changed by the latest operation or event. | array.itemType=string | Omit if not used. |
 | ?updatedAt | String | 0x09 | Timestamp for this audio state. | maxLength=64 | Omit if not used. |
+| ?audioDelayMs | UInt32 | 0x0A | Configured receiver-local audio playback delay in milliseconds; zero disables compensation. | min=0, max=1000 | Default: 250 |
 
 ---
 
@@ -867,6 +869,7 @@ Type: `CastAudioState`
 | ?reason | Enum | 0x07 | Latest audio state transition reason. | enum=receiverDefault/externalSet/localUi/sessionStarted/sessionStopped/unknown | Omit if not used. |
 | ?changedFields | Array<String> | 0x08 | Field names changed by the latest operation or event. | array.itemType=string | Omit if not used. |
 | ?updatedAt | String | 0x09 | Timestamp for this audio state. | maxLength=64 | Omit if not used. |
+| ?audioDelayMs | UInt32 | 0x0A | Configured receiver-local audio playback delay in milliseconds; zero disables compensation. | min=0, max=1000 | Default: 250 |
 
 ---
 
@@ -909,6 +912,7 @@ Type: `CastAudioState`
 | ?reason | Enum | 0x07 | Latest audio state transition reason. | enum=receiverDefault/externalSet/localUi/sessionStarted/sessionStopped/unknown | Omit if not used. |
 | ?changedFields | Array<String> | 0x08 | Field names changed by the latest operation or event. | array.itemType=string | Omit if not used. |
 | ?updatedAt | String | 0x09 | Timestamp for this audio state. | maxLength=64 | Omit if not used. |
+| ?audioDelayMs | UInt32 | 0x0A | Configured receiver-local audio playback delay in milliseconds; zero disables compensation. | min=0, max=1000 | Default: 250 |
 
 ---
 
@@ -1390,6 +1394,49 @@ Type: `CastStatus`
 | ?flowControl | CastFlowControlState | 0x07 | Flow control summary. | None | Omit if not used. |
 | sampledAt | String | 0x08 | Timestamp for this status snapshot. | maxLength=64 | N/A |
 | ?redacted | Boolean | 0x09 | Whether any sensitive snapshot fields were withheld. | None | Omit if not used. |
+
+---
+
+### cast.setAudioDelay
+
+Set receiver-local audio playback delay compensation for cast audio.
+
+- Method ID: `0x1613`
+- Domain: `cast`
+- bitOffset: `18`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `cast.audio`
+- Possible Events: `cast.audioChanged`
+- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `OUT_OF_RANGE`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `CastSetAudioDelayParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| audioDelayMs | UInt32 | 0x01 | Target local audio playback delay in milliseconds; zero disables delay compensation. | min=0, max=1000 | N/A |
+| ?sessionId | String | 0x02 | Optional receiver-local session id. | maxLength=128 | Omit if not used. |
+| ?scope | Enum | 0x03 | State target hint; default persists the receiver delay for future sessions. | enum=currentSession/default | Omit if not used. |
+
+#### Response Fields
+
+Type: `CastAudioState`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| enabled | Boolean | 0x01 | Whether local receiver playback is enabled. | None | Default: false |
+| muted | Boolean | 0x02 | Whether local receiver output is muted. | None | Default: false |
+| effectivePlayback | Boolean | 0x03 | Whether audio is effectively playing locally after state and session conditions are applied. | None | N/A |
+| ?scope | Enum | 0x04 | State target hint represented by this snapshot. | enum=currentSession/default | Omit if not used. |
+| ?sessionId | String | 0x05 | Receiver-local session id for session-specific state. | maxLength=128 | Omit if not used. |
+| ?source | Enum | 0x06 | Source of the latest state value. | enum=defaultConfig/externalSet/localUi/sessionStarted/sessionStopped/unknown | Omit if not used. |
+| ?reason | Enum | 0x07 | Latest audio state transition reason. | enum=receiverDefault/externalSet/localUi/sessionStarted/sessionStopped/unknown | Omit if not used. |
+| ?changedFields | Array<String> | 0x08 | Field names changed by the latest operation or event. | array.itemType=string | Omit if not used. |
+| ?updatedAt | String | 0x09 | Timestamp for this audio state. | maxLength=64 | Omit if not used. |
+| ?audioDelayMs | UInt32 | 0x0A | Configured receiver-local audio playback delay in milliseconds; zero disables compensation. | min=0, max=1000 | Default: 250 |
 
 ---
 
@@ -3299,7 +3346,7 @@ Type: `CastSessionFailedEvent`
 
 ### cast.audioChanged
 
-Emitted when local cast audio playback or mute state changes.
+Emitted when local cast audio playback, mute, or delay compensation state changes.
 
 - Event ID: `0x1606`
 - Domain: `cast`
@@ -3307,7 +3354,7 @@ Emitted when local cast audio playback or mute state changes.
 - Status: `draft`
 - Severity: `info`
 - Added in v1.0.0
-- Trigger: `cast.setAudio`, `cast.setMuted`, `local UI`, `session started`, `session stopped`
+- Trigger: `cast.setAudio`, `cast.setMuted`, `cast.setAudioDelay`, `local UI`, `session started`, `session stopped`
 - Required Capabilities: `cast.audio`
 
 #### Payload Fields

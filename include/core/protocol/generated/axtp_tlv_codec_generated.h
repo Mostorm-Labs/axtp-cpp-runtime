@@ -522,6 +522,12 @@ constexpr std::uint8_t SESSION_ID = 0x02;
 constexpr std::uint8_t SCOPE = 0x03;
 }
 
+namespace fields::cast_set_audio_delay_params {
+constexpr std::uint8_t AUDIO_DELAY_MS = 0x01;
+constexpr std::uint8_t SESSION_ID = 0x02;
+constexpr std::uint8_t SCOPE = 0x03;
+}
+
 namespace fields::cast_audio_state {
 constexpr std::uint8_t ENABLED = 0x01;
 constexpr std::uint8_t MUTED = 0x02;
@@ -532,6 +538,7 @@ constexpr std::uint8_t SOURCE = 0x06;
 constexpr std::uint8_t REASON = 0x07;
 constexpr std::uint8_t CHANGED_FIELDS = 0x08;
 constexpr std::uint8_t UPDATED_AT = 0x09;
+constexpr std::uint8_t AUDIO_DELAY_MS = 0x0A;
 }
 
 namespace fields::cast_audio_changed_event {
@@ -771,6 +778,9 @@ namespace fields::cast_audio_capability {
 constexpr std::uint8_t DEFAULT_ENABLED = 0x01;
 constexpr std::uint8_t SUPPORTS_MUTE = 0x02;
 constexpr std::uint8_t REPORTS_EFFECTIVE_PLAYBACK = 0x03;
+constexpr std::uint8_t SUPPORTS_AUDIO_DELAY = 0x04;
+constexpr std::uint8_t DEFAULT_AUDIO_DELAY_MS = 0x05;
+constexpr std::uint8_t MAX_AUDIO_DELAY_MS = 0x06;
 }
 
 namespace fields::cast_pin_code_capability {
@@ -2407,6 +2417,14 @@ struct CastSetMutedParams {
     bool has_scope = false;
 };
 
+struct CastSetAudioDelayParams {
+    std::uint32_t audioDelayMs = 0;
+    const char* sessionId = nullptr;
+    bool has_sessionId = false;
+    std::uint32_t scope = 0;
+    bool has_scope = false;
+};
+
 struct CastAudioState {
     bool enabled = false;
     bool muted = false;
@@ -2423,6 +2441,8 @@ struct CastAudioState {
     bool has_changedFields = false;
     const char* updatedAt = nullptr;
     bool has_updatedAt = false;
+    std::uint32_t audioDelayMs = 0;
+    bool has_audioDelayMs = false;
 };
 
 struct CastAudioChangedEvent {
@@ -2768,6 +2788,12 @@ struct CastAudioCapability {
     bool has_supportsMute = false;
     bool reportsEffectivePlayback = false;
     bool has_reportsEffectivePlayback = false;
+    bool supportsAudioDelay = false;
+    bool has_supportsAudioDelay = false;
+    std::uint32_t defaultAudioDelayMs = 0;
+    bool has_defaultAudioDelayMs = false;
+    std::uint32_t maxAudioDelayMs = 0;
+    bool has_maxAudioDelayMs = false;
 };
 
 struct CastPinCodeCapability {
@@ -4151,6 +4177,9 @@ bool DecodeCastSetAudioParams(TlvReader& reader, CastSetAudioParams* output, Err
 
 bool EncodeCastSetMutedParams(const CastSetMutedParams& input, TlvWriter& writer, ErrorCode* error);
 bool DecodeCastSetMutedParams(TlvReader& reader, CastSetMutedParams* output, ErrorCode* error);
+
+bool EncodeCastSetAudioDelayParams(const CastSetAudioDelayParams& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastSetAudioDelayParams(TlvReader& reader, CastSetAudioDelayParams* output, ErrorCode* error);
 
 bool EncodeCastAudioState(const CastAudioState& input, TlvWriter& writer, ErrorCode* error);
 bool DecodeCastAudioState(TlvReader& reader, CastAudioState* output, ErrorCode* error);
