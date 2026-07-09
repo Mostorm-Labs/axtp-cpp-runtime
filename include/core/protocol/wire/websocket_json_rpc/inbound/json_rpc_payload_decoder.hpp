@@ -125,11 +125,15 @@ private:
     static ErrorCode parseStatusCode(const nlohmann::json& d) {
         const auto status = d.find("status");
         if (status == d.end() || !status->is_object()) {
-            return ErrorCode::Success;
+            throw std::invalid_argument("invalid status");
+        }
+        const auto ok = status->find("ok");
+        if (ok == status->end() || !ok->is_boolean()) {
+            throw std::invalid_argument("invalid status ok");
         }
         const auto code = status->find("code");
         if (code == status->end()) {
-            return ErrorCode::Success;
+            throw std::invalid_argument("missing status code");
         }
         std::uint64_t raw = 0;
         if (code->is_number_unsigned()) {
@@ -146,7 +150,34 @@ private:
         if (raw > std::numeric_limits<std::uint16_t>::max()) {
             throw std::invalid_argument("status code out of range");
         }
+        const auto okValue = ok->get<bool>();
+        if ((okValue && raw != 0) || (!okValue && raw == 0)) {
+            throw std::invalid_argument("inconsistent status");
+        }
         return static_cast<ErrorCode>(static_cast<std::uint16_t>(raw));
+    }
+
+    static std::optional<std::uint32_t> parseRandomSeed(const nlohmann::json& d) {
+        const auto randomSeed = d.find("randomSeed");
+        if (randomSeed == d.end()) {
+            return std::nullopt;
+        }
+        std::uint64_t raw = 0;
+        if (randomSeed->is_number_unsigned()) {
+            raw = randomSeed->get<std::uint64_t>();
+        } else if (randomSeed->is_number_integer()) {
+            const auto signedSeed = randomSeed->get<std::int64_t>();
+            if (signedSeed < 0) {
+                throw std::invalid_argument("negative randomSeed");
+            }
+            raw = static_cast<std::uint64_t>(signedSeed);
+        } else {
+            throw std::invalid_argument("invalid randomSeed");
+        }
+        if (raw > std::numeric_limits<std::uint32_t>::max()) {
+            throw std::invalid_argument("randomSeed out of range");
+        }
+        return static_cast<std::uint32_t>(raw);
     }
 
     static Bytes jsonToBytes(const nlohmann::json& value) {
@@ -224,6 +255,9 @@ private:
         response.bodyEncoding = RpcBodyEncoding::None;
         fillJsonMeta(response, object, sourceProtocol);
         if (const auto result = d.find("result"); result != d.end()) {
+            if (response.statusCode != ErrorCode::Success) {
+                throw std::invalid_argument("error response carries result");
+            }
             response.body = jsonToBytes(*result);
         } else if (response.statusCode != ErrorCode::Success) {
             response.body = jsonToBytes(d);
@@ -273,25 +307,9 @@ private:
             return;
         }
         if (op == RpcOp::Identify || op == RpcOp::Reidentify) {
-            if (const auto randomSeed = d.find("randomSeed");
-                randomSeed != d.end() &&
-                (randomSeed->is_number_unsigned() || randomSeed->is_number_integer())) {
-                std::uint64_t raw = 0;
-                if (randomSeed->is_number_integer()) {
-                    const auto signedSeed = randomSeed->get<std::int64_t>();
-                    if (signedSeed < 0) {
-                        return;
-                    }
-                    raw = static_cast<std::uint64_t>(signedSeed);
-                } else {
-                    raw = randomSeed->get<std::uint64_t>();
-                }
-                if (raw <= std::numeric_limits<std::uint32_t>::max()) {
-                    payload.meta.hasRandomSeed = true;
-                    payload.meta.randomSeed = static_cast<std::uint32_t>(raw);
-                } else {
-                    return;
-                }
+            if (auto randomSeed = parseRandomSeed(d)) {
+                payload.meta.hasRandomSeed = true;
+                payload.meta.randomSeed = *randomSeed;
             }
         }
         payload.body = jsonToBytes(d);

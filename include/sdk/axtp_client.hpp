@@ -476,6 +476,16 @@ public:
         }
     }
 
+    void sendStream(StreamPayload payload) {
+        if (_transport == nullptr || _endpoint == nullptr) {
+            _lastError = SdkError::failure(ErrorCode::Unavailable, "transport unavailable");
+            return;
+        }
+        _endpoint->core().configure(_transport->profile());
+        _endpoint->sendStream(std::move(payload));
+        _lastError = SdkError::success();
+    }
+
 private:
     static RpcBodyEncoding bodyEncodingFor(RpcEncoding encoding) {
         return bodyEncodingForRpcEncoding(encoding);

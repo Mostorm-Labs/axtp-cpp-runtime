@@ -207,6 +207,31 @@ int main() {
     auto rawBytes = client.callRawBytes(0x90010001, axtp::Bytes{0xCA, 0xFE});
     assert((rawBytes == axtp::Bytes{0xCA, 0xFE}));
 
+    {
+        axtp::sdk::AxtpClient streamClient;
+        auto transport = std::make_unique<axtp::MockTransport>();
+        auto* transportPtr = transport.get();
+        streamClient.attachTransport(std::move(transport));
+
+        axtp::StreamPayload stream;
+        stream.streamId = 0x1001;
+        stream.seqId = 7;
+        stream.cursor = 12;
+        stream.data = {0xF0, 0x0D};
+        streamClient.sendStream(stream);
+
+        const auto outgoing = transportPtr->tryPopOutgoing();
+        assert(outgoing.has_value());
+        CapturingPayloadSink sink;
+        axtp::InboundProcessor inbound(sink);
+        inbound.onBytes(outgoing->data(), outgoing->size());
+        assert(sink.streams.size() == 1);
+        assert(sink.streams[0].streamId == 0x1001);
+        assert(sink.streams[0].seqId == 7);
+        assert(sink.streams[0].cursor == 12);
+        assert((sink.streams[0].data == axtp::Bytes{0xF0, 0x0D}));
+    }
+
     axtp::sdk::AxtpDevice device(client);
     auto config = device.audio.getAlgorithmConfig();
     (void)config;

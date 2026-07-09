@@ -218,11 +218,8 @@ private:
 
     void handleRpc(RpcPayload payload) {
         if (payload.op == RpcOp::Identify || payload.op == RpcOp::Reidentify) {
-            if (!payload.meta.hasRandomSeed) {
-                _sessionRpcs.push(std::move(payload));
-                return;
-            }
-            const auto sid = makeSessionId(payload.meta.randomSeed);
+            const auto randomSeed = payload.meta.hasRandomSeed ? payload.meta.randomSeed : 0;
+            const auto sid = makeSessionId(randomSeed);
             _sessionRpcs.push(std::move(payload));
             _outbound.sendRpc(JsonRpcEncoder::makeIdentified(sid));
             return;
@@ -280,7 +277,7 @@ private:
             mixed = _nextSessionId;
         }
         std::ostringstream out;
-        out << std::hex << std::setw(8) << std::setfill('0') << mixed;
+        out << std::uppercase << std::hex << std::setw(8) << std::setfill('0') << mixed;
         return out.str();
     }
 };

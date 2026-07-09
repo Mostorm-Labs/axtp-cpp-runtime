@@ -76,6 +76,11 @@ public:
         flushOutbound();
     }
 
+    void sendStream(StreamPayload payload) {
+        _core.handleBrokerResult(BrokerResult::streamData(std::move(payload)));
+        flushOutbound();
+    }
+
     std::optional<RpcPayload> tryTakeRpcResponse(std::uint32_t requestId) {
         return _core.tryTakeRpcResponse(requestId);
     }

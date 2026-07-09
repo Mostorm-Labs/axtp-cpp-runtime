@@ -1,6 +1,7 @@
 #include <cassert>
 #include <cstring>
 #include <cstdint>
+#include <regex>
 #include <utility>
 #include <vector>
 
@@ -295,7 +296,36 @@ int main() {
         auto identify = core.tryTakeSessionRpc(axtp::RpcOp::Identify);
         assert(identify.has_value());
         assert(!identify->meta.hasRandomSeed);
-        assert(!core.tryPopOutboundBytes().has_value());
+        auto identifiedBytes = core.tryPopOutboundBytes();
+        assert(identifiedBytes.has_value());
+
+        CapturingPayloadSink sink;
+        axtp::InboundProcessor inbound(sink);
+        inbound.onBytes(identifiedBytes->data(), identifiedBytes->size());
+        assert(sink.rpcs.size() == 1);
+        assert(sink.rpcs[0].op == axtp::RpcOp::Identified);
+        assert(std::regex_match(sink.rpcs[0].meta.jsonSid, std::regex("^[0-9A-F]{8}$")));
+        assert(sink.rpcs[0].meta.jsonSid != "00000000");
+    }
+
+    {
+        axtp::AxtpCore core;
+        const auto bytes = makeFrame(axtp::PayloadType::Rpc,
+                                     22,
+                                     makeJsonEnvelopePayload(
+                                         R"({"sid":"","op":2,"d":{"randomSeed":305419896}})"));
+        core.byteSink().onBytes(bytes.data(), bytes.size());
+        auto identifiedBytes = core.tryPopOutboundBytes();
+        assert(identifiedBytes.has_value());
+
+        CapturingPayloadSink sink;
+        axtp::InboundProcessor inbound(sink);
+        inbound.onBytes(identifiedBytes->data(), identifiedBytes->size());
+        assert(sink.rpcs.size() == 1);
+        assert(sink.rpcs[0].op == axtp::RpcOp::Identified);
+        assert(std::regex_match(sink.rpcs[0].meta.jsonSid, std::regex("^[0-9A-F]{8}$")));
+        assert(sink.rpcs[0].meta.jsonSid != "00000000");
+        assert(sink.rpcs[0].meta.jsonSid != "12345678");
     }
 
     return 0;

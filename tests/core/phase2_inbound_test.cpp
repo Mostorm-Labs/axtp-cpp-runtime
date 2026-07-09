@@ -150,5 +150,47 @@ int main() {
         assert(!sink.rpcs[0].body.empty());
     }
 
+    {
+        CapturingPayloadSink sink;
+        axtp::InboundProcessor inbound(sink);
+        const auto frame = makeFrame(axtp::PayloadType::Rpc,
+                                     7,
+                                     0,
+                                     1,
+                                     makeJsonEnvelopePayload(
+                                         R"({"sid":"12345678","op":8,"d":{"id":1,"status":51}})"));
+        inbound.onBytes(frame.data(), frame.size());
+        assert(sink.rpcs.empty());
+    }
+
+    {
+        CapturingPayloadSink sink;
+        axtp::InboundProcessor inbound(sink);
+        const auto frame = makeFrame(
+            axtp::PayloadType::Rpc,
+            8,
+            0,
+            1,
+            makeJsonEnvelopePayload(
+                R"({"sid":"12345678","op":8,"d":{"id":1,"status":{"ok":false,"code":54},"result":{}}})"));
+        inbound.onBytes(frame.data(), frame.size());
+        assert(sink.rpcs.empty());
+    }
+
+    {
+        CapturingPayloadSink sink;
+        axtp::InboundProcessor inbound(sink);
+        const auto frame =
+            makeFrame(axtp::PayloadType::Rpc,
+                      9,
+                      0,
+                      1,
+                      makeJsonEnvelopePayload(R"({"sid":"","op":2,"d":{"eventMasks":""}})"));
+        inbound.onBytes(frame.data(), frame.size());
+        assert(sink.rpcs.size() == 1);
+        assert(sink.rpcs[0].op == axtp::RpcOp::Identify);
+        assert(!sink.rpcs[0].meta.hasRandomSeed);
+    }
+
     return 0;
 }

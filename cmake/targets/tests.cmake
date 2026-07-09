@@ -77,6 +77,16 @@ if(TARGET axtpctl)
     add_test(NAME axtpctl_capability_methods COMMAND axtpctl capability methods)
     add_test(NAME axtpctl_list_methods COMMAND axtpctl list-methods)
 
+    add_test(NAME axtpctl_firmware_update_mock
+        COMMAND axtpctl -t mock -o json firmware update
+            --file ${AXTP_CPP_RUNTIME_ROOT}/tests/tools/axtpctl/firmware_fixture.bin
+            --file-id firmware
+            --chunk-size 4
+    )
+    set_tests_properties(axtpctl_firmware_update_mock PROPERTIES
+        PASS_REGULAR_EXPRESSION "\"ok\":true"
+    )
+
     add_test(NAME axtpctl_unknown_method
         COMMAND axtpctl -c unknown.method
     )
@@ -123,6 +133,17 @@ if(TARGET axtp_media_profile)
 
     add_test(NAME axtp_media_profile_test COMMAND axtp_media_profile_test)
 endif()
+
+add_executable(axtp_firmware_profile_test
+    ${AXTP_CPP_RUNTIME_ROOT}/tests/profiles/firmware_profile_test.cpp
+)
+
+target_link_libraries(axtp_firmware_profile_test PRIVATE
+    axtp_sdk
+    axtp_firmware_profile
+)
+
+add_test(NAME axtp_firmware_profile_test COMMAND axtp_firmware_profile_test)
 
 if(TARGET axtp-mediahost)
     add_test(NAME axtp_mediahost_help COMMAND axtp-mediahost --help)

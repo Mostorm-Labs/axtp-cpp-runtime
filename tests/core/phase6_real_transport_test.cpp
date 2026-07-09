@@ -6,6 +6,7 @@
 #include <mutex>
 #include <nlohmann/json.hpp>
 #include <queue>
+#include <regex>
 #include <string>
 #include <thread>
 #include <utility>
@@ -202,12 +203,29 @@ int main() {
         assert(beforeIdentify.at("d").at("status").at("code").get<int>() ==
                static_cast<int>(axtp::ErrorCode::ControlOpenRequired));
 
+        injectJson(transport, R"({"sid":"","op":2,"d":{"resumeSid":"legacy-session"}})");
+        auto legacyIdentified = popJson(transport, "legacy identify without randomSeed");
+        assert(legacyIdentified.at("op").get<int>() ==
+               static_cast<int>(axtp::RpcOp::Identified));
+        assert(legacyIdentified.at("sid").get<std::string>() == "legacy-session");
+
+        injectJson(
+            transport,
+            R"({"sid":"legacy-session","op":7,"d":{"id":706,"method":"audio.getAlgorithmConfig","params":{}}})");
+        auto legacyResponse = popJson(transport, "legacy request without randomSeed");
+        auto legacyD = legacyResponse.at("d");
+        assert(legacyD.at("id").get<int>() == 706);
+        assert(legacyD.at("status").at("ok").get<bool>());
+        assert(legacyD.at("result").contains("noiseSuppression"));
+
         injectJson(transport,
                    R"({"sid":"","op":2,"d":{"randomSeed":305419896,"eventMasks":"850101"}})");
         auto identified = popJson(transport, "identified");
         assert(identified.at("op").get<int>() == static_cast<int>(axtp::RpcOp::Identified));
         const auto sid = jsonString(identified, "sid");
-        assert(!sid.empty());
+        assert(std::regex_match(sid, std::regex("^[0-9A-F]{8}$")));
+        assert(sid != "00000000");
+        assert(sid != "12345678");
 
         injectJson(transport,
                    R"({"sid":")" + sid +
@@ -255,6 +273,18 @@ int main() {
         assert(d.at("status").at("code").get<int>() ==
                static_cast<int>(axtp::ErrorCode::RpcBatchUnsupported));
 
+        injectJson(
+            transport,
+            R"({"sid":"0x000003","op":7,"d":{"id":708,"method":"audio.getAlgorithmConfig","params":{}}})");
+        response = popJson(transport, "invalid sid");
+        d = response.at("d");
+        assert(response.at("op").get<int>() == static_cast<int>(axtp::RpcOp::RequestResponse));
+        assert(d.at("id").get<int>() == 708);
+        assert(d.at("status").at("ok").get<bool>() == false);
+        assert(d.at("status").at("code").get<int>() ==
+               static_cast<int>(axtp::ErrorCode::RpcPayloadInvalid));
+        assert(!d.contains("result"));
+
         axtp::RpcPayload event;
         event.op = axtp::RpcOp::Event;
         event.methodOrEventId = 0x0901;
@@ -281,6 +311,68 @@ int main() {
         assert(sink.rpcs[0].requestId == 901);
         assert(sink.rpcs[0].methodOrEventId == 0x0901);
         assert(sink.rpcs[0].meta.sourceProtocol == axtp::SourceProtocol::JsonRpc);
+    }
+
+    {
+        axtp::BasicBroker<> broker;
+        axtp::AxtpEndpoint endpoint(broker);
+        broker.registerMethod(0x0901, [](const axtp::RpcPayload&) {
+            const std::string result = R"({"ok":true})";
+            return axtp::Bytes(result.begin(), result.end());
+        });
+
+        axtp::MockTransport transport;
+        endpoint.attachTransport(transport);
+        axtp::WebSocketJsonRpcAdapter adapter(endpoint, transport);
+        transport.bind(adapter);
+        transport.open();
+
+        injectJson(transport,
+                   R"({"sid":"","op":2,"d":{"randomSeed":305419896,"resumeSid":"legacy-session"}})");
+        auto identified = popJson(transport, "legacy identified");
+        assert(identified.at("op").get<int>() == static_cast<int>(axtp::RpcOp::Identified));
+        assert(identified.at("sid").get<std::string>() == "legacy-session");
+
+        injectJson(
+            transport,
+            R"({"sid":"legacy-session","op":7,"d":{"id":707,"method":"audio.getAlgorithmConfig","params":{}}})");
+        auto response = popJson(transport, "legacy sid request");
+        const auto d = response.at("d");
+        assert(d.at("id").get<int>() == 707);
+        assert(d.at("status").at("ok").get<bool>());
+        assert(d.at("result").at("ok").get<bool>());
+    }
+
+    {
+        axtp::BasicBroker<> broker;
+        axtp::AxtpEndpoint endpoint(broker);
+
+        axtp::MockTransport transport;
+        endpoint.attachTransport(transport);
+        axtp::WebSocketJsonRpcAdapter adapter(endpoint, transport);
+        transport.bind(adapter);
+        transport.open();
+
+        injectJson(transport, R"({"sid":"","op":2,"d":{"randomSeed":305419896}})");
+        auto identified = popJson(transport, "event sid identified");
+        assert(identified.at("op").get<int>() == static_cast<int>(axtp::RpcOp::Identified));
+        const auto sid = identified.at("sid").get<std::string>();
+        assert(std::regex_match(sid, std::regex("^[0-9A-F]{8}$")));
+
+        axtp::RpcPayload event;
+        event.encoding = axtp::RpcEncoding::Json;
+        event.op = axtp::RpcOp::Event;
+        event.methodOrEventId = 0x0901;
+        event.bodyEncoding = axtp::RpcBodyEncoding::None;
+        event.meta.sourceProtocol = axtp::SourceProtocol::JsonRpc;
+        const std::string body = R"({"state":"changed"})";
+        event.body = axtp::Bytes(body.begin(), body.end());
+
+        adapter.sendEvent(std::move(event));
+        auto emitted = popJson(transport, "event sid");
+        assert(emitted.at("op").get<int>() == static_cast<int>(axtp::RpcOp::Event));
+        assert(emitted.at("sid").get<std::string>() == sid);
+        assert(emitted.at("d").at("data").at("state").get<std::string>() == "changed");
     }
 
     {
@@ -396,7 +488,9 @@ int main() {
         auto firstIdentified = nlohmann::json::parse(first.waitMessage());
         assert(firstIdentified.at("op").get<int>() == static_cast<int>(axtp::RpcOp::Identified));
         const auto firstSid = firstIdentified.at("sid").get<std::string>();
-        assert(!firstSid.empty());
+        assert(std::regex_match(firstSid, std::regex("^[0-9A-F]{8}$")));
+        assert(firstSid != "00000000");
+        assert(firstSid != "12345678");
 
         WebSocketProbe second(port);
         auto secondHello = nlohmann::json::parse(second.waitMessage());
@@ -405,7 +499,9 @@ int main() {
         auto secondIdentified = nlohmann::json::parse(second.waitMessage());
         assert(secondIdentified.at("op").get<int>() == static_cast<int>(axtp::RpcOp::Identified));
         const auto secondSid = secondIdentified.at("sid").get<std::string>();
-        assert(!secondSid.empty());
+        assert(std::regex_match(secondSid, std::regex("^[0-9A-F]{8}$")));
+        assert(secondSid != "00000000");
+        assert(secondSid != "12345679");
         assert(secondSid != firstSid);
 
         keepPolling = false;
