@@ -77,6 +77,10 @@ if(AXTP_CPP_RUNTIME_NEEDS_SDK)
     include(cmake/targets/sdk.cmake)
 endif()
 
+if(TARGET axtp_sdk)
+    include(cmake/targets/firmware_profile.cmake)
+endif()
+
 if(AXTP_CPP_RUNTIME_BUILD_TESTS OR
    AXTP_CPP_RUNTIME_BUILD_TOOLS OR
    AXTP_CPP_RUNTIME_BUILD_MEDIAHOST)
@@ -117,6 +121,9 @@ if(AXTP_CPP_RUNTIME_ENABLE_INSTALL)
     )
     if(TARGET axtp_sdk)
         list(APPEND AXTP_CPP_RUNTIME_INSTALL_TARGETS axtp_sdk)
+    endif()
+    if(TARGET axtp_firmware_profile)
+        list(APPEND AXTP_CPP_RUNTIME_INSTALL_TARGETS axtp_firmware_profile)
     endif()
     if(TARGET axtp_json_rpc)
         list(APPEND AXTP_CPP_RUNTIME_INSTALL_TARGETS axtp_json_rpc)

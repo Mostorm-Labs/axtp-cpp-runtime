@@ -16,8 +16,11 @@
 #include <utility>
 #include <vector>
 
+#include <websocketpp/common/md5.hpp>
+
 #include "axtp_core.hpp"
 #include "json_rpc/method_registry_json.hpp"
+#include "profiles/firmware/firmware_profile.hpp"
 #include "axtp_sdk.hpp"
 #include "toolkit/axtp_toolkit.hpp"
 
@@ -115,6 +118,7 @@ void printUsage() {
               << "  capability methods\n"
               << "  list-methods\n"
               << "  handshake\n"
+              << "  firmware update --file PATH [--file-id ID] [--target TARGET]\n"
               << "  list-hid [--vid VID --pid PID --usage-page PAGE --usage USAGE]\n"
               << "  read-hid [--path PATH] [--timeout MS]\n"
               << "  ping\n"
@@ -130,7 +134,8 @@ void printUsage() {
               << "  axtpctl -t hid read-hid --timeout 10000\n"
               << "  axtpctl -t hid read-hid --path \"<path from list-hid>\" --timeout 10000\n"
               << "  axtpctl -t hid -c audio.getAlgorithmConfig\n"
-              << "  axtpctl -t tcp --host 127.0.0.1 --port 9000 -c audio.getAlgorithmConfig -o json\n";
+              << "  axtpctl -t tcp --host 127.0.0.1 --port 9000 -c audio.getAlgorithmConfig -o json\n"
+              << "  axtpctl -t hid firmware update --file firmware.bin --file-id firmware\n";
 }
 
 bool isOption(const std::string& text) {
@@ -500,6 +505,27 @@ void printJsonObject(const nlohmann::json& object, OutputFormat format) {
     std::cout << object.dump() << "\n";
 }
 
+std::string md5Hex(const axtp::Bytes& bytes) {
+    websocketpp::md5::md5_state_t state;
+    websocketpp::md5::md5_init(&state);
+    if (!bytes.empty()) {
+        websocketpp::md5::md5_append(
+            &state,
+            reinterpret_cast<const websocketpp::md5::md5_byte_t*>(bytes.data()),
+            bytes.size());
+    }
+    websocketpp::md5::md5_byte_t digest[16] = {};
+    websocketpp::md5::md5_finish(&state, digest);
+    return toHex(axtp::Bytes(digest, digest + 16));
+}
+
+std::optional<std::string> jsonFieldString(const nlohmann::json& object, const char* field) {
+    if (!object.is_object() || !object.contains(field) || !object[field].is_string()) {
+        return std::nullopt;
+    }
+    return object[field].get<std::string>();
+}
+
 std::string errorName(axtp::ErrorCode code) {
     return axtp::toolkit::errorName(code);
 }
@@ -522,6 +548,45 @@ void installMockHandlers(axtp::sdk::AxtpClient& client) {
                           });
     client.registerMethod(static_cast<std::uint16_t>(axtp::MethodId::AudioResetAlgorithmConfig),
                           [](const axtp::RpcPayload&) { return axtp::Bytes{}; });
+    client.registerMethod(
+        static_cast<std::uint16_t>(axtp::MethodId::FirmwareBeginUpdate),
+        [](const axtp::RpcPayload& request) {
+            std::string fileId = "firmware";
+            const auto params = parseJsonValueOrString(request.body);
+            if (params.is_object() && params.contains("manifest") &&
+                params["manifest"].contains("files") && params["manifest"]["files"].is_array() &&
+                !params["manifest"]["files"].empty()) {
+                if (const auto parsed =
+                        jsonFieldString(params["manifest"]["files"].front(), "fileId")) {
+                    fileId = *parsed;
+                }
+            }
+
+            auto response = nlohmann::json::object();
+            response["updateSessionId"] = "mock-update-1";
+            response["state"] = "receiving";
+            response["streams"] =
+                nlohmann::json::array({{{"fileId", fileId}, {"streamId", 0x1001}}});
+            response["chunkSize"] = 4;
+            const auto body = response.dump();
+            return axtp::Bytes(body.begin(), body.end());
+        });
+    client.registerMethod(
+        static_cast<std::uint16_t>(axtp::MethodId::FirmwareFinishUpdate),
+        [](const axtp::RpcPayload& request) {
+            std::string updateSessionId = "mock-update-1";
+            const auto params = parseJsonValueOrString(request.body);
+            if (const auto parsed = jsonFieldString(params, "updateSessionId")) {
+                updateSessionId = *parsed;
+            }
+
+            auto response = nlohmann::json::object();
+            response["updateSessionId"] = updateSessionId;
+            response["accepted"] = true;
+            response["state"] = "verifying";
+            const auto body = response.dump();
+            return axtp::Bytes(body.begin(), body.end());
+        });
 }
 
 axtp::toolkit::OutputFormat toolkitFormat(OutputFormat format) {
@@ -978,6 +1043,130 @@ int callMethod(const CliOptions& options) {
     return response.statusCode == axtp::ErrorCode::Success ? 0 : 4;
 }
 
+int firmwareUpdateCommand(const CliOptions& options) {
+    if (options.command.size() < 2 || options.command[1] != "update") {
+        std::cerr << "firmware requires subcommand: update\n";
+        return 2;
+    }
+    if (options.transport == "websocket" || options.transport == "ws") {
+        std::cerr << "firmware update requires a framed-binary transport\n";
+        return 2;
+    }
+
+    const auto filePath = optionValue(options.command, "--file");
+    if (!filePath.has_value() || filePath->empty()) {
+        std::cerr << "firmware update requires --file\n";
+        return 2;
+    }
+
+    const auto image = readBinaryFile(*filePath);
+    if (!image.has_value()) {
+        std::cerr << "failed to read firmware file: " << *filePath << "\n";
+        return 2;
+    }
+
+    std::uint32_t chunkSize = 1024;
+    if (const auto rawChunkSize = optionValue(options.command, "--chunk-size")) {
+        const auto parsed = parseUint32(*rawChunkSize);
+        if (!parsed.has_value() || *parsed == 0) {
+            std::cerr << "invalid --chunk-size\n";
+            return 2;
+        }
+        chunkSize = *parsed;
+    }
+
+    const auto outputFormat = parseOutputFormat(options.output);
+    const auto fileId = optionValue(options.command, "--file-id").value_or("firmware");
+    const auto target = optionValue(options.command, "--target");
+    const auto packageId = optionValue(options.command, "--package-id");
+    const auto version = optionValue(options.command, "--version");
+    const auto md5 = md5Hex(*image);
+
+    auto logger = makeLogger(options);
+    std::mutex traceMutex;
+    auto hidTrace = [&logger, &options, &traceMutex](const axtp::HidReportTrace& trace) {
+        logger.write(hidTraceLine(trace, logger.includeBody()));
+        if (options.verbose) {
+            std::lock_guard<std::mutex> lock(traceMutex);
+            printHidTrace(trace, parseOutputFormat(options.output), logger.includeBody());
+        }
+    };
+
+    axtp::sdk::ClientOptions clientOptions;
+    clientOptions.autoIdentify = !options.noAppReady;
+    axtp::sdk::AxtpClient client(clientOptions);
+    if (!attachTransport(options, &client, hidTrace)) {
+        std::cerr << "failed to connect transport: " << options.transport << "\n";
+        return 4;
+    }
+    if (options.transport == "mock") {
+        installMockHandlers(client);
+    }
+
+    if (isHidTransport(options) && !options.noAppReady) {
+        axtp::sdk::AppReadyOptions appOptions;
+        appOptions.timeout = std::chrono::milliseconds(options.timeoutMs);
+        appOptions.randomSeed = options.randomSeed;
+        appOptions.trace = [&logger, &options](const axtp::sdk::AppReadyTraceEvent& event) {
+            logger.write(appReadyTraceLine(event, logger.includeBody()));
+            printAppReadyTrace(event, logger.includeBody(), options.verbose);
+        };
+        const auto ready = client.ensureAppReady(appOptions);
+        if (!ready.ok) {
+            return printAppReadyResult(ready, std::chrono::milliseconds(0), outputFormat);
+        }
+    }
+
+    axtp::sdk::CallOptions callOptions;
+    callOptions.timeout = std::chrono::milliseconds(options.timeoutMs);
+    callOptions.encoding = axtp::RpcEncoding::Json;
+
+    axtp::firmware::FirmwareUpdateRequest updateRequest;
+    updateRequest.file.fileId = fileId;
+    if (target.has_value()) {
+        updateRequest.file.target = *target;
+    }
+    updateRequest.file.data = *image;
+    updateRequest.file.md5 = md5;
+    if (packageId.has_value()) {
+        updateRequest.packageId = *packageId;
+    }
+    if (version.has_value()) {
+        updateRequest.version = *version;
+    }
+    updateRequest.preferredChunkSize = chunkSize;
+    if (options.noAppReady) {
+        updateRequest.jsonSid = options.sid;
+    }
+
+    axtp::firmware::FirmwareUpdateProfile profile(client);
+    const auto result = profile.update(updateRequest, callOptions);
+
+    auto output = nlohmann::json::object();
+    output["ok"] = result.ok;
+    output["method"] = "firmware.update";
+    output["file"] = *filePath;
+    output["fileId"] = fileId;
+    output["size"] = image->size();
+    output["md5"] = md5;
+    output["updateSessionId"] = result.updateSessionId;
+    output["streamId"] = result.streamId;
+    output["chunkSize"] = result.chunkSize;
+    output["chunks"] = result.chunks;
+    output["begin"] = result.begin;
+    output["finish"] = result.finish;
+    if (!result.ok) {
+        auto error = nlohmann::json::object();
+        error["code"] = errorName(result.status);
+        error["numericCode"] = static_cast<std::uint16_t>(result.status);
+        error["message"] = errorName(result.status);
+        error["method"] = result.failedMethod;
+        output["error"] = std::move(error);
+    }
+    printJsonObject(output, outputFormat);
+    return result.ok ? 0 : 4;
+}
+
 int listHidDevicesCommand(const CliOptions& options) {
     if (!isHidTransport(options)) {
         std::cerr << "list-hid requires -t hid\n";
@@ -1157,6 +1346,9 @@ int runCommand(const CliOptions& options) {
     }
     if (options.command[0] == "handshake") {
         return handshakeCommand(options);
+    }
+    if (options.command[0] == "firmware") {
+        return firmwareUpdateCommand(options);
     }
     if (options.command[0] == "capability" && options.command.size() >= 2 &&
         options.command[1] == "methods") {
