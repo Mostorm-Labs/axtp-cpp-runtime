@@ -567,6 +567,9 @@ void HidTransport::readLoop() {
                         0,
                         _options.readThreadTimeoutMs,
                         _backend->lastError());
+            if (_options.readErrorBackoffMs != 0) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(_options.readErrorBackoffMs));
+            }
         } else if (*read == 0) {
             traceReport(HidReportTraceKind::ReadTimeout, nullptr, 0, _options.readThreadTimeoutMs);
         } else if (*read > 0) {
