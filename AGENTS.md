@@ -1,6 +1,6 @@
 # AGENTS.md
 
-本仓库是 AXTP C++ runtime、SDK、optional transports 和 `axtpctl` 工具仓库。协议语义来自主规范仓库 `axtp/`，本仓库只实现和生成 C++ 侧产物。
+本仓库是 AXTP C++ runtime、SDK 和 optional transports 仓库。协议语义来自主规范仓库 `axtp/`，本仓库只实现和生成 C++ 侧产物。
 
 ## 先读
 
@@ -11,7 +11,6 @@
 - `docs/AXTP_CPP_EXECUTION_FLOW.md`
 - `docs/AXTP_CORE_API_DESIGN.md`
 - `docs/AXTP_SDK_API_DESIGN.md`
-- `docs/AXTPCTL_COMMAND_DESIGN.md`
 - `docs/AXTP_CPP_STYLE.md`
 
 需要判断协议事实时，回到主规范仓库读取 `axtp/AGENTS.md`、`protocol/axtp.protocol.yaml`、`docs/generated/**` 和 `docs/conformance/**`。

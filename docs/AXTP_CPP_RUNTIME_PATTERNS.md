@@ -23,7 +23,6 @@ ITransport <-> AxtpEndpoint -> AxtpCore -> BasicBroker<>
 | `axtp_transport_hidapi` | `STATIC` optional | HID report-level transport，public header 位于 `include/transports`，实现位于 `src/transports`，依赖顶层或工具解析出的 hidapi target |
 | `axtp_transport_tcp_boost` | `INTERFACE` optional | Legacy Boost.Asio TCP transport，Boost 可用时定义，位于 `include/transports` |
 | `axtp_transport_websocket_ix` | `INTERFACE` optional | IXWebSocket WebSocket transport，位于 `include/transports`，依赖顶层或工具解析出的 IXWebSocket target |
-| `axtp_transport_websocket_websocketpp` | `INTERFACE` optional | 高级可选 websocketpp + standalone Asio WebSocket transport，位于 `include/transports` |
 | `axtp_transport_websocket_boost` | `INTERFACE` optional | Legacy optional Boost.Beast WebSocket transport，位于 `include/transports` |
 
 推荐 runtime include：
@@ -43,7 +42,6 @@ Concrete transports 不包含在聚合头中。
 | `docs/AXTP_CPP_EXECUTION_FLOW.md` | Runtime、SDK、CLI、transport 的端到端执行流程 |
 | `docs/AXTP_CPP_STYLE.md` | C++ 命名、文件布局、include、formatting、ownership 规则 |
 | `docs/AXTP_SDK_API_DESIGN.md` | SDK API 形态和 dynamic RPC 策略 |
-| `docs/AXTPCTL_COMMAND_DESIGN.md` | CLI 命令形态和 dispatch 策略 |
 
 ## Runtime 数据流
 
@@ -248,7 +246,7 @@ method name/id + RpcEncoding + body bytes
 
 1. 修改 `registry/domains/<domain>/domain.yaml` 或对应 registry 源 YAML。
 2. 运行 generator，刷新 generated docs/headers/tooling。
-3. SDK/CLI 可先通过 dynamic JSON/TLV/Raw 调用。
+3. SDK 或上层工具可先通过 dynamic JSON/TLV/Raw 调用。
 4. 需要 typed API 时再补 generator 或 facade。
 
 ### 新增 Broker Handler
@@ -256,12 +254,6 @@ method name/id + RpcEncoding + body bytes
 1. 优先用 `registerJsonMethod(name, handler)` 或 `registerRawMethod(id, handler)`。
 2. Handler 只读 `RpcRequestView`，返回 `RpcResponseData`。
 3. 不在 handler 中写 transport；事件和 stream 结果通过 broker/core 结果流返回。
-
-### 新增 CLI Command
-
-1. 命令解析留在 `tools/axtpctl/src/main.cpp` 或后续拆分模块。
-2. 业务调用走 SDK；只有 `inspect` 类命令可以直接读 core model/decoder。
-3. 输出格式固定为 JSON、hex 或 file，不混合 debug 文本和机器输出。
 
 ## 测试地图
 

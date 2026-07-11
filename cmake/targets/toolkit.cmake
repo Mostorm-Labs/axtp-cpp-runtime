@@ -7,7 +7,7 @@ if(NOT TARGET axtp_sdk OR
         "axtp_toolkit requires SDK, JSON-RPC, HID, TCP, and WebSocket targets. "
         "Provide hidapi/IXWebSocket from the top-level project or package manager, "
         "or configure with -DAXTP_CPP_RUNTIME_TOOLS_FETCH_DEPS=ON to allow the "
-        "tool build to use bundled third-party dependencies.")
+        "MediaHost build to fetch pinned third-party dependencies.")
 endif()
 
 add_library(axtp_toolkit STATIC

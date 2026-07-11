@@ -138,40 +138,6 @@ if(AXTP_BUILD_OPTIONAL_TRANSPORTS)
         endif()
     endif()
 
-    set(AXTP_THIRDPARTY_WEBSOCKETPP_DIR ${AXTP_CPP_RUNTIME_ROOT}/third_party/websocketpp)
-    set(AXTP_THIRDPARTY_ASIO_DIR ${AXTP_CPP_RUNTIME_ROOT}/third_party/asio)
-    set(AXTP_THIRDPARTY_ASIO_INCLUDE_DIR "")
-    if(EXISTS "${AXTP_THIRDPARTY_ASIO_DIR}/include/asio/version.hpp")
-        set(AXTP_THIRDPARTY_ASIO_INCLUDE_DIR ${AXTP_THIRDPARTY_ASIO_DIR}/include)
-    elseif(EXISTS "${AXTP_THIRDPARTY_ASIO_DIR}/asio/include/asio/version.hpp")
-        set(AXTP_THIRDPARTY_ASIO_INCLUDE_DIR ${AXTP_THIRDPARTY_ASIO_DIR}/asio/include)
-    endif()
-    if(EXISTS "${AXTP_THIRDPARTY_WEBSOCKETPP_DIR}/websocketpp" AND
-       AXTP_THIRDPARTY_ASIO_INCLUDE_DIR)
-        add_library(axtp_transport_websocket_websocketpp INTERFACE)
-        target_include_directories(axtp_transport_websocket_websocketpp
-            INTERFACE
-                $<BUILD_INTERFACE:${AXTP_CPP_RUNTIME_ROOT}/include>
-                $<BUILD_INTERFACE:${AXTP_THIRDPARTY_WEBSOCKETPP_DIR}>
-                $<BUILD_INTERFACE:${AXTP_THIRDPARTY_ASIO_INCLUDE_DIR}>
-                $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-        )
-        target_compile_definitions(axtp_transport_websocket_websocketpp
-            INTERFACE
-                ASIO_STANDALONE
-                _WEBSOCKETPP_CPP11_STL_
-        )
-        target_link_libraries(axtp_transport_websocket_websocketpp
-            INTERFACE
-                axtp_runtime
-        )
-        target_compile_features(axtp_transport_websocket_websocketpp INTERFACE cxx_std_17)
-        set_target_properties(axtp_transport_websocket_websocketpp PROPERTIES EXPORT_NAME transport_websocket_websocketpp)
-        if(NOT TARGET axtp::transport_websocket_websocketpp)
-            add_library(axtp::transport_websocket_websocketpp ALIAS axtp_transport_websocket_websocketpp)
-        endif()
-    endif()
-
     if(Boost_FOUND)
         add_library(axtp_transport_websocket_boost INTERFACE)
         target_include_directories(axtp_transport_websocket_boost

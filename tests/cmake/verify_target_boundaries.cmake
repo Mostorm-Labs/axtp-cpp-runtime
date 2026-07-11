@@ -28,8 +28,7 @@ if(NOT AXTP_BUILD_OPTIONAL_TRANSPORTS)
             axtp_transport_tcp_boost
             axtp_transport_hidapi
             axtp_transport_websocket_boost
-            axtp_transport_websocket_ix
-            axtp_transport_websocket_websocketpp)
+            axtp_transport_websocket_ix)
         if(TARGET ${optional_transport_target})
             message(FATAL_ERROR
                 "${optional_transport_target} must not be defined when "
@@ -42,16 +41,10 @@ if(NOT AXTP_BUILD_JSON_RPC AND TARGET axtp_json_rpc)
     message(FATAL_ERROR "axtp_json_rpc must not be defined when AXTP_BUILD_JSON_RPC is OFF")
 endif()
 
-if(NOT AXTP_CPP_RUNTIME_TOOLS_FETCH_DEPS)
-    foreach(tool_dependency_target
-            ixwebsocket
-            hidapi_darwin
-            hidapi_hidraw
-            hidapi_libusb)
-        if(TARGET ${tool_dependency_target})
-            message(FATAL_ERROR
-                "${tool_dependency_target} must not be pulled from bundled tool dependencies "
-                "unless AXTP_CPP_RUNTIME_TOOLS_FETCH_DEPS is ON")
-        endif()
-    endforeach()
-endif()
+foreach(retired_dependency IXWebSocket asio hidapi websocketpp)
+    if(EXISTS "${AXTP_CPP_RUNTIME_ROOT}/third_party/${retired_dependency}")
+        message(FATAL_ERROR
+            "cpp-runtime must not vendor third_party/${retired_dependency}; "
+            "concrete transport providers belong to the embedding application or the explicit tool fetch path")
+    endif()
+endforeach()
