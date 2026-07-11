@@ -1,6 +1,9 @@
 #include <algorithm>
 #include <cassert>
+#include <chrono>
 #include <cstddef>
+#include <condition_variable>
+#include <mutex>
 #include <optional>
 #include <queue>
 #include <utility>
@@ -65,6 +68,56 @@ public:
     std::vector<axtp::Bytes> writes;
     std::vector<std::size_t> readSizes;
     std::queue<axtp::Bytes> reads;
+};
+
+class ReadErrorHidBackend : public axtp::IHidBackend {
+public:
+    using Clock = std::chrono::steady_clock;
+
+    bool open(const axtp::HidTransportOptions&) override {
+        std::lock_guard<std::mutex> lock(_mutex);
+        _open = true;
+        return true;
+    }
+
+    void close() override {
+        std::lock_guard<std::mutex> lock(_mutex);
+        _open = false;
+    }
+
+    bool writeReport(const axtp::Byte*, std::size_t) override {
+        return false;
+    }
+
+    std::optional<std::size_t>
+    readReport(axtp::Byte*, std::size_t, std::uint32_t) override {
+        {
+            std::lock_guard<std::mutex> lock(_mutex);
+            if (!_open) {
+                return std::nullopt;
+            }
+            _readTimestamps.push_back(Clock::now());
+        }
+        _readObserved.notify_all();
+        return std::nullopt;
+    }
+
+    bool waitForReadCount(std::size_t count, std::chrono::milliseconds timeout) {
+        std::unique_lock<std::mutex> lock(_mutex);
+        return _readObserved.wait_for(
+            lock, timeout, [&] { return _readTimestamps.size() >= count; });
+    }
+
+    std::vector<Clock::time_point> readTimestamps() const {
+        std::lock_guard<std::mutex> lock(_mutex);
+        return _readTimestamps;
+    }
+
+private:
+    mutable std::mutex _mutex;
+    std::condition_variable _readObserved;
+    bool _open = false;
+    std::vector<Clock::time_point> _readTimestamps;
 };
 
 class CapturingByteSink : public axtp::IByteSink {
@@ -211,6 +264,38 @@ int main() {
     assert(autoBackendPtr->readSizes.size() == 1);
     assert(autoBackendPtr->readSizes[0] == 4096);
     autoTransport.close();
+
+    constexpr auto readErrorBackoff = std::chrono::milliseconds(40);
+    constexpr auto minimumObservedBackoff = std::chrono::milliseconds(30);
+    axtp::HidTransportOptions readErrorOptions;
+    readErrorOptions.inputReportSize = 64;
+    readErrorOptions.outputReportSize = 64;
+    readErrorOptions.useReadThread = true;
+    readErrorOptions.readThreadTimeoutMs = 1;
+    readErrorOptions.readErrorBackoffMs =
+        static_cast<std::uint32_t>(readErrorBackoff.count());
+    auto readErrorBackend = std::make_unique<ReadErrorHidBackend>();
+    auto* readErrorBackendPtr = readErrorBackend.get();
+    axtp::HidTransport readErrorTransport(readErrorOptions, std::move(readErrorBackend));
+    readErrorTransport.open();
+    assert(readErrorTransport.isOpen());
+
+    const bool observedReadErrors =
+        readErrorBackendPtr->waitForReadCount(3, std::chrono::seconds(2));
+    const auto closeStarted = ReadErrorHidBackend::Clock::now();
+    readErrorTransport.close();
+    const auto closeElapsed = ReadErrorHidBackend::Clock::now() - closeStarted;
+    const auto readErrorTimestamps = readErrorBackendPtr->readTimestamps();
+
+    assert(observedReadErrors);
+    assert(readErrorTimestamps.size() >= 3);
+    for (std::size_t index = 1; index < 3; ++index) {
+        assert(readErrorTimestamps[index] - readErrorTimestamps[index - 1] >=
+               minimumObservedBackoff);
+    }
+    assert(readErrorTransport.stats().readErrors >= 3);
+    assert(closeElapsed < std::chrono::milliseconds(250));
+    assert(!readErrorTransport.isOpen());
 
     auto coreBackend = std::make_unique<MockHidBackend>();
     auto* coreBackendPtr = coreBackend.get();
