@@ -29,7 +29,6 @@
 #include "sdk/client_options.hpp"
 #include "sdk/endpoints.hpp"
 #include "sdk/sdk_error.hpp"
-#include "transports/tcp/native/tcp_transport.hpp"
 
 namespace axtp::sdk {
 
@@ -62,17 +61,11 @@ public:
     }
 
     void connect(const TcpEndpoint& endpoint) {
-        auto transport =
-            std::make_unique<TcpClientTransport>(endpoint.host, endpoint.port, _options.connectTimeout);
-        auto* transportPtr = transport.get();
-        attachTransport(std::move(transport));
-        if (!transportPtr->isOpen()) {
-            _lastError = SdkError::failure(ErrorCode::Unavailable, "TCP connection failed");
-            _connected = false;
-            _transport.reset();
-            return;
-        }
-        _lastError = SdkError::success();
+        (void)endpoint;
+        _lastError =
+            SdkError::failure(ErrorCode::NotSupported,
+                              "TCP transport construction is provided by optional connectors");
+        _connected = false;
     }
 
     void connect(const WebSocketEndpoint& endpoint) {
@@ -337,6 +330,10 @@ public:
 
     void registerEventHandler(std::uint32_t eventId, RawEventHandler handler) {
         _eventHandlers[eventId] = std::move(handler);
+    }
+
+    void setStreamHandler(BasicBroker<>::StreamHandler handler) {
+        _broker.registerStreamHandler(std::move(handler));
     }
 
     RpcPayload callRaw(RpcPayload request, CallOptions options = {}) {

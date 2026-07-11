@@ -77,6 +77,7 @@ struct HidTransportOptions {
     std::size_t maxReportsPerPoll = 16;
     bool useReadThread = false;
     std::uint32_t readThreadTimeoutMs = 1000;
+    std::uint32_t readErrorBackoffMs = 10;
     std::uint32_t writeTimeoutMs = 5000;
     std::function<void(const HidReportTrace&)> reportTrace;
 };

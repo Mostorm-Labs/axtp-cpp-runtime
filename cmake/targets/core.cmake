@@ -47,22 +47,6 @@ target_link_libraries(axtp_runtime INTERFACE axtp_core axtp_broker)
 target_compile_features(axtp_runtime INTERFACE cxx_std_17)
 set_target_properties(axtp_runtime PROPERTIES EXPORT_NAME runtime)
 
-add_library(axtp_transport_tcp_native INTERFACE)
-target_include_directories(axtp_transport_tcp_native
-    INTERFACE
-        $<BUILD_INTERFACE:${AXTP_CPP_RUNTIME_ROOT}/include>
-        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-)
-target_link_libraries(axtp_transport_tcp_native
-    INTERFACE
-        axtp_runtime
-)
-if(WIN32)
-    target_link_libraries(axtp_transport_tcp_native INTERFACE ws2_32)
-endif()
-target_compile_features(axtp_transport_tcp_native INTERFACE cxx_std_17)
-set_target_properties(axtp_transport_tcp_native PROPERTIES EXPORT_NAME transport_tcp_native)
-
 if(NOT TARGET axtp::core)
     add_library(axtp::core ALIAS axtp_core)
 endif()
@@ -72,10 +56,6 @@ endif()
 if(NOT TARGET axtp::runtime)
     add_library(axtp::runtime ALIAS axtp_runtime)
 endif()
-if(NOT TARGET axtp::transport_tcp_native)
-    add_library(axtp::transport_tcp_native ALIAS axtp_transport_tcp_native)
-endif()
-
 if(AXTP_BUILD_JSON_RPC)
     add_library(axtp_json_rpc INTERFACE)
     target_include_directories(axtp_json_rpc
@@ -95,6 +75,25 @@ if(AXTP_BUILD_JSON_RPC)
 endif()
 
 if(AXTP_BUILD_OPTIONAL_TRANSPORTS)
+    add_library(axtp_transport_tcp_native INTERFACE)
+    target_include_directories(axtp_transport_tcp_native
+        INTERFACE
+            $<BUILD_INTERFACE:${AXTP_CPP_RUNTIME_ROOT}/include>
+            $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+    )
+    target_link_libraries(axtp_transport_tcp_native
+        INTERFACE
+            axtp_runtime
+    )
+    if(WIN32)
+        target_link_libraries(axtp_transport_tcp_native INTERFACE ws2_32)
+    endif()
+    target_compile_features(axtp_transport_tcp_native INTERFACE cxx_std_17)
+    set_target_properties(axtp_transport_tcp_native PROPERTIES EXPORT_NAME transport_tcp_native)
+    if(NOT TARGET axtp::transport_tcp_native)
+        add_library(axtp::transport_tcp_native ALIAS axtp_transport_tcp_native)
+    endif()
+
     find_package(Boost CONFIG QUIET)
 
     if(Boost_FOUND)
@@ -116,38 +115,27 @@ if(AXTP_BUILD_OPTIONAL_TRANSPORTS)
         endif()
     endif()
 
-    set(AXTP_THIRDPARTY_IXWEBSOCKET_DIR ${AXTP_CPP_RUNTIME_ROOT}/third_party/IXWebSocket)
-    if(EXISTS "${AXTP_THIRDPARTY_IXWEBSOCKET_DIR}/CMakeLists.txt" AND NOT TARGET ixwebsocket::ixwebsocket)
-        set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
-        set(BUILD_DEMO OFF CACHE BOOL "" FORCE)
-        set(USE_TLS OFF CACHE BOOL "" FORCE)
-        set(USE_ZLIB OFF CACHE BOOL "" FORCE)
-        set(IXWEBSOCKET_INSTALL OFF CACHE BOOL "" FORCE)
-        add_subdirectory(
-            ${AXTP_THIRDPARTY_IXWEBSOCKET_DIR}
-            ${AXTP_CPP_RUNTIME_BINARY_DIR}/third_party/IXWebSocket
-            EXCLUDE_FROM_ALL
-        )
-    endif()
     if(NOT TARGET ixwebsocket::ixwebsocket)
-        find_package(ixwebsocket CONFIG REQUIRED)
+        axtp_cpp_runtime_resolve_ixwebsocket()
     endif()
 
-    add_library(axtp_transport_websocket_ix INTERFACE)
-    target_include_directories(axtp_transport_websocket_ix
-        INTERFACE
-            $<BUILD_INTERFACE:${AXTP_CPP_RUNTIME_ROOT}/include>
-            $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-    )
-    target_link_libraries(axtp_transport_websocket_ix
-        INTERFACE
-            axtp_runtime
-            ixwebsocket::ixwebsocket
-    )
-    target_compile_features(axtp_transport_websocket_ix INTERFACE cxx_std_17)
-    set_target_properties(axtp_transport_websocket_ix PROPERTIES EXPORT_NAME transport_websocket_ix)
-    if(NOT TARGET axtp::transport_websocket_ix)
-        add_library(axtp::transport_websocket_ix ALIAS axtp_transport_websocket_ix)
+    if(TARGET ixwebsocket::ixwebsocket)
+        add_library(axtp_transport_websocket_ix INTERFACE)
+        target_include_directories(axtp_transport_websocket_ix
+            INTERFACE
+                $<BUILD_INTERFACE:${AXTP_CPP_RUNTIME_ROOT}/include>
+                $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+        )
+        target_link_libraries(axtp_transport_websocket_ix
+            INTERFACE
+                axtp_runtime
+                ixwebsocket::ixwebsocket
+        )
+        target_compile_features(axtp_transport_websocket_ix INTERFACE cxx_std_17)
+        set_target_properties(axtp_transport_websocket_ix PROPERTIES EXPORT_NAME transport_websocket_ix)
+        if(NOT TARGET axtp::transport_websocket_ix)
+            add_library(axtp::transport_websocket_ix ALIAS axtp_transport_websocket_ix)
+        endif()
     endif()
 
     set(AXTP_THIRDPARTY_WEBSOCKETPP_DIR ${AXTP_CPP_RUNTIME_ROOT}/third_party/websocketpp)
@@ -203,91 +191,36 @@ if(AXTP_BUILD_OPTIONAL_TRANSPORTS)
         endif()
     endif()
 
-    set(AXTP_HIDAPI_TARGET "")
-    set(AXTP_THIRDPARTY_HIDAPI_DIR ${AXTP_CPP_RUNTIME_ROOT}/third_party/hidapi)
-    if(EXISTS "${AXTP_THIRDPARTY_HIDAPI_DIR}/CMakeLists.txt" AND NOT TARGET hidapi::hidapi)
-        set(HIDAPI_INSTALL_TARGETS OFF CACHE BOOL "" FORCE)
-        set(HIDAPI_BUILD_HIDTEST OFF CACHE BOOL "" FORCE)
-        set(HIDAPI_WITH_TESTS OFF CACHE BOOL "" FORCE)
-        set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
-        add_subdirectory(
-            ${AXTP_THIRDPARTY_HIDAPI_DIR}
-            ${AXTP_CPP_RUNTIME_BINARY_DIR}/third_party/hidapi
-            EXCLUDE_FROM_ALL
+    if(AXTP_HIDAPI_TARGET AND NOT TARGET ${AXTP_HIDAPI_TARGET})
+        set(AXTP_HIDAPI_TARGET "")
+    endif()
+
+    if(NOT AXTP_HIDAPI_TARGET)
+        axtp_cpp_runtime_resolve_hidapi()
+    endif()
+
+    if(AXTP_HIDAPI_TARGET)
+        add_library(axtp_transport_hidapi STATIC EXCLUDE_FROM_ALL
+            ${AXTP_CPP_RUNTIME_ROOT}/src/transports/hidapi/hid_transport.cpp
         )
-    endif()
-
-    if(TARGET hidapi::hidapi)
-        set(AXTP_HIDAPI_TARGET hidapi::hidapi)
-    endif()
-
-    if(NOT AXTP_HIDAPI_TARGET)
-        find_package(hidapi CONFIG QUIET)
-        if(TARGET hidapi::hidapi)
-            set(AXTP_HIDAPI_TARGET hidapi::hidapi)
-        elseif(TARGET hidapi::hidapi-shared)
-            set(AXTP_HIDAPI_TARGET hidapi::hidapi-shared)
-        elseif(TARGET hidapi::hidapi-static)
-            set(AXTP_HIDAPI_TARGET hidapi::hidapi-static)
-        elseif(TARGET hidapi::hidapi-darwin)
-            set(AXTP_HIDAPI_TARGET hidapi::hidapi-darwin)
-        elseif(TARGET hidapi::hidapi-hidraw)
-            set(AXTP_HIDAPI_TARGET hidapi::hidapi-hidraw)
-        elseif(TARGET hidapi::hidapi-libusb)
-            set(AXTP_HIDAPI_TARGET hidapi::hidapi-libusb)
-        elseif(TARGET hidapi::darwin)
-            set(AXTP_HIDAPI_TARGET hidapi::darwin)
-        elseif(TARGET hidapi::hidraw)
-            set(AXTP_HIDAPI_TARGET hidapi::hidraw)
-        elseif(TARGET hidapi::libusb)
-            set(AXTP_HIDAPI_TARGET hidapi::libusb)
+        target_include_directories(axtp_transport_hidapi
+            PUBLIC
+                $<BUILD_INTERFACE:${AXTP_CPP_RUNTIME_ROOT}/include>
+                $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+        )
+        target_link_libraries(axtp_transport_hidapi
+            PUBLIC
+                axtp_runtime
+            PRIVATE
+                ${AXTP_HIDAPI_TARGET}
+        )
+        if(WIN32)
+            target_link_libraries(axtp_transport_hidapi PRIVATE hid)
         endif()
-    endif()
-
-    if(NOT AXTP_HIDAPI_TARGET)
-        find_package(PkgConfig QUIET)
-        if(PkgConfig_FOUND)
-            pkg_check_modules(HIDAPI QUIET IMPORTED_TARGET hidapi)
-            if(TARGET PkgConfig::HIDAPI)
-                set(AXTP_HIDAPI_TARGET PkgConfig::HIDAPI)
-            else()
-                pkg_check_modules(HIDAPI_HIDRAW QUIET IMPORTED_TARGET hidapi-hidraw)
-                if(TARGET PkgConfig::HIDAPI_HIDRAW)
-                    set(AXTP_HIDAPI_TARGET PkgConfig::HIDAPI_HIDRAW)
-                else()
-                    pkg_check_modules(HIDAPI_LIBUSB QUIET IMPORTED_TARGET hidapi-libusb)
-                    if(TARGET PkgConfig::HIDAPI_LIBUSB)
-                        set(AXTP_HIDAPI_TARGET PkgConfig::HIDAPI_LIBUSB)
-                    endif()
-                endif()
-            endif()
+        target_compile_features(axtp_transport_hidapi PUBLIC cxx_std_17)
+        set_target_properties(axtp_transport_hidapi PROPERTIES EXPORT_NAME transport_hidapi)
+        if(NOT TARGET axtp::transport_hidapi)
+            add_library(axtp::transport_hidapi ALIAS axtp_transport_hidapi)
         endif()
-    endif()
-
-    if(NOT AXTP_HIDAPI_TARGET)
-        message(FATAL_ERROR "hidapi is required to build optional axtp_transport_hidapi")
-    endif()
-
-    add_library(axtp_transport_hidapi STATIC EXCLUDE_FROM_ALL
-        ${AXTP_CPP_RUNTIME_ROOT}/src/transports/hidapi/hid_transport.cpp
-    )
-    target_include_directories(axtp_transport_hidapi
-        PUBLIC
-            $<BUILD_INTERFACE:${AXTP_CPP_RUNTIME_ROOT}/include>
-            $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-    )
-    target_link_libraries(axtp_transport_hidapi
-        PUBLIC
-            axtp_runtime
-        PRIVATE
-            ${AXTP_HIDAPI_TARGET}
-    )
-    if(WIN32)
-        target_link_libraries(axtp_transport_hidapi PRIVATE hid)
-    endif()
-    target_compile_features(axtp_transport_hidapi PUBLIC cxx_std_17)
-    set_target_properties(axtp_transport_hidapi PROPERTIES EXPORT_NAME transport_hidapi)
-    if(NOT TARGET axtp::transport_hidapi)
-        add_library(axtp::transport_hidapi ALIAS axtp_transport_hidapi)
     endif()
 endif()

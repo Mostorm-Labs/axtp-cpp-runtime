@@ -25,6 +25,9 @@ endif()
 option(AXTP_CPP_RUNTIME_BUILD_SDK "Build the AXTP SDK target" ON)
 option(AXTP_CPP_RUNTIME_BUILD_TOOLS "Build AXTP command line tools" OFF)
 option(AXTP_CPP_RUNTIME_BUILD_MEDIAHOST "Build the AXTP MediaHost sample" OFF)
+option(AXTP_CPP_RUNTIME_TOOLS_FETCH_DEPS
+    "Allow tool builds to use bundled or fetched third-party transport dependencies"
+    OFF)
 option(AXTP_CPP_RUNTIME_BUILD_TESTS "Build AXTP C++ runtime tests" ${AXTP_CPP_RUNTIME_IS_TOP_LEVEL})
 option(AXTP_CPP_RUNTIME_BUILD_CONFORMANCE "Build AXTP conformance runner" OFF)
 option(AXTP_CPP_RUNTIME_ENABLE_INSTALL "Install AXTP C++ runtime package targets" ${AXTP_CPP_RUNTIME_IS_TOP_LEVEL})
@@ -43,8 +46,7 @@ function(axtp_cpp_runtime_target_is_imported target output_variable)
     set(${output_variable} OFF PARENT_SCOPE)
 endfunction()
 
-if(AXTP_CPP_RUNTIME_BUILD_TESTS OR
-   AXTP_CPP_RUNTIME_BUILD_TOOLS OR
+if(AXTP_CPP_RUNTIME_BUILD_TOOLS OR
    AXTP_CPP_RUNTIME_BUILD_MEDIAHOST)
     set(AXTP_BUILD_JSON_RPC ON CACHE BOOL "" FORCE)
     set(AXTP_BUILD_OPTIONAL_TRANSPORTS ON CACHE BOOL "" FORCE)
@@ -58,6 +60,7 @@ if(AXTP_CPP_RUNTIME_BUILD_TESTS)
     enable_testing()
 endif()
 
+include(cmake/targets/tool_deps.cmake)
 include(cmake/targets/core.cmake)
 include(cmake/targets/stream.cmake)
 include(cmake/targets/media_profile.cmake)
@@ -81,13 +84,12 @@ if(TARGET axtp_sdk)
     include(cmake/targets/firmware_profile.cmake)
 endif()
 
-if(AXTP_CPP_RUNTIME_BUILD_TESTS OR
-   AXTP_CPP_RUNTIME_BUILD_TOOLS OR
+if(AXTP_CPP_RUNTIME_BUILD_TOOLS OR
    AXTP_CPP_RUNTIME_BUILD_MEDIAHOST)
     include(cmake/targets/toolkit.cmake)
 endif()
 
-if(AXTP_CPP_RUNTIME_BUILD_TESTS OR AXTP_CPP_RUNTIME_BUILD_TOOLS)
+if(AXTP_CPP_RUNTIME_BUILD_TOOLS)
     include(cmake/targets/axtpctl.cmake)
 endif()
 
@@ -107,6 +109,7 @@ if(AXTP_CPP_RUNTIME_BUILD_CONFORMANCE)
 endif()
 
 if(AXTP_CPP_RUNTIME_BUILD_TESTS)
+    include(tests/cmake/verify_target_boundaries.cmake)
     include(cmake/targets/tests.cmake)
 endif()
 
@@ -117,7 +120,6 @@ if(AXTP_CPP_RUNTIME_ENABLE_INSTALL)
         axtp_runtime
         axtp_stream
         axtp_media_profile
-        axtp_transport_tcp_native
     )
     if(TARGET axtp_sdk)
         list(APPEND AXTP_CPP_RUNTIME_INSTALL_TARGETS axtp_sdk)
@@ -134,6 +136,9 @@ if(AXTP_CPP_RUNTIME_ENABLE_INSTALL)
     set(AXTP_CPP_RUNTIME_CONFIG_NEEDS_HIDAPI OFF)
 
     if(AXTP_CPP_RUNTIME_INSTALL_OPTIONAL_TRANSPORTS)
+        if(TARGET axtp_transport_tcp_native)
+            list(APPEND AXTP_CPP_RUNTIME_INSTALL_TARGETS axtp_transport_tcp_native)
+        endif()
         if(TARGET axtp_transport_tcp_boost)
             list(APPEND AXTP_CPP_RUNTIME_INSTALL_TARGETS axtp_transport_tcp_boost)
             set(AXTP_CPP_RUNTIME_CONFIG_NEEDS_BOOST ON)
@@ -181,9 +186,37 @@ if(AXTP_CPP_RUNTIME_ENABLE_INSTALL)
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     )
 
-    install(DIRECTORY include/
+    install(DIRECTORY
+            include/core
+            include/sdk
+            include/stream
+            include/profiles
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
     )
+    install(FILES
+            include/axtp_core.hpp
+            include/axtp_runtime.hpp
+            include/axtp_sdk.hpp
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    )
+    if(TARGET axtp_json_rpc)
+        install(DIRECTORY include/json_rpc
+            DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+        )
+        install(FILES include/axtp_json_rpc.hpp
+            DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+        )
+    endif()
+    if(AXTP_CPP_RUNTIME_INSTALL_OPTIONAL_TRANSPORTS)
+        install(DIRECTORY include/transports
+            DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+        )
+        install(FILES
+                include/axtp_transport_hid.hpp
+                include/axtp_transport_tcp_native.hpp
+            DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+        )
+    endif()
 
     set(AXTP_CPP_RUNTIME_CONFIG_NEEDS_NLOHMANN_JSON ON)
     if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/third_party/json/include/nlohmann/json.hpp")
@@ -191,6 +224,52 @@ if(AXTP_CPP_RUNTIME_ENABLE_INSTALL)
         install(DIRECTORY third_party/json/include/
             DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
         )
+    endif()
+
+    set(AXTP_CPP_RUNTIME_CONFIG_FIND_NLOHMANN_JSON "")
+    if(AXTP_CPP_RUNTIME_CONFIG_NEEDS_NLOHMANN_JSON)
+        set(AXTP_CPP_RUNTIME_CONFIG_FIND_NLOHMANN_JSON
+            "find_dependency(nlohmann_json CONFIG REQUIRED)")
+    endif()
+
+    set(AXTP_CPP_RUNTIME_CONFIG_FIND_BOOST "")
+    if(AXTP_CPP_RUNTIME_CONFIG_NEEDS_BOOST)
+        set(AXTP_CPP_RUNTIME_CONFIG_FIND_BOOST
+            "find_dependency(Boost CONFIG REQUIRED)")
+    endif()
+
+    set(AXTP_CPP_RUNTIME_CONFIG_FIND_IXWEBSOCKET "")
+    if(AXTP_CPP_RUNTIME_CONFIG_NEEDS_IXWEBSOCKET)
+        set(AXTP_CPP_RUNTIME_CONFIG_FIND_IXWEBSOCKET
+            "find_dependency(ixwebsocket CONFIG REQUIRED)")
+    endif()
+
+    set(AXTP_CPP_RUNTIME_CONFIG_FIND_HIDAPI "")
+    if(AXTP_CPP_RUNTIME_CONFIG_NEEDS_HIDAPI)
+        set(AXTP_CPP_RUNTIME_CONFIG_FIND_HIDAPI [=[
+find_dependency(hidapi CONFIG QUIET)
+if(NOT TARGET hidapi::hidapi AND
+   NOT TARGET hidapi::hidapi-shared AND
+   NOT TARGET hidapi::hidapi-static AND
+   NOT TARGET hidapi::hidapi-darwin AND
+   NOT TARGET hidapi::hidapi-hidraw AND
+   NOT TARGET hidapi::hidapi-libusb AND
+   NOT TARGET hidapi::darwin AND
+   NOT TARGET hidapi::hidraw AND
+   NOT TARGET hidapi::libusb)
+    find_package(PkgConfig QUIET)
+    if(PkgConfig_FOUND)
+        pkg_check_modules(HIDAPI QUIET IMPORTED_TARGET hidapi)
+        if(NOT TARGET PkgConfig::HIDAPI)
+            pkg_check_modules(HIDAPI_HIDRAW QUIET IMPORTED_TARGET hidapi-hidraw)
+        endif()
+        if(NOT TARGET PkgConfig::HIDAPI AND
+           NOT TARGET PkgConfig::HIDAPI_HIDRAW)
+            pkg_check_modules(HIDAPI_LIBUSB QUIET IMPORTED_TARGET hidapi-libusb)
+        endif()
+    endif()
+endif()
+]=])
     endif()
 
     if(AXTP_CPP_RUNTIME_INSTALL_OPTIONAL_TRANSPORTS AND

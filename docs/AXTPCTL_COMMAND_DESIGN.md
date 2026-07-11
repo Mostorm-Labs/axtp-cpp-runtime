@@ -34,7 +34,7 @@ axtpctl \
   <command>
 ```
 
-`mock` 是 P0 smoke test 的默认 transport。协议级调试优先走 `mock` 或 TCP/WebSocket mock server。HID 只面向真实设备调试，不提供 HID mock/socket simulation。真实设备应通过 SDK transport connector 或可选 transport factory 接入。HID/TCP/WebSocket concrete dependency 属于 tool/runtime dependency，不得下沉到 cpp/core。
+`mock` 是 P0 smoke test 的默认 transport。协议级调试优先走 `mock` 或 TCP/WebSocket mock server。HID 只面向真实设备调试，不提供 HID mock/socket simulation。真实设备应通过 SDK transport connector 或可选 transport factory 接入。HID/TCP/WebSocket concrete dependency 属于 tool/optional transport dependency，不得下沉到 cpp/core、runtime 或 SDK 默认目标。
 
 ## P0 命令
 

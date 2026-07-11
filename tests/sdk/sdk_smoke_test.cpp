@@ -10,8 +10,6 @@
 
 #include "core/runtime/endpoint/axtp_endpoint.hpp"
 #include "core/runtime/testing/mock_transport.hpp"
-#include "transports/tcp/native/tcp_transport.hpp"
-
 #include <axtp_sdk.hpp>
 
 namespace {
@@ -53,6 +51,13 @@ axtp::Bytes encodeRpc(axtp::RpcPayload payload) {
     CapturingByteWriter writer;
     axtp::OutboundProcessor outbound(writer);
     outbound.sendRpc(std::move(payload));
+    return writer.bytes;
+}
+
+axtp::Bytes encodeStream(axtp::StreamPayload payload) {
+    CapturingByteWriter writer;
+    axtp::OutboundProcessor outbound(writer);
+    outbound.sendStream(std::move(payload));
     return writer.bytes;
 }
 
@@ -306,51 +311,36 @@ int main() {
         assert(transportPtr->sawBusinessRequest);
     }
 
+    axtp::sdk::AxtpClient tcpConnectorClient;
+    tcpConnectorClient.connect(axtp::sdk::TcpEndpoint{"127.0.0.1", 1});
+    assert(!tcpConnectorClient.isConnected());
+    assert(tcpConnectorClient.lastError().code == axtp::ErrorCode::NotSupported);
+
     {
-        axtp::BasicBroker<> broker;
-        axtp::AxtpEndpoint endpoint(broker);
-        broker.registerMethod(
-            static_cast<std::uint16_t>(axtp::MethodId::AudioGetAlgorithmConfig),
-            [](const axtp::RpcPayload&) {
-                const std::string body = R"({"noiseSuppression":{"enabled":true,"level":3}})";
-                return axtp::Bytes(body.begin(), body.end());
+        axtp::sdk::AxtpClient client;
+        std::vector<axtp::StreamPayload> received;
+        client.setStreamHandler(
+            [&received](const axtp::BrokerContext&, const axtp::StreamPayload& stream) {
+                received.push_back(stream);
             });
 
-        axtp::TcpServerTransport server(0);
-        endpoint.attachTransport(server);
-        server.open();
-        assert(server.isOpen());
-        const auto port = server.localPort();
-        assert(port != 0);
+        auto transport = std::make_unique<axtp::MockTransport>();
+        auto* rawTransport = transport.get();
+        client.attachTransport(std::move(transport));
 
-        std::atomic<bool> running{true};
-        std::thread serverThread([&] {
-            while (running.load()) {
-                endpoint.poll();
-                std::this_thread::sleep_for(std::chrono::milliseconds(1));
-            }
-        });
+        axtp::StreamPayload stream;
+        stream.streamId = 0x1001;
+        stream.seqId = 7;
+        stream.cursor = 123456;
+        stream.data = {0x00, 0x00, 0x01, 0x65};
+        rawTransport->injectIncoming(encodeStream(stream));
 
-        axtp::sdk::AxtpClient tcpClient;
-        tcpClient.connect(axtp::sdk::TcpEndpoint{"127.0.0.1", port});
-        assert(tcpClient.isConnected());
+        client.poll();
 
-        axtp::sdk::AppReadyOptions options;
-        options.timeout = std::chrono::milliseconds(1000);
-        options.randomSeed = 0x01020304;
-        const auto ready = tcpClient.ensureAppReady(options);
-        assert(ready.ok);
-        assert(tcpClient.isAppReady());
-        assert(!tcpClient.sessionSid().empty());
-
-        axtp::sdk::CallOptions callOptions;
-        callOptions.timeout = std::chrono::milliseconds(1000);
-        const auto body = tcpClient.callJson("audio.getAlgorithmConfig", "{}", callOptions);
-        assert(body.find("noiseSuppression") != std::string::npos);
-
-        tcpClient.close();
-        running = false;
-        serverThread.join();
-        server.close();
+        assert(received.size() == 1);
+        assert(received.front().streamId == 0x1001);
+        assert(received.front().seqId == 7);
+        assert(received.front().cursor == 123456);
+        assert(received.front().data.size() == 4);
     }
 }
