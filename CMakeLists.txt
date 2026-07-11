@@ -84,8 +84,7 @@ if(TARGET axtp_sdk)
     include(cmake/targets/firmware_profile.cmake)
 endif()
 
-if(AXTP_CPP_RUNTIME_BUILD_TESTS OR
-   AXTP_CPP_RUNTIME_BUILD_TOOLS OR
+if(AXTP_CPP_RUNTIME_BUILD_TOOLS OR
    AXTP_CPP_RUNTIME_BUILD_MEDIAHOST)
     include(cmake/targets/toolkit.cmake)
 endif()
