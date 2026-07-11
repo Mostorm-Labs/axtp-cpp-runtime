@@ -72,42 +72,21 @@ if(TARGET axtp_sdk)
     add_test(NAME cpp_sdk_smoke_test COMMAND cpp_sdk_smoke_test)
 endif()
 
-if(TARGET axtpctl)
-    add_test(NAME axtpctl_help COMMAND axtpctl --help)
-    add_test(NAME axtpctl_capability_methods COMMAND axtpctl capability methods)
-    add_test(NAME axtpctl_list_methods COMMAND axtpctl list-methods)
-
-    add_test(NAME axtpctl_firmware_update_mock
-        COMMAND axtpctl -t mock -o json firmware update
-            --file ${AXTP_CPP_RUNTIME_ROOT}/tests/tools/axtpctl/firmware_fixture.bin
-            --file-id firmware
-            --chunk-size 4
-    )
-    set_tests_properties(axtpctl_firmware_update_mock PROPERTIES
-        PASS_REGULAR_EXPRESSION "\"ok\":true"
-    )
-
-    add_test(NAME axtpctl_unknown_method
-        COMMAND axtpctl -c unknown.method
-    )
-    set_tests_properties(axtpctl_unknown_method PROPERTIES WILL_FAIL TRUE)
-
-    add_test(NAME axtpctl_json_conflict
-        COMMAND axtpctl -c audio.setAlgorithmConfig
-            --json {}
-            --json-file ${AXTP_CPP_RUNTIME_ROOT}/tests/tools/axtpctl/params_algorithm_config.json
-    )
-    set_tests_properties(axtpctl_json_conflict PROPERTIES WILL_FAIL TRUE)
-
-    add_test(NAME axtpctl_invalid_vid
-        COMMAND axtpctl -t hid list-hid --vid 0x10000
-    )
-    set_tests_properties(axtpctl_invalid_vid PROPERTIES WILL_FAIL TRUE)
-
-    add_test(NAME axtpctl_invalid_usage_page
-        COMMAND axtpctl -t hid list-hid --usage-page 0x81xyz
-    )
-    set_tests_properties(axtpctl_invalid_usage_page PROPERTIES WILL_FAIL TRUE)
+if(AXTP_CPP_RUNTIME_BUILD_MEDIAHOST)
+    foreach(required_mediahost_target
+            axtp-mediahost
+            axtp_toolkit
+            axtp_transport_hidapi
+            axtp_transport_tcp_native
+            axtp_transport_websocket_ix
+            phase6_real_transport_test
+            phase9_hid_transport_test)
+        if(NOT TARGET ${required_mediahost_target})
+            message(FATAL_ERROR
+                "AXTP_CPP_RUNTIME_BUILD_MEDIAHOST requires ${required_mediahost_target}; "
+                "the MediaHost/test inventory must not be silently reduced")
+        endif()
+    endforeach()
 endif()
 
 if(TARGET axtp_stream)

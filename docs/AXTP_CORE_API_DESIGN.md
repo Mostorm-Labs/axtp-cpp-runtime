@@ -35,7 +35,6 @@ ITransport <-> AxtpEndpoint -> AxtpCore -> BasicBroker
 | `axtp_transport_hidapi` | `STATIC` optional | HID report-level transport，public header 位于 `include/transports`，实现位于 `src/transports`，依赖顶层或工具解析出的 hidapi target |
 | `axtp_transport_tcp_boost` | `INTERFACE` optional | Legacy Boost.Asio TCP transport，Boost 可用时定义，位于 `include/transports` |
 | `axtp_transport_websocket_ix` | `INTERFACE` optional | IXWebSocket WebSocket transport，位于 `include/transports`，依赖顶层或工具解析出的 IXWebSocket target |
-| `axtp_transport_websocket_websocketpp` | `INTERFACE` optional | 高级可选 websocketpp + standalone Asio WebSocket transport，位于 `include/transports` |
 | `axtp_transport_websocket_boost` | `INTERFACE` optional | Legacy optional Boost.Beast WebSocket transport，位于 `include/transports` |
 
 推荐 runtime 聚合 include：
@@ -54,7 +53,6 @@ ITransport <-> AxtpEndpoint -> AxtpCore -> BasicBroker
 | `docs/AXTP_CPP_EXECUTION_FLOW.md` | FramedBinary、WebSocketJsonRpc、SDK、CLI、HID、direct-core 执行流程 |
 | `docs/AXTP_CPP_STYLE.md` | C++ 命名、文件布局、include、格式化和分层边界 |
 | `docs/AXTP_SDK_API_DESIGN.md` | SDK API 形态和 dynamic RPC 策略 |
-| `docs/AXTPCTL_COMMAND_DESIGN.md` | CLI 命令形态和 dispatch 策略 |
 
 ## Public API 分组
 

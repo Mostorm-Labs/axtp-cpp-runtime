@@ -19,7 +19,7 @@ env:
 
 jobs:
   windows-tools:
-    name: Build Windows tools
+    name: Build Windows MediaHost
     runs-on: windows-2022
     steps:
       - name: Checkout runtime repository
@@ -39,36 +39,31 @@ jobs:
           $runtimeVersion = $runtimeTag -replace "^v", ""
           "RUNTIME_VERSION=$runtimeVersion" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
-      - name: Configure Windows tools
+      - name: Configure Windows MediaHost
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
           cmake -S . -B build/windows-tools -G "Visual Studio 17 2022" -A x64 `
-            -DAXTP_CPP_RUNTIME_BUILD_TOOLS=ON `
             -DAXTP_CPP_RUNTIME_BUILD_MEDIAHOST=ON `
             -DAXTP_CPP_RUNTIME_TOOLS_FETCH_DEPS=ON `
             -DAXTP_CPP_RUNTIME_BUILD_TESTS=OFF `
             -DAXTP_CPP_RUNTIME_ENABLE_INSTALL=OFF
 
-      - name: Build Windows tools
+      - name: Build Windows MediaHost
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
-          cmake --build build/windows-tools --config Release --target axtpctl axtp-mediahost
+          cmake --build build/windows-tools --config Release --target axtp-mediahost
 
-      - name: Smoke test Windows tools
+      - name: Smoke test Windows MediaHost
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
-          $axtpctl = Get-ChildItem build/windows-tools -Recurse -Filter axtpctl.exe | Select-Object -First 1
           $mediahost = Get-ChildItem build/windows-tools -Recurse -Filter axtp-mediahost.exe | Select-Object -First 1
-          if (-not $axtpctl) { throw "axtpctl.exe was not produced" }
           if (-not $mediahost) { throw "axtp-mediahost.exe was not produced" }
-          & $axtpctl.FullName --help
-          & $axtpctl.FullName ping
           & $mediahost.FullName --help
 
-      - name: Package Windows tools
+      - name: Package Windows MediaHost
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
@@ -80,22 +75,18 @@ jobs:
           New-Item -ItemType Directory -Force $packageDir | Out-Null
           New-Item -ItemType Directory -Force $artifactDir | Out-Null
 
-          $axtpctl = Get-ChildItem build/windows-tools -Recurse -Filter axtpctl.exe | Select-Object -First 1
           $mediahost = Get-ChildItem build/windows-tools -Recurse -Filter axtp-mediahost.exe | Select-Object -First 1
-          if (-not $axtpctl) { throw "axtpctl.exe was not produced" }
           if (-not $mediahost) { throw "axtp-mediahost.exe was not produced" }
 
-          Copy-Item $axtpctl.FullName "$packageDir/axtpctl.exe"
           Copy-Item $mediahost.FullName "$packageDir/axtp-mediahost.exe"
           Copy-Item AXTP_SPEC.lock.yaml "$packageDir/AXTP_SPEC.lock.yaml"
           Copy-Item generated/axtp_generated_manifest.json "$packageDir/axtp_generated_manifest.json"
 
           @(
-            "AXTP C++ Runtime Windows tools"
+            "AXTP C++ Runtime Windows MediaHost"
             ""
             "Runtime: $runtimeName $runtimeVersion"
             "Binaries:"
-            "- axtpctl.exe"
             "- axtp-mediahost.exe"
           ) | Set-Content "$packageDir/README.txt"
 

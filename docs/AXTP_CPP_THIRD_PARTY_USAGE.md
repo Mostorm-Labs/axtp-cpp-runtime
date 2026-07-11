@@ -152,22 +152,19 @@ HID 入口头文件：
 同理，IXWebSocket transport 会优先使用顶层已经定义的
 `ixwebsocket::ixwebsocket` / `ixwebsocket` target，其次使用
 `find_package(ixwebsocket CONFIG)`。默认情况下，`AXTP_BUILD_OPTIONAL_TRANSPORTS`
-不会从本仓 `third_party/IXWebSocket` 或 `third_party/hidapi` 拉依赖；缺少依赖
-时，对应 concrete transport target 不会被定义。
+不会下载 concrete transport 依赖；缺少依赖时，对应 transport target 不会被定义。
 
 仓内工具有单独的依赖许可开关：
 
 ```cmake
-set(AXTP_CPP_RUNTIME_BUILD_TOOLS ON CACHE BOOL "" FORCE)
+set(AXTP_CPP_RUNTIME_BUILD_MEDIAHOST ON CACHE BOOL "" FORCE)
 set(AXTP_CPP_RUNTIME_TOOLS_FETCH_DEPS ON CACHE BOOL "" FORCE)
 add_subdirectory(third_party/axtp-cpp-runtime)
 ```
 
-`AXTP_CPP_RUNTIME_TOOLS_FETCH_DEPS=ON` 只服务 `axtpctl`、MediaHost 等仓内工具：
-它允许工具构建使用已 checkout 的 `third_party/hidapi` /
-`third_party/IXWebSocket`，或者在 submodule 缺失时通过 CMake FetchContent 拉取
-锁定 commit。外部业务项目通常不应依赖这个开关，而应自行统一 concrete
-transport 依赖。
+`AXTP_CPP_RUNTIME_TOOLS_FETCH_DEPS=ON` 只服务 MediaHost 示例：
+它允许工具构建通过 CMake FetchContent 拉取锁定的 hidapi 和 IXWebSocket commit。
+外部业务项目通常不应依赖这个开关，而应自行统一 concrete transport 依赖。
 
 ## Optional JSON-RPC Helpers
 
@@ -189,9 +186,8 @@ target_link_libraries(your_app PRIVATE axtp::json_rpc)
 | Option | Default | Meaning |
 |---|---:|---|
 | `AXTP_CPP_RUNTIME_BUILD_SDK` | `ON` | 构建 `axtp::sdk`。设为 `OFF` 时只进入 core/runtime。 |
-| `AXTP_CPP_RUNTIME_BUILD_TOOLS` | `OFF` | 构建 `axtpctl`。应用接入通常不需要。 |
 | `AXTP_CPP_RUNTIME_BUILD_MEDIAHOST` | `OFF` | 构建 Windows MediaHost 示例。应用接入通常不需要。 |
-| `AXTP_CPP_RUNTIME_TOOLS_FETCH_DEPS` | `OFF` | 仅在 tools/MediaHost 构建中允许使用本仓 submodule 或 FetchContent 解析 hidapi/IXWebSocket。 |
+| `AXTP_CPP_RUNTIME_TOOLS_FETCH_DEPS` | `OFF` | 仅在 tools/MediaHost 构建中允许 FetchContent 拉取锁定的 hidapi/IXWebSocket。 |
 | `AXTP_CPP_RUNTIME_BUILD_TESTS` | top-level `ON`, subdirectory `OFF` | 构建仓内一方测试。 |
 | `AXTP_CPP_RUNTIME_BUILD_CONFORMANCE` | `OFF` | 构建 conformance runner。 |
 | `AXTP_CPP_RUNTIME_ENABLE_INSTALL` | top-level `ON`, subdirectory `OFF` | 生成 install/export/package config 规则。 |
@@ -200,10 +196,10 @@ target_link_libraries(your_app PRIVATE axtp::json_rpc)
 | `AXTP_BUILD_OPTIONAL_TRANSPORTS` | `OFF` | 打开 TCP/HID/Boost/WebSocket optional transport targets。 |
 
 `AXTP_CPP_RUNTIME_INSTALL_OPTIONAL_TRANSPORTS` 只导出可以形成可消费安装包的
-optional target。如果 IXWebSocket 或 hidapi 是从本仓 `third_party/` submodule
-直接构建出来的，安装规则会跳过对应 target，避免导出的 package 指向未安装的
-底层第三方 target。需要安装 HID/IX target 时，优先让消费环境提供可被
-`find_package` 找到的 hidapi/ixwebsocket 包。
+optional target。如果 IXWebSocket 或 hidapi provider 不是可独立发现的安装包，
+安装规则会跳过对应 target，避免导出的 package 指向不可重建的底层第三方 target。
+需要安装 HID/IX target 时，优先让消费环境提供可被 `find_package` 找到的
+hidapi/ixwebsocket 包。
 
 ## Common Pitfalls
 

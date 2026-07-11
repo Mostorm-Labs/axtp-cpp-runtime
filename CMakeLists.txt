@@ -23,10 +23,9 @@ if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
 endif()
 
 option(AXTP_CPP_RUNTIME_BUILD_SDK "Build the AXTP SDK target" ON)
-option(AXTP_CPP_RUNTIME_BUILD_TOOLS "Build AXTP command line tools" OFF)
 option(AXTP_CPP_RUNTIME_BUILD_MEDIAHOST "Build the AXTP MediaHost sample" OFF)
 option(AXTP_CPP_RUNTIME_TOOLS_FETCH_DEPS
-    "Allow tool builds to use bundled or fetched third-party transport dependencies"
+    "Allow MediaHost builds to fetch pinned third-party transport dependencies"
     OFF)
 option(AXTP_CPP_RUNTIME_BUILD_TESTS "Build AXTP C++ runtime tests" ${AXTP_CPP_RUNTIME_IS_TOP_LEVEL})
 option(AXTP_CPP_RUNTIME_BUILD_CONFORMANCE "Build AXTP conformance runner" OFF)
@@ -46,8 +45,7 @@ function(axtp_cpp_runtime_target_is_imported target output_variable)
     set(${output_variable} OFF PARENT_SCOPE)
 endfunction()
 
-if(AXTP_CPP_RUNTIME_BUILD_TOOLS OR
-   AXTP_CPP_RUNTIME_BUILD_MEDIAHOST)
+if(AXTP_CPP_RUNTIME_BUILD_MEDIAHOST)
     set(AXTP_BUILD_JSON_RPC ON CACHE BOOL "" FORCE)
     set(AXTP_BUILD_OPTIONAL_TRANSPORTS ON CACHE BOOL "" FORCE)
 endif()
@@ -67,13 +65,12 @@ include(cmake/targets/media_profile.cmake)
 
 set(AXTP_CPP_RUNTIME_NEEDS_SDK ${AXTP_CPP_RUNTIME_BUILD_SDK})
 if(AXTP_CPP_RUNTIME_BUILD_TESTS OR
-   AXTP_CPP_RUNTIME_BUILD_TOOLS OR
    AXTP_CPP_RUNTIME_BUILD_MEDIAHOST)
     set(AXTP_CPP_RUNTIME_NEEDS_SDK ON)
 endif()
 
 if(NOT AXTP_CPP_RUNTIME_BUILD_SDK AND AXTP_CPP_RUNTIME_NEEDS_SDK)
-    message(STATUS "Enabling axtp_sdk target because tests/tools/mediahost require it")
+    message(STATUS "Enabling axtp_sdk target because tests/mediahost require it")
 endif()
 
 if(AXTP_CPP_RUNTIME_NEEDS_SDK)
@@ -84,16 +81,8 @@ if(TARGET axtp_sdk)
     include(cmake/targets/firmware_profile.cmake)
 endif()
 
-if(AXTP_CPP_RUNTIME_BUILD_TOOLS OR
-   AXTP_CPP_RUNTIME_BUILD_MEDIAHOST)
-    include(cmake/targets/toolkit.cmake)
-endif()
-
-if(AXTP_CPP_RUNTIME_BUILD_TOOLS)
-    include(cmake/targets/axtpctl.cmake)
-endif()
-
 if(AXTP_CPP_RUNTIME_BUILD_MEDIAHOST)
+    include(cmake/targets/toolkit.cmake)
     include(cmake/targets/mediahost.cmake)
 endif()
 
@@ -154,11 +143,8 @@ if(AXTP_CPP_RUNTIME_ENABLE_INSTALL)
                 list(APPEND AXTP_CPP_RUNTIME_INSTALL_TARGETS axtp_transport_websocket_ix)
                 set(AXTP_CPP_RUNTIME_CONFIG_NEEDS_IXWEBSOCKET ON)
             else()
-                message(STATUS "Skipping install export for axtp_transport_websocket_ix because IXWebSocket is built from the vendored submodule")
+                message(STATUS "Skipping install export for axtp_transport_websocket_ix because its IXWebSocket provider is not independently discoverable")
             endif()
-        endif()
-        if(TARGET axtp_transport_websocket_websocketpp)
-            list(APPEND AXTP_CPP_RUNTIME_INSTALL_TARGETS axtp_transport_websocket_websocketpp)
         endif()
         if(TARGET axtp_transport_hidapi)
             set(AXTP_HIDAPI_VENDOR_TARGET_PRESENT OFF)
@@ -171,7 +157,7 @@ if(AXTP_CPP_RUNTIME_ENABLE_INSTALL)
                 endif()
             endforeach()
             if(AXTP_HIDAPI_VENDOR_TARGET_PRESENT)
-                message(STATUS "Skipping install export for axtp_transport_hidapi because hidapi is built from the vendored submodule")
+                message(STATUS "Skipping install export for axtp_transport_hidapi because its provider is not independently discoverable")
             else()
                 list(APPEND AXTP_CPP_RUNTIME_INSTALL_TARGETS axtp_transport_hidapi)
                 set(AXTP_CPP_RUNTIME_CONFIG_NEEDS_HIDAPI ON)
@@ -270,19 +256,6 @@ if(NOT TARGET hidapi::hidapi AND
     endif()
 endif()
 ]=])
-    endif()
-
-    if(AXTP_CPP_RUNTIME_INSTALL_OPTIONAL_TRANSPORTS AND
-       TARGET axtp_transport_websocket_websocketpp)
-        install(DIRECTORY third_party/websocketpp/websocketpp
-            DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-        )
-        install(DIRECTORY third_party/asio/asio/include/asio
-            DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-        )
-        install(FILES third_party/asio/asio/include/asio.hpp
-            DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-        )
     endif()
 
     set(AXTP_CPP_RUNTIME_INSTALL_CMAKEDIR

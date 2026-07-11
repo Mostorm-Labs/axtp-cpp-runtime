@@ -25,7 +25,6 @@ AXTP 不使用 Skia 的 `fMember` 或 `gGlobal` 命名，也不要求所有类�
 | `docs/AXTP_CPP_RUNTIME_PATTERNS.md` | Runtime 设计模式、extension recipe、anti-pattern、测试地图 |
 | `docs/AXTP_CPP_EXECUTION_FLOW.md` | Runtime、SDK、CLI、HID、direct-core 执行流程 |
 | `docs/AXTP_SDK_API_DESIGN.md` | SDK public API 和 dynamic RPC 策略 |
-| `docs/AXTPCTL_COMMAND_DESIGN.md` | CLI command shape 和 command dispatch 策略 |
 
 ## 2. Namespace 与类型命名
 
