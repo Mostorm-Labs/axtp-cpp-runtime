@@ -61,6 +61,17 @@ axtp::Bytes encodeStream(axtp::StreamPayload payload) {
     return writer.bytes;
 }
 
+axtp::RpcPayload makeEvent(std::uint32_t eventId, std::string body) {
+    axtp::RpcPayload event;
+    event.encoding = axtp::RpcEncoding::Json;
+    event.op = axtp::RpcOp::Event;
+    event.methodOrEventId = eventId;
+    event.bodyEncoding = axtp::RpcBodyEncoding::None;
+    event.meta.sourceProtocol = axtp::SourceProtocol::AxtpV1;
+    event.body.assign(body.begin(), body.end());
+    return event;
+}
+
 class ScriptedHandshakeTransport : public axtp::ITransport {
 public:
     void bind(axtp::IByteSink& sink) override {
@@ -342,5 +353,61 @@ int main() {
         assert(received.front().seqId == 7);
         assert(received.front().cursor == 123456);
         assert(received.front().data.size() == 4);
+    }
+
+    {
+        constexpr std::uint32_t registeredEventId = 0x7002;
+        constexpr std::uint32_t unregisteredEventId = 0x7003;
+
+        axtp::sdk::AxtpClient eventClient;
+        int firstHandlerCalls = 0;
+        int replacementHandlerCalls = 0;
+        std::string lastBody;
+        eventClient.registerEventHandler(
+            registeredEventId,
+            [&](const axtp::RpcPayload& event) {
+                ++firstHandlerCalls;
+                lastBody.assign(event.body.begin(), event.body.end());
+                eventClient.registerEventHandler(
+                    registeredEventId,
+                    [&](const axtp::RpcPayload& replacementEvent) {
+                        ++replacementHandlerCalls;
+                        lastBody.assign(replacementEvent.body.begin(),
+                                        replacementEvent.body.end());
+                    });
+            });
+
+        auto firstTransport = std::make_unique<axtp::MockTransport>();
+        auto* firstTransportPtr = firstTransport.get();
+        eventClient.attachTransport(std::move(firstTransport));
+
+        firstTransportPtr->injectIncoming(
+            encodeRpc(makeEvent(unregisteredEventId, R"({"ignored":true})")));
+        firstTransportPtr->injectIncoming(
+            encodeRpc(makeEvent(registeredEventId, R"({"state":"started"})")));
+        eventClient.poll();
+
+        assert(firstHandlerCalls == 1);
+        assert(replacementHandlerCalls == 0);
+        assert(lastBody == R"({"state":"started"})");
+
+        firstTransportPtr->injectIncoming(
+            encodeRpc(makeEvent(registeredEventId, R"({"state":"stopped"})")));
+        eventClient.poll();
+
+        assert(firstHandlerCalls == 1);
+        assert(replacementHandlerCalls == 1);
+        assert(lastBody == R"({"state":"stopped"})");
+
+        auto secondTransport = std::make_unique<axtp::MockTransport>();
+        auto* secondTransportPtr = secondTransport.get();
+        eventClient.attachTransport(std::move(secondTransport));
+        secondTransportPtr->injectIncoming(
+            encodeRpc(makeEvent(registeredEventId, R"({"state":"reconnected"})")));
+        eventClient.poll();
+
+        assert(firstHandlerCalls == 1);
+        assert(replacementHandlerCalls == 2);
+        assert(lastBody == R"({"state":"reconnected"})");
     }
 }

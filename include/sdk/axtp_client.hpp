@@ -39,7 +39,12 @@ public:
 
     explicit AxtpClient(ClientOptions options = {})
         : _options(options)
-        , _endpoint(std::make_unique<AxtpEndpoint<BasicBroker<>>>(_broker)) {}
+        , _endpoint(std::make_unique<AxtpEndpoint<BasicBroker<>>>(_broker)) {
+        _broker.registerEventHandler(
+            [this](const BrokerContext&, const RpcPayload& eventPayload) {
+                emitRaw(eventPayload);
+            });
+    }
 
     ~AxtpClient() {
         close();
@@ -472,7 +477,11 @@ public:
     void emitRaw(RpcPayload eventPayload) {
         const auto it = _eventHandlers.find(eventPayload.methodOrEventId);
         if (it != _eventHandlers.end()) {
-            it->second(eventPayload);
+            // Invoke a copy so a handler may safely replace its own registration.
+            auto handler = it->second;
+            if (handler) {
+                handler(eventPayload);
+            }
         }
     }
 
