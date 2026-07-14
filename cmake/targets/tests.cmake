@@ -72,23 +72,6 @@ if(TARGET axtp_sdk)
     add_test(NAME cpp_sdk_smoke_test COMMAND cpp_sdk_smoke_test)
 endif()
 
-if(AXTP_CPP_RUNTIME_BUILD_MEDIAHOST)
-    foreach(required_mediahost_target
-            axtp-mediahost
-            axtp_toolkit
-            axtp_transport_hidapi
-            axtp_transport_tcp_native
-            axtp_transport_websocket_ix
-            phase6_real_transport_test
-            phase9_hid_transport_test)
-        if(NOT TARGET ${required_mediahost_target})
-            message(FATAL_ERROR
-                "AXTP_CPP_RUNTIME_BUILD_MEDIAHOST requires ${required_mediahost_target}; "
-                "the MediaHost/test inventory must not be silently reduced")
-        endif()
-    endforeach()
-endif()
-
 if(TARGET axtp_stream)
     add_executable(axtp_stream_test
         ${AXTP_CPP_RUNTIME_ROOT}/tests/stream/stream_test.cpp
@@ -101,18 +84,6 @@ if(TARGET axtp_stream)
     add_test(NAME axtp_stream_test COMMAND axtp_stream_test)
 endif()
 
-if(TARGET axtp_media_profile)
-    add_executable(axtp_media_profile_test
-        ${AXTP_CPP_RUNTIME_ROOT}/tests/profiles/media_profile_test.cpp
-    )
-
-    target_link_libraries(axtp_media_profile_test PRIVATE
-        axtp_media_profile
-    )
-
-    add_test(NAME axtp_media_profile_test COMMAND axtp_media_profile_test)
-endif()
-
 add_executable(axtp_firmware_profile_test
     ${AXTP_CPP_RUNTIME_ROOT}/tests/profiles/firmware_profile_test.cpp
 )
@@ -123,15 +94,3 @@ target_link_libraries(axtp_firmware_profile_test PRIVATE
 )
 
 add_test(NAME axtp_firmware_profile_test COMMAND axtp_firmware_profile_test)
-
-if(TARGET axtp-mediahost)
-    add_test(NAME axtp_mediahost_help COMMAND axtp-mediahost --help)
-    add_test(NAME axtp_mediahost_missing_hid
-        COMMAND axtp-mediahost --path __axtp_missing_hid__ --timeout 1
-    )
-    set_tests_properties(axtp_mediahost_missing_hid PROPERTIES WILL_FAIL TRUE)
-    add_test(NAME axtp_mediahost_render_missing_hid
-        COMMAND axtp-mediahost --render --path __axtp_missing_hid__ --timeout 1
-    )
-    set_tests_properties(axtp_mediahost_render_missing_hid PROPERTIES WILL_FAIL TRUE)
-endif()

@@ -90,7 +90,7 @@ cmake -S . -B build -DCMAKE_PREFIX_PATH=/opt/axtp-cpp-runtime
 ```
 
 默认安装包会导出 `axtp::core`、`axtp::broker`、`axtp::runtime`、
-`axtp::stream`、`axtp::media_profile` 和 `axtp::sdk`。如果仓内
+`axtp::stream` 和 `axtp::sdk`。如果仓内
 `third_party/json` 已初始化，安装包会一并安装
 `nlohmann/json.hpp`，业务仓库不需要单独安装 nlohmann_json。
 
@@ -154,17 +154,8 @@ HID 入口头文件：
 `find_package(ixwebsocket CONFIG)`。默认情况下，`AXTP_BUILD_OPTIONAL_TRANSPORTS`
 不会下载 concrete transport 依赖；缺少依赖时，对应 transport target 不会被定义。
 
-仓内工具有单独的依赖许可开关：
-
-```cmake
-set(AXTP_CPP_RUNTIME_BUILD_MEDIAHOST ON CACHE BOOL "" FORCE)
-set(AXTP_CPP_RUNTIME_TOOLS_FETCH_DEPS ON CACHE BOOL "" FORCE)
-add_subdirectory(third_party/axtp-cpp-runtime)
-```
-
-`AXTP_CPP_RUNTIME_TOOLS_FETCH_DEPS=ON` 只服务 MediaHost 示例：
-它允许工具构建通过 CMake FetchContent 拉取锁定的 hidapi 和 IXWebSocket commit。
-外部业务项目通常不应依赖这个开关，而应自行统一 concrete transport 依赖。
+cpp-runtime 不再通过 FetchContent 下载 concrete transport 依赖。产品和工具应由
+顶层项目统一提供 hidapi/IXWebSocket；媒体 Host 与协议 CLI 由 Axent 提供。
 
 ## Optional JSON-RPC Helpers
 
@@ -186,8 +177,6 @@ target_link_libraries(your_app PRIVATE axtp::json_rpc)
 | Option | Default | Meaning |
 |---|---:|---|
 | `AXTP_CPP_RUNTIME_BUILD_SDK` | `ON` | 构建 `axtp::sdk`。设为 `OFF` 时只进入 core/runtime。 |
-| `AXTP_CPP_RUNTIME_BUILD_MEDIAHOST` | `OFF` | 构建 Windows MediaHost 示例。应用接入通常不需要。 |
-| `AXTP_CPP_RUNTIME_TOOLS_FETCH_DEPS` | `OFF` | 仅在 tools/MediaHost 构建中允许 FetchContent 拉取锁定的 hidapi/IXWebSocket。 |
 | `AXTP_CPP_RUNTIME_BUILD_TESTS` | top-level `ON`, subdirectory `OFF` | 构建仓内一方测试。 |
 | `AXTP_CPP_RUNTIME_BUILD_CONFORMANCE` | `OFF` | 构建 conformance runner。 |
 | `AXTP_CPP_RUNTIME_ENABLE_INSTALL` | top-level `ON`, subdirectory `OFF` | 生成 install/export/package config 规则。 |
@@ -207,7 +196,6 @@ hidapi/ixwebsocket 包。
   `#include` 前缀；link target 后使用 `<axtp_sdk.hpp>`、
   `<axtp_runtime.hpp>`、`<axtp_core.hpp>` 这类入口，或按需使用
   `<core/...>`、`<sdk/...>`、`<transports/...>`、`<json_rpc/...>`。
-- 不要直接依赖 `tools/toolkit`。它只服务仓内工具，不是稳定 SDK API。
 - 需要 TCP、HID 或 WebSocket 时，先打开 optional transport 选项，再 link 对应
   target；`axtp::sdk` 本身不会强制拉入平台 transport 依赖。
 - 不要手写 `include/core/protocol/generated/**`。协议事实由锁定的 AXTP spec
