@@ -47,6 +47,22 @@ foreach(retired_host_path
     endif()
 endforeach()
 
+foreach(retired_profile_target
+        axtp_firmware_profile)
+    if(TARGET ${retired_profile_target})
+        message(FATAL_ERROR "retired profile target must not be defined: ${retired_profile_target}")
+    endif()
+endforeach()
+
+foreach(retired_profile_path
+        "cmake/targets/firmware_profile.cmake"
+        "include/profiles"
+        "tests/profiles/firmware_profile_test.cpp")
+    if(EXISTS "${AXTP_CPP_RUNTIME_ROOT}/${retired_profile_path}")
+        message(FATAL_ERROR "retired profile path must not exist: ${retired_profile_path}")
+    endif()
+endforeach()
+
 foreach(retired_media_option
         AXTP_CPP_RUNTIME_BUILD_MEDIAHOST
         AXTP_CPP_RUNTIME_TOOLS_FETCH_DEPS)

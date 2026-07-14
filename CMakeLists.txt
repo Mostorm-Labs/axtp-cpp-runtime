@@ -65,10 +65,6 @@ if(AXTP_CPP_RUNTIME_NEEDS_SDK)
     include(cmake/targets/sdk.cmake)
 endif()
 
-if(TARGET axtp_sdk)
-    include(cmake/targets/firmware_profile.cmake)
-endif()
-
 if(AXTP_CPP_RUNTIME_BUILD_CONFORMANCE)
     if(NOT TARGET axtp_json_rpc)
         message(FATAL_ERROR "AXTP conformance runner requires AXTP_BUILD_JSON_RPC")
@@ -93,9 +89,6 @@ if(AXTP_CPP_RUNTIME_ENABLE_INSTALL)
     )
     if(TARGET axtp_sdk)
         list(APPEND AXTP_CPP_RUNTIME_INSTALL_TARGETS axtp_sdk)
-    endif()
-    if(TARGET axtp_firmware_profile)
-        list(APPEND AXTP_CPP_RUNTIME_INSTALL_TARGETS axtp_firmware_profile)
     endif()
     if(TARGET axtp_json_rpc)
         list(APPEND AXTP_CPP_RUNTIME_INSTALL_TARGETS axtp_json_rpc)
@@ -156,7 +149,6 @@ if(AXTP_CPP_RUNTIME_ENABLE_INSTALL)
     install(DIRECTORY
             include/core
             include/sdk
-            include/profiles
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
     )
     install(FILES
