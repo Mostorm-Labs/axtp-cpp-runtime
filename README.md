@@ -24,20 +24,15 @@ flowchart LR
     TransportApi -. optional .-> ConcreteTransports["include/transports/\nTCP, HID, WebSocket"]
 
     Runtime --> JsonRpc["include/json_rpc/\nregistry and adapter helpers"]
-    SDK --> Toolkit["tools/toolkit\ninternal tool support"]
-    JsonRpc --> Toolkit
-    ConcreteTransports --> Toolkit
-    Toolkit --> MediaHost["tools/axtp-mediahost\nWindows app sample"]
 
     SDK --> Apps["your application"]
+    JsonRpc -. optional .-> Apps
     ConcreteTransports -. explicitly linked .-> Apps
 ```
 
-Dependency direction is one way: lower layers do not depend on the SDK, tools,
-or concrete applications. Runtime and SDK targets expose only protocol/runtime
+Dependency direction is one way: lower layers do not depend on the SDK or
+concrete applications. Runtime and SDK targets expose only protocol/runtime
 interfaces; applications choose and link concrete transports explicitly.
-`tools/toolkit` is an internal support library for repository tools, not a
-stable SDK API.
 
 `include/core/protocol/wire/websocket_json_rpc/` owns the protocol-level
 WebSocket JSON-RPC envelope and payload codecs. The top-level `json-rpc/`
@@ -56,7 +51,6 @@ integrations.
 | Inspect protocol IDs, registries, or generated facts | Protocol generated layer | `axtp::core` | `#include <core/protocol/generated/registry_lookup.h>` | `tests/core/phase8_api_surface_test.cpp` |
 | Connect over TCP without extra dependencies | Optional native TCP transport | `axtp::transport_tcp_native` | `#include <axtp_transport_tcp_native.hpp>` | `tests/core/phase6_real_transport_test.cpp` |
 | Connect to real HID devices | Optional HID transport | `axtp::transport_hidapi` | `#include <axtp_transport_hid.hpp>` | `tests/core/phase9_hid_transport_test.cpp` |
-| Build a Windows media receiver sample | App-level tool | `axtp-mediahost` | Media stream registry/coordinators | `tools/axtp-mediahost/src/app/main.cpp`, `cmake/targets/mediahost.cmake` |
 | Regenerate runtime protocol facts | Generator | `pnpm --dir devtools/generators ...` | `AXTP_SPEC_PATH=/path/to/axtp` | `devtools/generators/README.md` |
 
 If you are unsure, start with `axtp_sdk`. Drop to `axtp_runtime` only when you
@@ -68,7 +62,7 @@ wire-format, registry, or conformance work.
 The public C++ headers are arranged by dependency direction:
 
 ```text
-support/io -> protocol -> runtime -> sdk/json_rpc/transports -> tools
+support/io -> protocol -> runtime -> sdk/json_rpc/transports
 ```
 
 | Path | Purpose |
@@ -94,8 +88,6 @@ support/io -> protocol -> runtime -> sdk/json_rpc/transports -> tools
 | `include/json_rpc/` | Optional runtime helper layer for registry JSON loading and WebSocket JSON-RPC adapter/session glue; not the wire codec owner. |
 | `include/transports/` | Optional transport headers for HID, native/Boost TCP, and IX/Boost WebSocket. |
 | `src/transports/` | Non-header implementation files for optional transports, currently HID. |
-| `tools/toolkit/` | Internal support library for the MediaHost sample. |
-| `tools/axtp-mediahost/` | Windows MediaHost application-style integration sample split into app, media protocol, media model, and Win32 render layers. |
 | `examples/quickstart/` | Minimal external-style SDK quickstart project. |
 | `devtools/generators/` | TypeScript generator that consumes the AXTP spec and emits C++ generated headers. |
 | `devtools/scripts/` | Spec lock, generation, versioning, conformance, and release helper scripts. |
@@ -188,7 +180,7 @@ available for new projects; the unqualified target names remain supported.
 | `axtp_sdk` | `axtp::sdk` | You want client/device convenience APIs. |
 | `axtp_json_rpc` | `axtp::json_rpc` | You need the optional WebSocket JSON-RPC adapter. Enable `AXTP_BUILD_JSON_RPC`. |
 | `axtp_transport_tcp_native` | `axtp::transport_tcp_native` | You explicitly enabled optional transports and need the header-only native TCP transport without Boost. |
-| `axtp_transport_hidapi` | `axtp::transport_hidapi` | You explicitly enabled optional transports and provided hidapi through the top-level project, package manager, or tool dependency fetch option. |
+| `axtp_transport_hidapi` | `axtp::transport_hidapi` | You explicitly enabled optional transports and provided hidapi through the top-level project or package manager. |
 | `axtp_transport_tcp_boost`, `axtp_transport_websocket_ix`, `axtp_transport_websocket_boost` | `axtp::transport_tcp_boost`, `axtp::transport_websocket_ix`, `axtp::transport_websocket_boost` | You need legacy Boost TCP or optional WebSocket transport headers and their externally supplied dependencies. Enable `AXTP_BUILD_OPTIONAL_TRANSPORTS`; targets are defined only when their dependencies are available. |
 
 If you are embedding only the runtime layer:
@@ -253,20 +245,10 @@ cmake -S . -B build/root-no-tests -DAXTP_CPP_RUNTIME_BUILD_TESTS=OFF
 cmake --build build/root-no-tests
 ```
 
-Optional Windows MediaHost build:
-
-```bash
-cmake -S . -B build/root-mediahost \
-  -DAXTP_CPP_RUNTIME_BUILD_MEDIAHOST=ON \
-  -DAXTP_CPP_RUNTIME_TOOLS_FETCH_DEPS=ON
-cmake --build build/root-mediahost
-ctest --test-dir build/root-mediahost --output-on-failure
-```
-
-`AXTP_CPP_RUNTIME_TOOLS_FETCH_DEPS=ON` is only for the MediaHost sample. It
-allows that build to fetch locked hidapi and IXWebSocket commits. Default
-runtime/SDK builds do not use this path and do not pull concrete transport
-dependencies. The supported protocol CLI is owned and shipped by Axent.
+The runtime never downloads concrete transport dependencies. Projects that
+enable optional transports must provide hidapi or IXWebSocket through their
+top-level dependency graph. Product media hosting and the supported protocol
+CLI are owned and shipped by Axent.
 
 ## Documentation
 

@@ -23,10 +23,6 @@ if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
 endif()
 
 option(AXTP_CPP_RUNTIME_BUILD_SDK "Build the AXTP SDK target" ON)
-option(AXTP_CPP_RUNTIME_BUILD_MEDIAHOST "Build the AXTP MediaHost sample" OFF)
-option(AXTP_CPP_RUNTIME_TOOLS_FETCH_DEPS
-    "Allow MediaHost builds to fetch pinned third-party transport dependencies"
-    OFF)
 option(AXTP_CPP_RUNTIME_BUILD_TESTS "Build AXTP C++ runtime tests" ${AXTP_CPP_RUNTIME_IS_TOP_LEVEL})
 option(AXTP_CPP_RUNTIME_BUILD_CONFORMANCE "Build AXTP conformance runner" OFF)
 option(AXTP_CPP_RUNTIME_ENABLE_INSTALL "Install AXTP C++ runtime package targets" ${AXTP_CPP_RUNTIME_IS_TOP_LEVEL})
@@ -45,11 +41,6 @@ function(axtp_cpp_runtime_target_is_imported target output_variable)
     set(${output_variable} OFF PARENT_SCOPE)
 endfunction()
 
-if(AXTP_CPP_RUNTIME_BUILD_MEDIAHOST)
-    set(AXTP_BUILD_JSON_RPC ON CACHE BOOL "" FORCE)
-    set(AXTP_BUILD_OPTIONAL_TRANSPORTS ON CACHE BOOL "" FORCE)
-endif()
-
 if(AXTP_CPP_RUNTIME_BUILD_CONFORMANCE)
     set(AXTP_BUILD_JSON_RPC ON CACHE BOOL "" FORCE)
 endif()
@@ -61,16 +52,14 @@ endif()
 include(cmake/targets/tool_deps.cmake)
 include(cmake/targets/core.cmake)
 include(cmake/targets/stream.cmake)
-include(cmake/targets/media_profile.cmake)
 
 set(AXTP_CPP_RUNTIME_NEEDS_SDK ${AXTP_CPP_RUNTIME_BUILD_SDK})
-if(AXTP_CPP_RUNTIME_BUILD_TESTS OR
-   AXTP_CPP_RUNTIME_BUILD_MEDIAHOST)
+if(AXTP_CPP_RUNTIME_BUILD_TESTS)
     set(AXTP_CPP_RUNTIME_NEEDS_SDK ON)
 endif()
 
 if(NOT AXTP_CPP_RUNTIME_BUILD_SDK AND AXTP_CPP_RUNTIME_NEEDS_SDK)
-    message(STATUS "Enabling axtp_sdk target because tests/mediahost require it")
+    message(STATUS "Enabling axtp_sdk target because tests require it")
 endif()
 
 if(AXTP_CPP_RUNTIME_NEEDS_SDK)
@@ -79,11 +68,6 @@ endif()
 
 if(TARGET axtp_sdk)
     include(cmake/targets/firmware_profile.cmake)
-endif()
-
-if(AXTP_CPP_RUNTIME_BUILD_MEDIAHOST)
-    include(cmake/targets/toolkit.cmake)
-    include(cmake/targets/mediahost.cmake)
 endif()
 
 if(AXTP_CPP_RUNTIME_BUILD_CONFORMANCE)
@@ -108,7 +92,6 @@ if(AXTP_CPP_RUNTIME_ENABLE_INSTALL)
         axtp_broker
         axtp_runtime
         axtp_stream
-        axtp_media_profile
     )
     if(TARGET axtp_sdk)
         list(APPEND AXTP_CPP_RUNTIME_INSTALL_TARGETS axtp_sdk)

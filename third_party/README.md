@@ -1,8 +1,8 @@
 # Third-party Dependencies
 
 The runtime vendors only its default JSON dependency. Concrete transport
-providers are supplied by the embedding application or fetched at pinned
-commits only when the MediaHost dependency option is explicitly enabled.
+providers are supplied by the embedding application or package environment;
+the runtime does not fetch them.
 
 | Path | Repository | Version | Commit |
 |---|---|---|---|

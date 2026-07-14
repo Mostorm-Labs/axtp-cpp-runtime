@@ -18,92 +18,7 @@ env:
   RUNTIME_TAG: ${{ inputs.runtime_tag || github.ref_name }}
 
 jobs:
-  windows-tools:
-    name: Build Windows MediaHost
-    runs-on: windows-2022
-    steps:
-      - name: Checkout runtime repository
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ env.RUNTIME_TAG }}
-          submodules: recursive
-
-      - name: Validate runtime tag
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = "Stop"
-          $runtimeTag = $env:RUNTIME_TAG
-          if ($runtimeTag -notmatch "^v\d+\.\d+\.\d+(\.\d+)?$") {
-            throw "Runtime release tags must match vMAJOR.MINOR.PATCH or vMAJOR.MINOR.PATCH.REVISION"
-          }
-          $runtimeVersion = $runtimeTag -replace "^v", ""
-          "RUNTIME_VERSION=$runtimeVersion" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-
-      - name: Configure Windows MediaHost
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = "Stop"
-          cmake -S . -B build/windows-tools -G "Visual Studio 17 2022" -A x64 `
-            -DAXTP_CPP_RUNTIME_BUILD_MEDIAHOST=ON `
-            -DAXTP_CPP_RUNTIME_TOOLS_FETCH_DEPS=ON `
-            -DAXTP_CPP_RUNTIME_BUILD_TESTS=OFF `
-            -DAXTP_CPP_RUNTIME_ENABLE_INSTALL=OFF
-
-      - name: Build Windows MediaHost
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = "Stop"
-          cmake --build build/windows-tools --config Release --target axtp-mediahost
-
-      - name: Smoke test Windows MediaHost
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = "Stop"
-          $mediahost = Get-ChildItem build/windows-tools -Recurse -Filter axtp-mediahost.exe | Select-Object -First 1
-          if (-not $mediahost) { throw "axtp-mediahost.exe was not produced" }
-          & $mediahost.FullName --help
-
-      - name: Package Windows MediaHost
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = "Stop"
-          $runtimeName = "${env:GITHUB_REPOSITORY}".Split("/")[-1]
-          $runtimeVersion = $env:RUNTIME_VERSION
-          if (-not $runtimeVersion) { throw "RUNTIME_VERSION was not set" }
-          $packageDir = "build/windows-tools-package"
-          $artifactDir = "release-artifacts"
-          New-Item -ItemType Directory -Force $packageDir | Out-Null
-          New-Item -ItemType Directory -Force $artifactDir | Out-Null
-
-          $mediahost = Get-ChildItem build/windows-tools -Recurse -Filter axtp-mediahost.exe | Select-Object -First 1
-          if (-not $mediahost) { throw "axtp-mediahost.exe was not produced" }
-
-          Copy-Item $mediahost.FullName "$packageDir/axtp-mediahost.exe"
-          Copy-Item AXTP_SPEC.lock.yaml "$packageDir/AXTP_SPEC.lock.yaml"
-          Copy-Item generated/axtp_generated_manifest.json "$packageDir/axtp_generated_manifest.json"
-
-          @(
-            "AXTP C++ Runtime Windows MediaHost"
-            ""
-            "Runtime: $runtimeName $runtimeVersion"
-            "Binaries:"
-            "- axtp-mediahost.exe"
-          ) | Set-Content "$packageDir/README.txt"
-
-          $zipPath = "$artifactDir/$runtimeName-$runtimeVersion-windows-x64-tools.zip"
-          Compress-Archive -Path "$packageDir/*" -DestinationPath $zipPath -Force
-          Get-ChildItem $artifactDir
-
-      - name: Upload Windows tools artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows-tools
-          path: release-artifacts/*.zip
-          if-no-files-found: error
-          retention-days: 7
-
   release:
-    needs: windows-tools
     runs-on: ubuntu-latest
     steps:
       - name: Checkout runtime repository
@@ -310,12 +225,6 @@ jobs:
           fi
           tar --exclude='*/node_modules' --exclude='*/dist' -czf "release-artifacts/${runtime_name}-${RUNTIME_VERSION}-generated.tar.gz" "${items[@]}"
           cp generated/axtp_generated_manifest.json release-artifacts/axtp_generated_manifest.json
-
-      - name: Download Windows tools artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: windows-tools
-          path: release-artifacts
 
       - name: Write release notes
         shell: bash

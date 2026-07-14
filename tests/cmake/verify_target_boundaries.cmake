@@ -20,7 +20,37 @@ axtp_assert_interface_does_not_link(axtp_core "^axtp_transport_")
 axtp_assert_interface_does_not_link(axtp_runtime "^axtp_transport_")
 axtp_assert_interface_does_not_link(axtp_sdk "^axtp_transport_")
 axtp_assert_interface_does_not_link(axtp_stream "^axtp_transport_")
-axtp_assert_interface_does_not_link(axtp_media_profile "^axtp_transport_")
+
+foreach(retired_media_target
+        axtp_media_profile
+        axtp_toolkit
+        axtp_mediahost_render_win32
+        axtp-mediahost)
+    if(TARGET ${retired_media_target})
+        message(FATAL_ERROR "retired MediaHost target must not be defined: ${retired_media_target}")
+    endif()
+endforeach()
+
+foreach(retired_media_path
+        "cmake/targets/media_profile.cmake"
+        "cmake/targets/mediahost.cmake"
+        "cmake/targets/toolkit.cmake"
+        "include/profiles/media"
+        "tests/profiles/media_profile_test.cpp"
+        "tools/axtp-mediahost"
+        "tools/toolkit")
+    if(EXISTS "${AXTP_CPP_RUNTIME_ROOT}/${retired_media_path}")
+        message(FATAL_ERROR "retired MediaHost path must not exist: ${retired_media_path}")
+    endif()
+endforeach()
+
+foreach(retired_media_option
+        AXTP_CPP_RUNTIME_BUILD_MEDIAHOST
+        AXTP_CPP_RUNTIME_TOOLS_FETCH_DEPS)
+    if(DEFINED ${retired_media_option})
+        message(FATAL_ERROR "retired MediaHost option must not be defined: ${retired_media_option}")
+    endif()
+endforeach()
 
 if(NOT AXTP_BUILD_OPTIONAL_TRANSPORTS)
     foreach(optional_transport_target
