@@ -51,7 +51,6 @@ endif()
 
 include(cmake/targets/tool_deps.cmake)
 include(cmake/targets/core.cmake)
-include(cmake/targets/stream.cmake)
 
 set(AXTP_CPP_RUNTIME_NEEDS_SDK ${AXTP_CPP_RUNTIME_BUILD_SDK})
 if(AXTP_CPP_RUNTIME_BUILD_TESTS)
@@ -91,7 +90,6 @@ if(AXTP_CPP_RUNTIME_ENABLE_INSTALL)
         axtp_core
         axtp_broker
         axtp_runtime
-        axtp_stream
     )
     if(TARGET axtp_sdk)
         list(APPEND AXTP_CPP_RUNTIME_INSTALL_TARGETS axtp_sdk)
@@ -158,7 +156,6 @@ if(AXTP_CPP_RUNTIME_ENABLE_INSTALL)
     install(DIRECTORY
             include/core
             include/sdk
-            include/stream
             include/profiles
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
     )

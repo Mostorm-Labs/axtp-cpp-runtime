@@ -72,18 +72,6 @@ if(TARGET axtp_sdk)
     add_test(NAME cpp_sdk_smoke_test COMMAND cpp_sdk_smoke_test)
 endif()
 
-if(TARGET axtp_stream)
-    add_executable(axtp_stream_test
-        ${AXTP_CPP_RUNTIME_ROOT}/tests/stream/stream_test.cpp
-    )
-
-    target_link_libraries(axtp_stream_test PRIVATE
-        axtp_stream
-    )
-
-    add_test(NAME axtp_stream_test COMMAND axtp_stream_test)
-endif()
-
 add_executable(axtp_firmware_profile_test
     ${AXTP_CPP_RUNTIME_ROOT}/tests/profiles/firmware_profile_test.cpp
 )

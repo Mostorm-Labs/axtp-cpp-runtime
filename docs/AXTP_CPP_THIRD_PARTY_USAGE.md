@@ -90,7 +90,8 @@ cmake -S . -B build -DCMAKE_PREFIX_PATH=/opt/axtp-cpp-runtime
 ```
 
 默认安装包会导出 `axtp::core`、`axtp::broker`、`axtp::runtime`、
-`axtp::stream` 和 `axtp::sdk`。如果仓内
+`axtp::sdk` 和 firmware profile。core/SDK 中的 `StreamPayload` wire 能力
+继续保留，但不再导出 Host 型 stream registry/coordinator target。如果仓内
 `third_party/json` 已初始化，安装包会一并安装
 `nlohmann/json.hpp`，业务仓库不需要单独安装 nlohmann_json。
 
