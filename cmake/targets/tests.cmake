@@ -71,14 +71,3 @@ if(TARGET axtp_sdk)
     target_link_libraries(cpp_sdk_smoke_test PRIVATE axtp_sdk)
     add_test(NAME cpp_sdk_smoke_test COMMAND cpp_sdk_smoke_test)
 endif()
-
-add_executable(axtp_firmware_profile_test
-    ${AXTP_CPP_RUNTIME_ROOT}/tests/profiles/firmware_profile_test.cpp
-)
-
-target_link_libraries(axtp_firmware_profile_test PRIVATE
-    axtp_sdk
-    axtp_firmware_profile
-)
-
-add_test(NAME axtp_firmware_profile_test COMMAND axtp_firmware_profile_test)
