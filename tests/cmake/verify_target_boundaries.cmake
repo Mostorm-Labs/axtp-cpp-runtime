@@ -19,28 +19,31 @@ endfunction()
 axtp_assert_interface_does_not_link(axtp_core "^axtp_transport_")
 axtp_assert_interface_does_not_link(axtp_runtime "^axtp_transport_")
 axtp_assert_interface_does_not_link(axtp_sdk "^axtp_transport_")
-axtp_assert_interface_does_not_link(axtp_stream "^axtp_transport_")
 
-foreach(retired_media_target
+foreach(retired_host_target
+        axtp_stream
         axtp_media_profile
         axtp_toolkit
         axtp_mediahost_render_win32
         axtp-mediahost)
-    if(TARGET ${retired_media_target})
-        message(FATAL_ERROR "retired MediaHost target must not be defined: ${retired_media_target}")
+    if(TARGET ${retired_host_target})
+        message(FATAL_ERROR "retired Host-layer target must not be defined: ${retired_host_target}")
     endif()
 endforeach()
 
-foreach(retired_media_path
+foreach(retired_host_path
+        "cmake/targets/stream.cmake"
         "cmake/targets/media_profile.cmake"
         "cmake/targets/mediahost.cmake"
         "cmake/targets/toolkit.cmake"
+        "include/stream"
         "include/profiles/media"
+        "tests/stream/stream_test.cpp"
         "tests/profiles/media_profile_test.cpp"
         "tools/axtp-mediahost"
         "tools/toolkit")
-    if(EXISTS "${AXTP_CPP_RUNTIME_ROOT}/${retired_media_path}")
-        message(FATAL_ERROR "retired MediaHost path must not exist: ${retired_media_path}")
+    if(EXISTS "${AXTP_CPP_RUNTIME_ROOT}/${retired_host_path}")
+        message(FATAL_ERROR "retired Host-layer path must not exist: ${retired_host_path}")
     endif()
 endforeach()
 
