@@ -1224,24 +1224,27 @@ bool graphNegativeSelfChecks() {
         if (semantic == "advisory_version_handshake") advisory = &item;
         if (semantic == "registered_method_unavailable") degradation = &item;
     }
-    if (!advisory || !degradation) return false;
     std::string ignored;
-    auto wrongDirection = advisory->definition;
-    wrongDirection["scenarios"][0]["steps"][1]["direction"] = "server_to_client";
-    if (executeAdvisoryScenarios(wrongDirection, ignored)) return false;
-    auto brokenEdge = advisory->definition;
-    brokenEdge["scenarios"][0]["steps"][3]["triggeredBy"] = "missing-step";
-    if (executeAdvisoryScenarios(brokenEdge, ignored)) return false;
-    auto wrongStatus = degradation->definition;
-    for (auto& step : wrongStatus["steps"]) {
-        if (step.value("role", "") == "degraded")
-            step["expect"]["rpc"]["statusCode"] = "SUCCESS";
+    if (advisory != nullptr) {
+        auto wrongDirection = advisory->definition;
+        wrongDirection["scenarios"][0]["steps"][1]["direction"] = "server_to_client";
+        if (executeAdvisoryScenarios(wrongDirection, ignored)) return false;
+        auto brokenEdge = advisory->definition;
+        brokenEdge["scenarios"][0]["steps"][3]["triggeredBy"] = "missing-step";
+        if (executeAdvisoryScenarios(brokenEdge, ignored)) return false;
     }
-    if (executeDegradationGraph(wrongStatus, ignored)) return false;
-    auto duplicateRole = degradation->definition;
-    duplicateRole["steps"].push_back(duplicateRole["steps"][0]);
-    duplicateRole["steps"].back()["id"] = "duplicate-trigger";
-    if (executeDegradationGraph(duplicateRole, ignored)) return false;
+    if (degradation != nullptr) {
+        auto wrongStatus = degradation->definition;
+        for (auto& step : wrongStatus["steps"]) {
+            if (step.value("role", "") == "degraded")
+                step["expect"]["rpc"]["statusCode"] = "SUCCESS";
+        }
+        if (executeDegradationGraph(wrongStatus, ignored)) return false;
+        auto duplicateRole = degradation->definition;
+        duplicateRole["steps"].push_back(duplicateRole["steps"][0]);
+        duplicateRole["steps"].back()["id"] = "duplicate-trigger";
+        if (executeDegradationGraph(duplicateRole, ignored)) return false;
+    }
     return true;
 }
 
@@ -1270,10 +1273,15 @@ bool executeLoadedCase(const CaseResult& item, std::string& message) {
 
     static const std::map<std::string, std::function<bool(std::string&)>> structuralCases = {
         {"handshake.open_accept", testOpenAccept}, {"handshake.close", testClose},
-        {"handshake.heartbeat", testHeartbeat}, {"session.request_before_identified", testRequestBeforeIdentified},
+        {"handshake.heartbeat", testHeartbeat},
+        {"session.hello_identify_identified", testSessionHelloIdentify},
+        {"session.request_before_identified", testRequestBeforeIdentified},
         {"rpc.request_response_json", testRequestResponseJson}, {"rpc.method_not_found", testMethodNotFound},
         {"rpc.request_id_match", testRequestIdMatch}, {"error.standard_error_shape", testStandardErrorShape},
-        {"event.subscribe_event", testSubscribeEvent}, {"event.emit_event", testEmitEvent},
+        {"event.subscribe_event", testSubscribeEvent},
+        {"event.unsubscribe_event",
+         [](std::string& message) { return testUnsubscribeEvent(message); }},
+        {"event.emit_event", testEmitEvent},
         {"capability.get_all", testCapabilityGetAll}, {"capability.method_binding", testCapabilityMethodBinding},
         {"capability.session_survives_not_supported", testSessionSurvivesNotSupported},
         {"capability.unknown_optional_field_ignored", testUnknownOptionalFieldIgnored},

@@ -3,6 +3,8 @@ set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
+ruby "$root/devtools/conformance/yaml_to_json_test.rb"
+
 spec_path="${AXTP_SPEC_PATH:-}"
 if [[ -z "$spec_path" ]]; then
   if [[ -d "$root/third_party/axtp-spec" ]]; then
