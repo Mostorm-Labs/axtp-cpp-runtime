@@ -16,6 +16,10 @@ inline constexpr EventDescriptor kEventRegistry[] = {
     { 0x0102, "device.enrollmentStateChanged", "device", "DeviceEnrollmentStateChangedEvent" },
     { 0x0402, "firmware.updateProgressReported", "firmware", "FirmwareUpdateProgressEvent" },
     { 0x0403, "firmware.updateStateChanged", "firmware", "FirmwareUpdateStateChangedEvent" },
+    { 0x0501, "stream.stateChanged", "stream", "StreamStateChangedEvent" },
+    { 0x0502, "stream.statsReported", "stream", "StreamStatsReportedEvent" },
+    { 0x0503, "stream.flowControlChanged", "stream", "StreamFlowControlChangedEvent" },
+    { 0x0504, "stream.clockReport", "stream", "StreamClockReportEvent" },
     { 0x0806, "video.streamStateChanged", "video", "VideoStreamStateChangedEvent" },
     { 0x0807, "video.streamSourceStateChanged", "video", "VideoStreamSourceStateChangedEvent" },
     { 0x0808, "video.streamStatsReported", "video", "VideoStreamStatsReportedEvent" },
@@ -48,6 +52,6 @@ inline constexpr EventDescriptor kEventRegistry[] = {
     { 0x1702, "software.updatePolicyChanged", "software", "SoftwareUpdatePolicyChangedEvent" },
 };
 
-inline constexpr std::size_t kEventRegistryCount = 33;
+inline constexpr std::size_t kEventRegistryCount = 37;
 
 } // namespace axtp

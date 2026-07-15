@@ -1594,6 +1594,33 @@
             "itemType": "string"
           },
           "description": "Optional AAC transport format strings; exact supported set remains product-confirmed."
+        },
+        {
+          "fieldId": 10,
+          "name": "supportedAudioPtsModes",
+          "type": "array",
+          "required": false,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Optional audio PTS modes such as derivedFromSeq and explicit."
+        },
+        {
+          "fieldId": 11,
+          "name": "supportedPacketizationModes",
+          "type": "array",
+          "required": false,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Optional audio packetization modes such as fixedSamplesPerPacket."
+        },
+        {
+          "fieldId": 12,
+          "name": "supportsSourceCaptureTimestampCursor",
+          "type": "bool",
+          "required": false,
+          "description": "Whether STREAM cursorUnit sourceCaptureTimestampUs is supported."
         }
       ]
     },
@@ -1773,6 +1800,54 @@
           "type": "uint32",
           "required": false,
           "description": "Preferred maximum STREAM payload data size."
+        },
+        {
+          "fieldId": 16,
+          "name": "audioPtsMode",
+          "type": "enum",
+          "required": false,
+          "default": "derivedFromSeq",
+          "description": "Audio PTS mode; NA20/NT10 MVP uses derivedFromSeq."
+        },
+        {
+          "fieldId": 17,
+          "name": "timebase",
+          "type": "uint32",
+          "required": false,
+          "default": 48000,
+          "description": "Audio PTS timebase in ticks per second."
+        },
+        {
+          "fieldId": 18,
+          "name": "samplesPerPacket",
+          "type": "uint32",
+          "required": false,
+          "default": 1024,
+          "description": "Fixed samples consumed by each STREAM packet when packetizationMode is fixedSamplesPerPacket."
+        },
+        {
+          "fieldId": 19,
+          "name": "firstMediaSeqId",
+          "type": "uint32",
+          "required": false,
+          "default": 0,
+          "description": "First STREAM seqId used as the base for derived audio PTS."
+        },
+        {
+          "fieldId": 20,
+          "name": "audioPtsBase",
+          "type": "uint64",
+          "required": false,
+          "default": 0,
+          "description": "Audio PTS value corresponding to firstMediaSeqId."
+        },
+        {
+          "fieldId": 21,
+          "name": "packetizationMode",
+          "type": "enum",
+          "required": false,
+          "default": "fixedSamplesPerPacket",
+          "description": "Audio packetization mode; NA20/NT10 MVP uses fixedSamplesPerPacket."
         }
       ]
     },
@@ -1898,6 +1973,48 @@
           "type": "uint32",
           "required": false,
           "description": "Negotiated maximum STREAM payload data size."
+        },
+        {
+          "fieldId": 17,
+          "name": "audioPtsMode",
+          "type": "enum",
+          "required": false,
+          "description": "Negotiated audio PTS mode."
+        },
+        {
+          "fieldId": 18,
+          "name": "timebase",
+          "type": "uint32",
+          "required": false,
+          "description": "Negotiated audio PTS timebase in ticks per second."
+        },
+        {
+          "fieldId": 19,
+          "name": "samplesPerPacket",
+          "type": "uint32",
+          "required": false,
+          "description": "Fixed samples consumed by each STREAM packet when packetizationMode is fixedSamplesPerPacket."
+        },
+        {
+          "fieldId": 20,
+          "name": "firstMediaSeqId",
+          "type": "uint32",
+          "required": false,
+          "description": "First STREAM seqId used as the base for derived audio PTS."
+        },
+        {
+          "fieldId": 21,
+          "name": "audioPtsBase",
+          "type": "uint64",
+          "required": false,
+          "description": "Audio PTS value corresponding to firstMediaSeqId."
+        },
+        {
+          "fieldId": 22,
+          "name": "packetizationMode",
+          "type": "enum",
+          "required": false,
+          "description": "Negotiated audio packetization mode."
         }
       ]
     },
@@ -4592,6 +4709,261 @@
       ]
     },
     {
+      "name": "CastSetVideoStreamParamsParams",
+      "kind": "object",
+      "description": "Request to update the active cast video stream frame rate or bitrate, optionally resetting selected fields.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "sessionId",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "Optional receiver-local cast session id."
+        },
+        {
+          "fieldId": 2,
+          "name": "frameRate",
+          "type": "uint32",
+          "required": false,
+          "min": 1,
+          "description": "Optional target encoded video frame rate; zero is invalid, omission leaves the current session value unchanged or unset if never configured, and only resetFields clears it and restores the source/profile default."
+        },
+        {
+          "fieldId": 3,
+          "name": "bitrateKbps",
+          "type": "uint32",
+          "required": false,
+          "min": 1,
+          "description": "Optional target encoded video bitrate in kbps; zero is invalid, omission leaves the current session value unchanged or unset if never configured, and only resetFields clears it and restores the source/profile default."
+        },
+        {
+          "fieldId": 4,
+          "name": "resetFields",
+          "type": "array",
+          "required": false,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Optional video parameter field names to reset to the source or profile default."
+        }
+      ]
+    },
+    {
+      "name": "CastSetVideoStreamParamsResult",
+      "kind": "object",
+      "description": "Result and reconfiguration status for cast video stream parameter changes.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "accepted",
+          "type": "bool",
+          "required": true,
+          "description": "Whether the receiver accepted the requested video parameter change."
+        },
+        {
+          "fieldId": 2,
+          "name": "state",
+          "type": "enum",
+          "required": true,
+          "enumValues": [
+            "pending",
+            "applied",
+            "failed",
+            "rolledBack",
+            "unchanged"
+          ],
+          "description": "Reconfiguration lifecycle state."
+        },
+        {
+          "fieldId": 3,
+          "name": "sessionId",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "Receiver-local cast session id associated with the result."
+        },
+        {
+          "fieldId": 4,
+          "name": "reconfigureId",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "Identifier for this video stream reconfiguration operation."
+        },
+        {
+          "fieldId": 5,
+          "name": "previousStreamId",
+          "type": "uint32",
+          "required": false,
+          "description": "Previously active video stream id when the operation replaced a stream."
+        },
+        {
+          "fieldId": 6,
+          "name": "activeStreamId",
+          "type": "uint32",
+          "required": false,
+          "description": "Currently active video stream id after the operation."
+        },
+        {
+          "fieldId": 7,
+          "name": "sourceVideo",
+          "type": "CastVideoStreamParamsState",
+          "required": true,
+          "description": "Effective source video stream parameter state after the request."
+        }
+      ]
+    },
+    {
+      "name": "CastVideoStreamParamsState",
+      "kind": "object",
+      "description": "Desired and effective cast source video stream parameters and reconfiguration state.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "sessionId",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "Receiver-local cast session id."
+        },
+        {
+          "fieldId": 2,
+          "name": "source",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "Source identifier whose video stream parameters are represented."
+        },
+        {
+          "fieldId": 3,
+          "name": "desiredFrameRate",
+          "type": "uint32",
+          "required": false,
+          "min": 1,
+          "description": "Requested video encoder frame rate, if one is pending or configured; zero is invalid."
+        },
+        {
+          "fieldId": 4,
+          "name": "desiredBitrateKbps",
+          "type": "uint32",
+          "required": false,
+          "min": 1,
+          "description": "Requested video encoder bitrate in kbps, if one is pending or configured; zero is invalid."
+        },
+        {
+          "fieldId": 5,
+          "name": "effectiveFrameRate",
+          "type": "uint32",
+          "required": false,
+          "min": 1,
+          "description": "Effective encoded video frame rate currently applied by the source."
+        },
+        {
+          "fieldId": 6,
+          "name": "effectiveBitrateKbps",
+          "type": "uint32",
+          "required": false,
+          "min": 1,
+          "description": "Effective encoded video bitrate in kbps currently applied by the source."
+        },
+        {
+          "fieldId": 7,
+          "name": "streamProfile",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "Effective video STREAM profile."
+        },
+        {
+          "fieldId": 8,
+          "name": "encoder",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "Encoder or encoder profile selected for the source video stream."
+        },
+        {
+          "fieldId": 9,
+          "name": "reconfigureId",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "Most recent video stream reconfiguration operation id."
+        },
+        {
+          "fieldId": 10,
+          "name": "state",
+          "type": "enum",
+          "required": false,
+          "enumValues": [
+            "idle",
+            "pending",
+            "closing",
+            "opening",
+            "streaming",
+            "failed",
+            "rolledBack"
+          ],
+          "description": "Current source video stream reconfiguration state."
+        },
+        {
+          "fieldId": 11,
+          "name": "phase",
+          "type": "enum",
+          "required": false,
+          "enumValues": [
+            "idle",
+            "pending",
+            "closing",
+            "opening",
+            "streaming",
+            "failed",
+            "rolledBack"
+          ],
+          "description": "Current source video stream lifecycle phase during reconfiguration."
+        },
+        {
+          "fieldId": 12,
+          "name": "previousStreamId",
+          "type": "uint32",
+          "required": false,
+          "description": "Previous active downstream video stream id when a reconfiguration replaces it."
+        },
+        {
+          "fieldId": 13,
+          "name": "activeStreamId",
+          "type": "uint32",
+          "required": false,
+          "description": "Active downstream video stream id, if one is established."
+        },
+        {
+          "fieldId": 14,
+          "name": "rollbackApplied",
+          "type": "bool",
+          "required": false,
+          "description": "Whether the previous stream parameters were restored after a failed reconfiguration."
+        },
+        {
+          "fieldId": 15,
+          "name": "lastError",
+          "type": "CastLastError",
+          "required": false,
+          "description": "Last reconfiguration or stream lifecycle error, when available."
+        },
+        {
+          "fieldId": 16,
+          "name": "changedFields",
+          "type": "array",
+          "required": false,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Video parameter fields changed by the most recent operation."
+        }
+      ]
+    },
+    {
       "name": "CastFlowControlState",
       "kind": "object",
       "description": "Receiver-local cast flow control policy and low-frequency statistics.",
@@ -4713,6 +5085,13 @@
           "required": false,
           "maxLength": 64,
           "description": "Timestamp for this flow sample."
+        },
+        {
+          "fieldId": 16,
+          "name": "sourceVideo",
+          "type": "CastVideoStreamParamsState",
+          "required": false,
+          "description": "Effective source video stream parameters and reconfiguration state."
         }
       ]
     },
@@ -4745,6 +5124,8 @@
           "required": false,
           "enumValues": [
             "manualFlowControl",
+            "videoStreamParams",
+            "videoStreamReconfigure",
             "diagnosticsSample",
             "sessionStarted",
             "sessionStopped",
@@ -4759,6 +5140,21 @@
           "required": false,
           "maxLength": 64,
           "description": "Timestamp for this event."
+        },
+        {
+          "fieldId": 5,
+          "name": "sourceVideo",
+          "type": "CastVideoStreamParamsState",
+          "required": false,
+          "description": "Effective source video stream parameter state associated with this event."
+        },
+        {
+          "fieldId": 6,
+          "name": "reconfigureId",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "Video stream reconfiguration operation id associated with this event."
         }
       ]
     },
@@ -5340,6 +5736,50 @@
           "required": false,
           "default": false,
           "description": "Whether a public keyframe request method is exposed; current draft keeps this false."
+        },
+        {
+          "fieldId": 6,
+          "name": "supportsVideoStreamParams",
+          "type": "bool",
+          "required": false,
+          "default": false,
+          "description": "Whether cast.setVideoStreamParams can update source video frame rate or bitrate."
+        },
+        {
+          "fieldId": 7,
+          "name": "supportsActiveVideoReconfigure",
+          "type": "bool",
+          "required": false,
+          "default": false,
+          "description": "Whether active video stream parameter changes may reconfigure or replace the current stream."
+        },
+        {
+          "fieldId": 8,
+          "name": "supportedVideoStreamProfiles",
+          "type": "array",
+          "required": false,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Video STREAM profiles supported by cast.setVideoStreamParams; each profile may declare source-specific support and frame-rate/bitrate ranges."
+        },
+        {
+          "fieldId": 9,
+          "name": "supportedVideoEncoders",
+          "type": "array",
+          "required": false,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Encoder or encoder profile identifiers exposed for source video reconfiguration."
+        },
+        {
+          "fieldId": 10,
+          "name": "supportsSourceSpecificVideoParams",
+          "type": "bool",
+          "required": false,
+          "default": true,
+          "description": "Whether video parameter support and ranges may vary by source and are described by the selected video profile."
         }
       ]
     },
@@ -9027,6 +9467,707 @@
       ]
     },
     {
+      "name": "StreamFlowControlCapabilities",
+      "kind": "object",
+      "description": "Common STREAM runtime flow-control and diagnostics capability summary.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "capability",
+          "type": "string",
+          "required": true,
+          "maxLength": 32,
+          "description": "Fixed capability name stream.flowControl."
+        },
+        {
+          "fieldId": 2,
+          "name": "supportsAck",
+          "type": "bool",
+          "required": true,
+          "description": "Whether stream.ack is supported."
+        },
+        {
+          "fieldId": 3,
+          "name": "supportsWindowUpdate",
+          "type": "bool",
+          "required": true,
+          "description": "Whether stream.windowUpdate is supported."
+        },
+        {
+          "fieldId": 4,
+          "name": "supportsPauseResume",
+          "type": "bool",
+          "required": true,
+          "description": "Whether stream.pause and stream.resume are supported."
+        },
+        {
+          "fieldId": 5,
+          "name": "supportsAbort",
+          "type": "bool",
+          "required": true,
+          "description": "Whether stream.abort is supported."
+        },
+        {
+          "fieldId": 6,
+          "name": "supportsStats",
+          "type": "bool",
+          "required": true,
+          "description": "Whether stream.getState, stream.getStats, and stats events are supported."
+        },
+        {
+          "fieldId": 7,
+          "name": "supportsClockReport",
+          "type": "bool",
+          "required": true,
+          "description": "Whether stream.clockReport timing samples are supported."
+        },
+        {
+          "fieldId": 8,
+          "name": "defaultWindowBytes",
+          "type": "uint32",
+          "required": false,
+          "description": "Default receive window in bytes, if advertised."
+        },
+        {
+          "fieldId": 9,
+          "name": "clockReportIntervalMs",
+          "type": "uint32",
+          "required": false,
+          "description": "Suggested clock-report interval in milliseconds."
+        }
+      ]
+    },
+    {
+      "name": "StreamSelector",
+      "kind": "object",
+      "description": "Selector for a STREAM runtime context; omit streamId for aggregate state when the method allows it.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "streamId",
+          "type": "uint32",
+          "required": false,
+          "description": "STREAM data-plane stream identifier."
+        }
+      ]
+    },
+    {
+      "name": "StreamState",
+      "kind": "object",
+      "description": "Common runtime state for a STREAM context or aggregate stream runtime.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "streamId",
+          "type": "uint32",
+          "required": false,
+          "description": "STREAM data-plane stream identifier, omitted for aggregate state."
+        },
+        {
+          "fieldId": 2,
+          "name": "state",
+          "type": "enum",
+          "required": true,
+          "enumValues": [
+            "opening",
+            "streaming",
+            "paused",
+            "draining",
+            "closing",
+            "closed",
+            "aborted",
+            "failed",
+            "aggregate"
+          ],
+          "description": "Common STREAM runtime state."
+        },
+        {
+          "fieldId": 3,
+          "name": "paused",
+          "type": "bool",
+          "required": false,
+          "description": "Whether data-plane sending is currently paused."
+        },
+        {
+          "fieldId": 4,
+          "name": "windowBytes",
+          "type": "uint32",
+          "required": false,
+          "description": "Current advertised receive window or sender credit in bytes."
+        },
+        {
+          "fieldId": 5,
+          "name": "ackedSeqId",
+          "type": "uint32",
+          "required": false,
+          "description": "Highest contiguous STREAM seqId acknowledged by the receiver."
+        },
+        {
+          "fieldId": 6,
+          "name": "lastSeqId",
+          "type": "uint32",
+          "required": false,
+          "description": "Last observed or sent STREAM seqId."
+        },
+        {
+          "fieldId": 7,
+          "name": "lastCursor",
+          "type": "uint64",
+          "required": false,
+          "description": "Last observed STREAM cursor value."
+        },
+        {
+          "fieldId": 8,
+          "name": "reason",
+          "type": "enum",
+          "required": false,
+          "enumValues": [
+            "ack",
+            "windowUpdate",
+            "pause",
+            "resume",
+            "abort",
+            "timeout",
+            "peerClosed",
+            "transportLost",
+            "diagnosticSample",
+            "unknown"
+          ],
+          "description": "Reason associated with the current state or last state change."
+        }
+      ]
+    },
+    {
+      "name": "StreamStats",
+      "kind": "object",
+      "description": "Bounded STREAM transport-level runtime statistics.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "streamId",
+          "type": "uint32",
+          "required": false,
+          "description": "STREAM data-plane stream identifier, omitted for aggregate stats."
+        },
+        {
+          "fieldId": 2,
+          "name": "packets",
+          "type": "uint64",
+          "required": false,
+          "description": "Number of STREAM packets observed."
+        },
+        {
+          "fieldId": 3,
+          "name": "bytes",
+          "type": "uint64",
+          "required": false,
+          "description": "Number of STREAM payload bytes observed."
+        },
+        {
+          "fieldId": 4,
+          "name": "droppedPackets",
+          "type": "uint64",
+          "required": false,
+          "description": "Number of dropped STREAM packets."
+        },
+        {
+          "fieldId": 5,
+          "name": "seqGaps",
+          "type": "uint64",
+          "required": false,
+          "description": "Number of detected seqId gaps."
+        },
+        {
+          "fieldId": 6,
+          "name": "jitterMs",
+          "type": "uint32",
+          "required": false,
+          "description": "Estimated transport jitter in milliseconds."
+        },
+        {
+          "fieldId": 7,
+          "name": "lastSeqId",
+          "type": "uint32",
+          "required": false,
+          "description": "Last observed STREAM seqId."
+        },
+        {
+          "fieldId": 8,
+          "name": "lastCursor",
+          "type": "uint64",
+          "required": false,
+          "description": "Last observed STREAM cursor value."
+        },
+        {
+          "fieldId": 9,
+          "name": "latestClockReportAgeMs",
+          "type": "uint32",
+          "required": false,
+          "description": "Age of the latest clock report sample known to the receiver."
+        }
+      ]
+    },
+    {
+      "name": "StreamAckParams",
+      "kind": "object",
+      "description": "Request payload for acknowledging received STREAM packet ranges.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "streamId",
+          "type": "uint32",
+          "required": true,
+          "description": "STREAM data-plane stream identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "ackedSeqId",
+          "type": "uint32",
+          "required": true,
+          "description": "Highest contiguous STREAM seqId received."
+        },
+        {
+          "fieldId": 3,
+          "name": "ackedCursor",
+          "type": "uint64",
+          "required": false,
+          "description": "Optional cursor value associated with ackedSeqId."
+        },
+        {
+          "fieldId": 4,
+          "name": "missingSeqIds",
+          "type": "array",
+          "required": false,
+          "array": {
+            "itemType": "uint32"
+          },
+          "description": "Optional sparse list of missing seqId values for diagnostics."
+        }
+      ]
+    },
+    {
+      "name": "StreamAckResult",
+      "kind": "object",
+      "description": "Result of a STREAM ACK update.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "accepted",
+          "type": "bool",
+          "required": true,
+          "description": "Whether the ACK update was accepted."
+        },
+        {
+          "fieldId": 2,
+          "name": "state",
+          "type": "StreamState",
+          "required": false,
+          "description": "Updated STREAM runtime state, when returned."
+        }
+      ]
+    },
+    {
+      "name": "StreamWindowUpdateParams",
+      "kind": "object",
+      "description": "Request payload for updating receive window or sender credit.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "streamId",
+          "type": "uint32",
+          "required": true,
+          "description": "STREAM data-plane stream identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "windowBytes",
+          "type": "uint32",
+          "required": true,
+          "description": "Advertised receive window or sender credit in bytes."
+        },
+        {
+          "fieldId": 3,
+          "name": "reason",
+          "type": "enum",
+          "required": false,
+          "enumValues": [
+            "bufferAvailable",
+            "bufferPressure",
+            "manualFlowControl",
+            "diagnosticSample",
+            "unknown"
+          ],
+          "description": "Reason for the window update."
+        }
+      ]
+    },
+    {
+      "name": "StreamWindowUpdateResult",
+      "kind": "object",
+      "description": "Result of a STREAM window update.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "accepted",
+          "type": "bool",
+          "required": true,
+          "description": "Whether the window update was accepted."
+        },
+        {
+          "fieldId": 2,
+          "name": "state",
+          "type": "StreamState",
+          "required": false,
+          "description": "Updated STREAM runtime state, when returned."
+        }
+      ]
+    },
+    {
+      "name": "StreamPauseParams",
+      "kind": "object",
+      "description": "Request payload for pausing a STREAM runtime context.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "streamId",
+          "type": "uint32",
+          "required": true,
+          "description": "STREAM data-plane stream identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "reason",
+          "type": "enum",
+          "required": false,
+          "enumValues": [
+            "bufferPressure",
+            "userRequest",
+            "diagnostic",
+            "unknown"
+          ],
+          "description": "Pause reason."
+        }
+      ]
+    },
+    {
+      "name": "StreamResumeParams",
+      "kind": "object",
+      "description": "Request payload for resuming a STREAM runtime context.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "streamId",
+          "type": "uint32",
+          "required": true,
+          "description": "STREAM data-plane stream identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "reason",
+          "type": "enum",
+          "required": false,
+          "enumValues": [
+            "bufferAvailable",
+            "userRequest",
+            "diagnostic",
+            "unknown"
+          ],
+          "description": "Resume reason."
+        }
+      ]
+    },
+    {
+      "name": "StreamAbortParams",
+      "kind": "object",
+      "description": "Request payload for aborting a STREAM runtime context.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "streamId",
+          "type": "uint32",
+          "required": true,
+          "description": "STREAM data-plane stream identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "reason",
+          "type": "enum",
+          "required": false,
+          "enumValues": [
+            "timeout",
+            "peerClosed",
+            "transportLost",
+            "userRequest",
+            "profileFailure",
+            "unknown"
+          ],
+          "description": "Abort reason."
+        },
+        {
+          "fieldId": 3,
+          "name": "message",
+          "type": "string",
+          "required": false,
+          "maxLength": 256,
+          "description": "Optional diagnostic message."
+        }
+      ]
+    },
+    {
+      "name": "StreamActionResult",
+      "kind": "object",
+      "description": "Result of a pause, resume, or abort action.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "accepted",
+          "type": "bool",
+          "required": true,
+          "description": "Whether the action was accepted."
+        },
+        {
+          "fieldId": 2,
+          "name": "state",
+          "type": "StreamState",
+          "required": false,
+          "description": "Updated STREAM runtime state, when returned."
+        }
+      ]
+    },
+    {
+      "name": "StreamStateChangedEvent",
+      "kind": "object",
+      "description": "Event payload for common STREAM runtime state changes.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "streamId",
+          "type": "uint32",
+          "required": false,
+          "description": "STREAM data-plane stream identifier, omitted for aggregate state changes."
+        },
+        {
+          "fieldId": 2,
+          "name": "state",
+          "type": "StreamState",
+          "required": true,
+          "description": "New STREAM runtime state."
+        }
+      ]
+    },
+    {
+      "name": "StreamStatsReportedEvent",
+      "kind": "object",
+      "description": "Event payload for common STREAM statistics reports.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "streamId",
+          "type": "uint32",
+          "required": false,
+          "description": "STREAM data-plane stream identifier, omitted for aggregate stats."
+        },
+        {
+          "fieldId": 2,
+          "name": "stats",
+          "type": "StreamStats",
+          "required": true,
+          "description": "Bounded STREAM transport-level statistics."
+        }
+      ]
+    },
+    {
+      "name": "StreamFlowControlChangedEvent",
+      "kind": "object",
+      "description": "Event payload for ACK, window, pause, or resume changes.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "streamId",
+          "type": "uint32",
+          "required": true,
+          "description": "STREAM data-plane stream identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "reason",
+          "type": "enum",
+          "required": false,
+          "enumValues": [
+            "ack",
+            "windowUpdate",
+            "pause",
+            "resume",
+            "bufferPressure",
+            "bufferAvailable",
+            "diagnosticSample",
+            "unknown"
+          ],
+          "description": "Flow-control change reason."
+        },
+        {
+          "fieldId": 3,
+          "name": "state",
+          "type": "StreamState",
+          "required": false,
+          "description": "Updated STREAM runtime state, when returned."
+        }
+      ]
+    },
+    {
+      "name": "StreamClockMediaAnchor",
+      "kind": "object",
+      "description": "One media timeline anchor carried by stream.clockReport.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "streamId",
+          "type": "uint32",
+          "required": false,
+          "description": "STREAM data-plane stream identifier for this media timeline."
+        },
+        {
+          "fieldId": 2,
+          "name": "mediaPts",
+          "type": "uint64",
+          "required": true,
+          "description": "Media PTS at the anchor point; audio derivedFromSeq uses sample-count PTS, video sameAsCursor uses capture timestamp PTS."
+        },
+        {
+          "fieldId": 3,
+          "name": "timebase",
+          "type": "uint32",
+          "required": true,
+          "description": "Media PTS timebase in ticks per second, such as 48000 for audio or 1000000 for video."
+        },
+        {
+          "fieldId": 4,
+          "name": "anchorNt10MonotonicUs",
+          "type": "uint64",
+          "required": true,
+          "description": "NT10 source monotonic timestamp corresponding to mediaPts."
+        },
+        {
+          "fieldId": 5,
+          "name": "seqId",
+          "type": "uint32",
+          "required": false,
+          "description": "Optional STREAM seqId associated with the media anchor."
+        },
+        {
+          "fieldId": 6,
+          "name": "cursor",
+          "type": "uint64",
+          "required": false,
+          "description": "Optional STREAM cursor associated with the media anchor."
+        }
+      ]
+    },
+    {
+      "name": "StreamClockReportEvent",
+      "kind": "object",
+      "description": "Latest-wins timing sample linking NT10 media anchors, NT10 source clock, NA20 relay clock, and receiver arrival time.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "reportSeq",
+          "type": "uint32",
+          "required": true,
+          "description": "Source or relay report sequence number."
+        },
+        {
+          "fieldId": 2,
+          "name": "syncGroupId",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "Synchronization group that links related audio and video streams."
+        },
+        {
+          "fieldId": 3,
+          "name": "sourceDeviceId",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "Source device identifier, such as NT10."
+        },
+        {
+          "fieldId": 4,
+          "name": "sourceClockDomain",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "Source monotonic clock domain for this report."
+        },
+        {
+          "fieldId": 5,
+          "name": "nt10ReportMonotonicUs",
+          "type": "uint64",
+          "required": true,
+          "description": "NT10 source monotonic timestamp sampled when the report was produced."
+        },
+        {
+          "fieldId": 6,
+          "name": "sentAtNt10MonotonicUs",
+          "type": "uint64",
+          "required": false,
+          "description": "NT10 source monotonic timestamp sampled when the report was sent to NA20."
+        },
+        {
+          "fieldId": 7,
+          "name": "na20ReceivedAtUs",
+          "type": "uint64",
+          "required": false,
+          "description": "NA20 monotonic timestamp sampled when the source report or associated media anchor was received."
+        },
+        {
+          "fieldId": 8,
+          "name": "na20SentAtUs",
+          "type": "uint64",
+          "required": false,
+          "description": "NA20 monotonic timestamp sampled when the AXTP event was sent to MediaHost."
+        },
+        {
+          "fieldId": 9,
+          "name": "audio",
+          "type": "StreamClockMediaAnchor",
+          "required": false,
+          "description": "Optional audio media timeline anchor."
+        },
+        {
+          "fieldId": 10,
+          "name": "video",
+          "type": "StreamClockMediaAnchor",
+          "required": false,
+          "description": "Optional video media timeline anchor."
+        },
+        {
+          "fieldId": 11,
+          "name": "discontinuity",
+          "type": "bool",
+          "required": false,
+          "default": false,
+          "description": "Whether this report follows a media or source clock discontinuity."
+        },
+        {
+          "fieldId": 12,
+          "name": "reason",
+          "type": "enum",
+          "required": false,
+          "enumValues": [
+            "periodic",
+            "streamOpened",
+            "streamResumed",
+            "discontinuity",
+            "sourceReset",
+            "diagnosticSample",
+            "unknown"
+          ],
+          "description": "Report reason."
+        }
+      ]
+    },
+    {
       "name": "VideoGetStreamCapabilitiesParams",
       "kind": "object",
       "description": "Selector for video stream capability.",
@@ -9124,6 +10265,33 @@
           "type": "bool",
           "required": true,
           "description": "Whether normal applications can rely on runtime-managed STREAM flow control."
+        },
+        {
+          "fieldId": 9,
+          "name": "supportedVideoPtsModes",
+          "type": "array",
+          "required": false,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Optional video PTS modes such as sameAsCursor and explicit."
+        },
+        {
+          "fieldId": 10,
+          "name": "supportedPacketizationModes",
+          "type": "array",
+          "required": false,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Optional video packetization modes such as completeFrame."
+        },
+        {
+          "fieldId": 11,
+          "name": "supportsSourceCaptureTimestampCursor",
+          "type": "bool",
+          "required": false,
+          "description": "Whether STREAM cursorUnit sourceCaptureTimestampUs is supported."
         }
       ]
     },
@@ -9184,6 +10352,42 @@
           "type": "enum",
           "required": false,
           "description": "Runtime source state, such as available, receiving, stopped, or unavailable."
+        },
+        {
+          "fieldId": 7,
+          "name": "bitratesKbps",
+          "type": "array",
+          "required": false,
+          "array": {
+            "itemType": "uint32"
+          },
+          "description": "Supported encoded video bitrates in kbps."
+        },
+        {
+          "fieldId": 8,
+          "name": "encoder",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "Encoder or encoder profile identifier used by this source."
+        },
+        {
+          "fieldId": 9,
+          "name": "supportsReconfigure",
+          "type": "bool",
+          "required": false,
+          "default": false,
+          "description": "Whether active downstream video encoding parameters can be reconfigured via close then open without restarting the upstream source."
+        },
+        {
+          "fieldId": 10,
+          "name": "reconfigureFields",
+          "type": "array",
+          "required": false,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Video stream fields that can be changed by an encoding reconfiguration."
         }
       ]
     },
@@ -9233,14 +10437,16 @@
           "name": "frameRate",
           "type": "uint32",
           "required": false,
-          "description": "Requested frame rate."
+          "min": 1,
+          "description": "Requested frame rate for the selected video encoder target; zero is invalid and omission uses the source/session default."
         },
         {
           "fieldId": 7,
           "name": "bitrateKbps",
           "type": "uint32",
           "required": false,
-          "description": "Requested bitrate in kbps."
+          "min": 1,
+          "description": "Requested bitrate in kbps for the selected video encoder target; zero is invalid and omission uses the source/session default."
         },
         {
           "fieldId": 8,
@@ -9288,6 +10494,30 @@
           "type": "uint32",
           "required": false,
           "description": "Preferred maximum STREAM payload data size."
+        },
+        {
+          "fieldId": 14,
+          "name": "videoPtsMode",
+          "type": "enum",
+          "required": false,
+          "default": "sameAsCursor",
+          "description": "Video PTS mode; NA20/NT10 MVP uses sameAsCursor."
+        },
+        {
+          "fieldId": 15,
+          "name": "timebase",
+          "type": "uint32",
+          "required": false,
+          "default": 1000000,
+          "description": "Video PTS timebase in ticks per second."
+        },
+        {
+          "fieldId": 16,
+          "name": "packetizationMode",
+          "type": "enum",
+          "required": false,
+          "default": "completeFrame",
+          "description": "Video packetization mode; NA20/NT10 MVP uses completeFrame."
         }
       ]
     },
@@ -9351,14 +10581,16 @@
           "name": "frameRate",
           "type": "uint32",
           "required": false,
-          "description": "Negotiated frame rate."
+          "min": 1,
+          "description": "Negotiated frame rate; zero is invalid and omission means the source/session default was used."
         },
         {
           "fieldId": 9,
           "name": "bitrateKbps",
           "type": "uint32",
           "required": false,
-          "description": "Negotiated bitrate in kbps."
+          "min": 1,
+          "description": "Negotiated bitrate in kbps; zero is invalid and omission means the source/session default was used."
         },
         {
           "fieldId": 10,
@@ -9389,6 +10621,27 @@
           "type": "uint32",
           "required": false,
           "description": "Negotiated maximum STREAM payload data size."
+        },
+        {
+          "fieldId": 14,
+          "name": "videoPtsMode",
+          "type": "enum",
+          "required": false,
+          "description": "Negotiated video PTS mode."
+        },
+        {
+          "fieldId": 15,
+          "name": "timebase",
+          "type": "uint32",
+          "required": false,
+          "description": "Negotiated video PTS timebase in ticks per second."
+        },
+        {
+          "fieldId": 16,
+          "name": "packetizationMode",
+          "type": "enum",
+          "required": false,
+          "description": "Negotiated video packetization mode."
         }
       ]
     },
@@ -9416,6 +10669,17 @@
           "name": "reason",
           "type": "enum",
           "required": false,
+          "enumValues": [
+            "receiver_closed",
+            "user_stop",
+            "not_needed",
+            "source_disconnected",
+            "producer_stopped",
+            "session_lost",
+            "receiver_timeout",
+            "encodingReconfigure",
+            "error"
+          ],
           "description": "Close reason."
         },
         {
@@ -9451,6 +10715,17 @@
           "name": "reason",
           "type": "enum",
           "required": false,
+          "enumValues": [
+            "receiver_closed",
+            "user_stop",
+            "not_needed",
+            "source_disconnected",
+            "producer_stopped",
+            "session_lost",
+            "receiver_timeout",
+            "encodingReconfigure",
+            "error"
+          ],
           "description": "Final close reason."
         },
         {
@@ -9561,6 +10836,22 @@
           "type": "enum",
           "required": false,
           "description": "Failure reason when state is failed."
+        },
+        {
+          "fieldId": 12,
+          "name": "frameRate",
+          "type": "uint32",
+          "required": false,
+          "min": 1,
+          "description": "Effective negotiated video frame rate; zero is invalid and omission means the source/session default was used."
+        },
+        {
+          "fieldId": 13,
+          "name": "bitrateKbps",
+          "type": "uint32",
+          "required": false,
+          "min": 1,
+          "description": "Effective negotiated video bitrate in kbps; zero is invalid and omission means the source/session default was used."
         }
       ]
     },
@@ -9704,6 +10995,22 @@
           "type": "VideoStreamStats",
           "required": false,
           "description": "Optional bounded stream statistics."
+        },
+        {
+          "fieldId": 6,
+          "name": "frameRate",
+          "type": "uint32",
+          "required": false,
+          "min": 1,
+          "description": "Effective video frame rate at the time of this event; zero is invalid and omission means the source/session default was used."
+        },
+        {
+          "fieldId": 7,
+          "name": "bitrateKbps",
+          "type": "uint32",
+          "required": false,
+          "min": 1,
+          "description": "Effective video bitrate in kbps at the time of this event; zero is invalid and omission means the source/session default was used."
         }
       ]
     },
@@ -10653,6 +11960,45 @@
       "errors": [
         "SUCCESS",
         "INVALID_ARGUMENT",
+        "UNAVAILABLE"
+      ]
+    },
+    {
+      "name": "cast.setVideoStreamParams",
+      "description": "Request cast video stream parameter reconfiguration; an active stream is coordinated through close then open, while a source without an active stream is opened directly.",
+      "methodId": 5652,
+      "bitOffset": 19,
+      "domain": "cast",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "CastSetVideoStreamParamsParams"
+      },
+      "response": {
+        "type": "CastSetVideoStreamParamsResult"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "cast.flowControl"
+      ],
+      "events": [
+        "cast.flowControlChanged"
+      ],
+      "errors": [
+        "SUCCESS",
+        "INVALID_ARGUMENT",
+        "INVALID_STATE",
+        "OUT_OF_RANGE",
+        "NOT_SUPPORTED",
+        "BUSY",
+        "MEDIA_SOURCE_UNAVAILABLE",
+        "MEDIA_FRAMERATE_UNSUPPORTED",
+        "MEDIA_BITRATE_UNSUPPORTED",
+        "MEDIA_STREAM_START_FAILED",
+        "MEDIA_STREAM_STOP_FAILED",
         "UNAVAILABLE"
       ]
     },
@@ -11802,6 +13148,258 @@
       ]
     },
     {
+      "name": "stream.getCapabilities",
+      "description": "Return common STREAM runtime flow-control, statistics, and clock-report capabilities.",
+      "methodId": 1281,
+      "bitOffset": 0,
+      "domain": "stream",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "Empty"
+      },
+      "response": {
+        "type": "StreamFlowControlCapabilities"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "stream.flowControl"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "PERMISSION_DENIED",
+        "UNAVAILABLE"
+      ]
+    },
+    {
+      "name": "stream.getState",
+      "description": "Return runtime state for one STREAM context, or aggregate runtime state when streamId is omitted.",
+      "methodId": 1282,
+      "bitOffset": 1,
+      "domain": "stream",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "StreamSelector"
+      },
+      "response": {
+        "type": "StreamState"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "stream.flowControl"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "STREAM_NOT_FOUND",
+        "PERMISSION_DENIED",
+        "UNAVAILABLE"
+      ]
+    },
+    {
+      "name": "stream.getStats",
+      "description": "Return bounded transport-level statistics for one STREAM context, or aggregate statistics when streamId is omitted.",
+      "methodId": 1283,
+      "bitOffset": 2,
+      "domain": "stream",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "StreamSelector"
+      },
+      "response": {
+        "type": "StreamStats"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "stream.flowControl"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "STREAM_NOT_FOUND",
+        "PERMISSION_DENIED",
+        "UNAVAILABLE"
+      ]
+    },
+    {
+      "name": "stream.ack",
+      "description": "Acknowledge received STREAM packet ranges so the sender can release flow-control window.",
+      "methodId": 1284,
+      "bitOffset": 3,
+      "domain": "stream",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "StreamAckParams"
+      },
+      "response": {
+        "type": "StreamAckResult"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "stream.flowControl"
+      ],
+      "events": [
+        "stream.flowControlChanged"
+      ],
+      "errors": [
+        "SUCCESS",
+        "STREAM_NOT_FOUND",
+        "STREAM_CLOSED",
+        "INVALID_ARGUMENT",
+        "INVALID_STATE",
+        "BUSY"
+      ]
+    },
+    {
+      "name": "stream.windowUpdate",
+      "description": "Update receive window or sender credit for an existing STREAM context.",
+      "methodId": 1285,
+      "bitOffset": 4,
+      "domain": "stream",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "StreamWindowUpdateParams"
+      },
+      "response": {
+        "type": "StreamWindowUpdateResult"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "stream.flowControl"
+      ],
+      "events": [
+        "stream.flowControlChanged"
+      ],
+      "errors": [
+        "SUCCESS",
+        "STREAM_NOT_FOUND",
+        "STREAM_CLOSED",
+        "INVALID_ARGUMENT",
+        "INVALID_STATE",
+        "BUSY"
+      ]
+    },
+    {
+      "name": "stream.pause",
+      "description": "Pause data-plane sending for an existing STREAM context without closing the owning media or transfer profile.",
+      "methodId": 1286,
+      "bitOffset": 5,
+      "domain": "stream",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "StreamPauseParams"
+      },
+      "response": {
+        "type": "StreamActionResult"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "stream.flowControl"
+      ],
+      "events": [
+        "stream.flowControlChanged"
+      ],
+      "errors": [
+        "SUCCESS",
+        "STREAM_NOT_FOUND",
+        "STREAM_CLOSED",
+        "INVALID_ARGUMENT",
+        "INVALID_STATE",
+        "BUSY"
+      ]
+    },
+    {
+      "name": "stream.resume",
+      "description": "Resume data-plane sending for a paused STREAM context.",
+      "methodId": 1287,
+      "bitOffset": 6,
+      "domain": "stream",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "StreamResumeParams"
+      },
+      "response": {
+        "type": "StreamActionResult"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "stream.flowControl"
+      ],
+      "events": [
+        "stream.flowControlChanged"
+      ],
+      "errors": [
+        "SUCCESS",
+        "STREAM_NOT_FOUND",
+        "STREAM_CLOSED",
+        "INVALID_ARGUMENT",
+        "INVALID_STATE",
+        "BUSY"
+      ]
+    },
+    {
+      "name": "stream.abort",
+      "description": "Abort an existing STREAM runtime context on an exceptional path; normal business close remains profile-specific.",
+      "methodId": 1288,
+      "bitOffset": 7,
+      "domain": "stream",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "StreamAbortParams"
+      },
+      "response": {
+        "type": "StreamActionResult"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "stream.flowControl"
+      ],
+      "events": [
+        "stream.stateChanged"
+      ],
+      "errors": [
+        "SUCCESS",
+        "STREAM_NOT_FOUND",
+        "STREAM_CLOSED",
+        "INVALID_ARGUMENT",
+        "INVALID_STATE",
+        "BUSY"
+      ]
+    },
+    {
       "name": "video.getStreamCapabilities",
       "description": "Return video stream sources, codecs, profiles, and open-mode support.",
       "methodId": 2066,
@@ -11833,7 +13431,7 @@
     },
     {
       "name": "video.openStream",
-      "description": "Open a real-time video STREAM and return the negotiated streamId and media metadata.",
+      "description": "Open a real-time video STREAM and return the negotiated streamId and media metadata; an active stream must be closed before opening a replacement, while a source without an active stream may be opened directly.",
       "methodId": 2059,
       "bitOffset": 1,
       "domain": "video",
@@ -11866,6 +13464,7 @@
         "MEDIA_CODEC_UNSUPPORTED",
         "MEDIA_RESOLUTION_UNSUPPORTED",
         "MEDIA_FRAMERATE_UNSUPPORTED",
+        "MEDIA_BITRATE_UNSUPPORTED",
         "MEDIA_STREAM_START_FAILED"
       ]
     },
@@ -12322,7 +13921,7 @@
     },
     {
       "name": "cast.flowControlChanged",
-      "description": "Emitted when receiver-local cast flow policy or low-frequency flow statistics change.",
+      "description": "Emitted when receiver-local cast flow policy, video stream parameters, or low-frequency flow statistics change.",
       "eventId": 5644,
       "bitOffset": 11,
       "domain": "cast",
@@ -12335,6 +13934,7 @@
       "trigger": [
         "cast.setRenderFps",
         "cast.setFlowPolicy",
+        "cast.setVideoStreamParams",
         "diagnostics sample"
       ],
       "capabilities": [
@@ -12631,6 +14231,88 @@
       ]
     },
     {
+      "name": "stream.stateChanged",
+      "description": "Emitted when common STREAM runtime state changes or an abort converges.",
+      "eventId": 1281,
+      "bitOffset": 0,
+      "domain": "stream",
+      "since": "1.0.0",
+      "status": "draft",
+      "payload": {
+        "type": "StreamStateChangedEvent"
+      },
+      "severity": "info",
+      "trigger": [
+        "stream.abort",
+        "runtime state change"
+      ],
+      "capabilities": [
+        "stream.flowControl"
+      ]
+    },
+    {
+      "name": "stream.statsReported",
+      "description": "Emitted with bounded STREAM runtime statistics for diagnostics.",
+      "eventId": 1282,
+      "bitOffset": 1,
+      "domain": "stream",
+      "since": "1.0.0",
+      "status": "draft",
+      "payload": {
+        "type": "StreamStatsReportedEvent"
+      },
+      "severity": "info",
+      "trigger": [
+        "stream statistics interval",
+        "diagnostic sampling"
+      ],
+      "capabilities": [
+        "stream.flowControl"
+      ]
+    },
+    {
+      "name": "stream.flowControlChanged",
+      "description": "Emitted when ACK, window, pause, or resume changes STREAM sending conditions.",
+      "eventId": 1283,
+      "bitOffset": 2,
+      "domain": "stream",
+      "since": "1.0.0",
+      "status": "draft",
+      "payload": {
+        "type": "StreamFlowControlChangedEvent"
+      },
+      "severity": "info",
+      "trigger": [
+        "stream.ack",
+        "stream.windowUpdate",
+        "stream.pause",
+        "stream.resume"
+      ],
+      "capabilities": [
+        "stream.flowControl"
+      ]
+    },
+    {
+      "name": "stream.clockReport",
+      "description": "Emitted as a latest-wins timing sample that anchors source media PTS to source and relay monotonic clocks.",
+      "eventId": 1284,
+      "bitOffset": 3,
+      "domain": "stream",
+      "since": "1.0.0",
+      "status": "draft",
+      "payload": {
+        "type": "StreamClockReportEvent"
+      },
+      "severity": "info",
+      "trigger": [
+        "source clock report",
+        "relay diagnostic sampling"
+      ],
+      "capabilities": [
+        "stream.flowControl"
+      ]
+    },
+    {
       "name": "video.streamStateChanged",
       "description": "Emitted when a video stream enters opening, streaming, closed, failed, or keyframe-related state.",
       "eventId": 2054,
@@ -12734,7 +14416,7 @@
       "status": "stable",
       "severity": "error",
       "retryable": false,
-      "message": "Feature is not supported by the current device or mode."
+      "message": "Canonical error new senders use when a registered operation is unavailable under the current runtime, device, profile, mode, or capability set; the session remains usable."
     },
     {
       "name": "INVALID_STATE",
@@ -13184,7 +14866,7 @@
       "status": "stable",
       "severity": "error",
       "retryable": false,
-      "message": "MethodId or method name is not registered."
+      "message": "MethodId or method name is not registered; do not use for a registered but currently unavailable method."
     },
     {
       "name": "RPC_METHOD_NOT_SUPPORTED",
@@ -13194,7 +14876,7 @@
       "status": "stable",
       "severity": "error",
       "retryable": false,
-      "message": "Method exists but is not supported by the current device."
+      "message": "Compatibility error for a registered but unsupported method. Receivers must continue to decode it; new senders use common NOT_SUPPORTED."
     },
     {
       "name": "RPC_METHOD_DISABLED",
@@ -13424,7 +15106,7 @@
       "status": "stable",
       "severity": "error",
       "retryable": false,
-      "message": "Method capability is not supported."
+      "message": "Compatibility error for an unsupported method capability. Receivers must continue to decode it; new senders use common NOT_SUPPORTED."
     },
     {
       "name": "CAPABILITY_EVENT_UNSUPPORTED",
@@ -13861,7 +15543,7 @@
       "code": 2054,
       "category": "video",
       "since": "1.0.0",
-      "status": "draft",
+      "status": "stable",
       "severity": "error",
       "retryable": false,
       "message": "Requested media bitrate is unsupported."
@@ -14483,6 +16165,16 @@
       "status": "draft",
       "type": "object",
       "schema": "SoftwareUpdatePolicyCapability"
+    },
+    {
+      "name": "stream.flowControl",
+      "description": "Device supports common STREAM runtime flow control, statistics, abort, and clock-report diagnostics.",
+      "capabilityId": 1281,
+      "domain": "stream",
+      "since": "1.0.0",
+      "status": "draft",
+      "type": "object",
+      "schema": "StreamFlowControlCapabilities"
     },
     {
       "name": "video.stream",

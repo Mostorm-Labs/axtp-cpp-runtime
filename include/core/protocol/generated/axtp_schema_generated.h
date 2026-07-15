@@ -283,6 +283,9 @@ inline constexpr FieldDescriptor kAudioStreamCapabilitiesFields[] = {
     { 0x07, "supportsSyncGroup", FieldType::Bool, true, 0, 0 },
     { 0x08, "flowControlManagedByRuntime", FieldType::Bool, true, 0, 0 },
     { 0x09, "aacTransportFormats", FieldType::Array, false, 0, 0 },
+    { 0x0A, "supportedAudioPtsModes", FieldType::Array, false, 0, 0 },
+    { 0x0B, "supportedPacketizationModes", FieldType::Array, false, 0, 0 },
+    { 0x0C, "supportsSourceCaptureTimestampCursor", FieldType::Bool, false, 0, 0 },
 };
 
 inline constexpr FieldDescriptor kAudioStreamSourceFields[] = {
@@ -310,6 +313,12 @@ inline constexpr FieldDescriptor kAudioOpenStreamParamsFields[] = {
     { 0x0D, "clockDomain", FieldType::String, false, 0, 0 },
     { 0x0E, "receiverClockDomain", FieldType::String, false, 0, 0 },
     { 0x0F, "maxDataSize", FieldType::Uint32, false, 0, 0 },
+    { 0x10, "audioPtsMode", FieldType::Enum, false, 0, 0 },
+    { 0x11, "timebase", FieldType::Uint32, false, 0, 0 },
+    { 0x12, "samplesPerPacket", FieldType::Uint32, false, 0, 0 },
+    { 0x13, "firstMediaSeqId", FieldType::Uint32, false, 0, 0 },
+    { 0x14, "audioPtsBase", FieldType::Uint64, false, 0, 0 },
+    { 0x15, "packetizationMode", FieldType::Enum, false, 0, 0 },
 };
 
 inline constexpr FieldDescriptor kAudioOpenStreamResultFields[] = {
@@ -329,6 +338,12 @@ inline constexpr FieldDescriptor kAudioOpenStreamResultFields[] = {
     { 0x0E, "clockDomain", FieldType::String, false, 0, 0 },
     { 0x0F, "receiverClockDomain", FieldType::String, false, 0, 0 },
     { 0x10, "maxDataSize", FieldType::Uint32, false, 0, 0 },
+    { 0x11, "audioPtsMode", FieldType::Enum, false, 0, 0 },
+    { 0x12, "timebase", FieldType::Uint32, false, 0, 0 },
+    { 0x13, "samplesPerPacket", FieldType::Uint32, false, 0, 0 },
+    { 0x14, "firstMediaSeqId", FieldType::Uint32, false, 0, 0 },
+    { 0x15, "audioPtsBase", FieldType::Uint64, false, 0, 0 },
+    { 0x16, "packetizationMode", FieldType::Enum, false, 0, 0 },
 };
 
 inline constexpr FieldDescriptor kAudioCloseStreamParamsFields[] = {
@@ -730,6 +745,42 @@ inline constexpr FieldDescriptor kCastSetFlowPolicyParamsFields[] = {
     { 0x06, "scope", FieldType::Enum, false, 0, 0 },
 };
 
+inline constexpr FieldDescriptor kCastSetVideoStreamParamsParamsFields[] = {
+    { 0x01, "sessionId", FieldType::String, false, 0, 0 },
+    { 0x02, "frameRate", FieldType::Uint32, false, 1, 0 },
+    { 0x03, "bitrateKbps", FieldType::Uint32, false, 1, 0 },
+    { 0x04, "resetFields", FieldType::Array, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastSetVideoStreamParamsResultFields[] = {
+    { 0x01, "accepted", FieldType::Bool, true, 0, 0 },
+    { 0x02, "state", FieldType::Enum, true, 0, 0 },
+    { 0x03, "sessionId", FieldType::String, false, 0, 0 },
+    { 0x04, "reconfigureId", FieldType::String, false, 0, 0 },
+    { 0x05, "previousStreamId", FieldType::Uint32, false, 0, 0 },
+    { 0x06, "activeStreamId", FieldType::Uint32, false, 0, 0 },
+    { 0x07, "sourceVideo", FieldType::Object, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastVideoStreamParamsStateFields[] = {
+    { 0x01, "sessionId", FieldType::String, false, 0, 0 },
+    { 0x02, "source", FieldType::String, false, 0, 0 },
+    { 0x03, "desiredFrameRate", FieldType::Uint32, false, 1, 0 },
+    { 0x04, "desiredBitrateKbps", FieldType::Uint32, false, 1, 0 },
+    { 0x05, "effectiveFrameRate", FieldType::Uint32, false, 1, 0 },
+    { 0x06, "effectiveBitrateKbps", FieldType::Uint32, false, 1, 0 },
+    { 0x07, "streamProfile", FieldType::String, false, 0, 0 },
+    { 0x08, "encoder", FieldType::String, false, 0, 0 },
+    { 0x09, "reconfigureId", FieldType::String, false, 0, 0 },
+    { 0x0A, "state", FieldType::Enum, false, 0, 0 },
+    { 0x0B, "phase", FieldType::Enum, false, 0, 0 },
+    { 0x0C, "previousStreamId", FieldType::Uint32, false, 0, 0 },
+    { 0x0D, "activeStreamId", FieldType::Uint32, false, 0, 0 },
+    { 0x0E, "rollbackApplied", FieldType::Bool, false, 0, 0 },
+    { 0x0F, "lastError", FieldType::Object, false, 0, 0 },
+    { 0x10, "changedFields", FieldType::Array, false, 0, 0 },
+};
+
 inline constexpr FieldDescriptor kCastFlowControlStateFields[] = {
     { 0x01, "targetRenderFps", FieldType::Object, true, 0, 0 },
     { 0x02, "inputFps", FieldType::Object, false, 0, 0 },
@@ -746,6 +797,7 @@ inline constexpr FieldDescriptor kCastFlowControlStateFields[] = {
     { 0x0D, "keyFrameOnDropBurst", FieldType::Bool, false, 0, 0 },
     { 0x0E, "changedFields", FieldType::Array, false, 0, 0 },
     { 0x0F, "sampledAt", FieldType::String, false, 0, 0 },
+    { 0x10, "sourceVideo", FieldType::Object, false, 0, 0 },
 };
 
 inline constexpr FieldDescriptor kCastFlowControlChangedEventFields[] = {
@@ -753,6 +805,8 @@ inline constexpr FieldDescriptor kCastFlowControlChangedEventFields[] = {
     { 0x02, "state", FieldType::Object, true, 0, 0 },
     { 0x03, "reason", FieldType::Enum, false, 0, 0 },
     { 0x04, "sampledAt", FieldType::String, false, 0, 0 },
+    { 0x05, "sourceVideo", FieldType::Object, false, 0, 0 },
+    { 0x06, "reconfigureId", FieldType::String, false, 0, 0 },
 };
 
 inline constexpr FieldDescriptor kCastGetStatusParamsFields[] = {
@@ -841,6 +895,11 @@ inline constexpr FieldDescriptor kCastFlowControlCapabilityFields[] = {
     { 0x03, "supportsOverlay", FieldType::Bool, false, 0, 0 },
     { 0x04, "supportsStats", FieldType::Bool, false, 0, 0 },
     { 0x05, "exposesExternalKeyframeRequest", FieldType::Bool, false, 0, 0 },
+    { 0x06, "supportsVideoStreamParams", FieldType::Bool, false, 0, 0 },
+    { 0x07, "supportsActiveVideoReconfigure", FieldType::Bool, false, 0, 0 },
+    { 0x08, "supportedVideoStreamProfiles", FieldType::Array, false, 0, 0 },
+    { 0x09, "supportedVideoEncoders", FieldType::Array, false, 0, 0 },
+    { 0x0A, "supportsSourceSpecificVideoParams", FieldType::Bool, false, 0, 0 },
 };
 
 inline constexpr FieldDescriptor kCastStatusCapabilityFields[] = {
@@ -1568,6 +1627,129 @@ inline constexpr FieldDescriptor kSoftwareUpdatePolicyCapabilityFields[] = {
     { 0x04, "supportsReset", FieldType::Bool, false, 0, 0 },
 };
 
+inline constexpr FieldDescriptor kStreamFlowControlCapabilitiesFields[] = {
+    { 0x01, "capability", FieldType::String, true, 0, 0 },
+    { 0x02, "supportsAck", FieldType::Bool, true, 0, 0 },
+    { 0x03, "supportsWindowUpdate", FieldType::Bool, true, 0, 0 },
+    { 0x04, "supportsPauseResume", FieldType::Bool, true, 0, 0 },
+    { 0x05, "supportsAbort", FieldType::Bool, true, 0, 0 },
+    { 0x06, "supportsStats", FieldType::Bool, true, 0, 0 },
+    { 0x07, "supportsClockReport", FieldType::Bool, true, 0, 0 },
+    { 0x08, "defaultWindowBytes", FieldType::Uint32, false, 0, 0 },
+    { 0x09, "clockReportIntervalMs", FieldType::Uint32, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kStreamSelectorFields[] = {
+    { 0x01, "streamId", FieldType::Uint32, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kStreamStateFields[] = {
+    { 0x01, "streamId", FieldType::Uint32, false, 0, 0 },
+    { 0x02, "state", FieldType::Enum, true, 0, 0 },
+    { 0x03, "paused", FieldType::Bool, false, 0, 0 },
+    { 0x04, "windowBytes", FieldType::Uint32, false, 0, 0 },
+    { 0x05, "ackedSeqId", FieldType::Uint32, false, 0, 0 },
+    { 0x06, "lastSeqId", FieldType::Uint32, false, 0, 0 },
+    { 0x07, "lastCursor", FieldType::Uint64, false, 0, 0 },
+    { 0x08, "reason", FieldType::Enum, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kStreamStatsFields[] = {
+    { 0x01, "streamId", FieldType::Uint32, false, 0, 0 },
+    { 0x02, "packets", FieldType::Uint64, false, 0, 0 },
+    { 0x03, "bytes", FieldType::Uint64, false, 0, 0 },
+    { 0x04, "droppedPackets", FieldType::Uint64, false, 0, 0 },
+    { 0x05, "seqGaps", FieldType::Uint64, false, 0, 0 },
+    { 0x06, "jitterMs", FieldType::Uint32, false, 0, 0 },
+    { 0x07, "lastSeqId", FieldType::Uint32, false, 0, 0 },
+    { 0x08, "lastCursor", FieldType::Uint64, false, 0, 0 },
+    { 0x09, "latestClockReportAgeMs", FieldType::Uint32, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kStreamAckParamsFields[] = {
+    { 0x01, "streamId", FieldType::Uint32, true, 0, 0 },
+    { 0x02, "ackedSeqId", FieldType::Uint32, true, 0, 0 },
+    { 0x03, "ackedCursor", FieldType::Uint64, false, 0, 0 },
+    { 0x04, "missingSeqIds", FieldType::Array, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kStreamAckResultFields[] = {
+    { 0x01, "accepted", FieldType::Bool, true, 0, 0 },
+    { 0x02, "state", FieldType::Object, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kStreamWindowUpdateParamsFields[] = {
+    { 0x01, "streamId", FieldType::Uint32, true, 0, 0 },
+    { 0x02, "windowBytes", FieldType::Uint32, true, 0, 0 },
+    { 0x03, "reason", FieldType::Enum, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kStreamWindowUpdateResultFields[] = {
+    { 0x01, "accepted", FieldType::Bool, true, 0, 0 },
+    { 0x02, "state", FieldType::Object, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kStreamPauseParamsFields[] = {
+    { 0x01, "streamId", FieldType::Uint32, true, 0, 0 },
+    { 0x02, "reason", FieldType::Enum, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kStreamResumeParamsFields[] = {
+    { 0x01, "streamId", FieldType::Uint32, true, 0, 0 },
+    { 0x02, "reason", FieldType::Enum, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kStreamAbortParamsFields[] = {
+    { 0x01, "streamId", FieldType::Uint32, true, 0, 0 },
+    { 0x02, "reason", FieldType::Enum, false, 0, 0 },
+    { 0x03, "message", FieldType::String, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kStreamActionResultFields[] = {
+    { 0x01, "accepted", FieldType::Bool, true, 0, 0 },
+    { 0x02, "state", FieldType::Object, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kStreamStateChangedEventFields[] = {
+    { 0x01, "streamId", FieldType::Uint32, false, 0, 0 },
+    { 0x02, "state", FieldType::Object, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kStreamStatsReportedEventFields[] = {
+    { 0x01, "streamId", FieldType::Uint32, false, 0, 0 },
+    { 0x02, "stats", FieldType::Object, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kStreamFlowControlChangedEventFields[] = {
+    { 0x01, "streamId", FieldType::Uint32, true, 0, 0 },
+    { 0x02, "reason", FieldType::Enum, false, 0, 0 },
+    { 0x03, "state", FieldType::Object, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kStreamClockMediaAnchorFields[] = {
+    { 0x01, "streamId", FieldType::Uint32, false, 0, 0 },
+    { 0x02, "mediaPts", FieldType::Uint64, true, 0, 0 },
+    { 0x03, "timebase", FieldType::Uint32, true, 0, 0 },
+    { 0x04, "anchorNt10MonotonicUs", FieldType::Uint64, true, 0, 0 },
+    { 0x05, "seqId", FieldType::Uint32, false, 0, 0 },
+    { 0x06, "cursor", FieldType::Uint64, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kStreamClockReportEventFields[] = {
+    { 0x01, "reportSeq", FieldType::Uint32, true, 0, 0 },
+    { 0x02, "syncGroupId", FieldType::String, false, 0, 0 },
+    { 0x03, "sourceDeviceId", FieldType::String, false, 0, 0 },
+    { 0x04, "sourceClockDomain", FieldType::String, false, 0, 0 },
+    { 0x05, "nt10ReportMonotonicUs", FieldType::Uint64, true, 0, 0 },
+    { 0x06, "sentAtNt10MonotonicUs", FieldType::Uint64, false, 0, 0 },
+    { 0x07, "na20ReceivedAtUs", FieldType::Uint64, false, 0, 0 },
+    { 0x08, "na20SentAtUs", FieldType::Uint64, false, 0, 0 },
+    { 0x09, "audio", FieldType::Object, false, 0, 0 },
+    { 0x0A, "video", FieldType::Object, false, 0, 0 },
+    { 0x0B, "discontinuity", FieldType::Bool, false, 0, 0 },
+    { 0x0C, "reason", FieldType::Enum, false, 0, 0 },
+};
+
 inline constexpr FieldDescriptor kVideoGetStreamCapabilitiesParamsFields[] = {
     { 0x01, "source", FieldType::String, false, 0, 0 },
     { 0x02, "includeRuntimeState", FieldType::Bool, false, 0, 0 },
@@ -1582,6 +1764,9 @@ inline constexpr FieldDescriptor kVideoStreamCapabilitiesFields[] = {
     { 0x06, "supportsSourceStateEvent", FieldType::Bool, true, 0, 0 },
     { 0x07, "supportsSyncGroup", FieldType::Bool, true, 0, 0 },
     { 0x08, "flowControlManagedByRuntime", FieldType::Bool, true, 0, 0 },
+    { 0x09, "supportedVideoPtsModes", FieldType::Array, false, 0, 0 },
+    { 0x0A, "supportedPacketizationModes", FieldType::Array, false, 0, 0 },
+    { 0x0B, "supportsSourceCaptureTimestampCursor", FieldType::Bool, false, 0, 0 },
 };
 
 inline constexpr FieldDescriptor kVideoStreamSourceFields[] = {
@@ -1591,6 +1776,10 @@ inline constexpr FieldDescriptor kVideoStreamSourceFields[] = {
     { 0x04, "resolutions", FieldType::Array, false, 0, 0 },
     { 0x05, "frameRates", FieldType::Array, false, 0, 0 },
     { 0x06, "state", FieldType::Enum, false, 0, 0 },
+    { 0x07, "bitratesKbps", FieldType::Array, false, 0, 0 },
+    { 0x08, "encoder", FieldType::String, false, 0, 0 },
+    { 0x09, "supportsReconfigure", FieldType::Bool, false, 0, 0 },
+    { 0x0A, "reconfigureFields", FieldType::Array, false, 0, 0 },
 };
 
 inline constexpr FieldDescriptor kVideoOpenStreamParamsFields[] = {
@@ -1599,14 +1788,17 @@ inline constexpr FieldDescriptor kVideoOpenStreamParamsFields[] = {
     { 0x03, "codec", FieldType::Enum, true, 0, 0 },
     { 0x04, "width", FieldType::Uint32, false, 0, 0 },
     { 0x05, "height", FieldType::Uint32, false, 0, 0 },
-    { 0x06, "frameRate", FieldType::Uint32, false, 0, 0 },
-    { 0x07, "bitrateKbps", FieldType::Uint32, false, 0, 0 },
+    { 0x06, "frameRate", FieldType::Uint32, false, 1, 0 },
+    { 0x07, "bitrateKbps", FieldType::Uint32, false, 1, 0 },
     { 0x08, "streamProfile", FieldType::String, false, 0, 0 },
     { 0x09, "cursorUnit", FieldType::Enum, false, 0, 0 },
     { 0x0A, "syncGroupId", FieldType::String, false, 0, 0 },
     { 0x0B, "castSessionId", FieldType::String, false, 0, 0 },
     { 0x0C, "clockDomain", FieldType::String, false, 0, 0 },
     { 0x0D, "maxDataSize", FieldType::Uint32, false, 0, 0 },
+    { 0x0E, "videoPtsMode", FieldType::Enum, false, 0, 0 },
+    { 0x0F, "timebase", FieldType::Uint32, false, 0, 0 },
+    { 0x10, "packetizationMode", FieldType::Enum, false, 0, 0 },
 };
 
 inline constexpr FieldDescriptor kVideoOpenStreamResultFields[] = {
@@ -1617,12 +1809,15 @@ inline constexpr FieldDescriptor kVideoOpenStreamResultFields[] = {
     { 0x05, "codec", FieldType::Enum, true, 0, 0 },
     { 0x06, "width", FieldType::Uint32, false, 0, 0 },
     { 0x07, "height", FieldType::Uint32, false, 0, 0 },
-    { 0x08, "frameRate", FieldType::Uint32, false, 0, 0 },
-    { 0x09, "bitrateKbps", FieldType::Uint32, false, 0, 0 },
+    { 0x08, "frameRate", FieldType::Uint32, false, 1, 0 },
+    { 0x09, "bitrateKbps", FieldType::Uint32, false, 1, 0 },
     { 0x0A, "streamProfile", FieldType::String, true, 0, 0 },
     { 0x0B, "cursorUnit", FieldType::Enum, true, 0, 0 },
     { 0x0C, "syncGroupId", FieldType::String, false, 0, 0 },
     { 0x0D, "maxDataSize", FieldType::Uint32, false, 0, 0 },
+    { 0x0E, "videoPtsMode", FieldType::Enum, false, 0, 0 },
+    { 0x0F, "timebase", FieldType::Uint32, false, 0, 0 },
+    { 0x10, "packetizationMode", FieldType::Enum, false, 0, 0 },
 };
 
 inline constexpr FieldDescriptor kVideoCloseStreamParamsFields[] = {
@@ -1655,6 +1850,8 @@ inline constexpr FieldDescriptor kVideoStreamStateFields[] = {
     { 0x09, "lastCursor", FieldType::Uint64, false, 0, 0 },
     { 0x0A, "keyFrameRequested", FieldType::Bool, false, 0, 0 },
     { 0x0B, "failureReason", FieldType::Enum, false, 0, 0 },
+    { 0x0C, "frameRate", FieldType::Uint32, false, 1, 0 },
+    { 0x0D, "bitrateKbps", FieldType::Uint32, false, 1, 0 },
 };
 
 inline constexpr FieldDescriptor kVideoGetStreamSourceStateParamsFields[] = {
@@ -1685,6 +1882,8 @@ inline constexpr FieldDescriptor kVideoStreamStateChangedEventFields[] = {
     { 0x03, "source", FieldType::String, true, 0, 0 },
     { 0x04, "reason", FieldType::Enum, false, 0, 0 },
     { 0x05, "stats", FieldType::Object, false, 0, 0 },
+    { 0x06, "frameRate", FieldType::Uint32, false, 1, 0 },
+    { 0x07, "bitrateKbps", FieldType::Uint32, false, 1, 0 },
 };
 
 inline constexpr FieldDescriptor kVideoStreamSourceStateChangedEventFields[] = {
@@ -1741,10 +1940,10 @@ inline constexpr SchemaDescriptor kAudioVoiceActivityDetectionConfigSchema = { "
 inline constexpr SchemaDescriptor kAudioDirectionOfArrivalConfigSchema = { "AudioDirectionOfArrivalConfig", kAudioDirectionOfArrivalConfigFields, 4 };
 inline constexpr SchemaDescriptor kAudioHowlingSuppressionConfigSchema = { "AudioHowlingSuppressionConfig", kAudioHowlingSuppressionConfigFields, 2 };
 inline constexpr SchemaDescriptor kAudioGetStreamCapabilitiesParamsSchema = { "AudioGetStreamCapabilitiesParams", kAudioGetStreamCapabilitiesParamsFields, 2 };
-inline constexpr SchemaDescriptor kAudioStreamCapabilitiesSchema = { "AudioStreamCapabilities", kAudioStreamCapabilitiesFields, 9 };
+inline constexpr SchemaDescriptor kAudioStreamCapabilitiesSchema = { "AudioStreamCapabilities", kAudioStreamCapabilitiesFields, 12 };
 inline constexpr SchemaDescriptor kAudioStreamSourceSchema = { "AudioStreamSource", kAudioStreamSourceFields, 6 };
-inline constexpr SchemaDescriptor kAudioOpenStreamParamsSchema = { "AudioOpenStreamParams", kAudioOpenStreamParamsFields, 15 };
-inline constexpr SchemaDescriptor kAudioOpenStreamResultSchema = { "AudioOpenStreamResult", kAudioOpenStreamResultFields, 16 };
+inline constexpr SchemaDescriptor kAudioOpenStreamParamsSchema = { "AudioOpenStreamParams", kAudioOpenStreamParamsFields, 21 };
+inline constexpr SchemaDescriptor kAudioOpenStreamResultSchema = { "AudioOpenStreamResult", kAudioOpenStreamResultFields, 22 };
 inline constexpr SchemaDescriptor kAudioCloseStreamParamsSchema = { "AudioCloseStreamParams", kAudioCloseStreamParamsFields, 4 };
 inline constexpr SchemaDescriptor kAudioCloseStreamResultSchema = { "AudioCloseStreamResult", kAudioCloseStreamResultFields, 4 };
 inline constexpr SchemaDescriptor kAudioGetStreamStateParamsSchema = { "AudioGetStreamStateParams", kAudioGetStreamStateParamsFields, 1 };
@@ -1794,8 +1993,11 @@ inline constexpr SchemaDescriptor kCastBackendChangedEventSchema = { "CastBacken
 inline constexpr SchemaDescriptor kCastGetFlowControlStateParamsSchema = { "CastGetFlowControlStateParams", kCastGetFlowControlStateParamsFields, 3 };
 inline constexpr SchemaDescriptor kCastSetRenderFpsParamsSchema = { "CastSetRenderFpsParams", kCastSetRenderFpsParamsFields, 3 };
 inline constexpr SchemaDescriptor kCastSetFlowPolicyParamsSchema = { "CastSetFlowPolicyParams", kCastSetFlowPolicyParamsFields, 6 };
-inline constexpr SchemaDescriptor kCastFlowControlStateSchema = { "CastFlowControlState", kCastFlowControlStateFields, 15 };
-inline constexpr SchemaDescriptor kCastFlowControlChangedEventSchema = { "CastFlowControlChangedEvent", kCastFlowControlChangedEventFields, 4 };
+inline constexpr SchemaDescriptor kCastSetVideoStreamParamsParamsSchema = { "CastSetVideoStreamParamsParams", kCastSetVideoStreamParamsParamsFields, 4 };
+inline constexpr SchemaDescriptor kCastSetVideoStreamParamsResultSchema = { "CastSetVideoStreamParamsResult", kCastSetVideoStreamParamsResultFields, 7 };
+inline constexpr SchemaDescriptor kCastVideoStreamParamsStateSchema = { "CastVideoStreamParamsState", kCastVideoStreamParamsStateFields, 16 };
+inline constexpr SchemaDescriptor kCastFlowControlStateSchema = { "CastFlowControlState", kCastFlowControlStateFields, 16 };
+inline constexpr SchemaDescriptor kCastFlowControlChangedEventSchema = { "CastFlowControlChangedEvent", kCastFlowControlChangedEventFields, 6 };
 inline constexpr SchemaDescriptor kCastGetStatusParamsSchema = { "CastGetStatusParams", kCastGetStatusParamsFields, 2 };
 inline constexpr SchemaDescriptor kCastReceiverSummarySchema = { "CastReceiverSummary", kCastReceiverSummaryFields, 4 };
 inline constexpr SchemaDescriptor kCastSessionStatusSummarySchema = { "CastSessionStatusSummary", kCastSessionStatusSummaryFields, 5 };
@@ -1806,7 +2008,7 @@ inline constexpr SchemaDescriptor kCastAudioCapabilitySchema = { "CastAudioCapab
 inline constexpr SchemaDescriptor kCastPinCodeCapabilitySchema = { "CastPinCodeCapability", kCastPinCodeCapabilityFields, 5 };
 inline constexpr SchemaDescriptor kCastWindowCapabilitySchema = { "CastWindowCapability", kCastWindowCapabilityFields, 4 };
 inline constexpr SchemaDescriptor kCastBackendCapabilitySchema = { "CastBackendCapability", kCastBackendCapabilityFields, 4 };
-inline constexpr SchemaDescriptor kCastFlowControlCapabilitySchema = { "CastFlowControlCapability", kCastFlowControlCapabilityFields, 5 };
+inline constexpr SchemaDescriptor kCastFlowControlCapabilitySchema = { "CastFlowControlCapability", kCastFlowControlCapabilityFields, 10 };
 inline constexpr SchemaDescriptor kCastStatusCapabilitySchema = { "CastStatusCapability", kCastStatusCapabilityFields, 2 };
 inline constexpr SchemaDescriptor kGetDeviceInfoParamsSchema = { "GetDeviceInfoParams", kGetDeviceInfoParamsFields, 1 };
 inline constexpr SchemaDescriptor kDeviceInfoSchema = { "DeviceInfo", kDeviceInfoFields, 7 };
@@ -1924,20 +2126,37 @@ inline constexpr SchemaDescriptor kLauncherUpdatePolicySchema = { "LauncherUpdat
 inline constexpr SchemaDescriptor kUpdateScheduleSchema = { "UpdateSchedule", kUpdateScheduleFields, 3 };
 inline constexpr SchemaDescriptor kUpdateConditionsSchema = { "UpdateConditions", kUpdateConditionsFields, 2 };
 inline constexpr SchemaDescriptor kSoftwareUpdatePolicyCapabilitySchema = { "SoftwareUpdatePolicyCapability", kSoftwareUpdatePolicyCapabilityFields, 4 };
+inline constexpr SchemaDescriptor kStreamFlowControlCapabilitiesSchema = { "StreamFlowControlCapabilities", kStreamFlowControlCapabilitiesFields, 9 };
+inline constexpr SchemaDescriptor kStreamSelectorSchema = { "StreamSelector", kStreamSelectorFields, 1 };
+inline constexpr SchemaDescriptor kStreamStateSchema = { "StreamState", kStreamStateFields, 8 };
+inline constexpr SchemaDescriptor kStreamStatsSchema = { "StreamStats", kStreamStatsFields, 9 };
+inline constexpr SchemaDescriptor kStreamAckParamsSchema = { "StreamAckParams", kStreamAckParamsFields, 4 };
+inline constexpr SchemaDescriptor kStreamAckResultSchema = { "StreamAckResult", kStreamAckResultFields, 2 };
+inline constexpr SchemaDescriptor kStreamWindowUpdateParamsSchema = { "StreamWindowUpdateParams", kStreamWindowUpdateParamsFields, 3 };
+inline constexpr SchemaDescriptor kStreamWindowUpdateResultSchema = { "StreamWindowUpdateResult", kStreamWindowUpdateResultFields, 2 };
+inline constexpr SchemaDescriptor kStreamPauseParamsSchema = { "StreamPauseParams", kStreamPauseParamsFields, 2 };
+inline constexpr SchemaDescriptor kStreamResumeParamsSchema = { "StreamResumeParams", kStreamResumeParamsFields, 2 };
+inline constexpr SchemaDescriptor kStreamAbortParamsSchema = { "StreamAbortParams", kStreamAbortParamsFields, 3 };
+inline constexpr SchemaDescriptor kStreamActionResultSchema = { "StreamActionResult", kStreamActionResultFields, 2 };
+inline constexpr SchemaDescriptor kStreamStateChangedEventSchema = { "StreamStateChangedEvent", kStreamStateChangedEventFields, 2 };
+inline constexpr SchemaDescriptor kStreamStatsReportedEventSchema = { "StreamStatsReportedEvent", kStreamStatsReportedEventFields, 2 };
+inline constexpr SchemaDescriptor kStreamFlowControlChangedEventSchema = { "StreamFlowControlChangedEvent", kStreamFlowControlChangedEventFields, 3 };
+inline constexpr SchemaDescriptor kStreamClockMediaAnchorSchema = { "StreamClockMediaAnchor", kStreamClockMediaAnchorFields, 6 };
+inline constexpr SchemaDescriptor kStreamClockReportEventSchema = { "StreamClockReportEvent", kStreamClockReportEventFields, 12 };
 inline constexpr SchemaDescriptor kVideoGetStreamCapabilitiesParamsSchema = { "VideoGetStreamCapabilitiesParams", kVideoGetStreamCapabilitiesParamsFields, 2 };
-inline constexpr SchemaDescriptor kVideoStreamCapabilitiesSchema = { "VideoStreamCapabilities", kVideoStreamCapabilitiesFields, 8 };
-inline constexpr SchemaDescriptor kVideoStreamSourceSchema = { "VideoStreamSource", kVideoStreamSourceFields, 6 };
-inline constexpr SchemaDescriptor kVideoOpenStreamParamsSchema = { "VideoOpenStreamParams", kVideoOpenStreamParamsFields, 13 };
-inline constexpr SchemaDescriptor kVideoOpenStreamResultSchema = { "VideoOpenStreamResult", kVideoOpenStreamResultFields, 13 };
+inline constexpr SchemaDescriptor kVideoStreamCapabilitiesSchema = { "VideoStreamCapabilities", kVideoStreamCapabilitiesFields, 11 };
+inline constexpr SchemaDescriptor kVideoStreamSourceSchema = { "VideoStreamSource", kVideoStreamSourceFields, 10 };
+inline constexpr SchemaDescriptor kVideoOpenStreamParamsSchema = { "VideoOpenStreamParams", kVideoOpenStreamParamsFields, 16 };
+inline constexpr SchemaDescriptor kVideoOpenStreamResultSchema = { "VideoOpenStreamResult", kVideoOpenStreamResultFields, 16 };
 inline constexpr SchemaDescriptor kVideoCloseStreamParamsSchema = { "VideoCloseStreamParams", kVideoCloseStreamParamsFields, 4 };
 inline constexpr SchemaDescriptor kVideoCloseStreamResultSchema = { "VideoCloseStreamResult", kVideoCloseStreamResultFields, 4 };
 inline constexpr SchemaDescriptor kVideoGetStreamStateParamsSchema = { "VideoGetStreamStateParams", kVideoGetStreamStateParamsFields, 1 };
-inline constexpr SchemaDescriptor kVideoStreamStateSchema = { "VideoStreamState", kVideoStreamStateFields, 11 };
+inline constexpr SchemaDescriptor kVideoStreamStateSchema = { "VideoStreamState", kVideoStreamStateFields, 13 };
 inline constexpr SchemaDescriptor kVideoGetStreamSourceStateParamsSchema = { "VideoGetStreamSourceStateParams", kVideoGetStreamSourceStateParamsFields, 1 };
 inline constexpr SchemaDescriptor kVideoStreamSourceStateSchema = { "VideoStreamSourceState", kVideoStreamSourceStateFields, 5 };
 inline constexpr SchemaDescriptor kVideoRequestKeyFrameParamsSchema = { "VideoRequestKeyFrameParams", kVideoRequestKeyFrameParamsFields, 2 };
 inline constexpr SchemaDescriptor kVideoRequestKeyFrameResultSchema = { "VideoRequestKeyFrameResult", kVideoRequestKeyFrameResultFields, 2 };
-inline constexpr SchemaDescriptor kVideoStreamStateChangedEventSchema = { "VideoStreamStateChangedEvent", kVideoStreamStateChangedEventFields, 5 };
+inline constexpr SchemaDescriptor kVideoStreamStateChangedEventSchema = { "VideoStreamStateChangedEvent", kVideoStreamStateChangedEventFields, 7 };
 inline constexpr SchemaDescriptor kVideoStreamSourceStateChangedEventSchema = { "VideoStreamSourceStateChangedEvent", kVideoStreamSourceStateChangedEventFields, 5 };
 inline constexpr SchemaDescriptor kVideoStreamStatsReportedEventSchema = { "VideoStreamStatsReportedEvent", kVideoStreamStatsReportedEventFields, 2 };
 inline constexpr SchemaDescriptor kVideoStreamStatsSchema = { "VideoStreamStats", kVideoStreamStatsFields, 4 };

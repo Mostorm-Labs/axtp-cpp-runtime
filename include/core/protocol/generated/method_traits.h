@@ -75,6 +75,70 @@ struct MethodTraits<MethodId::FirmwareFinishUpdate> {
 };
 
 template <>
+struct MethodTraits<MethodId::StreamGetCapabilities> {
+    using Request = Empty;
+    using Response = StreamFlowControlCapabilities;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::StreamGetCapabilities);
+    static constexpr const char* name = "stream.getCapabilities";
+};
+
+template <>
+struct MethodTraits<MethodId::StreamGetState> {
+    using Request = StreamSelector;
+    using Response = StreamState;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::StreamGetState);
+    static constexpr const char* name = "stream.getState";
+};
+
+template <>
+struct MethodTraits<MethodId::StreamGetStats> {
+    using Request = StreamSelector;
+    using Response = StreamStats;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::StreamGetStats);
+    static constexpr const char* name = "stream.getStats";
+};
+
+template <>
+struct MethodTraits<MethodId::StreamAck> {
+    using Request = StreamAckParams;
+    using Response = StreamAckResult;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::StreamAck);
+    static constexpr const char* name = "stream.ack";
+};
+
+template <>
+struct MethodTraits<MethodId::StreamWindowUpdate> {
+    using Request = StreamWindowUpdateParams;
+    using Response = StreamWindowUpdateResult;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::StreamWindowUpdate);
+    static constexpr const char* name = "stream.windowUpdate";
+};
+
+template <>
+struct MethodTraits<MethodId::StreamPause> {
+    using Request = StreamPauseParams;
+    using Response = StreamActionResult;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::StreamPause);
+    static constexpr const char* name = "stream.pause";
+};
+
+template <>
+struct MethodTraits<MethodId::StreamResume> {
+    using Request = StreamResumeParams;
+    using Response = StreamActionResult;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::StreamResume);
+    static constexpr const char* name = "stream.resume";
+};
+
+template <>
+struct MethodTraits<MethodId::StreamAbort> {
+    using Request = StreamAbortParams;
+    using Response = StreamActionResult;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::StreamAbort);
+    static constexpr const char* name = "stream.abort";
+};
+
+template <>
 struct MethodTraits<MethodId::VideoOpenStream> {
     using Request = VideoOpenStreamParams;
     using Response = VideoOpenStreamResult;
@@ -531,6 +595,14 @@ struct MethodTraits<MethodId::CastSetAudioDelay> {
 };
 
 template <>
+struct MethodTraits<MethodId::CastSetVideoStreamParams> {
+    using Request = CastSetVideoStreamParamsParams;
+    using Response = CastSetVideoStreamParamsResult;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::CastSetVideoStreamParams);
+    static constexpr const char* name = "cast.setVideoStreamParams";
+};
+
+template <>
 struct MethodTraits<MethodId::SoftwareGetConfig> {
     using Request = SoftwareGetConfigParams;
     using Response = SoftwareConfig;
@@ -600,6 +672,34 @@ struct EventTraits<EventId::FirmwareUpdateStateChanged> {
     using Event = FirmwareUpdateStateChangedEvent;
     static constexpr std::uint16_t id = static_cast<std::uint16_t>(EventId::FirmwareUpdateStateChanged);
     static constexpr const char* name = "firmware.updateStateChanged";
+};
+
+template <>
+struct EventTraits<EventId::StreamStateChanged> {
+    using Event = StreamStateChangedEvent;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(EventId::StreamStateChanged);
+    static constexpr const char* name = "stream.stateChanged";
+};
+
+template <>
+struct EventTraits<EventId::StreamStatsReported> {
+    using Event = StreamStatsReportedEvent;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(EventId::StreamStatsReported);
+    static constexpr const char* name = "stream.statsReported";
+};
+
+template <>
+struct EventTraits<EventId::StreamFlowControlChanged> {
+    using Event = StreamFlowControlChangedEvent;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(EventId::StreamFlowControlChanged);
+    static constexpr const char* name = "stream.flowControlChanged";
+};
+
+template <>
+struct EventTraits<EventId::StreamClockReport> {
+    using Event = StreamClockReportEvent;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(EventId::StreamClockReport);
+    static constexpr const char* name = "stream.clockReport";
 };
 
 template <>

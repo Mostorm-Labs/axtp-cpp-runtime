@@ -253,6 +253,9 @@ constexpr std::uint8_t SUPPORTS_SOURCE_STATE_EVENT = 0x06;
 constexpr std::uint8_t SUPPORTS_SYNC_GROUP = 0x07;
 constexpr std::uint8_t FLOW_CONTROL_MANAGED_BY_RUNTIME = 0x08;
 constexpr std::uint8_t AAC_TRANSPORT_FORMATS = 0x09;
+constexpr std::uint8_t SUPPORTED_AUDIO_PTS_MODES = 0x0A;
+constexpr std::uint8_t SUPPORTED_PACKETIZATION_MODES = 0x0B;
+constexpr std::uint8_t SUPPORTS_SOURCE_CAPTURE_TIMESTAMP_CURSOR = 0x0C;
 }
 
 namespace fields::audio_stream_source {
@@ -280,6 +283,12 @@ constexpr std::uint8_t CAST_SESSION_ID = 0x0C;
 constexpr std::uint8_t CLOCK_DOMAIN = 0x0D;
 constexpr std::uint8_t RECEIVER_CLOCK_DOMAIN = 0x0E;
 constexpr std::uint8_t MAX_DATA_SIZE = 0x0F;
+constexpr std::uint8_t AUDIO_PTS_MODE = 0x10;
+constexpr std::uint8_t TIMEBASE = 0x11;
+constexpr std::uint8_t SAMPLES_PER_PACKET = 0x12;
+constexpr std::uint8_t FIRST_MEDIA_SEQ_ID = 0x13;
+constexpr std::uint8_t AUDIO_PTS_BASE = 0x14;
+constexpr std::uint8_t PACKETIZATION_MODE = 0x15;
 }
 
 namespace fields::audio_open_stream_result {
@@ -299,6 +308,12 @@ constexpr std::uint8_t CAST_SESSION_ID = 0x0D;
 constexpr std::uint8_t CLOCK_DOMAIN = 0x0E;
 constexpr std::uint8_t RECEIVER_CLOCK_DOMAIN = 0x0F;
 constexpr std::uint8_t MAX_DATA_SIZE = 0x10;
+constexpr std::uint8_t AUDIO_PTS_MODE = 0x11;
+constexpr std::uint8_t TIMEBASE = 0x12;
+constexpr std::uint8_t SAMPLES_PER_PACKET = 0x13;
+constexpr std::uint8_t FIRST_MEDIA_SEQ_ID = 0x14;
+constexpr std::uint8_t AUDIO_PTS_BASE = 0x15;
+constexpr std::uint8_t PACKETIZATION_MODE = 0x16;
 }
 
 namespace fields::audio_close_stream_params {
@@ -700,6 +715,42 @@ constexpr std::uint8_t SESSION_ID = 0x05;
 constexpr std::uint8_t SCOPE = 0x06;
 }
 
+namespace fields::cast_set_video_stream_params_params {
+constexpr std::uint8_t SESSION_ID = 0x01;
+constexpr std::uint8_t FRAME_RATE = 0x02;
+constexpr std::uint8_t BITRATE_KBPS = 0x03;
+constexpr std::uint8_t RESET_FIELDS = 0x04;
+}
+
+namespace fields::cast_set_video_stream_params_result {
+constexpr std::uint8_t ACCEPTED = 0x01;
+constexpr std::uint8_t STATE = 0x02;
+constexpr std::uint8_t SESSION_ID = 0x03;
+constexpr std::uint8_t RECONFIGURE_ID = 0x04;
+constexpr std::uint8_t PREVIOUS_STREAM_ID = 0x05;
+constexpr std::uint8_t ACTIVE_STREAM_ID = 0x06;
+constexpr std::uint8_t SOURCE_VIDEO = 0x07;
+}
+
+namespace fields::cast_video_stream_params_state {
+constexpr std::uint8_t SESSION_ID = 0x01;
+constexpr std::uint8_t SOURCE = 0x02;
+constexpr std::uint8_t DESIRED_FRAME_RATE = 0x03;
+constexpr std::uint8_t DESIRED_BITRATE_KBPS = 0x04;
+constexpr std::uint8_t EFFECTIVE_FRAME_RATE = 0x05;
+constexpr std::uint8_t EFFECTIVE_BITRATE_KBPS = 0x06;
+constexpr std::uint8_t STREAM_PROFILE = 0x07;
+constexpr std::uint8_t ENCODER = 0x08;
+constexpr std::uint8_t RECONFIGURE_ID = 0x09;
+constexpr std::uint8_t STATE = 0x0A;
+constexpr std::uint8_t PHASE = 0x0B;
+constexpr std::uint8_t PREVIOUS_STREAM_ID = 0x0C;
+constexpr std::uint8_t ACTIVE_STREAM_ID = 0x0D;
+constexpr std::uint8_t ROLLBACK_APPLIED = 0x0E;
+constexpr std::uint8_t LAST_ERROR = 0x0F;
+constexpr std::uint8_t CHANGED_FIELDS = 0x10;
+}
+
 namespace fields::cast_flow_control_state {
 constexpr std::uint8_t TARGET_RENDER_FPS = 0x01;
 constexpr std::uint8_t INPUT_FPS = 0x02;
@@ -716,6 +767,7 @@ constexpr std::uint8_t KEYFRAME_REQUEST_COUNT = 0x0C;
 constexpr std::uint8_t KEY_FRAME_ON_DROP_BURST = 0x0D;
 constexpr std::uint8_t CHANGED_FIELDS = 0x0E;
 constexpr std::uint8_t SAMPLED_AT = 0x0F;
+constexpr std::uint8_t SOURCE_VIDEO = 0x10;
 }
 
 namespace fields::cast_flow_control_changed_event {
@@ -723,6 +775,8 @@ constexpr std::uint8_t CHANGED_FIELDS = 0x01;
 constexpr std::uint8_t STATE = 0x02;
 constexpr std::uint8_t REASON = 0x03;
 constexpr std::uint8_t SAMPLED_AT = 0x04;
+constexpr std::uint8_t SOURCE_VIDEO = 0x05;
+constexpr std::uint8_t RECONFIGURE_ID = 0x06;
 }
 
 namespace fields::cast_get_status_params {
@@ -811,6 +865,11 @@ constexpr std::uint8_t SUPPORTS_QUEUE_POLICY = 0x02;
 constexpr std::uint8_t SUPPORTS_OVERLAY = 0x03;
 constexpr std::uint8_t SUPPORTS_STATS = 0x04;
 constexpr std::uint8_t EXPOSES_EXTERNAL_KEYFRAME_REQUEST = 0x05;
+constexpr std::uint8_t SUPPORTS_VIDEO_STREAM_PARAMS = 0x06;
+constexpr std::uint8_t SUPPORTS_ACTIVE_VIDEO_RECONFIGURE = 0x07;
+constexpr std::uint8_t SUPPORTED_VIDEO_STREAM_PROFILES = 0x08;
+constexpr std::uint8_t SUPPORTED_VIDEO_ENCODERS = 0x09;
+constexpr std::uint8_t SUPPORTS_SOURCE_SPECIFIC_VIDEO_PARAMS = 0x0A;
 }
 
 namespace fields::cast_status_capability {
@@ -1538,6 +1597,129 @@ constexpr std::uint8_t SUPPORTS_SCHEDULE = 0x03;
 constexpr std::uint8_t SUPPORTS_RESET = 0x04;
 }
 
+namespace fields::stream_flow_control_capabilities {
+constexpr std::uint8_t CAPABILITY = 0x01;
+constexpr std::uint8_t SUPPORTS_ACK = 0x02;
+constexpr std::uint8_t SUPPORTS_WINDOW_UPDATE = 0x03;
+constexpr std::uint8_t SUPPORTS_PAUSE_RESUME = 0x04;
+constexpr std::uint8_t SUPPORTS_ABORT = 0x05;
+constexpr std::uint8_t SUPPORTS_STATS = 0x06;
+constexpr std::uint8_t SUPPORTS_CLOCK_REPORT = 0x07;
+constexpr std::uint8_t DEFAULT_WINDOW_BYTES = 0x08;
+constexpr std::uint8_t CLOCK_REPORT_INTERVAL_MS = 0x09;
+}
+
+namespace fields::stream_selector {
+constexpr std::uint8_t STREAM_ID = 0x01;
+}
+
+namespace fields::stream_state {
+constexpr std::uint8_t STREAM_ID = 0x01;
+constexpr std::uint8_t STATE = 0x02;
+constexpr std::uint8_t PAUSED = 0x03;
+constexpr std::uint8_t WINDOW_BYTES = 0x04;
+constexpr std::uint8_t ACKED_SEQ_ID = 0x05;
+constexpr std::uint8_t LAST_SEQ_ID = 0x06;
+constexpr std::uint8_t LAST_CURSOR = 0x07;
+constexpr std::uint8_t REASON = 0x08;
+}
+
+namespace fields::stream_stats {
+constexpr std::uint8_t STREAM_ID = 0x01;
+constexpr std::uint8_t PACKETS = 0x02;
+constexpr std::uint8_t BYTES = 0x03;
+constexpr std::uint8_t DROPPED_PACKETS = 0x04;
+constexpr std::uint8_t SEQ_GAPS = 0x05;
+constexpr std::uint8_t JITTER_MS = 0x06;
+constexpr std::uint8_t LAST_SEQ_ID = 0x07;
+constexpr std::uint8_t LAST_CURSOR = 0x08;
+constexpr std::uint8_t LATEST_CLOCK_REPORT_AGE_MS = 0x09;
+}
+
+namespace fields::stream_ack_params {
+constexpr std::uint8_t STREAM_ID = 0x01;
+constexpr std::uint8_t ACKED_SEQ_ID = 0x02;
+constexpr std::uint8_t ACKED_CURSOR = 0x03;
+constexpr std::uint8_t MISSING_SEQ_IDS = 0x04;
+}
+
+namespace fields::stream_ack_result {
+constexpr std::uint8_t ACCEPTED = 0x01;
+constexpr std::uint8_t STATE = 0x02;
+}
+
+namespace fields::stream_window_update_params {
+constexpr std::uint8_t STREAM_ID = 0x01;
+constexpr std::uint8_t WINDOW_BYTES = 0x02;
+constexpr std::uint8_t REASON = 0x03;
+}
+
+namespace fields::stream_window_update_result {
+constexpr std::uint8_t ACCEPTED = 0x01;
+constexpr std::uint8_t STATE = 0x02;
+}
+
+namespace fields::stream_pause_params {
+constexpr std::uint8_t STREAM_ID = 0x01;
+constexpr std::uint8_t REASON = 0x02;
+}
+
+namespace fields::stream_resume_params {
+constexpr std::uint8_t STREAM_ID = 0x01;
+constexpr std::uint8_t REASON = 0x02;
+}
+
+namespace fields::stream_abort_params {
+constexpr std::uint8_t STREAM_ID = 0x01;
+constexpr std::uint8_t REASON = 0x02;
+constexpr std::uint8_t MESSAGE = 0x03;
+}
+
+namespace fields::stream_action_result {
+constexpr std::uint8_t ACCEPTED = 0x01;
+constexpr std::uint8_t STATE = 0x02;
+}
+
+namespace fields::stream_state_changed_event {
+constexpr std::uint8_t STREAM_ID = 0x01;
+constexpr std::uint8_t STATE = 0x02;
+}
+
+namespace fields::stream_stats_reported_event {
+constexpr std::uint8_t STREAM_ID = 0x01;
+constexpr std::uint8_t STATS = 0x02;
+}
+
+namespace fields::stream_flow_control_changed_event {
+constexpr std::uint8_t STREAM_ID = 0x01;
+constexpr std::uint8_t REASON = 0x02;
+constexpr std::uint8_t STATE = 0x03;
+}
+
+namespace fields::stream_clock_media_anchor {
+constexpr std::uint8_t STREAM_ID = 0x01;
+constexpr std::uint8_t MEDIA_PTS = 0x02;
+constexpr std::uint8_t TIMEBASE = 0x03;
+constexpr std::uint8_t ANCHOR_NT10_MONOTONIC_US = 0x04;
+constexpr std::uint8_t SEQ_ID = 0x05;
+constexpr std::uint8_t CURSOR = 0x06;
+}
+
+namespace fields::stream_clock_report_event {
+constexpr std::uint8_t REPORT_SEQ = 0x01;
+constexpr std::uint8_t SYNC_GROUP_ID = 0x02;
+constexpr std::uint8_t SOURCE_DEVICE_ID = 0x03;
+constexpr std::uint8_t SOURCE_CLOCK_DOMAIN = 0x04;
+constexpr std::uint8_t NT10_REPORT_MONOTONIC_US = 0x05;
+constexpr std::uint8_t SENT_AT_NT10_MONOTONIC_US = 0x06;
+constexpr std::uint8_t NA20_RECEIVED_AT_US = 0x07;
+constexpr std::uint8_t NA20_SENT_AT_US = 0x08;
+constexpr std::uint8_t AUDIO = 0x09;
+constexpr std::uint8_t VIDEO = 0x0A;
+constexpr std::uint8_t DISCONTINUITY = 0x0B;
+constexpr std::uint8_t REASON = 0x0C;
+}
+
 namespace fields::video_get_stream_capabilities_params {
 constexpr std::uint8_t SOURCE = 0x01;
 constexpr std::uint8_t INCLUDE_RUNTIME_STATE = 0x02;
@@ -1552,6 +1734,9 @@ constexpr std::uint8_t PEER_ROLES = 0x05;
 constexpr std::uint8_t SUPPORTS_SOURCE_STATE_EVENT = 0x06;
 constexpr std::uint8_t SUPPORTS_SYNC_GROUP = 0x07;
 constexpr std::uint8_t FLOW_CONTROL_MANAGED_BY_RUNTIME = 0x08;
+constexpr std::uint8_t SUPPORTED_VIDEO_PTS_MODES = 0x09;
+constexpr std::uint8_t SUPPORTED_PACKETIZATION_MODES = 0x0A;
+constexpr std::uint8_t SUPPORTS_SOURCE_CAPTURE_TIMESTAMP_CURSOR = 0x0B;
 }
 
 namespace fields::video_stream_source {
@@ -1561,6 +1746,10 @@ constexpr std::uint8_t CODECS = 0x03;
 constexpr std::uint8_t RESOLUTIONS = 0x04;
 constexpr std::uint8_t FRAME_RATES = 0x05;
 constexpr std::uint8_t STATE = 0x06;
+constexpr std::uint8_t BITRATES_KBPS = 0x07;
+constexpr std::uint8_t ENCODER = 0x08;
+constexpr std::uint8_t SUPPORTS_RECONFIGURE = 0x09;
+constexpr std::uint8_t RECONFIGURE_FIELDS = 0x0A;
 }
 
 namespace fields::video_open_stream_params {
@@ -1577,6 +1766,9 @@ constexpr std::uint8_t SYNC_GROUP_ID = 0x0A;
 constexpr std::uint8_t CAST_SESSION_ID = 0x0B;
 constexpr std::uint8_t CLOCK_DOMAIN = 0x0C;
 constexpr std::uint8_t MAX_DATA_SIZE = 0x0D;
+constexpr std::uint8_t VIDEO_PTS_MODE = 0x0E;
+constexpr std::uint8_t TIMEBASE = 0x0F;
+constexpr std::uint8_t PACKETIZATION_MODE = 0x10;
 }
 
 namespace fields::video_open_stream_result {
@@ -1593,6 +1785,9 @@ constexpr std::uint8_t STREAM_PROFILE = 0x0A;
 constexpr std::uint8_t CURSOR_UNIT = 0x0B;
 constexpr std::uint8_t SYNC_GROUP_ID = 0x0C;
 constexpr std::uint8_t MAX_DATA_SIZE = 0x0D;
+constexpr std::uint8_t VIDEO_PTS_MODE = 0x0E;
+constexpr std::uint8_t TIMEBASE = 0x0F;
+constexpr std::uint8_t PACKETIZATION_MODE = 0x10;
 }
 
 namespace fields::video_close_stream_params {
@@ -1625,6 +1820,8 @@ constexpr std::uint8_t CURSOR_UNIT = 0x08;
 constexpr std::uint8_t LAST_CURSOR = 0x09;
 constexpr std::uint8_t KEY_FRAME_REQUESTED = 0x0A;
 constexpr std::uint8_t FAILURE_REASON = 0x0B;
+constexpr std::uint8_t FRAME_RATE = 0x0C;
+constexpr std::uint8_t BITRATE_KBPS = 0x0D;
 }
 
 namespace fields::video_get_stream_source_state_params {
@@ -1655,6 +1852,8 @@ constexpr std::uint8_t STATE = 0x02;
 constexpr std::uint8_t SOURCE = 0x03;
 constexpr std::uint8_t REASON = 0x04;
 constexpr std::uint8_t STATS = 0x05;
+constexpr std::uint8_t FRAME_RATE = 0x06;
+constexpr std::uint8_t BITRATE_KBPS = 0x07;
 }
 
 namespace fields::video_stream_source_state_changed_event {
@@ -2017,6 +2216,12 @@ struct AudioStreamCapabilities {
     bool flowControlManagedByRuntime = false;
     std::uint32_t aacTransportFormats = 0;
     bool has_aacTransportFormats = false;
+    std::uint32_t supportedAudioPtsModes = 0;
+    bool has_supportedAudioPtsModes = false;
+    std::uint32_t supportedPacketizationModes = 0;
+    bool has_supportedPacketizationModes = false;
+    bool supportsSourceCaptureTimestampCursor = false;
+    bool has_supportsSourceCaptureTimestampCursor = false;
 };
 
 struct AudioStreamSource {
@@ -2060,6 +2265,18 @@ struct AudioOpenStreamParams {
     bool has_receiverClockDomain = false;
     std::uint32_t maxDataSize = 0;
     bool has_maxDataSize = false;
+    std::uint32_t audioPtsMode = 0;
+    bool has_audioPtsMode = false;
+    std::uint32_t timebase = 0;
+    bool has_timebase = false;
+    std::uint32_t samplesPerPacket = 0;
+    bool has_samplesPerPacket = false;
+    std::uint32_t firstMediaSeqId = 0;
+    bool has_firstMediaSeqId = false;
+    std::uint64_t audioPtsBase = 0;
+    bool has_audioPtsBase = false;
+    std::uint32_t packetizationMode = 0;
+    bool has_packetizationMode = false;
 };
 
 struct AudioOpenStreamResult {
@@ -2086,6 +2303,18 @@ struct AudioOpenStreamResult {
     bool has_receiverClockDomain = false;
     std::uint32_t maxDataSize = 0;
     bool has_maxDataSize = false;
+    std::uint32_t audioPtsMode = 0;
+    bool has_audioPtsMode = false;
+    std::uint32_t timebase = 0;
+    bool has_timebase = false;
+    std::uint32_t samplesPerPacket = 0;
+    bool has_samplesPerPacket = false;
+    std::uint32_t firstMediaSeqId = 0;
+    bool has_firstMediaSeqId = false;
+    std::uint64_t audioPtsBase = 0;
+    bool has_audioPtsBase = false;
+    std::uint32_t packetizationMode = 0;
+    bool has_packetizationMode = false;
 };
 
 struct AudioCloseStreamParams {
@@ -2674,6 +2903,66 @@ struct CastSetFlowPolicyParams {
     bool has_scope = false;
 };
 
+struct CastSetVideoStreamParamsParams {
+    const char* sessionId = nullptr;
+    bool has_sessionId = false;
+    std::uint32_t frameRate = 0;
+    bool has_frameRate = false;
+    std::uint32_t bitrateKbps = 0;
+    bool has_bitrateKbps = false;
+    std::uint32_t resetFields = 0;
+    bool has_resetFields = false;
+};
+
+struct CastSetVideoStreamParamsResult {
+    bool accepted = false;
+    std::uint32_t state = 0;
+    const char* sessionId = nullptr;
+    bool has_sessionId = false;
+    const char* reconfigureId = nullptr;
+    bool has_reconfigureId = false;
+    std::uint32_t previousStreamId = 0;
+    bool has_previousStreamId = false;
+    std::uint32_t activeStreamId = 0;
+    bool has_activeStreamId = false;
+    std::uint32_t sourceVideo = 0;
+};
+
+struct CastVideoStreamParamsState {
+    const char* sessionId = nullptr;
+    bool has_sessionId = false;
+    const char* source = nullptr;
+    bool has_source = false;
+    std::uint32_t desiredFrameRate = 0;
+    bool has_desiredFrameRate = false;
+    std::uint32_t desiredBitrateKbps = 0;
+    bool has_desiredBitrateKbps = false;
+    std::uint32_t effectiveFrameRate = 0;
+    bool has_effectiveFrameRate = false;
+    std::uint32_t effectiveBitrateKbps = 0;
+    bool has_effectiveBitrateKbps = false;
+    const char* streamProfile = nullptr;
+    bool has_streamProfile = false;
+    const char* encoder = nullptr;
+    bool has_encoder = false;
+    const char* reconfigureId = nullptr;
+    bool has_reconfigureId = false;
+    std::uint32_t state = 0;
+    bool has_state = false;
+    std::uint32_t phase = 0;
+    bool has_phase = false;
+    std::uint32_t previousStreamId = 0;
+    bool has_previousStreamId = false;
+    std::uint32_t activeStreamId = 0;
+    bool has_activeStreamId = false;
+    bool rollbackApplied = false;
+    bool has_rollbackApplied = false;
+    std::uint32_t lastError = 0;
+    bool has_lastError = false;
+    std::uint32_t changedFields = 0;
+    bool has_changedFields = false;
+};
+
 struct CastFlowControlState {
     std::uint32_t targetRenderFps = 0;
     std::uint32_t inputFps = 0;
@@ -2700,6 +2989,8 @@ struct CastFlowControlState {
     bool has_changedFields = false;
     const char* sampledAt = nullptr;
     bool has_sampledAt = false;
+    std::uint32_t sourceVideo = 0;
+    bool has_sourceVideo = false;
 };
 
 struct CastFlowControlChangedEvent {
@@ -2709,6 +3000,10 @@ struct CastFlowControlChangedEvent {
     bool has_reason = false;
     const char* sampledAt = nullptr;
     bool has_sampledAt = false;
+    std::uint32_t sourceVideo = 0;
+    bool has_sourceVideo = false;
+    const char* reconfigureId = nullptr;
+    bool has_reconfigureId = false;
 };
 
 struct CastGetStatusParams {
@@ -2841,6 +3136,16 @@ struct CastFlowControlCapability {
     bool has_supportsStats = false;
     bool exposesExternalKeyframeRequest = false;
     bool has_exposesExternalKeyframeRequest = false;
+    bool supportsVideoStreamParams = false;
+    bool has_supportsVideoStreamParams = false;
+    bool supportsActiveVideoReconfigure = false;
+    bool has_supportsActiveVideoReconfigure = false;
+    std::uint32_t supportedVideoStreamProfiles = 0;
+    bool has_supportedVideoStreamProfiles = false;
+    std::uint32_t supportedVideoEncoders = 0;
+    bool has_supportedVideoEncoders = false;
+    bool supportsSourceSpecificVideoParams = false;
+    bool has_supportsSourceSpecificVideoParams = false;
 };
 
 struct CastStatusCapability {
@@ -3795,6 +4100,175 @@ struct SoftwareUpdatePolicyCapability {
     bool has_supportsReset = false;
 };
 
+struct StreamFlowControlCapabilities {
+    const char* capability = nullptr;
+    bool supportsAck = false;
+    bool supportsWindowUpdate = false;
+    bool supportsPauseResume = false;
+    bool supportsAbort = false;
+    bool supportsStats = false;
+    bool supportsClockReport = false;
+    std::uint32_t defaultWindowBytes = 0;
+    bool has_defaultWindowBytes = false;
+    std::uint32_t clockReportIntervalMs = 0;
+    bool has_clockReportIntervalMs = false;
+};
+
+struct StreamSelector {
+    std::uint32_t streamId = 0;
+    bool has_streamId = false;
+};
+
+struct StreamState {
+    std::uint32_t streamId = 0;
+    bool has_streamId = false;
+    std::uint32_t state = 0;
+    bool paused = false;
+    bool has_paused = false;
+    std::uint32_t windowBytes = 0;
+    bool has_windowBytes = false;
+    std::uint32_t ackedSeqId = 0;
+    bool has_ackedSeqId = false;
+    std::uint32_t lastSeqId = 0;
+    bool has_lastSeqId = false;
+    std::uint64_t lastCursor = 0;
+    bool has_lastCursor = false;
+    std::uint32_t reason = 0;
+    bool has_reason = false;
+};
+
+struct StreamStats {
+    std::uint32_t streamId = 0;
+    bool has_streamId = false;
+    std::uint64_t packets = 0;
+    bool has_packets = false;
+    std::uint64_t bytes = 0;
+    bool has_bytes = false;
+    std::uint64_t droppedPackets = 0;
+    bool has_droppedPackets = false;
+    std::uint64_t seqGaps = 0;
+    bool has_seqGaps = false;
+    std::uint32_t jitterMs = 0;
+    bool has_jitterMs = false;
+    std::uint32_t lastSeqId = 0;
+    bool has_lastSeqId = false;
+    std::uint64_t lastCursor = 0;
+    bool has_lastCursor = false;
+    std::uint32_t latestClockReportAgeMs = 0;
+    bool has_latestClockReportAgeMs = false;
+};
+
+struct StreamAckParams {
+    std::uint32_t streamId = 0;
+    std::uint32_t ackedSeqId = 0;
+    std::uint64_t ackedCursor = 0;
+    bool has_ackedCursor = false;
+    std::uint32_t missingSeqIds = 0;
+    bool has_missingSeqIds = false;
+};
+
+struct StreamAckResult {
+    bool accepted = false;
+    std::uint32_t state = 0;
+    bool has_state = false;
+};
+
+struct StreamWindowUpdateParams {
+    std::uint32_t streamId = 0;
+    std::uint32_t windowBytes = 0;
+    std::uint32_t reason = 0;
+    bool has_reason = false;
+};
+
+struct StreamWindowUpdateResult {
+    bool accepted = false;
+    std::uint32_t state = 0;
+    bool has_state = false;
+};
+
+struct StreamPauseParams {
+    std::uint32_t streamId = 0;
+    std::uint32_t reason = 0;
+    bool has_reason = false;
+};
+
+struct StreamResumeParams {
+    std::uint32_t streamId = 0;
+    std::uint32_t reason = 0;
+    bool has_reason = false;
+};
+
+struct StreamAbortParams {
+    std::uint32_t streamId = 0;
+    std::uint32_t reason = 0;
+    bool has_reason = false;
+    const char* message = nullptr;
+    bool has_message = false;
+};
+
+struct StreamActionResult {
+    bool accepted = false;
+    std::uint32_t state = 0;
+    bool has_state = false;
+};
+
+struct StreamStateChangedEvent {
+    std::uint32_t streamId = 0;
+    bool has_streamId = false;
+    std::uint32_t state = 0;
+};
+
+struct StreamStatsReportedEvent {
+    std::uint32_t streamId = 0;
+    bool has_streamId = false;
+    std::uint32_t stats = 0;
+};
+
+struct StreamFlowControlChangedEvent {
+    std::uint32_t streamId = 0;
+    std::uint32_t reason = 0;
+    bool has_reason = false;
+    std::uint32_t state = 0;
+    bool has_state = false;
+};
+
+struct StreamClockMediaAnchor {
+    std::uint32_t streamId = 0;
+    bool has_streamId = false;
+    std::uint64_t mediaPts = 0;
+    std::uint32_t timebase = 0;
+    std::uint64_t anchorNt10MonotonicUs = 0;
+    std::uint32_t seqId = 0;
+    bool has_seqId = false;
+    std::uint64_t cursor = 0;
+    bool has_cursor = false;
+};
+
+struct StreamClockReportEvent {
+    std::uint32_t reportSeq = 0;
+    const char* syncGroupId = nullptr;
+    bool has_syncGroupId = false;
+    const char* sourceDeviceId = nullptr;
+    bool has_sourceDeviceId = false;
+    const char* sourceClockDomain = nullptr;
+    bool has_sourceClockDomain = false;
+    std::uint64_t nt10ReportMonotonicUs = 0;
+    std::uint64_t sentAtNt10MonotonicUs = 0;
+    bool has_sentAtNt10MonotonicUs = false;
+    std::uint64_t na20ReceivedAtUs = 0;
+    bool has_na20ReceivedAtUs = false;
+    std::uint64_t na20SentAtUs = 0;
+    bool has_na20SentAtUs = false;
+    std::uint32_t audio = 0;
+    bool has_audio = false;
+    std::uint32_t video = 0;
+    bool has_video = false;
+    bool discontinuity = false;
+    bool has_discontinuity = false;
+    std::uint32_t reason = 0;
+    bool has_reason = false;
+};
+
 struct VideoGetStreamCapabilitiesParams {
     const char* source = nullptr;
     bool has_source = false;
@@ -3811,6 +4285,12 @@ struct VideoStreamCapabilities {
     bool supportsSourceStateEvent = false;
     bool supportsSyncGroup = false;
     bool flowControlManagedByRuntime = false;
+    std::uint32_t supportedVideoPtsModes = 0;
+    bool has_supportedVideoPtsModes = false;
+    std::uint32_t supportedPacketizationModes = 0;
+    bool has_supportedPacketizationModes = false;
+    bool supportsSourceCaptureTimestampCursor = false;
+    bool has_supportsSourceCaptureTimestampCursor = false;
 };
 
 struct VideoStreamSource {
@@ -3824,6 +4304,14 @@ struct VideoStreamSource {
     bool has_frameRates = false;
     std::uint32_t state = 0;
     bool has_state = false;
+    std::uint32_t bitratesKbps = 0;
+    bool has_bitratesKbps = false;
+    const char* encoder = nullptr;
+    bool has_encoder = false;
+    bool supportsReconfigure = false;
+    bool has_supportsReconfigure = false;
+    std::uint32_t reconfigureFields = 0;
+    bool has_reconfigureFields = false;
 };
 
 struct VideoOpenStreamParams {
@@ -3850,6 +4338,12 @@ struct VideoOpenStreamParams {
     bool has_clockDomain = false;
     std::uint32_t maxDataSize = 0;
     bool has_maxDataSize = false;
+    std::uint32_t videoPtsMode = 0;
+    bool has_videoPtsMode = false;
+    std::uint32_t timebase = 0;
+    bool has_timebase = false;
+    std::uint32_t packetizationMode = 0;
+    bool has_packetizationMode = false;
 };
 
 struct VideoOpenStreamResult {
@@ -3872,6 +4366,12 @@ struct VideoOpenStreamResult {
     bool has_syncGroupId = false;
     std::uint32_t maxDataSize = 0;
     bool has_maxDataSize = false;
+    std::uint32_t videoPtsMode = 0;
+    bool has_videoPtsMode = false;
+    std::uint32_t timebase = 0;
+    bool has_timebase = false;
+    std::uint32_t packetizationMode = 0;
+    bool has_packetizationMode = false;
 };
 
 struct VideoCloseStreamParams {
@@ -3917,6 +4417,10 @@ struct VideoStreamState {
     bool has_keyFrameRequested = false;
     std::uint32_t failureReason = 0;
     bool has_failureReason = false;
+    std::uint32_t frameRate = 0;
+    bool has_frameRate = false;
+    std::uint32_t bitrateKbps = 0;
+    bool has_bitrateKbps = false;
 };
 
 struct VideoGetStreamSourceStateParams {
@@ -3954,6 +4458,10 @@ struct VideoStreamStateChangedEvent {
     bool has_reason = false;
     std::uint32_t stats = 0;
     bool has_stats = false;
+    std::uint32_t frameRate = 0;
+    bool has_frameRate = false;
+    std::uint32_t bitrateKbps = 0;
+    bool has_bitrateKbps = false;
 };
 
 struct VideoStreamSourceStateChangedEvent {
@@ -4243,6 +4751,15 @@ bool DecodeCastSetRenderFpsParams(TlvReader& reader, CastSetRenderFpsParams* out
 
 bool EncodeCastSetFlowPolicyParams(const CastSetFlowPolicyParams& input, TlvWriter& writer, ErrorCode* error);
 bool DecodeCastSetFlowPolicyParams(TlvReader& reader, CastSetFlowPolicyParams* output, ErrorCode* error);
+
+bool EncodeCastSetVideoStreamParamsParams(const CastSetVideoStreamParamsParams& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastSetVideoStreamParamsParams(TlvReader& reader, CastSetVideoStreamParamsParams* output, ErrorCode* error);
+
+bool EncodeCastSetVideoStreamParamsResult(const CastSetVideoStreamParamsResult& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastSetVideoStreamParamsResult(TlvReader& reader, CastSetVideoStreamParamsResult* output, ErrorCode* error);
+
+bool EncodeCastVideoStreamParamsState(const CastVideoStreamParamsState& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastVideoStreamParamsState(TlvReader& reader, CastVideoStreamParamsState* output, ErrorCode* error);
 
 bool EncodeCastFlowControlState(const CastFlowControlState& input, TlvWriter& writer, ErrorCode* error);
 bool DecodeCastFlowControlState(TlvReader& reader, CastFlowControlState* output, ErrorCode* error);
@@ -4633,6 +5150,57 @@ bool DecodeUpdateConditions(TlvReader& reader, UpdateConditions* output, ErrorCo
 
 bool EncodeSoftwareUpdatePolicyCapability(const SoftwareUpdatePolicyCapability& input, TlvWriter& writer, ErrorCode* error);
 bool DecodeSoftwareUpdatePolicyCapability(TlvReader& reader, SoftwareUpdatePolicyCapability* output, ErrorCode* error);
+
+bool EncodeStreamFlowControlCapabilities(const StreamFlowControlCapabilities& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeStreamFlowControlCapabilities(TlvReader& reader, StreamFlowControlCapabilities* output, ErrorCode* error);
+
+bool EncodeStreamSelector(const StreamSelector& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeStreamSelector(TlvReader& reader, StreamSelector* output, ErrorCode* error);
+
+bool EncodeStreamState(const StreamState& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeStreamState(TlvReader& reader, StreamState* output, ErrorCode* error);
+
+bool EncodeStreamStats(const StreamStats& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeStreamStats(TlvReader& reader, StreamStats* output, ErrorCode* error);
+
+bool EncodeStreamAckParams(const StreamAckParams& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeStreamAckParams(TlvReader& reader, StreamAckParams* output, ErrorCode* error);
+
+bool EncodeStreamAckResult(const StreamAckResult& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeStreamAckResult(TlvReader& reader, StreamAckResult* output, ErrorCode* error);
+
+bool EncodeStreamWindowUpdateParams(const StreamWindowUpdateParams& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeStreamWindowUpdateParams(TlvReader& reader, StreamWindowUpdateParams* output, ErrorCode* error);
+
+bool EncodeStreamWindowUpdateResult(const StreamWindowUpdateResult& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeStreamWindowUpdateResult(TlvReader& reader, StreamWindowUpdateResult* output, ErrorCode* error);
+
+bool EncodeStreamPauseParams(const StreamPauseParams& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeStreamPauseParams(TlvReader& reader, StreamPauseParams* output, ErrorCode* error);
+
+bool EncodeStreamResumeParams(const StreamResumeParams& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeStreamResumeParams(TlvReader& reader, StreamResumeParams* output, ErrorCode* error);
+
+bool EncodeStreamAbortParams(const StreamAbortParams& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeStreamAbortParams(TlvReader& reader, StreamAbortParams* output, ErrorCode* error);
+
+bool EncodeStreamActionResult(const StreamActionResult& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeStreamActionResult(TlvReader& reader, StreamActionResult* output, ErrorCode* error);
+
+bool EncodeStreamStateChangedEvent(const StreamStateChangedEvent& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeStreamStateChangedEvent(TlvReader& reader, StreamStateChangedEvent* output, ErrorCode* error);
+
+bool EncodeStreamStatsReportedEvent(const StreamStatsReportedEvent& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeStreamStatsReportedEvent(TlvReader& reader, StreamStatsReportedEvent* output, ErrorCode* error);
+
+bool EncodeStreamFlowControlChangedEvent(const StreamFlowControlChangedEvent& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeStreamFlowControlChangedEvent(TlvReader& reader, StreamFlowControlChangedEvent* output, ErrorCode* error);
+
+bool EncodeStreamClockMediaAnchor(const StreamClockMediaAnchor& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeStreamClockMediaAnchor(TlvReader& reader, StreamClockMediaAnchor* output, ErrorCode* error);
+
+bool EncodeStreamClockReportEvent(const StreamClockReportEvent& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeStreamClockReportEvent(TlvReader& reader, StreamClockReportEvent* output, ErrorCode* error);
 
 bool EncodeVideoGetStreamCapabilitiesParams(const VideoGetStreamCapabilitiesParams& input, TlvWriter& writer, ErrorCode* error);
 bool DecodeVideoGetStreamCapabilitiesParams(TlvReader& reader, VideoGetStreamCapabilitiesParams* output, ErrorCode* error);

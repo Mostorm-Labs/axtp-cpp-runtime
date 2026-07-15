@@ -22,6 +22,14 @@ inline constexpr MethodDescriptor kMethodRegistry[] = {
     { 0x0402, "firmware.beginUpdate", "firmware", "BeginUpdateParams", "BeginUpdateResult" },
     { 0x0408, "firmware.getUpdateState", "firmware", "GetUpdateStateParams", "FirmwareUpdateState" },
     { 0x040B, "firmware.finishUpdate", "firmware", "FinishUpdateParams", "FinishUpdateResult" },
+    { 0x0501, "stream.getCapabilities", "stream", "Empty", "StreamFlowControlCapabilities" },
+    { 0x0502, "stream.getState", "stream", "StreamSelector", "StreamState" },
+    { 0x0503, "stream.getStats", "stream", "StreamSelector", "StreamStats" },
+    { 0x0504, "stream.ack", "stream", "StreamAckParams", "StreamAckResult" },
+    { 0x0505, "stream.windowUpdate", "stream", "StreamWindowUpdateParams", "StreamWindowUpdateResult" },
+    { 0x0506, "stream.pause", "stream", "StreamPauseParams", "StreamActionResult" },
+    { 0x0507, "stream.resume", "stream", "StreamResumeParams", "StreamActionResult" },
+    { 0x0508, "stream.abort", "stream", "StreamAbortParams", "StreamActionResult" },
     { 0x080B, "video.openStream", "video", "VideoOpenStreamParams", "VideoOpenStreamResult" },
     { 0x080C, "video.closeStream", "video", "VideoCloseStreamParams", "VideoCloseStreamResult" },
     { 0x080D, "video.getStreamState", "video", "VideoGetStreamStateParams", "VideoStreamState" },
@@ -79,6 +87,7 @@ inline constexpr MethodDescriptor kMethodRegistry[] = {
     { 0x1611, "cast.setFlowPolicy", "cast", "CastSetFlowPolicyParams", "CastFlowControlState" },
     { 0x1612, "cast.getStatus", "cast", "CastGetStatusParams", "CastStatus" },
     { 0x1613, "cast.setAudioDelay", "cast", "CastSetAudioDelayParams", "CastAudioState" },
+    { 0x1614, "cast.setVideoStreamParams", "cast", "CastSetVideoStreamParamsParams", "CastSetVideoStreamParamsResult" },
     { 0x1701, "software.getConfig", "software", "SoftwareGetConfigParams", "SoftwareConfig" },
     { 0x1702, "software.setConfig", "software", "SoftwareSetConfigParams", "SoftwareSetConfigResult" },
     { 0x1703, "software.resetConfig", "software", "SoftwareResetConfigParams", "SoftwareConfig" },
@@ -87,6 +96,6 @@ inline constexpr MethodDescriptor kMethodRegistry[] = {
     { 0x1706, "software.resetUpdatePolicy", "software", "SoftwareResetUpdatePolicyParams", "SoftwareUpdatePolicy" },
 };
 
-inline constexpr std::size_t kMethodRegistryCount = 71;
+inline constexpr std::size_t kMethodRegistryCount = 80;
 
 } // namespace axtp

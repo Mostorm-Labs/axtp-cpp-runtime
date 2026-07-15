@@ -21,6 +21,7 @@ inline constexpr CapabilityDescriptor kCapabilityRegistry[] = {
     { 0x0101, "device.info", "device", "object", "DeviceInfoCapability" },
     { 0x0102, "device.enrollment", "device", "object", "DeviceEnrollmentCapability" },
     { 0x0401, "firmware.update", "firmware", "object", "FirmwareUpdateCapabilities" },
+    { 0x0501, "stream.flowControl", "stream", "object", "StreamFlowControlCapabilities" },
     { 0x0801, "video.stream", "video", "object", "VideoStreamCapabilities" },
     { 0x0901, "audio.algorithm", "audio", "object", "AudioAlgorithmCapability" },
     { 0x0902, "audio.stream", "audio", "object", "AudioStreamCapabilities" },
@@ -40,6 +41,6 @@ inline constexpr CapabilityDescriptor kCapabilityRegistry[] = {
     { 0x1702, "software.updatePolicy", "software", "object", "SoftwareUpdatePolicyCapability" },
 };
 
-inline constexpr std::size_t kCapabilityRegistryCount = 24;
+inline constexpr std::size_t kCapabilityRegistryCount = 25;
 
 } // namespace axtp
