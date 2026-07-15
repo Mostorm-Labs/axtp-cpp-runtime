@@ -129,7 +129,6 @@ cpp-runtime 只保留 `ITransport`、`TransportProfile` 和 endpoint attach/bind
 `attachTransport()`：
 
 ```cmake
-add_subdirectory(third_party/axtp-cpp-runtime)
 add_subdirectory(third_party/axent)
 
 target_link_libraries(your_app PRIVATE

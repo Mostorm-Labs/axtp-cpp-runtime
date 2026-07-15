@@ -1,6 +1,6 @@
 # AGENTS.md
 
-本仓库是 AXTP C++ runtime、SDK 和 optional transports 仓库。协议语义来自主规范仓库 `axtp/`，本仓库只实现和生成 C++ 侧产物。
+本仓库是 AXTP C++ runtime、SDK、JSON-RPC helpers 和 `ITransport` contracts 仓库。具体 TCP、WebSocket、HID provider 由 Axent 或嵌入应用拥有。协议语义来自主规范仓库 `axtp/`，本仓库只实现和生成 C++ 侧产物。
 
 ## 先读
 

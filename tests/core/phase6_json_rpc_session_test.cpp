@@ -1,7 +1,10 @@
 #include <cassert>
+#include <cstdint>
 #include <iostream>
 #include <memory>
 #include <nlohmann/json.hpp>
+#include <optional>
+#include <queue>
 #include <regex>
 #include <string>
 #include <utility>
@@ -25,6 +28,62 @@ struct CapturingPayloadSink final : axtp::IPayloadSink {
   }
 
   void onStream(axtp::StreamPayload) override {}
+};
+
+class LifecycleTransport final : public axtp::ITransport {
+public:
+  void bind(axtp::IByteSink &sink) override { sink_ = &sink; }
+
+  void open() override { connected_ = true; }
+
+  void close() override { connected_ = false; }
+
+  void poll() override {}
+
+  void sendBytes(const axtp::Byte *data, std::size_t size) override {
+    outgoing_.push(axtp::Bytes(data, data + size));
+  }
+
+  axtp::TransportProfile profile() const override {
+    return {axtp::TransportKind::Mock,
+            axtp::AxtpWireMode::WebSocketJsonRpc,
+            axtp::RpcEncoding::Json,
+            true,
+            true,
+            false,
+            4096};
+  }
+
+  bool hasConnection() const { return connected_; }
+
+  std::uint64_t connectionGeneration() const { return generation_; }
+
+  void setGeneration(std::uint64_t generation) {
+    generation_ = generation;
+    connected_ = generation != 0;
+  }
+
+  void inject(const std::string &text) {
+    const axtp::Bytes bytes(text.begin(), text.end());
+    if (sink_ != nullptr) {
+      sink_->onBytes(bytes.data(), bytes.size());
+    }
+  }
+
+  std::optional<axtp::Bytes> tryPopOutgoing() {
+    if (outgoing_.empty()) {
+      return std::nullopt;
+    }
+    auto bytes = std::move(outgoing_.front());
+    outgoing_.pop();
+    return bytes;
+  }
+
+private:
+  axtp::IByteSink *sink_ = nullptr;
+  std::queue<axtp::Bytes> outgoing_;
+  bool connected_ = false;
+  std::uint64_t generation_ = 0;
 };
 
 struct SessionFixture {
@@ -235,6 +294,8 @@ int main() {
     const auto emitted = popJson(fixture.transport, "event sid");
     assert(emitted.at("op").get<int>() == static_cast<int>(axtp::RpcOp::Event));
     assert(emitted.at("sid").get<std::string>() == sid);
+    assert(emitted.at("d").at("event").get<std::string>() ==
+           "audio.algorithmConfigChanged");
     assert(emitted.at("d").at("data").at("state").get<std::string>() ==
            "changed");
 
@@ -265,6 +326,53 @@ int main() {
     assert(sink.rpcs[0].requestId == 901);
     assert(sink.rpcs[0].methodOrEventId == 0x0901);
     assert(sink.rpcs[0].meta.sourceProtocol == axtp::SourceProtocol::JsonRpc);
+  }
+
+  {
+    using Broker = axtp::BasicBroker<>;
+    Broker broker;
+    axtp::AxtpEndpoint<Broker> endpoint(broker);
+    LifecycleTransport transport;
+    endpoint.attachTransport(transport);
+    axtp::WebSocketJsonRpcAdapter adapter(endpoint, transport);
+    transport.bind(adapter);
+
+    transport.setGeneration(1);
+    adapter.poll(transport);
+    auto hello = transport.tryPopOutgoing();
+    assert(hello.has_value());
+    const auto helloJson =
+        nlohmann::json::parse(std::string(hello->begin(), hello->end()));
+    assert(helloJson.at("op").get<int>() ==
+           static_cast<int>(axtp::RpcOp::Hello));
+    adapter.poll(transport);
+    assert(!transport.tryPopOutgoing().has_value());
+
+    transport.inject(R"({"sid":"","op":2,"d":{"randomSeed":11}})");
+    auto identified = transport.tryPopOutgoing();
+    assert(identified.has_value());
+    const auto firstSid = nlohmann::json::parse(std::string(identified->begin(),
+                                                            identified->end()))
+                              .at("sid")
+                              .get<std::string>();
+
+    transport.setGeneration(0);
+    adapter.poll(transport);
+    assert(!transport.tryPopOutgoing().has_value());
+
+    transport.setGeneration(2);
+    adapter.poll(transport);
+    hello = transport.tryPopOutgoing();
+    assert(hello.has_value());
+    transport.inject(R"({"sid":"","op":2,"d":{"randomSeed":12}})");
+    identified = transport.tryPopOutgoing();
+    assert(identified.has_value());
+    const auto secondSid =
+        nlohmann::json::parse(
+            std::string(identified->begin(), identified->end()))
+            .at("sid")
+            .get<std::string>();
+    assert(secondSid != firstSid);
   }
 
   return 0;
