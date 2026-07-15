@@ -1,11 +1,17 @@
 #include <cassert>
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include <nlohmann/json.hpp>
+
 #include "core/protocol/wire/inbound_processor.hpp"
 #include "core/protocol/wire/outbound_processor.hpp"
+#include "core/protocol/wire/websocket_json_rpc/inbound/json_rpc_payload_decoder.hpp"
+#include "core/protocol/generated/axtp_generated_version.hpp"
+#include "json_rpc/rpc_client_session.hpp"
 #include "core/support/io/byte_writer_sink.hpp"
 
 namespace {
@@ -39,6 +45,43 @@ struct CapturingPayloadSink : axtp::IPayloadSink {
 }  // namespace
 
 int main() {
+    for (const auto& version : std::vector<std::optional<std::string>>{
+             "1.0.0", "1.1.0", "1.0.1", "2.0.0", "not-semver", std::nullopt}) {
+        nlohmann::json hello = {{"sid", ""}, {"op", 0}, {"d", nlohmann::json::object()}};
+        if (version) hello["d"]["axtpVersion"] = *version;
+        axtp::RpcClientSession session;
+        const auto identify = session.acceptHello(hello, 7);
+        assert(identify.at("op") == static_cast<int>(axtp::RpcOp::Identify));
+        assert(session.observedAxtpVersion() == version);
+    }
+    {
+        axtp::RpcClientSession session;
+        bool rejected = false;
+        try { (void)session.acceptHello({{"sid", ""}, {"op", 7}, {"d", nlohmann::json::object()}}, 1); }
+        catch (const std::invalid_argument&) { rejected = true; }
+        assert(rejected);
+    }
+
+    for (const std::string d : {
+             R"({"axtpVersion":"1.0.0"})",
+             R"({"axtpVersion":"1.1.0"})",
+             R"({"axtpVersion":"1.0.1"})",
+             R"({"axtpVersion":"2.0.0"})",
+             R"({"axtpVersion":"not-semver"})",
+             R"({})",
+         }) {
+        const std::string hello = R"({"sid":"","op":0,"d":)" + d + "}";
+        CapturingPayloadSink sink;
+        axtp::JsonRpcPayloadDecoder::decode(
+            reinterpret_cast<const axtp::Byte*>(hello.data()),
+            hello.size(),
+            sink,
+            axtp::SourceProtocol::JsonRpc);
+        assert(sink.rpcs.size() == 1);
+        assert(sink.rpcs[0].op == axtp::RpcOp::Hello);
+        assert(nlohmann::json::parse(sink.rpcs[0].body) == nlohmann::json::parse(d));
+    }
+
     {
         CapturingByteWriter writer;
         axtp::OutboundProcessor outbound(writer);
@@ -125,6 +168,7 @@ int main() {
         const std::string body(sink.rpcs[0].body.begin(), sink.rpcs[0].body.end());
         assert(body.find("axtpVersion") != std::string::npos);
         assert(body.find("rpcVersion") == std::string::npos);
+        assert(nlohmann::json::parse(body).at("axtpVersion") == axtp::generated::kSpecVersion);
     }
 
     {

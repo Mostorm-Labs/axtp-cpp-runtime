@@ -3,6 +3,13 @@
 本文档记录当前 C++ runtime 的代码设计模式。它描述“为什么这样分层”和“新增功能时应该放在哪里”，不替代 wire spec。
 本文中的 C++ runtime 路径均相对于独立仓库 `axtp-cpp-runtime`。
 
+## WebSocket JSON-RPC Hello version metadata
+
+`Hello.d.axtpVersion` 是 optional advisory metadata。字段缺失、malformed 或与本地值不同都不会导致
+session reject，也不参与 version negotiation。当前 generated C++ metadata 只提供 spec release
+`kSpecVersion`，所以 outbound Hello 暂时用它作为 diagnostics。Framed AXTP Header Version 的严格
+wire-format validation 保持不变。
+
 核心结构固定为：
 
 ```text

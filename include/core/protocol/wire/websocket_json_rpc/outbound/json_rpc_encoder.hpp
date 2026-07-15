@@ -108,6 +108,8 @@ private:
 
     static std::string serializeHello() {
         auto d = nlohmann::json::object();
+        // Generated C++ metadata currently exposes the locked spec release, not a
+        // separate protocol-compatibility value. This is diagnostic metadata only.
         d["axtpVersion"] = generated::kSpecVersion;
 
         auto object = nlohmann::json::object();

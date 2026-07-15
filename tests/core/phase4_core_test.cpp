@@ -12,6 +12,7 @@
 #include "core/support/io/byte_writer_sink.hpp"
 #include "core/support/io/crc16.hpp"
 #include "core/runtime/endpoint/axtp_endpoint.hpp"
+#include "profiles/audio/audio_algorithm_config_validator.hpp"
 
 namespace {
 
@@ -85,6 +86,52 @@ axtp::Bytes makeJsonEnvelopePayload(const char* json) {
 }  // namespace
 
 int main() {
+    {
+        axtp::BasicBroker<> broker;
+        bool called = false;
+        broker.registerRequestValidator(axtp::AudioAlgorithmConfigValidator{});
+        broker.registerJsonMethod("audio.setAlgorithmConfig", [&called](const axtp::RpcContext&, std::string_view) {
+            called = true;
+            return std::string(R"({})");
+        });
+        axtp::RpcPayload request;
+        request.encoding = axtp::RpcEncoding::Json;
+        request.op = axtp::RpcOp::Request;
+        request.requestId = 3;
+        request.methodOrEventId = 0x0902;
+        const std::string params = R"({"config":{"noiseSuppression":{"level":999}}})";
+        request.body.assign(params.begin(), params.end());
+        axtp::BrokerTask task;
+        task.type = axtp::BrokerTaskType::RpcRequest;
+        task.rpc = request;
+        broker.submit(std::move(task));
+        broker.poll();
+        const auto result = broker.pollResult();
+        assert(result.has_value());
+        assert(result->rpc.statusCode == axtp::ErrorCode::OutOfRange);
+        assert(!called);
+    }
+
+    {
+        axtp::BasicBroker<> broker;
+        axtp::RpcPayload request;
+        request.encoding = axtp::RpcEncoding::Json;
+        request.op = axtp::RpcOp::Request;
+        request.requestId = 39;
+        request.methodOrEventId = 0x0902;  // generated audio.setAlgorithmConfig
+        const auto response = broker.registry().findMethodName(request.methodOrEventId);
+        assert(response.has_value());
+
+        axtp::BrokerTask task;
+        task.type = axtp::BrokerTaskType::RpcRequest;
+        task.rpc = request;
+        broker.submit(std::move(task));
+        broker.poll();
+        const auto result = broker.pollResult();
+        assert(result.has_value());
+        assert(result->rpc.statusCode == axtp::ErrorCode::NotSupported);
+    }
+
     {
         axtp::BasicBroker<> broker;
         axtp::AxtpEndpoint endpoint(broker);

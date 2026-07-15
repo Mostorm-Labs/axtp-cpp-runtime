@@ -50,6 +50,9 @@ public:
         if (payload.opcode == ControlOpcode::Ping) {
             return makeResponse(ControlOpcode::Pong, payload);
         }
+        if (payload.opcode == ControlOpcode::Heartbeat) {
+            return makeResponse(ControlOpcode::HeartbeatAck, payload);
+        }
         if (payload.opcode == ControlOpcode::Close) {
             _open = false;
             return makeResponse(ControlOpcode::CloseAck, payload);
