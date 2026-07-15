@@ -1,8 +1,8 @@
 # AXTP C++ Runtime
 
-This repository contains the AXTP C++ runtime, SDK, optional transports, and
-developer tooling. Protocol facts are generated from the locked AXTP spec; this
-repository implements those facts for C++.
+This repository contains the AXTP C++ runtime, SDK, and developer tooling.
+Protocol facts are generated from the locked AXTP spec; this repository
+implements those facts for C++.
 
 ## Architecture
 
@@ -21,7 +21,7 @@ flowchart LR
     Runtime --> SDK["include/sdk/\nAxtpClient, AxtpDevice"]
 
     Runtime --> TransportApi["include/core/runtime/transport\nITransport contract"]
-    TransportApi -. optional .-> ConcreteTransports["include/transports/\nTCP, HID, WebSocket"]
+    TransportApi -. implemented by .-> ConcreteTransports["application/Axent providers\nTCP, HID, WebSocket"]
 
     Runtime --> JsonRpc["include/json_rpc/\nregistry and adapter helpers"]
 
@@ -49,8 +49,7 @@ integrations.
 | Host methods behind a transport | Runtime endpoint + broker | `axtp::runtime` | `#include <axtp_runtime.hpp>` | `tests/core/phase7_broker_test.cpp` |
 | Encode/decode frames or payloads directly | Protocol wire layer | `axtp::core` | `#include <axtp_core.hpp>` | `tests/core/phase2_inbound_test.cpp`, `tests/core/phase3_outbound_test.cpp` |
 | Inspect protocol IDs, registries, or generated facts | Protocol generated layer | `axtp::core` | `#include <core/protocol/generated/registry_lookup.h>` | `tests/core/phase8_api_surface_test.cpp` |
-| Connect over TCP without extra dependencies | Optional native TCP transport | `axtp::transport_tcp_native` | `#include <axtp_transport_tcp_native.hpp>` | `tests/core/phase6_real_transport_test.cpp` |
-| Connect to real HID devices | Optional HID transport | `axtp::transport_hidapi` | `#include <axtp_transport_hid.hpp>` | `tests/core/phase9_hid_transport_test.cpp` |
+| Attach TCP, WebSocket, HID, or another platform transport | External provider implementing `ITransport` | Application/Axent provider target | `#include <axtp_runtime.hpp>` | Provider repository tests |
 | Regenerate runtime protocol facts | Generator | `pnpm --dir devtools/generators ...` | `AXTP_SPEC_PATH=/path/to/axtp` | `devtools/generators/README.md` |
 
 If you are unsure, start with `axtp_sdk`. Drop to `axtp_runtime` only when you
@@ -62,7 +61,7 @@ wire-format, registry, or conformance work.
 The public C++ headers are arranged by dependency direction:
 
 ```text
-support/io -> protocol -> runtime -> sdk/json_rpc/transports
+support/io -> protocol -> runtime -> sdk/json_rpc
 ```
 
 | Path | Purpose |
@@ -70,8 +69,6 @@ support/io -> protocol -> runtime -> sdk/json_rpc/transports
 | `include/axtp_sdk.hpp` | Recommended SDK aggregate header for applications. |
 | `include/axtp_runtime.hpp` | Recommended runtime aggregate header for endpoint/broker users. |
 | `include/axtp_core.hpp` | Recommended core aggregate header for protocol/runtime internals. |
-| `include/axtp_transport_hid.hpp` | HID transport facade for real device debugging/integration. |
-| `include/axtp_transport_tcp_native.hpp` | Native TCP transport facade without Boost. |
 | `include/core/support/io/` | Byte buffers, readers/writers, byte sinks, CRC, text writer, and transport packet boundaries. |
 | `include/core/protocol/model/` | Stable protocol value types: bytes, errors, frames, messages, payloads, result wrappers, and protocol enums. |
 | `include/core/protocol/generated/` | Generated IDs, registries, schema facts, traits, lookup helpers, and generated version constants. Do not edit by hand. |
@@ -86,8 +83,6 @@ support/io -> protocol -> runtime -> sdk/json_rpc/transports
 | `include/core/runtime/testing/` | Test/mock transport utilities. |
 | `include/sdk/` | Higher-level client/device APIs, call options, endpoint options, typed generated clients, and SDK result/error wrappers. |
 | `include/json_rpc/` | Optional runtime helper layer for registry JSON loading and WebSocket JSON-RPC adapter/session glue; not the wire codec owner. |
-| `include/transports/` | Optional transport headers for HID, native/Boost TCP, and IX/Boost WebSocket. |
-| `src/transports/` | Non-header implementation files for optional transports, currently HID. |
 | `examples/quickstart/` | Minimal external-style SDK quickstart project. |
 | `devtools/generators/` | TypeScript generator that consumes the AXTP spec and emits C++ generated headers. |
 | `devtools/scripts/` | Spec lock, generation, versioning, conformance, and release helper scripts. |
@@ -103,7 +98,7 @@ For most application code, vendor this repository under your project's
 target, abstract transport contract, and public include paths. It does not
 choose TCP, HID, WebSocket, or any third-party transport dependency for you. See
 [third-party usage](docs/AXTP_CPP_THIRD_PARTY_USAGE.md) for SDK/core folder
-layout, optional transports, and CMake options.
+layout, transport ownership, and CMake options.
 
 Minimal `CMakeLists.txt`:
 
@@ -179,9 +174,6 @@ available for new projects; the unqualified target names remain supported.
 | `axtp_runtime` | `axtp::runtime` | You need `AxtpCore`, broker, endpoint glue, and transport interfaces. |
 | `axtp_sdk` | `axtp::sdk` | You want client/device convenience APIs. |
 | `axtp_json_rpc` | `axtp::json_rpc` | You need the optional WebSocket JSON-RPC adapter. Enable `AXTP_BUILD_JSON_RPC`. |
-| `axtp_transport_tcp_native` | `axtp::transport_tcp_native` | You explicitly enabled optional transports and need the header-only native TCP transport without Boost. |
-| `axtp_transport_hidapi` | `axtp::transport_hidapi` | You explicitly enabled optional transports and provided hidapi through the top-level project or package manager. |
-| `axtp_transport_tcp_boost`, `axtp_transport_websocket_ix`, `axtp_transport_websocket_boost` | `axtp::transport_tcp_boost`, `axtp::transport_websocket_ix`, `axtp::transport_websocket_boost` | You need legacy Boost TCP or optional WebSocket transport headers and their externally supplied dependencies. Enable `AXTP_BUILD_OPTIONAL_TRANSPORTS`; targets are defined only when their dependencies are available. |
 
 If you are embedding only the runtime layer:
 
@@ -245,10 +237,10 @@ cmake -S . -B build/root-no-tests -DAXTP_CPP_RUNTIME_BUILD_TESTS=OFF
 cmake --build build/root-no-tests
 ```
 
-The runtime never downloads concrete transport dependencies. Projects that
-enable optional transports must provide hidapi or IXWebSocket through their
-top-level dependency graph. Product media hosting and the supported protocol
-CLI are owned and shipped by Axent.
+The runtime does not ship or resolve concrete transport providers. Applications
+attach an `ITransport` implementation supplied by their product layer; the
+supported TCP, WebSocket, and HID providers, media hosting, and protocol CLI are
+owned and shipped by Axent.
 
 ## Documentation
 

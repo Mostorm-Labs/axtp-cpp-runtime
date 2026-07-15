@@ -30,20 +30,13 @@ add_executable(phase5_transport_test
 target_link_libraries(phase5_transport_test PRIVATE axtp_core)
 add_test(NAME phase5_transport_test COMMAND phase5_transport_test)
 
-if(TARGET axtp_json_rpc AND
-   TARGET axtp_transport_tcp_native AND
-   TARGET axtp_transport_websocket_ix)
-    add_executable(phase6_real_transport_test
-        ${AXTP_CPP_RUNTIME_ROOT}/tests/core/phase6_real_transport_test.cpp
+if(TARGET axtp_json_rpc)
+    add_executable(phase6_json_rpc_session_test
+        ${AXTP_CPP_RUNTIME_ROOT}/tests/core/phase6_json_rpc_session_test.cpp
     )
-    target_link_libraries(phase6_real_transport_test
-        PRIVATE
-            axtp_core
-            axtp_json_rpc
-            axtp_transport_tcp_native
-            axtp_transport_websocket_ix
-    )
-    add_test(NAME phase6_real_transport_test COMMAND phase6_real_transport_test)
+    target_link_libraries(phase6_json_rpc_session_test
+        PRIVATE axtp_core axtp_json_rpc)
+    add_test(NAME phase6_json_rpc_session_test COMMAND phase6_json_rpc_session_test)
 endif()
 
 add_executable(phase7_broker_test
@@ -57,14 +50,6 @@ add_executable(phase8_api_surface_test
 )
 target_link_libraries(phase8_api_surface_test PRIVATE axtp_core)
 add_test(NAME phase8_api_surface_test COMMAND phase8_api_surface_test)
-
-if(TARGET axtp_transport_hidapi)
-    add_executable(phase9_hid_transport_test
-        ${AXTP_CPP_RUNTIME_ROOT}/tests/core/phase9_hid_transport_test.cpp
-    )
-    target_link_libraries(phase9_hid_transport_test PRIVATE axtp_transport_hidapi)
-    add_test(NAME phase9_hid_transport_test COMMAND phase9_hid_transport_test)
-endif()
 
 if(TARGET axtp_sdk)
     add_executable(cpp_sdk_smoke_test
