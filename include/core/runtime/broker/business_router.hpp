@@ -5,6 +5,7 @@
 #include <string>
 #include <string_view>
 #include <utility>
+#include <vector>
 
 #include "core/protocol/generated/method_registry.h"
 #include "core/protocol/model/payload.hpp"
@@ -43,6 +44,11 @@ using TlvRpcHandler = std::function<Bytes(const RpcContext&, const Bytes&)>;
 class BusinessRouter {
 public:
     using Handler = std::function<Bytes(const RpcPayload&)>;
+    using RequestValidator = std::function<ErrorCode(const RpcPayload&)>;
+
+    void registerRequestValidator(RequestValidator validator) {
+        _validators.push_back(std::move(validator));
+    }
 
     MethodRegistry& registry() {
         return _registry;
@@ -130,8 +136,17 @@ public:
 
         auto it = _handlers.find(request.methodOrEventId);
         if (it == _handlers.end()) {
-            response.statusCode = ErrorCode::RpcMethodNotFound;
+            response.statusCode = _registry.findMethodName(request.methodOrEventId).has_value()
+                                      ? ErrorCode::NotSupported
+                                      : ErrorCode::RpcMethodNotFound;
             return response;
+        }
+
+        for (const auto& validator : _validators) {
+            if (const auto validation = validator(request); validation != ErrorCode::Success) {
+                response.statusCode = validation;
+                return response;
+            }
         }
 
         const auto methodName = _registry.findMethodName(request.methodOrEventId);
@@ -165,6 +180,7 @@ public:
 private:
     MethodRegistry _registry = MethodRegistry::fromGeneratedDefaults();
     std::map<std::uint32_t, RawRpcHandler> _handlers;
+    std::vector<RequestValidator> _validators;
 };
 
 }  // namespace axtp

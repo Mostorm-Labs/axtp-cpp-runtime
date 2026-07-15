@@ -4,9 +4,13 @@ required_levels:
   - core
   - websocket-jsonrpc
 optional_levels:
-  - capability
-  - framed-binary
   - event
+# Deferred until runtime artifacts can be regenerated from a pinned
+# advisory-compatible AXTP spec commit/tag rather than an unpinned worktree.
+unsupported_levels:
+  - capability
+  # Framed transport primitives exist, but the runtime does not implement every
+  # selected framed-binary profile case (including the STREAM control plane).
+  - framed-binary
+  # STREAM data framing exists, but open/close lifecycle RPC cases are incomplete.
   - stream
-unsupported_levels: []
-

@@ -90,6 +90,10 @@ public:
         _router.registerRawMethod(methodId, std::move(handler));
     }
 
+    void registerRequestValidator(BusinessRouter::RequestValidator validator) {
+        _router.registerRequestValidator(std::move(validator));
+    }
+
     void registerJsonMethod(std::uint32_t methodId, JsonRpcHandler handler) {
         _router.registerJsonMethod(methodId, std::move(handler));
     }
