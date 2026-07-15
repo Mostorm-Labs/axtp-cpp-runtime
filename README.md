@@ -6,6 +6,9 @@ implements those facts for C++.
 
 ## Architecture
 
+Before changing code, read [Layer Boundaries](docs/LAYER_BOUNDARIES.md). It is
+the ownership checklist shared with Axent and product hosts.
+
 The repository is layered so application code can enter at the highest useful
 level and avoid depending on lower-level wire details unless it needs them.
 

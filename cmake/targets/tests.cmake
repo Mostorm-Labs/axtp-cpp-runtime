@@ -1,3 +1,10 @@
+add_test(
+    NAME runtime_layer_boundary_docs
+    COMMAND ${CMAKE_COMMAND}
+        -DAXTP_CPP_RUNTIME_ROOT=${AXTP_CPP_RUNTIME_ROOT}
+        -P ${AXTP_CPP_RUNTIME_ROOT}/tests/cmake/verify_layer_boundaries.cmake
+)
+
 add_executable(phase1_model_io_test
     ${AXTP_CPP_RUNTIME_ROOT}/tests/core/phase1_model_io_test.cpp
 )
