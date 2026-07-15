@@ -4,6 +4,7 @@
 
 ## 先读
 
+- `docs/LAYER_BOUNDARIES.md`（修改代码前先确认职责归属和禁止依赖）
 - `README.md`
 - `AXTP_SPEC.lock.yaml`
 - `devtools/generators/README.md`
@@ -45,6 +46,8 @@ devtools/scripts/check-generated-version.sh
 ## Runtime 实现边界
 
 - 可以修改 `include/`、`src/`、`tools/`、`cmake/targets/` 和 `tests/` 中的手写源码。
+- Runtime 只拥有 wire、schema/generated facts、RPC、session、SDK 和 `ITransport` 抽象；不得重新引入 concrete transport、Host/profile、产品策略或上层仓库依赖。
+- 依赖方向固定为 `NearCast -> Axent -> cpp-runtime`；本仓库不得 include、链接或调用 Axent/NearCast。
 - 不在 runtime、SDK 或 tool 里发明新的 method/event/schema/error/capability 语义；缺失协议事实要回主规范仓库走 draft/adopt/amend/generate。
 - `PayloadType` 只选择 parser，不承载业务 domain 语义。不要把 VIDEO、FIRMWARE、FILE 等业务概念塞进 frame/payload 层。
 - 区分 `MessageId`、RPC `requestId` 和 STREAM `streamId`。多字节整数按 AXTP big-endian 规则处理。
