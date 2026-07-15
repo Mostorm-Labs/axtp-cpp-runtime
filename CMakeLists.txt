@@ -73,6 +73,8 @@ if(AXTP_CPP_RUNTIME_BUILD_CONFORMANCE)
     add_executable(axtp_conformance_runner
         devtools/conformance/conformance_runner.cpp
     )
+    target_include_directories(axtp_conformance_runner PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/devtools/conformance)
     target_link_libraries(axtp_conformance_runner PRIVATE axtp_core axtp_json_rpc)
     target_compile_definitions(axtp_conformance_runner PRIVATE
         AXTP_CONFORMANCE_YAML_READER="${CMAKE_CURRENT_SOURCE_DIR}/devtools/conformance/yaml_to_json.rb")

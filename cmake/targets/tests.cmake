@@ -19,6 +19,8 @@ add_test(NAME phase3_outbound_test COMMAND phase3_outbound_test)
 add_executable(phase4_core_test
     ${AXTP_CPP_RUNTIME_ROOT}/tests/core/phase4_core_test.cpp
 )
+target_include_directories(phase4_core_test PRIVATE
+    ${AXTP_CPP_RUNTIME_ROOT}/devtools/conformance)
 target_link_libraries(phase4_core_test PRIVATE axtp_core)
 add_test(NAME phase4_core_test COMMAND phase4_core_test)
 

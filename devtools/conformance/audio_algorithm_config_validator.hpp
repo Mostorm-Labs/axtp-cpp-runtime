@@ -8,6 +8,9 @@
 
 namespace axtp {
 
+// Test-only validator used by the conformance graph.  It is intentionally kept
+// outside the installed runtime include tree: product/domain validation belongs
+// to the embedding layer, not to the protocol runtime public API.
 class AudioAlgorithmConfigValidator {
 public:
     AudioAlgorithmConfigValidator()
