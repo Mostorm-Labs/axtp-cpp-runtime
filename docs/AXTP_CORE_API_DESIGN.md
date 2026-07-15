@@ -31,11 +31,9 @@ ITransport <-> AxtpEndpoint -> AxtpCore -> BasicBroker
 | `axtp_broker` | `INTERFACE` | `BasicBroker<>`、`BrokerTask`、`BrokerResult`、dynamic method dispatch helper |
 | `axtp_runtime` | `INTERFACE` | core + broker + endpoint glue，供普通应用使用 |
 | `axtp_json_rpc` | `INTERFACE` | WebSocket session helper adapter 和 JSON registry-file loader |
-| `axtp_transport_tcp_native` | `INTERFACE` optional | Native TCP transport，public header 位于 `include/transports`，不依赖 Boost |
-| `axtp_transport_hidapi` | `STATIC` optional | HID report-level transport，public header 位于 `include/transports`，实现位于 `src/transports`，依赖顶层或工具解析出的 hidapi target |
-| `axtp_transport_tcp_boost` | `INTERFACE` optional | Legacy Boost.Asio TCP transport，Boost 可用时定义，位于 `include/transports` |
-| `axtp_transport_websocket_ix` | `INTERFACE` optional | IXWebSocket WebSocket transport，位于 `include/transports`，依赖顶层或工具解析出的 IXWebSocket target |
-| `axtp_transport_websocket_boost` | `INTERFACE` optional | Legacy optional Boost.Beast WebSocket transport，位于 `include/transports` |
+
+cpp-runtime 不再提供 concrete transport target。TCP、WebSocket、HID 等 provider
+由 Axent 或嵌入应用实现 `ITransport`，并在应用侧注入 runtime endpoint。
 
 推荐 runtime 聚合 include：
 

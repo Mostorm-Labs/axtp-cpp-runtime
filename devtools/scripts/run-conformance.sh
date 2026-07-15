@@ -47,7 +47,6 @@ fi
 
 cmake -S "$root" -B "$build_dir" \
   -DAXTP_BUILD_JSON_RPC=ON \
-  -DAXTP_BUILD_OPTIONAL_TRANSPORTS=OFF \
   -DAXTP_CPP_RUNTIME_BUILD_TESTS=OFF \
   -DAXTP_CPP_RUNTIME_BUILD_CONFORMANCE=ON
 cmake --build "$build_dir" --target axtp_conformance_runner

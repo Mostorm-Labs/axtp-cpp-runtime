@@ -165,7 +165,7 @@ Generated files 可以继续使用当前 `.h` 文件名，直到 generator 单�
 
 Core public headers 可以 include 标准 C++ 头、AXTP public headers、generated headers，以及正式 `WebSocketJsonRpc` core wire mode 需要的 nlohmann/json。它们不能 include `windows.h`、`unistd.h`、`sys/socket.h`、`hidapi.h`、Boost.Asio、Boost.Beast、websocket libraries、Qt headers 或 pthread headers。
 
-Concrete transport target 和 tool 可以 include 平台库，但这些依赖不能通过 cpp/core public headers 泄漏。
+Axent 或应用侧 concrete transport provider 可以 include 平台库，但这些依赖不能通过 cpp/core public headers 泄漏。
 
 ## 6. Runtime 分层与 Ownership
 

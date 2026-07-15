@@ -71,20 +71,43 @@ foreach(retired_media_option
     endif()
 endforeach()
 
-if(NOT AXTP_BUILD_OPTIONAL_TRANSPORTS)
-    foreach(optional_transport_target
-            axtp_transport_tcp_native
-            axtp_transport_tcp_boost
-            axtp_transport_hidapi
-            axtp_transport_websocket_boost
-            axtp_transport_websocket_ix)
-        if(TARGET ${optional_transport_target})
-            message(FATAL_ERROR
-                "${optional_transport_target} must not be defined when "
-                "AXTP_BUILD_OPTIONAL_TRANSPORTS is OFF")
-        endif()
-    endforeach()
-endif()
+foreach(retired_transport_target
+        axtp_transport_tcp_native
+        axtp_transport_tcp_boost
+        axtp_transport_hidapi
+        axtp_transport_websocket_boost
+        axtp_transport_websocket_ix)
+    if(TARGET ${retired_transport_target})
+        message(FATAL_ERROR
+            "retired concrete transport target must not be defined: "
+            "${retired_transport_target}")
+    endif()
+endforeach()
+
+foreach(retired_transport_path
+        "cmake/targets/tool_deps.cmake"
+        "include/axtp_transport_hid.hpp"
+        "include/axtp_transport_tcp_native.hpp"
+        "include/transports"
+        "src/transports"
+        "tests/core/phase6_real_transport_test.cpp"
+        "tests/core/phase9_hid_transport_test.cpp")
+    if(EXISTS "${AXTP_CPP_RUNTIME_ROOT}/${retired_transport_path}")
+        message(FATAL_ERROR
+            "retired concrete transport path must not exist: "
+            "${retired_transport_path}")
+    endif()
+endforeach()
+
+foreach(retired_transport_option
+        AXTP_BUILD_OPTIONAL_TRANSPORTS
+        AXTP_CPP_RUNTIME_INSTALL_OPTIONAL_TRANSPORTS)
+    if(DEFINED ${retired_transport_option})
+        message(FATAL_ERROR
+            "retired concrete transport option must not be defined: "
+            "${retired_transport_option}")
+    endif()
+endforeach()
 
 if(NOT AXTP_BUILD_JSON_RPC AND TARGET axtp_json_rpc)
     message(FATAL_ERROR "axtp_json_rpc must not be defined when AXTP_BUILD_JSON_RPC is OFF")
