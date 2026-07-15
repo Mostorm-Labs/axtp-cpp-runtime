@@ -35,7 +35,7 @@
 #include "core/runtime/transport/transport.hpp"
 #include "json_rpc/websocket_json_rpc_adapter.hpp"
 #include "json_rpc/rpc_client_session.hpp"
-#include "profiles/audio/audio_algorithm_config_validator.hpp"
+#include "audio_algorithm_config_validator.hpp"
 
 namespace {
 
@@ -180,21 +180,35 @@ bool fileExists(const std::string& path) {
     return input.good();
 }
 
+#if defined(_WIN32)
+std::string shellQuote(const std::string& value) {
+    // cmd.exe accepts double-quoted paths.  The conformance paths come from
+    // the filesystem, but escape an embedded quote for completeness.
+    std::string out = "\"";
+    for (const auto ch : value) out += ch == '"' ? "\\\"" : std::string(1, ch);
+    return out + "\"";
+}
+#define AXTP_POPEN _popen
+#define AXTP_PCLOSE _pclose
+#else
 std::string shellQuote(const std::string& value) {
     std::string out = "'";
     for (const auto ch : value) out += ch == '\'' ? "'\\''" : std::string(1, ch);
     return out + "'";
 }
+#define AXTP_POPEN popen
+#define AXTP_PCLOSE pclose
+#endif
 
 nlohmann::json loadYaml(const std::string& path) {
     const auto command = std::string("ruby ") + shellQuote(AXTP_CONFORMANCE_YAML_READER) +
                          " " + shellQuote(path) + " 2>&1";
-    FILE* pipe = popen(command.c_str(), "r");
+    FILE* pipe = AXTP_POPEN(command.c_str(), "r");
     if (!pipe) throw std::runtime_error("cannot start YAML reader for " + path);
     std::string output;
     char buffer[4096];
     while (std::fgets(buffer, sizeof(buffer), pipe) != nullptr) output += buffer;
-    const auto status = pclose(pipe);
+    const auto status = AXTP_PCLOSE(pipe);
     if (status != 0 || output.empty())
         throw std::runtime_error("YAML reader failed for " + path + ": " + output);
     const auto lastNewline = output.find_last_of('\n', output.size() > 1 ? output.size() - 2 : 0);

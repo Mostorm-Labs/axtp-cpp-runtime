@@ -211,6 +211,22 @@ int main() {
 
         injectJson(
             transport,
+            R"({"sid":"legacy-session","op":4,"d":{"eventMasks":"cast.*"}})");
+        auto reidentified = popJson(transport, "reidentify");
+        assert(reidentified.at("op").get<int>() ==
+               static_cast<int>(axtp::RpcOp::Identified));
+        assert(reidentified.at("sid").get<std::string>() == "legacy-session");
+
+        injectJson(
+            transport,
+            R"({"sid":"","op":2,"d":{"randomSeed":7,"resumeSid":"replacement-session"}})");
+        auto duplicateIdentified = popJson(transport, "duplicate identify");
+        assert(duplicateIdentified.at("op").get<int>() ==
+               static_cast<int>(axtp::RpcOp::Identified));
+        assert(duplicateIdentified.at("sid").get<std::string>() == "legacy-session");
+
+        injectJson(
+            transport,
             R"({"sid":"legacy-session","op":7,"d":{"id":706,"method":"audio.getAlgorithmConfig","params":{}}})");
         auto legacyResponse = popJson(transport, "legacy request without randomSeed");
         auto legacyD = legacyResponse.at("d");

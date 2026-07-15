@@ -12,7 +12,7 @@
 #include "core/support/io/byte_writer_sink.hpp"
 #include "core/support/io/crc16.hpp"
 #include "core/runtime/endpoint/axtp_endpoint.hpp"
-#include "profiles/audio/audio_algorithm_config_validator.hpp"
+#include "audio_algorithm_config_validator.hpp"
 
 namespace {
 
