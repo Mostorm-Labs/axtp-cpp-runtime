@@ -171,12 +171,14 @@ private:
             throw std::invalid_argument("invalid d");
         }
         const auto randomSeed = parseRandomSeed(d);
-        if (const auto resumeSid = d.find("resumeSid");
-            resumeSid != d.end() && resumeSid->is_string() &&
-            !resumeSid->get<std::string>().empty()) {
-            _sid = resumeSid->get<std::string>();
-        } else {
-            _sid = makeSessionId(randomSeed.value_or(0));
+        if (!_identified) {
+            if (const auto resumeSid = d.find("resumeSid");
+                resumeSid != d.end() && resumeSid->is_string() &&
+                !resumeSid->get<std::string>().empty()) {
+                _sid = resumeSid->get<std::string>();
+            } else {
+                _sid = makeSessionId(randomSeed.value_or(0));
+            }
         }
         _identified = true;
         sendRpc(JsonRpcEncoder::makeIdentified(_sid));
