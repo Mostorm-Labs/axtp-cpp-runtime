@@ -64,4 +64,11 @@ if(TARGET axtp_sdk)
     )
     target_link_libraries(cpp_sdk_smoke_test PRIVATE axtp_sdk)
     add_test(NAME cpp_sdk_smoke_test COMMAND cpp_sdk_smoke_test)
+
+    add_executable(cpp_sdk_call_options_test
+        ${AXTP_CPP_RUNTIME_ROOT}/tests/sdk/call_options_test.cpp
+    )
+    target_link_libraries(cpp_sdk_call_options_test PRIVATE axtp_sdk)
+    target_compile_definitions(cpp_sdk_call_options_test PRIVATE AXTP_RUNTIME_TESTING=1)
+    add_test(NAME cpp_sdk_call_options_test COMMAND cpp_sdk_call_options_test)
 endif()

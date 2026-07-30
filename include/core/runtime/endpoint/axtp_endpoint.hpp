@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <optional>
 #include <utility>
 
@@ -22,12 +23,18 @@ public:
 
     void attachTransport(ITransport& transport) {
         _transport = &transport;
+        _core.resetResponseTracking();
         _core.configure(_transport->profile());
         _transport->bind(_byteSink);
     }
 
     void detachTransport() {
         _transport = nullptr;
+        _core.resetResponseTracking();
+    }
+
+    void setIngressTokenProvider(typename AxtpCore::IngressTokenProvider provider) {
+        _core.setIngressTokenProvider(std::move(provider));
     }
 
     void poll(std::size_t maxTasks = 8) {
@@ -60,15 +67,31 @@ public:
         _core.byteSink().onBytes(data, size);
     }
 
-    void sendRpcRequest(RpcPayload payload) {
-        _core.expectRpcResponse(payload.requestId);
+    bool sendRpcRequest(RpcPayload payload) {
+        if (!_core.expectRpcResponse(payload.requestId)) {
+            return false;
+        }
         _core.sendRpcRequest(std::move(payload));
         flushOutbound();
+        return true;
     }
 
     void sendControlOpen(std::uint16_t controlId) {
         _core.sendControlOpen(controlId);
         flushOutbound();
+    }
+
+    void sendControlHeartbeat(std::uint16_t controlId) {
+        _core.sendControlHeartbeat(controlId);
+        flushOutbound();
+    }
+
+    std::optional<std::uint32_t> negotiatedHeartbeatIntervalMs() const {
+        return _core.negotiatedHeartbeatIntervalMs();
+    }
+
+    std::uint64_t inboundActivityGeneration() const {
+        return _core.inboundActivityGeneration();
     }
 
     void sendRpcSession(RpcPayload payload) {
@@ -85,6 +108,10 @@ public:
         return _core.tryTakeRpcResponse(requestId);
     }
 
+    void abandonRpcResponse(std::uint32_t requestId) {
+        _core.abandonRpcResponse(requestId);
+    }
+
     std::optional<RpcPayload> tryTakeAnyRpcResponse() {
         return _core.tryTakeAnyRpcResponse();
     }
@@ -95,6 +122,12 @@ public:
 
     std::optional<ControlPayload> tryTakeControlNotice(ControlOpcode opcode) {
         return _core.tryTakeControlNotice(opcode);
+    }
+
+    std::optional<ControlPayload> tryTakeControlNotice(
+        ControlOpcode opcode,
+        std::uint16_t controlId) {
+        return _core.tryTakeControlNotice(opcode, controlId);
     }
 
     void flushOutbound() {

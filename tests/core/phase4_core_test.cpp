@@ -1,7 +1,9 @@
-#include <cassert>
+#include <cstdio>
 #include <cstring>
 #include <cstdint>
+#include <cstdlib>
 #include <regex>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -15,6 +17,16 @@
 #include "audio_algorithm_config_validator.hpp"
 
 namespace {
+
+void require(bool condition, const char* expression, const char* file, int line) {
+    if (!condition) {
+        std::fprintf(stderr, "%s:%d: requirement failed: %s\n", file, line, expression);
+        std::fflush(stderr);
+        std::exit(EXIT_FAILURE);
+    }
+}
+
+#define REQUIRE(expression) require((expression), #expression, __FILE__, __LINE__)
 
 struct CapturingByteWriter : axtp::IByteWriter {
     axtp::Bytes bytes;
@@ -53,6 +65,13 @@ axtp::Bytes encodeControl(axtp::ControlPayload payload) {
     CapturingByteWriter writer;
     axtp::OutboundProcessor outbound(writer);
     outbound.sendControl(std::move(payload));
+    return writer.bytes;
+}
+
+axtp::Bytes encodeStream(axtp::StreamPayload payload) {
+    CapturingByteWriter writer;
+    axtp::OutboundProcessor outbound(writer);
+    outbound.sendStream(std::move(payload));
     return writer.bytes;
 }
 
@@ -107,9 +126,9 @@ int main() {
         broker.submit(std::move(task));
         broker.poll();
         const auto result = broker.pollResult();
-        assert(result.has_value());
-        assert(result->rpc.statusCode == axtp::ErrorCode::OutOfRange);
-        assert(!called);
+        REQUIRE(result.has_value());
+        REQUIRE(result->rpc.statusCode == axtp::ErrorCode::OutOfRange);
+        REQUIRE(!called);
     }
 
     {
@@ -120,7 +139,7 @@ int main() {
         request.requestId = 39;
         request.methodOrEventId = 0x0902;  // generated audio.setAlgorithmConfig
         const auto response = broker.registry().findMethodName(request.methodOrEventId);
-        assert(response.has_value());
+        REQUIRE(response.has_value());
 
         axtp::BrokerTask task;
         task.type = axtp::BrokerTaskType::RpcRequest;
@@ -128,15 +147,15 @@ int main() {
         broker.submit(std::move(task));
         broker.poll();
         const auto result = broker.pollResult();
-        assert(result.has_value());
-        assert(result->rpc.statusCode == axtp::ErrorCode::NotSupported);
+        REQUIRE(result.has_value());
+        REQUIRE(result->rpc.statusCode == axtp::ErrorCode::NotSupported);
     }
 
     {
         axtp::BasicBroker<> broker;
         axtp::AxtpEndpoint endpoint(broker);
         broker.registerMethod(0x0101, [](const axtp::RpcPayload& request) {
-            assert(request.requestId == 100);
+            REQUIRE(request.requestId == 100);
             return axtp::Bytes{0x99, 0x88};
         });
 
@@ -151,15 +170,15 @@ int main() {
         endpoint.poll();
 
         auto responseBytes = endpoint.core().tryPopOutboundBytes();
-        assert(responseBytes.has_value());
+        REQUIRE(responseBytes.has_value());
         CapturingPayloadSink sink;
         axtp::InboundProcessor inbound(sink);
         inbound.onBytes(responseBytes->data(), responseBytes->size());
-        assert(sink.rpcs.size() == 1);
-        assert(sink.rpcs[0].op == axtp::RpcOp::RequestResponse);
-        assert(sink.rpcs[0].requestId == 100);
-        assert(sink.rpcs[0].methodOrEventId == 0x0101);
-        assert((sink.rpcs[0].body == axtp::Bytes{0x99, 0x88}));
+        REQUIRE(sink.rpcs.size() == 1);
+        REQUIRE(sink.rpcs[0].op == axtp::RpcOp::RequestResponse);
+        REQUIRE(sink.rpcs[0].requestId == 100);
+        REQUIRE(sink.rpcs[0].methodOrEventId == 0x0101);
+        REQUIRE((sink.rpcs[0].body == axtp::Bytes{0x99, 0x88}));
     }
 
     {
@@ -169,28 +188,28 @@ int main() {
         open.controlId = 1;
         auto bytes = encodeControl(open);
         core.byteSink().onBytes(bytes.data(), bytes.size());
-        assert(core.controlSessionOpen());
+        REQUIRE(core.controlSessionOpen());
         auto responseBytes = core.tryPopOutboundBytes();
-        assert(responseBytes.has_value());
+        REQUIRE(responseBytes.has_value());
         CapturingPayloadSink sink;
         axtp::InboundProcessor inbound(sink);
         inbound.onBytes(responseBytes->data(), responseBytes->size());
-        assert(sink.controls.size() == 1);
-        assert(sink.controls[0].opcode == axtp::ControlOpcode::Accept);
-        assert(sink.controls[0].controlId == 1);
-        assert(!sink.controls[0].body.empty());
-        assert(sink.controls[0].tlv.valid);
-        assert(sink.controls[0].tlv.hasSelectedRpcEncoding);
-        assert(sink.controls[0].tlv.selectedRpcEncoding ==
-               static_cast<std::uint8_t>(axtp::RpcEncoding::Json));
+        REQUIRE(sink.controls.size() == 1);
+        REQUIRE(sink.controls[0].opcode == axtp::ControlOpcode::Accept);
+        REQUIRE(sink.controls[0].controlId == 1);
+        REQUIRE(!sink.controls[0].body.empty());
+        REQUIRE(sink.controls[0].tlv.valid);
+        REQUIRE(sink.controls[0].tlv.hasSelectedRpcEncoding);
+        REQUIRE(sink.controls[0].tlv.selectedRpcEncoding ==
+                static_cast<std::uint8_t>(axtp::RpcEncoding::Json));
 
         responseBytes = core.tryPopOutboundBytes();
-        assert(responseBytes.has_value());
+        REQUIRE(responseBytes.has_value());
         CapturingPayloadSink helloSink;
         axtp::InboundProcessor helloInbound(helloSink);
         helloInbound.onBytes(responseBytes->data(), responseBytes->size());
-        assert(helloSink.rpcs.size() == 1);
-        assert(helloSink.rpcs[0].op == axtp::RpcOp::Hello);
+        REQUIRE(helloSink.rpcs.size() == 1);
+        REQUIRE(helloSink.rpcs[0].op == axtp::RpcOp::Hello);
 
         axtp::ControlPayload ping;
         ping.opcode = axtp::ControlOpcode::Ping;
@@ -198,35 +217,35 @@ int main() {
         bytes = encodeControl(ping);
         core.byteSink().onBytes(bytes.data(), bytes.size());
         responseBytes = core.tryPopOutboundBytes();
-        assert(responseBytes.has_value());
+        REQUIRE(responseBytes.has_value());
         CapturingPayloadSink pingSink;
         axtp::InboundProcessor pingInbound(pingSink);
         pingInbound.onBytes(responseBytes->data(), responseBytes->size());
-        assert(pingSink.controls.size() == 1);
-        assert(pingSink.controls[0].opcode == axtp::ControlOpcode::Pong);
+        REQUIRE(pingSink.controls.size() == 1);
+        REQUIRE(pingSink.controls[0].opcode == axtp::ControlOpcode::Pong);
     }
 
     {
         axtp::AxtpCore core;
         core.sendControlOpen(9);
         auto openBytes = core.tryPopOutboundBytes();
-        assert(openBytes.has_value());
+        REQUIRE(openBytes.has_value());
 
         CapturingPayloadSink openSink;
         axtp::InboundProcessor openInbound(openSink);
         openInbound.onBytes(openBytes->data(), openBytes->size());
-        assert(openSink.controls.size() == 1);
-        assert(openSink.controls[0].opcode == axtp::ControlOpcode::Open);
-        assert(openSink.controls[0].controlId == 9);
-        assert(!openSink.controls[0].body.empty());
-        assert(openSink.controls[0].tlv.valid);
-        assert(!openSink.controls[0].tlv.hasProtocolVersion);
-        assert(openSink.controls[0].tlv.hasMaxFrameSize);
-        assert(!openSink.controls[0].tlv.hasMtu);
-        assert(openSink.controls[0].tlv.hasSupportedPayloadTypes);
-        assert(openSink.controls[0].tlv.hasSupportedRpcEncodings);
-        assert(openSink.controls[0].tlv.supportedRpcEncodings == 0x09);
-        assert(!core.controlSessionOpen());
+        REQUIRE(openSink.controls.size() == 1);
+        REQUIRE(openSink.controls[0].opcode == axtp::ControlOpcode::Open);
+        REQUIRE(openSink.controls[0].controlId == 9);
+        REQUIRE(!openSink.controls[0].body.empty());
+        REQUIRE(openSink.controls[0].tlv.valid);
+        REQUIRE(!openSink.controls[0].tlv.hasProtocolVersion);
+        REQUIRE(openSink.controls[0].tlv.hasMaxFrameSize);
+        REQUIRE(!openSink.controls[0].tlv.hasMtu);
+        REQUIRE(openSink.controls[0].tlv.hasSupportedPayloadTypes);
+        REQUIRE(openSink.controls[0].tlv.hasSupportedRpcEncodings);
+        REQUIRE(openSink.controls[0].tlv.supportedRpcEncodings == 0x09);
+        REQUIRE(!core.controlSessionOpen());
 
         {
             axtp::ControlPayload accept;
@@ -245,19 +264,19 @@ int main() {
             };
             auto acceptBytes = encodeControl(accept);
             core.byteSink().onBytes(acceptBytes.data(), acceptBytes.size());
-            assert(core.controlSessionOpen());
+            REQUIRE(core.controlSessionOpen());
 
             auto notice = core.tryTakeControlNotice(axtp::ControlOpcode::Accept);
-            assert(notice.has_value());
-            assert(notice->controlId == 9);
-            assert(notice->statusCode == axtp::ErrorCode::Success);
-            assert(notice->tlv.valid);
-            assert(notice->tlv.hasMaxFrameSize);
-            assert(notice->tlv.maxFrameSize == 4096);
-            assert(notice->tlv.hasMtu);
-            assert(notice->tlv.mtu == 2500);
-            assert(notice->tlv.hasHeartbeatIntervalMs);
-            assert(notice->tlv.heartbeatIntervalMs == 3000);
+            REQUIRE(notice.has_value());
+            REQUIRE(notice->controlId == 9);
+            REQUIRE(notice->statusCode == axtp::ErrorCode::Success);
+            REQUIRE(notice->tlv.valid);
+            REQUIRE(notice->tlv.hasMaxFrameSize);
+            REQUIRE(notice->tlv.maxFrameSize == 4096);
+            REQUIRE(notice->tlv.hasMtu);
+            REQUIRE(notice->tlv.mtu == 2500);
+            REQUIRE(notice->tlv.hasHeartbeatIntervalMs);
+            REQUIRE(notice->tlv.heartbeatIntervalMs == 3000);
         }
 
         core.sendControlOpen(9);
@@ -269,12 +288,70 @@ int main() {
         accept.statusCode = axtp::ErrorCode::Success;
         auto acceptBytes = encodeControl(accept);
         core.byteSink().onBytes(acceptBytes.data(), acceptBytes.size());
-        assert(core.controlSessionOpen());
+        REQUIRE(core.controlSessionOpen());
 
         auto notice = core.tryTakeControlNotice(axtp::ControlOpcode::Accept);
-        assert(notice.has_value());
-        assert(notice->controlId == 9);
-        assert(notice->statusCode == axtp::ErrorCode::Success);
+        REQUIRE(notice.has_value());
+        REQUIRE(notice->controlId == 9);
+        REQUIRE(notice->statusCode == axtp::ErrorCode::Success);
+    }
+
+    {
+        // A renegotiation must not retain a heartbeat interval accepted by a
+        // previous OPEN.  Otherwise a peer that omits the interval on the
+        // replacement session would be incorrectly treated as heartbeat
+        // capable by the SDK.
+        axtp::ControlSession session;
+        auto open = session.makeOpen(21);
+        axtp::ControlPayload accept;
+        accept.opcode = axtp::ControlOpcode::Accept;
+        accept.controlId = open.controlId;
+        accept.statusCode = axtp::ErrorCode::Success;
+        accept.tlv = axtp::ControlTlvCodec::defaultsForAccept(open.tlv);
+        accept.tlv.hasHeartbeatIntervalMs = true;
+        accept.tlv.heartbeatIntervalMs = 5000;
+        REQUIRE(session.handle(std::move(accept)).has_value() == false);
+        REQUIRE(session.negotiatedHeartbeatIntervalMs().has_value());
+        REQUIRE(session.negotiatedHeartbeatIntervalMs().value() == 5000);
+
+        auto replacementOpen = session.makeOpen(22);
+        REQUIRE(!session.negotiatedHeartbeatIntervalMs().has_value());
+        axtp::ControlPayload replacementAccept;
+        replacementAccept.opcode = axtp::ControlOpcode::Accept;
+        replacementAccept.controlId = replacementOpen.controlId;
+        replacementAccept.statusCode = axtp::ErrorCode::Success;
+        replacementAccept.tlv = axtp::ControlTlvOptions{};
+        replacementAccept.tlv.valid = true;
+        // Deliberately omit heartbeatIntervalMs to model an older peer.
+        REQUIRE(session.handle(std::move(replacementAccept)).has_value() == false);
+        REQUIRE(!session.negotiatedHeartbeatIntervalMs().has_value());
+    }
+
+    {
+        // Ingress provenance is stamped before Core defers the stream event
+        // into its queue.  This is the boundary that fences an old payload
+        // when an embedding replaces its media lease before broker dispatch.
+        axtp::AxtpCore core;
+        axtp::TransportProfile profile;
+        profile.kind = axtp::TransportKind::Hid;
+        profile.wireMode = axtp::AxtpWireMode::FramedBinary;
+        core.configure(profile);
+        constexpr std::uint64_t kIngressToken = 0x1122334455667788ULL;
+        core.setIngressTokenProvider([kIngressToken] { return kIngressToken; });
+
+        axtp::StreamPayload stream;
+        stream.streamId = 0x1234;
+        stream.seqId = 7;
+        stream.cursor = 99;
+        stream.data = {0xAA, 0xBB};
+        const auto bytes = encodeStream(stream);
+        core.byteSink().onBytes(bytes.data(), bytes.size());
+        const auto event = core.pollEvent();
+        REQUIRE(event.has_value());
+        REQUIRE(event->type == axtp::CoreEventType::StreamData);
+        REQUIRE(event->stream.meta.ingressToken == kIngressToken);
+        REQUIRE(event->stream.streamId == stream.streamId);
+        REQUIRE(event->stream.seqId == stream.seqId);
     }
 
     {
@@ -288,11 +365,11 @@ int main() {
         accept.statusCode = axtp::ErrorCode::Success;
         auto acceptBytes = encodeControl(accept);
         core.byteSink().onBytes(acceptBytes.data(), acceptBytes.size());
-        assert(!core.controlSessionOpen());
+        REQUIRE(!core.controlSessionOpen());
 
         auto notice = core.tryTakeControlNotice(axtp::ControlOpcode::Accept);
-        assert(notice.has_value());
-        assert(notice->controlId == 11);
+        REQUIRE(notice.has_value());
+        REQUIRE(notice->controlId == 11);
     }
 
     {
@@ -312,8 +389,8 @@ int main() {
         outbound.sendRpcResponse(response);
         core.byteSink().onBytes(writer.bytes.data(), writer.bytes.size());
         auto matched = core.tryTakeRpcResponse(55);
-        assert(matched.has_value());
-        assert((matched->body == axtp::Bytes{0x01}));
+        REQUIRE(matched.has_value());
+        REQUIRE((matched->body == axtp::Bytes{0x01}));
     }
 
     {
@@ -325,12 +402,67 @@ int main() {
             makeJsonEnvelopePayload(
                 R"({"d":{"id":0,"status":{"code":51,"msg":"RPC_PAYLOAD_INVALID","ok":false}},"op":8,"sid":"12345678"})"));
         core.byteSink().onBytes(bytes.data(), bytes.size());
-        assert(!core.tryTakeRpcResponse(55).has_value());
+        REQUIRE(!core.tryTakeRpcResponse(55).has_value());
         auto any = core.tryTakeAnyRpcResponse();
-        assert(any.has_value());
-        assert(any->op == axtp::RpcOp::RequestResponse);
-        assert(any->requestId == 0);
-        assert(any->statusCode == axtp::ErrorCode::RpcPayloadInvalid);
+        REQUIRE(any.has_value());
+        REQUIRE(any->op == axtp::RpcOp::RequestResponse);
+        REQUIRE(any->requestId == 0);
+        REQUIRE(any->statusCode == axtp::ErrorCode::RpcPayloadInvalid);
+    }
+
+    {
+        axtp::AxtpCore core;
+        axtp::TransportProfile profile;
+        profile.kind = axtp::TransportKind::WebSocket;
+        profile.wireMode = axtp::AxtpWireMode::WebSocketJsonRpc;
+        profile.defaultRpcEncoding = axtp::RpcEncoding::Json;
+        profile.messageOriented = true;
+        profile.supportsTextMessage = true;
+        profile.supportsBinaryMessage = false;
+        core.configure(profile);
+
+        // Decoder-generated responses are outbound protocol errors, not
+        // unmatched responses from a peer.  They must retain their one-way
+        // trip through Core while genuine unknown responses are consumed.
+        const std::string unknownMethod =
+            R"({"sid":"12345678","op":7,"d":{"id":704,"method":"audio.unknown","params":{}}})";
+        core.byteSink().onBytes(
+            reinterpret_cast<const axtp::Byte*>(unknownMethod.data()),
+            unknownMethod.size());
+        auto errorBytes = core.tryPopOutboundBytes();
+        REQUIRE(errorBytes.has_value());
+        const std::string errorJson(errorBytes->begin(), errorBytes->end());
+        REQUIRE(errorJson.find(R"("id":704)") != std::string::npos);
+        const auto methodNotFoundCode =
+            std::to_string(static_cast<std::uint16_t>(
+                axtp::ErrorCode::RpcMethodNotFound));
+        REQUIRE(errorJson.find(std::string(R"("code":)") + methodNotFoundCode) !=
+                std::string::npos);
+
+        const std::string unsupportedBatch =
+            R"({"sid":"12345678","op":9,"d":{"id":705,"requests":[]}})";
+        core.byteSink().onBytes(
+            reinterpret_cast<const axtp::Byte*>(unsupportedBatch.data()),
+            unsupportedBatch.size());
+        auto batchErrorBytes = core.tryPopOutboundBytes();
+        REQUIRE(batchErrorBytes.has_value());
+        const std::string batchErrorJson(
+            batchErrorBytes->begin(), batchErrorBytes->end());
+        REQUIRE(batchErrorJson.find(R"("id":705)") != std::string::npos);
+        REQUIRE(batchErrorJson.find(R"("op":10)") != std::string::npos);
+        const auto batchUnsupportedCode =
+            std::to_string(static_cast<std::uint16_t>(
+                axtp::ErrorCode::RpcBatchUnsupported));
+        REQUIRE(batchErrorJson.find(std::string(R"("code":)") + batchUnsupportedCode) !=
+                std::string::npos);
+
+        const std::string unknownResponse =
+            R"({"sid":"12345678","op":8,"d":{"id":706,"status":{"ok":true,"code":0},"result":{}}})";
+        core.byteSink().onBytes(
+            reinterpret_cast<const axtp::Byte*>(unknownResponse.data()),
+            unknownResponse.size());
+        REQUIRE(!core.tryPopOutboundBytes().has_value());
+        REQUIRE(!core.tryTakeAnyRpcResponse().has_value());
     }
 
     {
@@ -341,18 +473,18 @@ int main() {
                                          R"({"sid":"","op":2,"d":{"eventMasks":""}})"));
         core.byteSink().onBytes(bytes.data(), bytes.size());
         auto identify = core.tryTakeSessionRpc(axtp::RpcOp::Identify);
-        assert(identify.has_value());
-        assert(!identify->meta.hasRandomSeed);
+        REQUIRE(identify.has_value());
+        REQUIRE(!identify->meta.hasRandomSeed);
         auto identifiedBytes = core.tryPopOutboundBytes();
-        assert(identifiedBytes.has_value());
+        REQUIRE(identifiedBytes.has_value());
 
         CapturingPayloadSink sink;
         axtp::InboundProcessor inbound(sink);
         inbound.onBytes(identifiedBytes->data(), identifiedBytes->size());
-        assert(sink.rpcs.size() == 1);
-        assert(sink.rpcs[0].op == axtp::RpcOp::Identified);
-        assert(std::regex_match(sink.rpcs[0].meta.jsonSid, std::regex("^[0-9A-F]{8}$")));
-        assert(sink.rpcs[0].meta.jsonSid != "00000000");
+        REQUIRE(sink.rpcs.size() == 1);
+        REQUIRE(sink.rpcs[0].op == axtp::RpcOp::Identified);
+        REQUIRE(std::regex_match(sink.rpcs[0].meta.jsonSid, std::regex("^[0-9A-F]{8}$")));
+        REQUIRE(sink.rpcs[0].meta.jsonSid != "00000000");
     }
 
     {
@@ -363,16 +495,16 @@ int main() {
                                          R"({"sid":"","op":2,"d":{"randomSeed":305419896}})"));
         core.byteSink().onBytes(bytes.data(), bytes.size());
         auto identifiedBytes = core.tryPopOutboundBytes();
-        assert(identifiedBytes.has_value());
+        REQUIRE(identifiedBytes.has_value());
 
         CapturingPayloadSink sink;
         axtp::InboundProcessor inbound(sink);
         inbound.onBytes(identifiedBytes->data(), identifiedBytes->size());
-        assert(sink.rpcs.size() == 1);
-        assert(sink.rpcs[0].op == axtp::RpcOp::Identified);
-        assert(std::regex_match(sink.rpcs[0].meta.jsonSid, std::regex("^[0-9A-F]{8}$")));
-        assert(sink.rpcs[0].meta.jsonSid != "00000000");
-        assert(sink.rpcs[0].meta.jsonSid != "12345678");
+        REQUIRE(sink.rpcs.size() == 1);
+        REQUIRE(sink.rpcs[0].op == axtp::RpcOp::Identified);
+        REQUIRE(std::regex_match(sink.rpcs[0].meta.jsonSid, std::regex("^[0-9A-F]{8}$")));
+        REQUIRE(sink.rpcs[0].meta.jsonSid != "00000000");
+        REQUIRE(sink.rpcs[0].meta.jsonSid != "12345678");
     }
 
     return 0;

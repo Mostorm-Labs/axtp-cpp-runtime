@@ -1,6 +1,7 @@
 #pragma once
 
 #include <chrono>
+#include <functional>
 
 #include "core/protocol/model/payload.hpp"
 
@@ -11,6 +12,8 @@ struct CallOptions {
     RpcEncoding encoding = RpcEncoding::Json;
     bool validateSchema = false;
     bool acceptAnyResponse = false;
+    std::function<bool()> cancelled;
+    std::function<void()> progress;
 };
 
 }  // namespace axtp::sdk

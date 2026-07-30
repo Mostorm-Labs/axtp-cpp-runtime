@@ -202,3 +202,30 @@ client.callRawBytes(0x90010001, bytes);
 ```
 
 Typed call 可用于稳定 generated domain，但必须保持为 dynamic/raw call 的 wrapper。新增 vendor 或 experimental method 应能通过 `MethodRegistry` 调用，不需要重新生成 SDK。
+
+## Call Wait Hooks
+
+`CallOptions::progress` lets an embedding scheduler submit work after each
+`AxtpClient::poll()` while a synchronous RPC is waiting. The callback must not
+recursively use the same client. After each poll, `callRaw()` runs `progress`,
+checks matching and accepted fallback responses, then checks `cancelled` and
+the deadline.
+
+Cancellation returns `ErrorCode::Canceled`; timeout continues to return
+`ErrorCode::RpcResponseTimeout`. Both outcomes abandon the request ID so a late
+response is consumed and discarded instead of satisfying a later call.
+Exceptions from either wait hook are contained and reported as
+`ErrorCode::InternalError`.
+
+The timeout is one absolute budget covering automatic control open,
+identification, and the business response. Because `IDENTIFIED` has no request
+ID, cancelling after `IDENTIFY` leaves that handshake outstanding; a later call
+on the same physical transport resumes the original wait rather than sending a
+second `IDENTIFY` that could be satisfied by the old response.
+
+Non-zero request IDs are single-use until the physical transport is detached.
+Successful, cancelled, and timed-out calls all retire their ID. Endpoint/Core
+callers must check the boolean result from `sendRpcRequest()` /
+`expectRpcResponse()` before sending. `acceptAnyResponse` is only a compatibility
+path for a legacy ID-zero response, which cannot be correlated reliably after
+cancellation; new peers must echo the non-zero request ID.

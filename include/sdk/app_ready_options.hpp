@@ -28,6 +28,12 @@ struct AppReadyOptions {
     std::optional<std::uint32_t> randomSeed;
     std::function<void(const AppReadyTraceEvent&)> trace;
     bool skipControlOpen = false;
+    // Standalone setup is also a synchronous wait.  These hooks mirror the
+    // call options used by automatic setup so callers can keep pumping their
+    // owner loop and stop an explicit ensureAppReady() without a second
+    // timeout domain.
+    std::function<bool()> cancelled;
+    std::function<void()> progress;
 };
 
 struct AppReadyResult {

@@ -17,6 +17,15 @@ struct PayloadMeta {
     std::string jsonSid;
     std::string jsonMethodOrEventName;
     std::string jsonEventMasks;
+    // Internal provenance only; encoders never serialize this bit.  It
+    // distinguishes a decoder-synthesized protocol error that Core must send
+    // back from a genuine inbound response that should be matched or dropped.
+    bool localGeneratedResponse = false;
+    // Internal ingress provenance only; encoders never serialize this value.
+    // A host may provide a monotonic binding token at the raw payload ingress
+    // boundary so deferred broker callbacks can reject data that crossed a
+    // logical lease handoff while it was still queued in Core.
+    std::uint64_t ingressToken = 0;
 };
 
 struct ControlTlvOptions {

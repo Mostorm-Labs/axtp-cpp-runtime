@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <iomanip>
 #include <optional>
 #include <queue>
@@ -26,6 +27,7 @@ namespace axtp {
 class AxtpCore {
 public:
     using JsonRpcNameLookup = InboundProcessor::NameLookup;
+    using IngressTokenProvider = std::function<std::uint64_t()>;
 
     AxtpCore()
         : _byteSink(*this)
@@ -43,6 +45,10 @@ public:
         }
     }
 
+    void setRequestedHeartbeatInterval(std::uint32_t intervalMs) {
+        _controlSession.setRequestedHeartbeatInterval(intervalMs);
+    }
+
     IByteSink& byteSink() {
         return _byteSink;
     }
@@ -53,6 +59,13 @@ public:
 
     void setJsonRpcEventLookup(JsonRpcNameLookup lookup) {
         _inbound.setJsonRpcEventLookup(std::move(lookup));
+    }
+
+    // The provider is invoked while a payload is still at the Core ingress
+    // boundary (before it is deferred into the broker task queue).  The value
+    // is internal provenance and is never serialized on the wire.
+    void setIngressTokenProvider(IngressTokenProvider provider) {
+        _ingressTokenProvider = std::move(provider);
     }
 
     std::optional<CoreEvent> pollEvent() {
@@ -84,8 +97,12 @@ public:
         }
     }
 
-    void expectRpcResponse(std::uint32_t requestId) {
-        _pendingCalls.expect(requestId);
+    bool expectRpcResponse(std::uint32_t requestId) {
+        return _pendingCalls.expect(requestId);
+    }
+
+    void abandonRpcResponse(std::uint32_t requestId) {
+        _pendingCalls.abandon(requestId);
     }
 
     std::optional<RpcPayload> tryTakeRpcResponse(std::uint32_t requestId) {
@@ -94,6 +111,10 @@ public:
 
     std::optional<RpcPayload> tryTakeAnyRpcResponse() {
         return _pendingCalls.tryTakeAnyResolved();
+    }
+
+    void resetResponseTracking() {
+        _pendingCalls.reset();
     }
 
     std::optional<RpcPayload> tryTakeSessionRpc(RpcOp op) {
@@ -122,6 +143,24 @@ public:
         return std::nullopt;
     }
 
+    // Variant used by request/response helpers that must not consume an ACK
+    // belonging to another in-flight control request.  Non-matching notices
+    // stay queued in their original order.
+    std::optional<ControlPayload> tryTakeControlNotice(
+        ControlOpcode opcode,
+        std::uint16_t controlId) {
+        const auto count = _controlNotices.size();
+        for (std::size_t index = 0; index < count; ++index) {
+            auto payload = std::move(_controlNotices.front());
+            _controlNotices.pop();
+            if (payload.opcode == opcode && payload.controlId == controlId) {
+                return payload;
+            }
+            _controlNotices.push(std::move(payload));
+        }
+        return std::nullopt;
+    }
+
     std::optional<Bytes> tryPopOutboundBytes() {
         if (_outboundBytes.empty()) {
             return std::nullopt;
@@ -137,6 +176,21 @@ public:
 
     void sendControlOpen(std::uint16_t controlId) {
         _outbound.sendControl(_controlSession.makeOpen(controlId));
+    }
+
+    void sendControlHeartbeat(std::uint16_t controlId) {
+        _outbound.sendControl(_controlSession.makeHeartbeat(controlId));
+    }
+
+    std::optional<std::uint32_t> negotiatedHeartbeatIntervalMs() const {
+        return _controlSession.negotiatedHeartbeatIntervalMs();
+    }
+
+    // Monotonic generation of successfully decoded inbound control/RPC/stream
+    // payloads.  Transport consumers can use this as liveness evidence while
+    // malformed or filtered reports remain invisible at this layer.
+    std::uint64_t inboundActivityGeneration() const {
+        return _inboundActivityGeneration;
     }
 
     void sendRpcRequest(RpcPayload payload) {
@@ -204,6 +258,7 @@ private:
     }
 
     void handleControl(ControlPayload payload) {
+        ++_inboundActivityGeneration;
         const auto opcode = payload.opcode;
         const auto notice = payload;
         auto response = _controlSession.handle(std::move(payload));
@@ -217,6 +272,7 @@ private:
     }
 
     void handleRpc(RpcPayload payload) {
+        ++_inboundActivityGeneration;
         if (payload.op == RpcOp::Identify || payload.op == RpcOp::Reidentify) {
             const auto randomSeed = payload.meta.hasRandomSeed ? payload.meta.randomSeed : 0;
             const auto sid = makeSessionId(randomSeed);
@@ -237,21 +293,44 @@ private:
             return;
         }
         if (payload.op == RpcOp::RequestResponse) {
-            if (!_pendingCalls.isPending(payload.requestId) &&
-                payload.meta.sourceProtocol == SourceProtocol::JsonRpc) {
+            if (payload.meta.localGeneratedResponse) {
                 _outbound.sendRpcResponse(std::move(payload));
+                return;
+            }
+            if (payload.requestId != 0 && !_pendingCalls.isPending(payload.requestId)) {
+                // A response for a timed-out, cancelled, duplicate, or
+                // otherwise unknown call is intentionally consumed here.  Do
+                // not echo it back on JSON-RPC: that turns a late response
+                // into a new wire transaction and can poison a later call.
                 return;
             }
             _pendingCalls.resolve(payload.requestId, std::move(payload));
             return;
         }
-        if (payload.op == RpcOp::RequestBatchResponse &&
-            payload.meta.sourceProtocol == SourceProtocol::JsonRpc) {
-            _outbound.sendRpcResponse(std::move(payload));
+        if (payload.op == RpcOp::RequestBatchResponse) {
+            if (payload.meta.localGeneratedResponse) {
+                _outbound.sendRpcResponse(std::move(payload));
+                return;
+            }
+            if (payload.requestId != 0 && !_pendingCalls.isPending(payload.requestId)) {
+                return;
+            }
+            _pendingCalls.resolve(payload.requestId, std::move(payload));
         }
     }
 
     void handleStream(StreamPayload payload) {
+        ++_inboundActivityGeneration;
+        if (_ingressTokenProvider) {
+            try {
+                payload.meta.ingressToken = _ingressTokenProvider();
+            } catch (...) {
+                // A provenance provider is diagnostic/lifecycle metadata and
+                // must never make a valid media payload fail at the wire
+                // boundary.  Leave the token unset on provider failure.
+                payload.meta.ingressToken = 0;
+            }
+        }
         _streamSession.handle(payload);
         _events.push(CoreEvent::streamData(std::move(payload)));
     }
@@ -270,6 +349,8 @@ private:
     std::queue<ControlPayload> _controlNotices;
     std::queue<Bytes> _outboundBytes;
     std::uint32_t _nextSessionId = 1;
+    std::uint64_t _inboundActivityGeneration = 0;
+    IngressTokenProvider _ingressTokenProvider;
 
     std::string makeSessionId(std::uint32_t randomSeed) {
         auto mixed = randomSeed ^ (_nextSessionId++ * 0x9E3779B9U);
