@@ -1,6 +1,7 @@
 #pragma once
 
 #include <atomic>
+#include <algorithm>
 #include <chrono>
 #include <cstdint>
 #include <exception>
@@ -9,6 +10,7 @@
 #include <memory>
 #include <optional>
 #include <random>
+#include <set>
 #include <string>
 #include <string_view>
 #include <thread>
@@ -36,6 +38,7 @@ class AxtpClient {
 public:
     using RawMethodHandler = std::function<Bytes(const RpcPayload&)>;
     using RawEventHandler = std::function<void(const RpcPayload&)>;
+    using IngressTokenProvider = AxtpCore::IngressTokenProvider;
 
     explicit AxtpClient(ClientOptions options = {})
         : _options(options)
@@ -56,8 +59,16 @@ public:
         _endpoint = std::make_unique<AxtpEndpoint<BasicBroker<>>>(_broker);
         _appReady = false;
         _sessionSid.clear();
+        _identifyOutstanding = false;
+        _pendingIdentifyRandomSeed.reset();
+        _negotiatedHeartbeatIntervalMs.reset();
+        _usedRequestIds.clear();
         if (_transport != nullptr) {
             _endpoint->attachTransport(*_transport);
+            // attachTransport() creates a fresh endpoint/core.  Reapply the
+            // provider after that replacement so deferred stream tasks retain
+            // the raw-ingress lease token on every physical session.
+            _endpoint->setIngressTokenProvider(_ingressTokenProvider);
             if (_options.autoOpen) {
                 _transport->open();
             }
@@ -106,6 +117,13 @@ public:
         _connected = false;
         _appReady = false;
         _sessionSid.clear();
+        _identifyOutstanding = false;
+        _pendingIdentifyRandomSeed.reset();
+        _negotiatedHeartbeatIntervalMs.reset();
+        _usedRequestIds.clear();
+        if (_endpoint != nullptr) {
+            _endpoint->core().resetResponseTracking();
+        }
     }
 
     bool isConnected() const {
@@ -113,6 +131,111 @@ public:
     }
 
     const SdkError& lastError() const {
+        return _lastError;
+    }
+
+    std::optional<std::uint32_t> negotiatedHeartbeatIntervalMs() const {
+        return _negotiatedHeartbeatIntervalMs;
+    }
+
+    std::uint64_t inboundActivityGeneration() const {
+        return _endpoint == nullptr ? 0 : _endpoint->inboundActivityGeneration();
+    }
+
+    // Set before or after attachTransport().  The value is retained across
+    // endpoint replacement and is consulted only at decoded stream ingress.
+    void setIngressTokenProvider(IngressTokenProvider provider) {
+        _ingressTokenProvider = std::move(provider);
+        if (_endpoint != nullptr) {
+            _endpoint->setIngressTokenProvider(_ingressTokenProvider);
+        }
+    }
+
+#if defined(AXTP_RUNTIME_TESTING)
+    // Test-only seam for exercising the 32-bit allocator wrap without
+    // issuing billions of requests. It is not present in production builds.
+    void setNextRequestIdForTesting(std::uint32_t requestId) noexcept {
+        _nextRequestId = requestId;
+    }
+#endif
+
+    // Send one control HEARTBEAT and wait for the matching ACK.  This is a
+    // protocol-level operation and is deliberately separate from RPC calls so
+    // a peer can answer it without waking the business broker.  The optional
+    // progress hook runs after every poll, before ACK matching, so an owner
+    // that is also carrying media can drain its staging queue while a quiet
+    // peer takes the full heartbeat timeout.  The one-argument API remains
+    // source-compatible for callers that do not need that hook.
+    SdkError heartbeat(
+        std::chrono::milliseconds timeout = std::chrono::milliseconds{500},
+        std::function<void()> progress = {}) {
+        if (_transport == nullptr || _endpoint == nullptr || !_connected) {
+            _lastError = SdkError::failure(ErrorCode::Unavailable, "transport unavailable");
+            return _lastError;
+        }
+        if (_transport->profile().wireMode != AxtpWireMode::FramedBinary ||
+            !_endpoint->core().controlSessionOpen()) {
+            _lastError = SdkError::failure(
+                ErrorCode::NotSupported,
+                "control heartbeat requires an open framed-binary session");
+            return _lastError;
+        }
+        if (!_negotiatedHeartbeatIntervalMs.has_value()) {
+            _lastError = SdkError::failure(
+                ErrorCode::NotSupported,
+                "peer did not advertise a valid heartbeat interval");
+            return _lastError;
+        }
+        if (timeout.count() <= 0) {
+            timeout = std::chrono::milliseconds{1};
+        }
+        auto controlId = _nextControlId++;
+        if (controlId == 0) {
+            controlId = _nextControlId++;
+        }
+        try {
+            _endpoint->sendControlHeartbeat(controlId);
+        } catch (...) {
+            _lastError = SdkError::failure(
+                ErrorCode::InternalError,
+                "heartbeat endpoint callback failed");
+            return _lastError;
+        }
+        const auto deadline = std::chrono::steady_clock::now() + timeout;
+        while (std::chrono::steady_clock::now() < deadline) {
+            try {
+                poll();
+            } catch (...) {
+                _lastError = SdkError::failure(
+                    ErrorCode::InternalError,
+                    "heartbeat endpoint callback failed");
+                return _lastError;
+            }
+            if (progress) {
+                try {
+                    progress();
+                } catch (...) {
+                    _lastError = SdkError::failure(
+                        ErrorCode::InternalError,
+                        "heartbeat progress callback failed");
+                    return _lastError;
+                }
+            }
+            if (auto ack = _endpoint->tryTakeControlNotice(
+                    ControlOpcode::HeartbeatAck, controlId)) {
+                if (ack->statusCode == ErrorCode::Success) {
+                    _lastError = SdkError::success();
+                    return _lastError;
+                }
+                _lastError = SdkError::failure(
+                    ack->statusCode, "control heartbeat rejected by peer");
+                return _lastError;
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        }
+        _lastError = SdkError::failure(
+            ErrorCode::ControlHeartbeatTimeout,
+            "control heartbeat acknowledgement timed out");
         return _lastError;
     }
 
@@ -131,6 +254,32 @@ public:
     }
 
     AppReadyResult ensureAppReady(AppReadyOptions options = {}) {
+        const auto deadline = deadlineAfter(options.timeout);
+        return ensureAppReadyUntil(std::move(options), deadline, nullptr);
+    }
+
+private:
+    // callRaw uses this form so automatic identification consumes the same
+    // absolute timeout budget as the business request.  The public overload
+    // above retains the SDK's existing API for callers that only need setup.
+    AppReadyResult ensureAppReadyUntil(AppReadyOptions options,
+                                       std::chrono::steady_clock::time_point deadline,
+                                       const CallOptions* waitOptions) {
+        try {
+            return ensureAppReadyUntilImpl(std::move(options), deadline, waitOptions);
+        } catch (...) {
+            AppReadyResult result;
+            result.statusCode = ErrorCode::InternalError;
+            result.stage = "callback";
+            _lastAppReady = result;
+            _lastError = SdkError::failure(result.statusCode, "app-ready callback failed");
+            return result;
+        }
+    }
+
+    AppReadyResult ensureAppReadyUntilImpl(AppReadyOptions options,
+                                           std::chrono::steady_clock::time_point deadline,
+                                           const CallOptions* waitOptions) {
         AppReadyResult result;
         auto emitTrace = [&](std::string stage,
                              std::string action,
@@ -181,7 +330,104 @@ public:
 
         const auto profile = _transport->profile();
         _endpoint->core().configure(profile);
-        const auto deadline = std::chrono::steady_clock::now() + options.timeout;
+        _endpoint->core().setRequestedHeartbeatInterval(
+            static_cast<std::uint32_t>(std::clamp<std::int64_t>(
+                _options.requestedHeartbeatInterval.count(), 1, 60000)));
+        auto stopWaiting = [&](std::string_view stage) -> std::optional<AppReadyResult> {
+            if (const auto status = invokeProgress(options, waitOptions)) {
+                result.statusCode = *status;
+                result.stage = std::string(stage);
+                emitTrace(result.stage, "error", result.statusCode, 0, "", "", "progress callback failed");
+                _lastAppReady = result;
+                _lastError = SdkError::failure(result.statusCode, "app-ready progress failed");
+                return result;
+            }
+            return std::nullopt;
+        };
+
+        auto cancellationOrTimeout = [&](std::string_view stage) -> std::optional<AppReadyResult> {
+            if (const auto status = invokeCancellation(options, waitOptions)) {
+                result.statusCode = *status;
+                result.stage = std::string(stage);
+                emitTrace(result.stage, *status == ErrorCode::Canceled ? "cancelled" : "error", *status);
+                _lastAppReady = result;
+                _lastError = SdkError::failure(result.statusCode, "app-ready cancelled");
+                return result;
+            }
+            if (std::chrono::steady_clock::now() >= deadline) {
+                result.statusCode = ErrorCode::RpcResponseTimeout;
+                result.stage = std::string(stage);
+                emitTrace(result.stage, "timeout", result.statusCode);
+                _lastAppReady = result;
+                _lastError = SdkError::failure(result.statusCode, "app-ready timeout");
+                return result;
+            }
+            return std::nullopt;
+        };
+
+        auto waitForIdentified = [&]() -> AppReadyResult {
+            result.stage = "identified";
+            result.hasRandomSeed = _pendingIdentifyRandomSeed.has_value();
+            result.randomSeed = _pendingIdentifyRandomSeed.value_or(0);
+            emitTrace("identified", "wait", ErrorCode::Success, 0, "", "", "", true);
+            while (true) {
+                poll();
+                if (const auto stopped = stopWaiting("identified")) {
+                    return *stopped;
+                }
+                if (auto identified = _endpoint->tryTakeSessionRpc(RpcOp::Identified)) {
+                    const std::string bodyText(identified->body.begin(), identified->body.end());
+                    emitTrace("identified",
+                              "receive",
+                              ErrorCode::Success,
+                              0,
+                              identified->meta.jsonSid,
+                              bodyText,
+                              "",
+                              true);
+                    _identifyOutstanding = false;
+                    _pendingIdentifyRandomSeed.reset();
+                    if (!identified->meta.jsonSid.empty()) {
+                        _sessionSid = identified->meta.jsonSid;
+                        _appReady = true;
+                        result.ok = true;
+                        result.statusCode = ErrorCode::Success;
+                        result.stage = "app-ready";
+                        result.sid = _sessionSid;
+                        emitTrace(
+                            "app-ready", "ready", ErrorCode::Success, 0, result.sid, "", "", true);
+                        _lastAppReady = result;
+                        _lastError = SdkError::success();
+                        return result;
+                    }
+                    result.statusCode = ErrorCode::RpcPayloadInvalid;
+                    emitTrace("identified", "error", result.statusCode, 0, "", bodyText, "", true);
+                    _lastAppReady = result;
+                    _lastError = SdkError::failure(result.statusCode, "identified sid missing");
+                    return result;
+                }
+                if (const auto stopped = cancellationOrTimeout("identified")) {
+                    return *stopped;
+                }
+                std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            }
+        };
+
+        // IDENTIFIED has no request id on the wire.  If a wait was cancelled
+        // or timed out after sending IDENTIFY, resume that exact wait instead
+        // of opening a second session and allowing the late response to be
+        // mistaken for a newer handshake.
+        if (_identifyOutstanding) {
+            emitTrace("identify",
+                      "resume",
+                      ErrorCode::Success,
+                      0,
+                      "",
+                      "",
+                      "waiting for the outstanding identify response",
+                      true);
+            return waitForIdentified();
+        }
 
         if (profile.wireMode == AxtpWireMode::FramedBinary && !options.skipControlOpen) {
             result.stage = "control-open";
@@ -189,20 +435,28 @@ public:
             emitTrace("control-open", "send", ErrorCode::Success, controlId);
             _endpoint->sendControlOpen(controlId);
             emitTrace("control-accept", "wait", ErrorCode::Success, controlId);
-            while (std::chrono::steady_clock::now() < deadline) {
+            while (true) {
                 poll();
-                if (auto accept = _endpoint->tryTakeControlNotice(ControlOpcode::Accept)) {
+                if (const auto stopped = stopWaiting("control-accept")) {
+                    return *stopped;
+                }
+                // Match the acknowledgement to the Open we just sent before
+                // consuming it.  A previous, cancelled handshake may still
+                // deliver a late ACCEPT; consuming that notice as a generic
+                // ACCEPT would incorrectly reject the new physical open.
+                if (auto accept = _endpoint->tryTakeControlNotice(
+                        ControlOpcode::Accept, controlId)) {
                     emitTrace("control-accept",
                               "receive",
                               accept->statusCode,
                               accept->controlId,
                               "",
                               "",
-                              accept->controlId == controlId ? "controlId matched"
-                                                             : "controlId mismatch");
-                    if (accept->controlId == controlId &&
-                        accept->statusCode == ErrorCode::Success &&
+                              "controlId matched");
+                    if (accept->statusCode == ErrorCode::Success &&
                         _endpoint->core().controlSessionOpen()) {
+                        _negotiatedHeartbeatIntervalMs =
+                            _endpoint->core().negotiatedHeartbeatIntervalMs();
                         emitTrace(
                             "framing-ready", "ready", ErrorCode::Success, accept->controlId);
                         break;
@@ -214,6 +468,9 @@ public:
                     _lastAppReady = result;
                     _lastError = SdkError::failure(result.statusCode, "control open rejected");
                     return result;
+                }
+                if (const auto stopped = cancellationOrTimeout("control-accept")) {
+                    return *stopped;
                 }
                 std::this_thread::sleep_for(std::chrono::milliseconds(1));
             }
@@ -238,8 +495,11 @@ public:
         result.stage = "hello";
         bool gotHello = false;
         emitTrace("hello", "wait");
-        while (std::chrono::steady_clock::now() < deadline) {
+        while (true) {
             poll();
+            if (const auto stopped = stopWaiting("hello")) {
+                return *stopped;
+            }
             if (auto hello = _endpoint->tryTakeSessionRpc(RpcOp::Hello)) {
                 gotHello = true;
                 emitTrace("hello",
@@ -249,6 +509,9 @@ public:
                           hello->meta.jsonSid,
                           std::string(hello->body.begin(), hello->body.end()));
                 break;
+            }
+            if (const auto stopped = cancellationOrTimeout("hello")) {
+                return *stopped;
             }
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
@@ -275,48 +538,12 @@ public:
                   true);
         _endpoint->sendRpcSession(
             JsonRpcEncoder::makeIdentify(result.randomSeed, options.eventMasks));
-
-        emitTrace("identified", "wait");
-        while (std::chrono::steady_clock::now() < deadline) {
-            poll();
-            if (auto identified = _endpoint->tryTakeSessionRpc(RpcOp::Identified)) {
-                const std::string bodyText(identified->body.begin(), identified->body.end());
-                emitTrace("identified",
-                          "receive",
-                          ErrorCode::Success,
-                          0,
-                          identified->meta.jsonSid,
-                          bodyText,
-                          "",
-                          true);
-                if (!identified->meta.jsonSid.empty()) {
-                    _sessionSid = identified->meta.jsonSid;
-                    _appReady = true;
-                    result.ok = true;
-                    result.statusCode = ErrorCode::Success;
-                    result.stage = "app-ready";
-                    result.sid = _sessionSid;
-                    emitTrace("app-ready", "ready", ErrorCode::Success, 0, result.sid, "", "", true);
-                    _lastAppReady = result;
-                    _lastError = SdkError::success();
-                    return result;
-                }
-                result.statusCode = ErrorCode::RpcPayloadInvalid;
-                emitTrace("identified", "error", result.statusCode, 0, "", bodyText, "", true);
-                _lastAppReady = result;
-                _lastError = SdkError::failure(result.statusCode, "identified sid missing");
-                return result;
-            }
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
-        }
-
-        result.statusCode = ErrorCode::RpcResponseTimeout;
-        emitTrace("identified", "timeout", result.statusCode, 0, "", "", "", true);
-        _lastAppReady = result;
-        _lastError = SdkError::failure(result.statusCode, "identified timeout");
-        return result;
+        _identifyOutstanding = true;
+        _pendingIdentifyRandomSeed = result.randomSeed;
+        return waitForIdentified();
     }
 
+public:
     bool isAppReady() const {
         return _appReady;
     }
@@ -342,7 +569,19 @@ public:
     }
 
     RpcPayload callRaw(RpcPayload request, CallOptions options = {}) {
-        normalizeRequest(request, options);
+        const auto deadline = deadlineAfter(options.timeout);
+        if (!normalizeRequest(request, options)) {
+            return makeErrorResponse(request, ErrorCode::InvalidArgument);
+        }
+
+        // A request id only becomes unavailable for this physical session
+        // once it can have reached the peer.  In particular, a caller may
+        // retry an explicitly assigned id after local dispatch, an unavailable
+        // transport, or an auto-identify failure: none of those paths writes
+        // the business request, so there is no late response to quarantine.
+        const auto releaseUnsentRequestId = [this, &request]() {
+            _usedRequestIds.erase(request.requestId);
+        };
 
         const auto local = _localHandlers.find(request.methodOrEventId);
         if (local != _localHandlers.end()) {
@@ -354,11 +593,18 @@ public:
             response.statusCode = ErrorCode::Success;
             response.bodyEncoding = request.bodyEncoding;
             response.meta = request.meta;
-            response.body = local->second(request);
+            try {
+                response.body = local->second(request);
+            } catch (...) {
+                releaseUnsentRequestId();
+                return makeErrorResponse(request, ErrorCode::InternalError);
+            }
+            releaseUnsentRequestId();
             return response;
         }
 
         if (_transport == nullptr || _endpoint == nullptr) {
+            releaseUnsentRequestId();
             return makeErrorResponse(request, ErrorCode::Unavailable);
         }
 
@@ -366,9 +612,10 @@ public:
         _endpoint->core().configure(profile);
         if (_options.autoIdentify && !_appReady) {
             AppReadyOptions appOptions;
-            appOptions.timeout = options.timeout;
-            const auto ready = ensureAppReady(appOptions);
+            appOptions.timeout = remainingUntil(deadline);
+            const auto ready = ensureAppReadyUntil(appOptions, deadline, &options);
             if (!ready.ok) {
+                releaseUnsentRequestId();
                 return makeErrorResponse(request, ready.statusCode);
             }
             if (request.meta.sourceProtocol == SourceProtocol::JsonRpc &&
@@ -376,23 +623,58 @@ public:
                 request.meta.jsonSid = _sessionSid;
             }
         }
-        _endpoint->sendRpcRequest(request);
+        try {
+            if (!_endpoint->sendRpcRequest(request)) {
+                // The Core rejects ids retired earlier in this physical session.
+                // Do not enter the wait loop (and, importantly, do not put a
+                // request on the wire) when a direct caller supplied a reused id.
+                releaseUnsentRequestId();
+                return makeErrorResponse(request, ErrorCode::InvalidArgument);
+            }
+        } catch (...) {
+            // sendRpcRequest flushes through the endpoint.  A throwing
+            // transport callback can therefore leave the request pending even
+            // though the caller never receives a normal response.
+            _endpoint->abandonRpcResponse(request.requestId);
+            return makeErrorResponse(request, ErrorCode::InternalError);
+        }
 
-        const auto deadline = std::chrono::steady_clock::now() + options.timeout;
-        while (std::chrono::steady_clock::now() < deadline) {
-            poll();
+        while (true) {
+            try {
+                // Endpoint polling crosses transport and registered
+                // event/stream handler boundaries.  Never allow either kind
+                // of embedding callback to escape a synchronous RPC call.
+                poll();
+            } catch (...) {
+                _endpoint->abandonRpcResponse(request.requestId);
+                return makeErrorResponse(request, ErrorCode::InternalError);
+            }
+            if (const auto status = invokeProgress(options)) {
+                _endpoint->abandonRpcResponse(request.requestId);
+                return makeErrorResponse(request, *status);
+            }
             if (auto response = _endpoint->tryTakeRpcResponse(request.requestId)) {
                 return *response;
             }
             if (options.acceptAnyResponse) {
                 if (auto response = _endpoint->tryTakeAnyRpcResponse()) {
+                    // A legacy id-zero reply completes this call.  Retire the
+                    // real request id so a later matching response cannot
+                    // surface during a subsequent call.
+                    _endpoint->abandonRpcResponse(request.requestId);
                     return *response;
                 }
             }
+            if (const auto status = invokeCancellation(options)) {
+                _endpoint->abandonRpcResponse(request.requestId);
+                return makeErrorResponse(request, *status);
+            }
+            if (std::chrono::steady_clock::now() >= deadline) {
+                _endpoint->abandonRpcResponse(request.requestId);
+                return makeErrorResponse(request, ErrorCode::RpcResponseTimeout);
+            }
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
-
-        return makeErrorResponse(request, ErrorCode::RpcResponseTimeout);
     }
 
     Bytes
@@ -518,9 +800,77 @@ private:
         return payload;
     }
 
-    void normalizeRequest(RpcPayload& request, const CallOptions& options) {
+    static std::chrono::steady_clock::time_point deadlineAfter(
+        std::chrono::milliseconds timeout) {
+        return std::chrono::steady_clock::now() + std::max(timeout, std::chrono::milliseconds{0});
+    }
+
+    static std::chrono::milliseconds remainingUntil(
+        std::chrono::steady_clock::time_point deadline) {
+        const auto remaining = std::chrono::duration_cast<std::chrono::milliseconds>(
+            deadline - std::chrono::steady_clock::now());
+        return std::max(remaining, std::chrono::milliseconds{0});
+    }
+
+    static std::optional<ErrorCode> invokeProgress(const CallOptions& options) {
+        try {
+            if (options.progress) {
+                options.progress();
+            }
+        } catch (...) {
+            return ErrorCode::InternalError;
+        }
+        return std::nullopt;
+    }
+
+    static std::optional<ErrorCode> invokeCancellation(const CallOptions& options) {
+        try {
+            if (options.cancelled && options.cancelled()) {
+                return ErrorCode::Canceled;
+            }
+        } catch (...) {
+            return ErrorCode::InternalError;
+        }
+        return std::nullopt;
+    }
+
+    static std::optional<ErrorCode> invokeProgress(const AppReadyOptions& appOptions,
+                                                   const CallOptions* callOptions) {
+        if (callOptions != nullptr) {
+            return invokeProgress(*callOptions);
+        }
+        try {
+            if (appOptions.progress) {
+                appOptions.progress();
+            }
+        } catch (...) {
+            return ErrorCode::InternalError;
+        }
+        return std::nullopt;
+    }
+
+    static std::optional<ErrorCode> invokeCancellation(const AppReadyOptions& appOptions,
+                                                       const CallOptions* callOptions) {
+        if (callOptions != nullptr) {
+            return invokeCancellation(*callOptions);
+        }
+        try {
+            if (appOptions.cancelled && appOptions.cancelled()) {
+                return ErrorCode::Canceled;
+            }
+        } catch (...) {
+            return ErrorCode::InternalError;
+        }
+        return std::nullopt;
+    }
+
+    bool normalizeRequest(RpcPayload& request, const CallOptions& options) {
         if (request.requestId == 0) {
-            request.requestId = _nextRequestId++;
+            if (!allocateRequestId(request.requestId)) {
+                return false;
+            }
+        } else if (!_usedRequestIds.insert(request.requestId).second) {
+            return false;
         }
         (void)options;
         if (request.bodyEncoding == RpcBodyEncoding::Tlv8 && !isJsonBinaryRpcEncoding(request.encoding)) {
@@ -532,6 +882,27 @@ private:
             _appReady && !_sessionSid.empty()) {
             request.meta.jsonSid = _sessionSid;
         }
+        return true;
+    }
+
+    bool allocateRequestId(std::uint32_t& requestId) {
+        // _usedRequestIds is reset only when the physical transport is
+        // attached/closed.  Skip zero on wrap and never recycle an id while a
+        // late response can still arrive on this session.
+        const auto firstCandidate = _nextRequestId == 0 ? 1U : _nextRequestId;
+        auto candidate = firstCandidate;
+        do {
+            if (_usedRequestIds.insert(candidate).second) {
+                requestId = candidate;
+                _nextRequestId = candidate + 1U;
+                return true;
+            }
+            ++candidate;
+            if (candidate == 0) {
+                candidate = 1U;
+            }
+        } while (candidate != firstCandidate);
+        return false;
     }
 
     static RpcPayload makeErrorResponse(const RpcPayload& request, ErrorCode code) {
@@ -586,14 +957,19 @@ private:
     std::unique_ptr<ITransport> _transport;
     BasicBroker<> _broker;
     std::unique_ptr<AxtpEndpoint<BasicBroker<>>> _endpoint;
+    IngressTokenProvider _ingressTokenProvider;
     MethodRegistry _registry = MethodRegistry::fromGeneratedDefaults();
     std::map<std::uint32_t, RawMethodHandler> _localHandlers;
     std::map<std::uint32_t, RawEventHandler> _eventHandlers;
+    std::set<std::uint32_t> _usedRequestIds;
     std::uint32_t _nextRequestId = 1;
     std::uint16_t _nextControlId = 1;
     bool _appReady = false;
     bool _connected = false;
+    bool _identifyOutstanding = false;
     std::string _sessionSid;
+    std::optional<std::uint32_t> _pendingIdentifyRandomSeed;
+    std::optional<std::uint32_t> _negotiatedHeartbeatIntervalMs;
     AppReadyResult _lastAppReady;
     SdkError _lastError;
 };
