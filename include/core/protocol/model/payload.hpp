@@ -4,6 +4,7 @@
 #include <string>
 
 #include "core/protocol/model/bytes.hpp"
+#include "core/protocol/model/endpoint_metadata.hpp"
 #include "core/protocol/model/protocol_types.hpp"
 
 namespace axtp {
@@ -26,6 +27,7 @@ struct PayloadMeta {
     // boundary so deferred broker callbacks can reject data that crossed a
     // logical lease handoff while it was still queued in Core.
     std::uint64_t ingressToken = 0;
+    EndpointMetadata endpoint;
 };
 
 struct ControlTlvOptions {
