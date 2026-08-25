@@ -182,6 +182,14 @@ int main() {
         false,
         false,
     };
+    [[maybe_unused]] const axtp::sdk::CallOptions completeLegacyAggregateOptions{
+        std::chrono::milliseconds{100},
+        axtp::RpcEncoding::Json,
+        false,
+        false,
+        {},
+        {},
+    };
 
     axtp::sdk::ClientOptions clientOptions;
     clientOptions.autoIdentify = false;

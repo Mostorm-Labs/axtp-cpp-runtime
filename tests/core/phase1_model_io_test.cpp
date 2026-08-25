@@ -11,6 +11,20 @@
 #include "core/protocol/model/payload.hpp"
 
 int main() {
+    [[maybe_unused]] const axtp::PayloadMeta legacyAggregateMeta{
+        axtp::SourceProtocol::JsonRpc,
+        1,
+        2,
+        false,
+        0,
+        "legacy-sid",
+        "legacy.method",
+        "legacy.*",
+        false,
+        3,
+    };
+    assert(!axtp::hasEndpointMetadata(legacyAggregateMeta.endpoint));
+
     {
         axtp::ByteWriter writer;
         writer.writeU8(0x12);
