@@ -9,8 +9,12 @@ namespace axtp {
 
 class BusinessExecutor {
 public:
-    RpcPayload executeRpcRequest(const BusinessRouter& router, const BrokerTask& task) const {
-        return router.handleRpcRequest(task.rpc);
+    RpcDispatch executeRpcRequest(const BusinessRouter& router, const BrokerTask& task) const {
+        return router.dispatchRpcRequest(task.rpc);
+    }
+
+    void completeRpcRequest(RpcPayload& response, const RpcResponseData& data) const {
+        BusinessRouter::applyResponseData(response, data);
     }
 };
 
