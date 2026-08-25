@@ -86,6 +86,10 @@ existing fixed envelope and does not serialize Endpoint metadata; an explicit
 does not choose an endpoint key, own provider registration, or map an Endpoint
 to a physical device; those are application/Axent responsibilities.
 
+The pinned `spec/v0.15.0` conformance profile declares `endpoint-relay` as a
+required level and runs the metadata compatibility, single-destination relay,
+and Event fanout addressing cases.
+
 ## Choose An Entry Point
 
 | You need to... | Use this layer | Link this target | Start with | Example entry |

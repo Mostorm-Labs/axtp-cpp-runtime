@@ -829,6 +829,138 @@ bool testUnknownOptionalFieldIgnored(std::string& message) {
     return true;
 }
 
+bool testEndpointMetadataCompatibility(std::string& message) {
+    axtp::BasicBroker<> broker;
+    registerSupportedGet(broker);
+    axtp::AxtpEndpoint endpoint(broker);
+    MemoryJsonTransport transport;
+    std::unique_ptr<axtp::WebSocketJsonRpcAdapter> adapter;
+    if (!setupJsonAdapter(broker, endpoint, transport, adapter, message)) return false;
+    std::string sid;
+    if (!identify(transport, sid, message)) return false;
+
+    nlohmann::json request = {
+        {"sid", sid},
+        {"op", static_cast<int>(axtp::RpcOp::Request)},
+        {"d", {{"id", 31}, {"method", "audio.getAlgorithmConfig"},
+               {"params", nlohmann::json::object()}}},
+    };
+    transport.injectJson(request.dump());
+    auto legacyResponse = transport.popJson(&message);
+    if (!legacyResponse.has_value() || !statusOk(*legacyResponse) ||
+        legacyResponse->at("d").at("id") != 31 || legacyResponse->contains("m")) {
+        message = "legacy object RPC did not remain unaddressed and usable";
+        return false;
+    }
+
+    request["m"] = {
+        {"src", "ep-app-001"},
+        {"dst", "ep-device-001"},
+        {"futureOptionalField", {{"value", 1}}},
+    };
+    request["d"]["id"] = 32;
+    transport.injectJson(request.dump());
+    auto extendedResponse = transport.popJson(&message);
+    if (!extendedResponse.has_value() || !statusOk(*extendedResponse) ||
+        extendedResponse->at("d").at("id") != 32 ||
+        !extendedResponse->contains("m") ||
+        extendedResponse->at("m").value("src", "") != "ep-device-001" ||
+        extendedResponse->at("m").value("dst", "") != "ep-app-001") {
+        message = "extended object RPC did not ignore unknown metadata and reverse addresses";
+        return false;
+    }
+    return true;
+}
+
+bool testEndpointRelayAddressing(std::string& message) {
+    std::optional<axtp::EndpointMetadata> observedEndpoint;
+    axtp::BasicBroker<> broker;
+    broker.registerJsonMethod(
+        "audio.getAlgorithmConfig",
+        [&observedEndpoint](const axtp::RpcContext& context, std::string_view) {
+            observedEndpoint = context.endpoint;
+            return std::string(R"({"noiseSuppression":{"enabled":true,"level":3}})");
+        });
+    axtp::AxtpEndpoint endpoint(broker);
+    MemoryJsonTransport transport;
+    std::unique_ptr<axtp::WebSocketJsonRpcAdapter> adapter;
+    if (!setupJsonAdapter(broker, endpoint, transport, adapter, message)) return false;
+    std::string sid;
+    if (!identify(transport, sid, message)) return false;
+
+    nlohmann::json request = {
+        {"sid", sid},
+        {"op", static_cast<int>(axtp::RpcOp::Request)},
+        {"m", {{"src", "ep-app-001"}, {"dst", "ep-child-audio-001"}}},
+        {"d", {{"id", 41}, {"method", "audio.getAlgorithmConfig"},
+               {"params", nlohmann::json::object()}}},
+    };
+    transport.injectJson(request.dump());
+    auto response = transport.popJson(&message);
+    if (!observedEndpoint.has_value() ||
+        observedEndpoint->src != std::optional<std::string>{"ep-app-001"} ||
+        observedEndpoint->dst != std::optional<std::string>{"ep-child-audio-001"}) {
+        message = "relay destination was not delivered to the local runtime handler";
+        return false;
+    }
+    if (!response.has_value() || !statusOk(*response) ||
+        response->at("d").at("id") != 41 || !response->contains("m") ||
+        !response->at("m").at("src").is_string() ||
+        !response->at("m").at("dst").is_string() ||
+        response->at("m").at("src") != "ep-child-audio-001" ||
+        response->at("m").at("dst") != "ep-app-001" ||
+        response->at("m").contains("route") || response->at("m").contains("nextHop")) {
+        message = "relay response did not keep a singular destination and reverse addresses";
+        return false;
+    }
+    return true;
+}
+
+bool testEndpointFanoutAddressing(std::string& message) {
+    std::optional<axtp::RpcPayload> sourceEvent;
+    axtp::BasicBroker<> broker;
+    broker.registerEventHandler(
+        [&sourceEvent](const axtp::BrokerContext&, const axtp::RpcPayload& event) {
+            sourceEvent = event;
+        });
+    axtp::AxtpEndpoint endpoint(broker);
+    MemoryJsonTransport transport;
+    std::unique_ptr<axtp::WebSocketJsonRpcAdapter> adapter;
+    if (!setupJsonAdapter(broker, endpoint, transport, adapter, message)) return false;
+    std::string sid;
+    if (!identify(transport, sid, message)) return false;
+
+    nlohmann::json incoming = {
+        {"sid", sid},
+        {"op", static_cast<int>(axtp::RpcOp::Event)},
+        {"m", {{"src", "ep-audio-001"}}},
+        {"d", {{"event", "audio.algorithmConfigChanged"},
+               {"data", {{"reason", "user_request"}, {"applyState", "applied"}}}}},
+    };
+    transport.injectJson(incoming.dump());
+    if (!sourceEvent.has_value() ||
+        sourceEvent->meta.endpoint.src != std::optional<std::string>{"ep-audio-001"} ||
+        sourceEvent->meta.endpoint.dst.has_value()) {
+        message = "source Event metadata was not decoded without a destination";
+        return false;
+    }
+
+    for (const auto* destination : {"ep-app-a", "ep-app-b"}) {
+        auto fanout = *sourceEvent;
+        fanout.meta.endpoint.dst = destination;
+        adapter->sendEvent(std::move(fanout));
+        auto outgoing = transport.popJson(&message);
+        if (!outgoing.has_value() || !outgoing->contains("m") ||
+            outgoing->at("m").value("src", "") != "ep-audio-001" ||
+            !outgoing->at("m").at("dst").is_string() ||
+            outgoing->at("m").at("dst") != destination) {
+            message = "Event fanout did not preserve source with one string destination";
+            return false;
+        }
+    }
+    return true;
+}
+
 bool testInvalidParams(std::string& message) {
     axtp::BasicBroker<> broker;
     broker.registerRequestValidator(axtp::AudioAlgorithmConfigValidator{});
@@ -1285,6 +1417,9 @@ bool executeLoadedCase(const CaseResult& item, std::string& message) {
         {"capability.get_all", testCapabilityGetAll}, {"capability.method_binding", testCapabilityMethodBinding},
         {"capability.session_survives_not_supported", testSessionSurvivesNotSupported},
         {"capability.unknown_optional_field_ignored", testUnknownOptionalFieldIgnored},
+        {"rpc.endpoint_metadata_compatibility", testEndpointMetadataCompatibility},
+        {"rpc.endpoint_relay_addressing", testEndpointRelayAddressing},
+        {"event.endpoint_fanout_addressing", testEndpointFanoutAddressing},
     };
     const auto handler = structuralCases.find(item.id);
     if (handler == structuralCases.end()) {

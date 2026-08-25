@@ -123,6 +123,10 @@ provider-local device selector。
 稳定 `endpointKey` 的选择属于 Endpoint owner。禁止使用 sid、request ID、
 IP、WebSocket connection、USB/HID path 或当前 parent Agent。
 
+本仓库从 `spec/v0.15.0` 起在 runtime profile 中把 `endpoint-relay` 声明为
+required level，并执行 legacy/extended metadata compatibility、单目标 RPC
+addressing 和 Event fanout addressing 三个 conformance case。
+
 ## 模式地图
 
 | 模式 | 代码位置 | 作用 |
