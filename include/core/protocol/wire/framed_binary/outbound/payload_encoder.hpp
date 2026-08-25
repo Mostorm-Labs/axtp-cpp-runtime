@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <stdexcept>
 
 #include "core/protocol/wire/framed_binary/control_tlv_codec.hpp"
 #include "core/protocol/wire/websocket_json_rpc/outbound/json_rpc_encoder.hpp"
@@ -28,6 +29,11 @@ public:
     }
 
     Message encodeRpc(const RpcPayload& payload) {
+        if (isJsonBinaryRpcEncoding(payload.encoding) &&
+            hasEndpointMetadata(payload.meta.endpoint)) {
+            throw std::invalid_argument(
+                "JSON_BINARY does not support endpoint metadata");
+        }
         ByteWriter writer;
         if (payload.meta.sourceProtocol == SourceProtocol::JsonRpc &&
             payload.encoding == RpcEncoding::Json) {

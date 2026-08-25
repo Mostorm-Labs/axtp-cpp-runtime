@@ -93,6 +93,24 @@ int main() {
         rpc.statusCode = axtp::ErrorCode::Success;
         rpc.bodyEncoding = axtp::RpcBodyEncoding::Tlv8;
         rpc.body = {0x01, 0x02, 0x03};
+
+        const auto message = axtp::PayloadEncoder{}.encodeRpc(rpc);
+        assert((message.body == axtp::Bytes{
+                                    0x04,
+                                    0x07,
+                                    0x00,
+                                    0x00,
+                                    0x00,
+                                    0x2A,
+                                    0x01,
+                                    0x01,
+                                    0x00,
+                                    0x00,
+                                    0x01,
+                                    0x01,
+                                    0x02,
+                                    0x03,
+                                }));
         outbound.sendRpcRequest(rpc);
 
         CapturingPayloadSink sink;
@@ -102,6 +120,24 @@ int main() {
         assert(sink.rpcs[0].requestId == 42);
         assert(sink.rpcs[0].methodOrEventId == 0x0101);
         assert((sink.rpcs[0].body == axtp::Bytes{0x01, 0x02, 0x03}));
+    }
+
+    {
+        axtp::RpcPayload rpc;
+        rpc.encoding = axtp::jsonBinaryRpcEncoding();
+        rpc.op = axtp::RpcOp::Request;
+        rpc.requestId = 47;
+        rpc.methodOrEventId = 0x0901;
+        rpc.bodyEncoding = axtp::RpcBodyEncoding::Tlv8;
+        rpc.meta.endpoint.src = "ep_app";
+        rpc.meta.endpoint.dst = "ep_device";
+        bool rejected = false;
+        try {
+            (void)axtp::PayloadEncoder{}.encodeRpc(rpc);
+        } catch (const std::invalid_argument&) {
+            rejected = true;
+        }
+        assert(rejected);
     }
 
     {

@@ -213,6 +213,60 @@ int main() {
     auto* transportPtr = transport.get();
     client.attachTransport(std::move(transport));
 
+    std::optional<axtp::RpcPayload> addressedRequest;
+    axtp::sdk::CallOptions addressedOptions;
+    addressedOptions.timeout = std::chrono::milliseconds{100};
+    addressedOptions.endpoint.src = "ep_app";
+    addressedOptions.endpoint.dst = "ep_device";
+    addressedOptions.progress = [&] {
+        addressedRequest = takeOutgoingRequest(*transportPtr);
+    };
+    addressedOptions.cancelled = [&] { return addressedRequest.has_value(); };
+    (void)client.callJson("audio.getAlgorithmConfig", "{}", addressedOptions);
+    REQUIRE(addressedRequest.has_value());
+    REQUIRE(addressedRequest->meta.endpoint.src == "ep_app");
+    REQUIRE(addressedRequest->meta.endpoint.dst == "ep_device");
+
+    const axtp::AudioGetAlgorithmConfigRequest typedInput{};
+    const auto typedRequest =
+        client.makeTypedRequest<axtp::MethodId::AudioGetAlgorithmConfig>(typedInput,
+                                                                         addressedOptions);
+    REQUIRE(typedRequest.meta.endpoint.src == "ep_app");
+    REQUIRE(typedRequest.meta.endpoint.dst == "ep_device");
+
+    {
+        axtp::sdk::AxtpClient localClient(clientOptions);
+        localClient.registerMethod(0x0901, [](const axtp::RpcPayload&) {
+            return axtp::Bytes{'{', '}'};
+        });
+        auto request = makeRequest(0x0901);
+        request.meta.endpoint.src = "ep_app";
+        request.meta.endpoint.dst = "ep_device";
+        const auto response = localClient.callRaw(request);
+        REQUIRE(response.statusCode == axtp::ErrorCode::Success);
+        REQUIRE(response.meta.endpoint.src == "ep_device");
+        REQUIRE(response.meta.endpoint.dst == "ep_app");
+    }
+
+    {
+        axtp::sdk::AxtpClient binaryClient(clientOptions);
+        auto binaryTransport = std::make_unique<axtp::MockTransport>();
+        auto* binaryTransportPtr = binaryTransport.get();
+        binaryClient.attachTransport(std::move(binaryTransport));
+        auto request = makeRequest(0x0901);
+        request.encoding = axtp::jsonBinaryRpcEncoding();
+        request.bodyEncoding = axtp::RpcBodyEncoding::Tlv8;
+        request.meta.endpoint.src = "ep_app";
+        request.meta.endpoint.dst = "ep_device";
+        axtp::sdk::CallOptions options;
+        options.timeout = std::chrono::milliseconds{0};
+        const auto response = binaryClient.callRaw(request, options);
+        REQUIRE(response.statusCode == axtp::ErrorCode::InvalidArgument);
+        REQUIRE(response.meta.endpoint.src == "ep_device");
+        REQUIRE(response.meta.endpoint.dst == "ep_app");
+        REQUIRE(!binaryTransportPtr->tryPopOutgoing().has_value());
+    }
+
     std::vector<axtp::StreamPayload> receivedStreams;
     client.setStreamHandler(
         [&receivedStreams](const axtp::BrokerContext&, const axtp::StreamPayload& stream) {

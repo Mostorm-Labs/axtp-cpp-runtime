@@ -14,6 +14,7 @@ struct CallOptions {
     bool acceptAnyResponse = false;
     std::function<bool()> cancelled;
     std::function<void()> progress;
+    EndpointMetadata endpoint;
 };
 
 }  // namespace axtp::sdk
