@@ -90,6 +90,39 @@ flowchart TB
 - JSON-RPC decoder/encoder 位于 core，因为 runtime 直接支持该 wire mode；因此 nlohmann/json 是允许的 `axtp_core` 依赖。
 - `WebSocketJsonRpcAdapter` 只是可选 session/transport helper，不拥有 `AxtpCore` 或 `BasicBroker<>`。
 
+## Endpoint Relay 模式
+
+Endpoint Relay 是 object RPC 的 optional metadata，不是新的 session 或
+transport topology：
+
+```text
+RpcPayload.meta.endpoint <-> m.src / m.dst
+```
+
+兼容规则：
+
+- 没有 `m` 的 `{sid, op, d}` 继续正常 decode，metadata 为空。
+- `src` 和 `dst` 都为空时 encoder 不输出 `m`，legacy golden JSON 不变。
+- `m.src` / `m.dst` 如果存在，必须是 non-empty string；`dst` 不能是 array。
+- unknown metadata key 被忽略；malformed payload 被丢弃，但 session 继续可用。
+- runtime 生成的 response 使用 `src=request.dst`、`dst=request.src`。
+- Event 可以只有 source；fanout copy 保留 source，每个 copy 最多一个 destination。
+- `JSON_BINARY` fixed envelope 不变，不支持 Endpoint metadata。
+
+`EndpointMetadata` 是 opaque wire value。runtime 不拥有 Endpoint Provider、
+订阅 fanout policy、设备 registry、authorization 或 multi-hop route。上层通过
+`CallOptions::endpoint` 显式传入地址；业务 params 不能承载 `src`、`dst` 或
+provider-local device selector。
+
+`endpointIdFromKey(endpointKey)` 只实现 canonical identity algorithm：
+
+```text
+"ep_" + first16Bytes(SHA-256(UTF-8("AXTP-ENDPOINT-v1|" + endpointKey))).lowerHex
+```
+
+稳定 `endpointKey` 的选择属于 Endpoint owner。禁止使用 sid、request ID、
+IP、WebSocket connection、USB/HID path 或当前 parent Agent。
+
 ## 模式地图
 
 | 模式 | 代码位置 | 作用 |

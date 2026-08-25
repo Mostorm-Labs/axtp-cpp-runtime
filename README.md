@@ -43,6 +43,49 @@ directory is an optional helper layer above the runtime: it provides registry
 JSON loading plus WebSocket JSON-RPC adapter/session glue for tools and
 integrations.
 
+## Endpoint Relay Compatibility
+
+Object-encoded RPC may carry optional Endpoint metadata:
+
+```json
+{
+  "sid": "12345678",
+  "op": 7,
+  "m": {"src": "ep_app", "dst": "ep_device"},
+  "d": {}
+}
+```
+
+The extension is backward compatible. A message without `m` decodes exactly
+as an unaddressed legacy message, and an empty `EndpointMetadata` makes the
+encoder omit `m`, preserving the existing `{sid, op, d}` JSON byte-for-byte.
+Unknown keys inside a structurally valid `m` are ignored. A malformed `m`,
+empty address, non-string address, or array destination drops only that
+payload; it does not make the WebSocket session unusable.
+
+Runtime-generated responses reverse the request addresses. Events may contain
+only `m.src`; a relay can copy an Event, add one string destination to each
+copy, and preserve the original source.
+
+SDK callers opt in explicitly:
+
+```cpp
+axtp::sdk::CallOptions options;
+options.endpoint.src = "ep_app";
+options.endpoint.dst = "ep_device";
+client.callJson("audio.getAlgorithmConfig", "{}", options);
+```
+
+`CallOptions::endpoint` is appended after the previous fields, so existing
+aggregate initializers remain source-compatible. `JSON_BINARY` retains its
+existing fixed envelope and does not serialize Endpoint metadata; an explicit
+`JSON_BINARY + EndpointMetadata` request fails locally with
+`ErrorCode::InvalidArgument` before sending bytes.
+
+`endpointIdFromKey()` provides the canonical `ep_` ID algorithm. The runtime
+does not choose an endpoint key, own provider registration, or map an Endpoint
+to a physical device; those are application/Axent responsibilities.
+
 ## Choose An Entry Point
 
 | You need to... | Use this layer | Link this target | Start with | Example entry |
