@@ -19,6 +19,7 @@ struct RpcContext {
     std::string methodName;
     RpcEncoding encoding = RpcEncoding::Json;
     SourceProtocol sourceProtocol = SourceProtocol::AxtpV1;
+    EndpointMetadata endpoint;
 };
 
 struct RpcRequestView {
@@ -71,6 +72,7 @@ public:
                               payload.meta.sessionId = context.sessionId;
                               payload.meta.requestId = context.requestId;
                               payload.meta.jsonMethodOrEventName = context.methodName;
+                              payload.meta.endpoint = context.endpoint;
                               payload.body = request.body;
                               RpcResponseData response;
                               response.body = handler(payload);
@@ -133,6 +135,7 @@ public:
         response.statusCode = ErrorCode::Success;
         response.bodyEncoding = request.bodyEncoding;
         response.meta = request.meta;
+        response.meta.endpoint = responseEndpointMetadata(request.meta.endpoint);
 
         auto it = _handlers.find(request.methodOrEventId);
         if (it == _handlers.end()) {
@@ -157,6 +160,7 @@ public:
         context.methodName = methodName.has_value() ? std::string(*methodName) : std::string();
         context.encoding = request.encoding;
         context.sourceProtocol = request.meta.sourceProtocol;
+        context.endpoint = request.meta.endpoint;
 
         RpcRequestView view;
         view.methodId = request.methodOrEventId;

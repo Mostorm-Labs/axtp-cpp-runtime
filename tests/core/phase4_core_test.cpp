@@ -9,6 +9,7 @@
 
 #include "core/runtime/broker/basic_broker.hpp"
 #include "core/runtime/core/axtp_core.hpp"
+#include "core/runtime/core/rpc_dispatcher.hpp"
 #include "core/protocol/wire/inbound_processor.hpp"
 #include "core/protocol/wire/outbound_processor.hpp"
 #include "core/support/io/byte_writer_sink.hpp"
@@ -118,6 +119,8 @@ int main() {
         request.op = axtp::RpcOp::Request;
         request.requestId = 3;
         request.methodOrEventId = 0x0902;
+        request.meta.endpoint.src = "ep_app";
+        request.meta.endpoint.dst = "ep_device";
         const std::string params = R"({"config":{"noiseSuppression":{"level":999}}})";
         request.body.assign(params.begin(), params.end());
         axtp::BrokerTask task;
@@ -128,6 +131,8 @@ int main() {
         const auto result = broker.pollResult();
         REQUIRE(result.has_value());
         REQUIRE(result->rpc.statusCode == axtp::ErrorCode::OutOfRange);
+        REQUIRE(result->rpc.meta.endpoint.src == "ep_device");
+        REQUIRE(result->rpc.meta.endpoint.dst == "ep_app");
         REQUIRE(!called);
     }
 
@@ -138,6 +143,8 @@ int main() {
         request.op = axtp::RpcOp::Request;
         request.requestId = 39;
         request.methodOrEventId = 0x0902;  // generated audio.setAlgorithmConfig
+        request.meta.endpoint.src = "ep_app";
+        request.meta.endpoint.dst = "ep_device";
         const auto response = broker.registry().findMethodName(request.methodOrEventId);
         REQUIRE(response.has_value());
 
@@ -149,6 +156,32 @@ int main() {
         const auto result = broker.pollResult();
         REQUIRE(result.has_value());
         REQUIRE(result->rpc.statusCode == axtp::ErrorCode::NotSupported);
+        REQUIRE(result->rpc.meta.endpoint.src == "ep_device");
+        REQUIRE(result->rpc.meta.endpoint.dst == "ep_app");
+    }
+
+    {
+        axtp::RpcDispatcher dispatcher;
+        dispatcher.registerHandler(0x0901, [](const axtp::RpcPayload&) {
+            return axtp::Bytes{'{', '}'};
+        });
+
+        axtp::RpcPayload request;
+        request.encoding = axtp::RpcEncoding::Json;
+        request.op = axtp::RpcOp::Request;
+        request.requestId = 40;
+        request.methodOrEventId = 0x0901;
+        request.meta.endpoint.src = "ep_app";
+        request.meta.endpoint.dst = "ep_device";
+        auto response = dispatcher.handle(request);
+        REQUIRE(response.has_value());
+        REQUIRE(response->meta.endpoint.src == "ep_device");
+        REQUIRE(response->meta.endpoint.dst == "ep_app");
+
+        request.meta.endpoint = {};
+        response = dispatcher.handle(request);
+        REQUIRE(response.has_value());
+        REQUIRE(!axtp::hasEndpointMetadata(response->meta.endpoint));
     }
 
     {
@@ -425,7 +458,7 @@ int main() {
         // unmatched responses from a peer.  They must retain their one-way
         // trip through Core while genuine unknown responses are consumed.
         const std::string unknownMethod =
-            R"({"sid":"12345678","op":7,"d":{"id":704,"method":"audio.unknown","params":{}}})";
+            R"({"sid":"12345678","op":7,"m":{"src":"ep_app","dst":"ep_device"},"d":{"id":704,"method":"audio.unknown","params":{}}})";
         core.byteSink().onBytes(
             reinterpret_cast<const axtp::Byte*>(unknownMethod.data()),
             unknownMethod.size());
@@ -438,9 +471,12 @@ int main() {
                 axtp::ErrorCode::RpcMethodNotFound));
         REQUIRE(errorJson.find(std::string(R"("code":)") + methodNotFoundCode) !=
                 std::string::npos);
+        const auto errorObject = nlohmann::json::parse(errorJson);
+        REQUIRE(errorObject.at("m").at("src") == "ep_device");
+        REQUIRE(errorObject.at("m").at("dst") == "ep_app");
 
         const std::string unsupportedBatch =
-            R"({"sid":"12345678","op":9,"d":{"id":705,"requests":[]}})";
+            R"({"sid":"12345678","op":9,"m":{"src":"ep_app","dst":"ep_device"},"d":{"id":705,"requests":[]}})";
         core.byteSink().onBytes(
             reinterpret_cast<const axtp::Byte*>(unsupportedBatch.data()),
             unsupportedBatch.size());
@@ -455,6 +491,9 @@ int main() {
                 axtp::ErrorCode::RpcBatchUnsupported));
         REQUIRE(batchErrorJson.find(std::string(R"("code":)") + batchUnsupportedCode) !=
                 std::string::npos);
+        const auto batchErrorObject = nlohmann::json::parse(batchErrorJson);
+        REQUIRE(batchErrorObject.at("m").at("src") == "ep_device");
+        REQUIRE(batchErrorObject.at("m").at("dst") == "ep_app");
 
         const std::string unknownResponse =
             R"({"sid":"12345678","op":8,"d":{"id":706,"status":{"ok":true,"code":0},"result":{}}})";

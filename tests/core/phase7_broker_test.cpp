@@ -77,6 +77,8 @@ int main() {
             "audio.getAlgorithmConfig",
             [](const axtp::RpcContext& context, std::string_view params) {
                 assert(context.methodName == "audio.getAlgorithmConfig");
+                assert(context.endpoint.src == "ep_app");
+                assert(context.endpoint.dst == "ep_device");
                 assert(params == "{}");
                 return std::string(R"({"ok":true})");
             });
@@ -102,6 +104,8 @@ int main() {
         jsonTask.rpc.requestId = 1001;
         jsonTask.rpc.methodOrEventId = 0x0901;
         jsonTask.rpc.bodyEncoding = axtp::RpcBodyEncoding::None;
+        jsonTask.rpc.meta.endpoint.src = "ep_app";
+        jsonTask.rpc.meta.endpoint.dst = "ep_device";
         jsonTask.rpc.body = {'{', '}'};
         dynamicBroker.submit(std::move(jsonTask));
 
@@ -137,12 +141,38 @@ int main() {
         assert(tlvResult->type == axtp::BrokerResultType::RpcResponse);
         assert(rawResult->type == axtp::BrokerResultType::RpcResponse);
         assert(jsonResult->rpc.encoding == axtp::RpcEncoding::Json);
+        assert(jsonResult->rpc.meta.endpoint.src == "ep_device");
+        assert(jsonResult->rpc.meta.endpoint.dst == "ep_app");
         assert((jsonResult->rpc.body ==
                 axtp::Bytes{'{', '"', 'o', 'k', '"', ':', 't', 'r', 'u', 'e', '}'}));
         assert(tlvResult->rpc.encoding == axtp::jsonBinaryRpcEncoding());
         assert((tlvResult->rpc.body == axtp::Bytes{0x02, 0x01, 0x01}));
         assert(rawResult->rpc.encoding == axtp::jsonBinaryRpcEncoding());
         assert((rawResult->rpc.body == axtp::Bytes{0xDE, 0xAD}));
+    }
+
+    {
+        axtp::BasicBroker<> compatibilityBroker;
+        compatibilityBroker.registerMethod(0x0901, [](const axtp::RpcPayload& request) {
+            assert(request.meta.endpoint.src == "ep_app");
+            assert(request.meta.endpoint.dst == "ep_device");
+            return axtp::Bytes{'{', '}'};
+        });
+
+        axtp::BrokerTask task;
+        task.type = axtp::BrokerTaskType::RpcRequest;
+        task.rpc.encoding = axtp::RpcEncoding::Json;
+        task.rpc.op = axtp::RpcOp::Request;
+        task.rpc.requestId = 1004;
+        task.rpc.methodOrEventId = 0x0901;
+        task.rpc.meta.endpoint.src = "ep_app";
+        task.rpc.meta.endpoint.dst = "ep_device";
+        compatibilityBroker.submit(std::move(task));
+        compatibilityBroker.poll();
+        const auto result = compatibilityBroker.pollResult();
+        assert(result.has_value());
+        assert(result->rpc.meta.endpoint.src == "ep_device");
+        assert(result->rpc.meta.endpoint.dst == "ep_app");
     }
 
     return 0;

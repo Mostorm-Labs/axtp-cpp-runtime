@@ -225,6 +225,7 @@ private:
             error.statusCode = ErrorCode::RpcMethodNotFound;
             error.bodyEncoding = RpcBodyEncoding::None;
             fillJsonMeta(error, object, sourceProtocol);
+            error.meta.endpoint = responseEndpointMetadata(error.meta.endpoint);
             error.meta.jsonMethodOrEventName = method;
             error.meta.localGeneratedResponse = true;
             sink.onRpc(std::move(error));
@@ -330,6 +331,7 @@ private:
         payload.statusCode = ErrorCode::RpcBatchUnsupported;
         payload.bodyEncoding = RpcBodyEncoding::None;
         fillJsonMeta(payload, object, sourceProtocol);
+        payload.meta.endpoint = responseEndpointMetadata(payload.meta.endpoint);
         payload.meta.localGeneratedResponse = true;
         payload.body = jsonToBytes(d);
         sink.onRpc(std::move(payload));
