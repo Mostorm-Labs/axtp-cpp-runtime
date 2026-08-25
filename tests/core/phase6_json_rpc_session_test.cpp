@@ -135,12 +135,34 @@ int main() {
 
     injectJson(
         fixture.transport,
+        R"({"sid":"","op":7,"m":{"src":"ep_app","dst":"ep_device"},"d":{"id":699,"method":"audio.getAlgorithmConfig"}})");
+    auto response = popJson(fixture.transport, "addressed request before identify");
+    assert(response.at("op").get<int>() ==
+           static_cast<int>(axtp::RpcOp::RequestResponse));
+    assert(response.at("d").at("id").get<int>() == 699);
+    assert(response.at("d").at("status").at("code").get<int>() ==
+           static_cast<int>(axtp::ErrorCode::ControlOpenRequired));
+    assert(response.at("m").at("src").get<std::string>() == "ep_device");
+    assert(response.at("m").at("dst").get<std::string>() == "ep_app");
+
+    injectJson(
+        fixture.transport,
         R"({"sid":"","op":7,"d":{"id":700,"method":"audio.getAlgorithmConfig"}})");
-    auto response = popJson(fixture.transport, "request before identify");
+    response = popJson(fixture.transport, "request before identify");
     assert(response.at("op").get<int>() ==
            static_cast<int>(axtp::RpcOp::RequestResponse));
     assert(response.at("d").at("status").at("code").get<int>() ==
            static_cast<int>(axtp::ErrorCode::ControlOpenRequired));
+    assert(!response.contains("m"));
+
+    injectJson(
+        fixture.transport,
+        R"({"sid":"","op":7,"m":{"src":7,"dst":"ep_device"},"d":{"id":700,"method":"audio.getAlgorithmConfig"}})");
+    response = popJson(fixture.transport, "malformed endpoint metadata");
+    assert(response.at("d").at("id").get<int>() == 0);
+    assert(response.at("d").at("status").at("code").get<int>() ==
+           static_cast<int>(axtp::ErrorCode::RpcPayloadInvalid));
+    assert(!response.contains("m"));
 
     injectJson(fixture.transport,
                R"({"sid":"","op":2,"d":{"resumeSid":"legacy-session"}})");
@@ -261,17 +283,19 @@ int main() {
 
     injectJson(fixture.transport,
                R"({"sid":")" + sid +
-                   R"(","op":9,"d":{"id":706,"requests":[]}})");
+                   R"(","op":9,"m":{"src":"ep_app","dst":"ep_device"},"d":{"id":706,"requests":[]}})");
     response = popJson(fixture.transport, "batch unsupported");
     data = response.at("d");
     assert(response.at("op").get<int>() ==
            static_cast<int>(axtp::RpcOp::RequestBatchResponse));
     assert(data.at("status").at("code").get<int>() ==
            static_cast<int>(axtp::ErrorCode::RpcBatchUnsupported));
+    assert(response.at("m").at("src").get<std::string>() == "ep_device");
+    assert(response.at("m").at("dst").get<std::string>() == "ep_app");
 
     injectJson(
         fixture.transport,
-        R"({"sid":"0x000003","op":7,"d":{"id":707,"method":"audio.getAlgorithmConfig","params":{}}})");
+        R"({"sid":"0x000003","op":7,"m":{"src":"ep_app","dst":"ep_device"},"d":{"id":707,"method":"audio.getAlgorithmConfig","params":{}}})");
     response = popJson(fixture.transport, "invalid sid");
     data = response.at("d");
     assert(response.at("op").get<int>() ==
@@ -280,6 +304,8 @@ int main() {
     assert(!data.at("status").at("ok").get<bool>());
     assert(data.at("status").at("code").get<int>() ==
            static_cast<int>(axtp::ErrorCode::RpcPayloadInvalid));
+    assert(response.at("m").at("src").get<std::string>() == "ep_device");
+    assert(response.at("m").at("dst").get<std::string>() == "ep_app");
 
     axtp::RpcPayload event;
     event.encoding = axtp::RpcEncoding::Json;
