@@ -156,6 +156,82 @@ int main() {
     }
 
     {
+        axtp::RpcPayload legacy;
+        legacy.encoding = axtp::RpcEncoding::Json;
+        legacy.op = axtp::RpcOp::Request;
+        legacy.requestId = 41;
+        legacy.methodOrEventId = 0x0901;
+        legacy.bodyEncoding = axtp::RpcBodyEncoding::None;
+        legacy.meta.sourceProtocol = axtp::SourceProtocol::JsonRpc;
+        legacy.meta.jsonSid = "12345678";
+        legacy.meta.jsonMethodOrEventName = "audio.getAlgorithmConfig";
+        legacy.body = {'{', '}'};
+
+        const auto bytes = axtp::JsonRpcEncoder{}.encode(legacy);
+        const std::string text(bytes.begin(), bytes.end());
+        assert(text ==
+               R"({"d":{"id":41,"method":"audio.getAlgorithmConfig","params":{}},"op":7,"sid":"12345678"})");
+    }
+
+    {
+        axtp::RpcPayload request;
+        request.encoding = axtp::RpcEncoding::Json;
+        request.op = axtp::RpcOp::Request;
+        request.requestId = 45;
+        request.methodOrEventId = 0x0901;
+        request.meta.jsonSid = "12345678";
+        request.meta.jsonMethodOrEventName = "audio.getAlgorithmConfig";
+        request.meta.endpoint.src = "ep_app";
+        request.meta.endpoint.dst = "ep_device";
+
+        auto object = nlohmann::json::parse(axtp::JsonRpcEncoder{}.encode(request));
+        assert(object.at("m").at("src") == "ep_app");
+        assert(object.at("m").at("dst") == "ep_device");
+
+        axtp::RpcPayload response;
+        response.encoding = axtp::RpcEncoding::Json;
+        response.op = axtp::RpcOp::RequestResponse;
+        response.requestId = 45;
+        response.meta.jsonSid = "12345678";
+        response.meta.endpoint.src = "ep_device";
+        response.meta.endpoint.dst = "ep_app";
+        object = nlohmann::json::parse(axtp::JsonRpcEncoder{}.encode(response));
+        assert(object.at("m").at("src") == "ep_device");
+        assert(object.at("m").at("dst") == "ep_app");
+
+        axtp::RpcPayload event;
+        event.encoding = axtp::RpcEncoding::Json;
+        event.op = axtp::RpcOp::Event;
+        event.methodOrEventId = 0x0901;
+        event.meta.jsonSid = "12345678";
+        event.meta.jsonMethodOrEventName = "audio.algorithmConfigChanged";
+        event.meta.endpoint.src = "ep_device";
+        object = nlohmann::json::parse(axtp::JsonRpcEncoder{}.encode(event));
+        assert(object.at("m").at("src") == "ep_device");
+        assert(!object.at("m").contains("dst"));
+
+        event.meta.endpoint.dst = "ep_app";
+        object = nlohmann::json::parse(axtp::JsonRpcEncoder{}.encode(event));
+        assert(object.at("m").at("src") == "ep_device");
+        assert(object.at("m").at("dst") == "ep_app");
+    }
+
+    {
+        axtp::RpcPayload request;
+        request.encoding = axtp::RpcEncoding::Json;
+        request.op = axtp::RpcOp::Request;
+        request.requestId = 46;
+        request.meta.endpoint.src = "";
+        bool rejected = false;
+        try {
+            (void)axtp::JsonRpcEncoder{}.encode(request);
+        } catch (const std::invalid_argument&) {
+            rejected = true;
+        }
+        assert(rejected);
+    }
+
+    {
         CapturingByteWriter writer;
         axtp::OutboundProcessor outbound(writer);
         outbound.sendRpc(axtp::JsonRpcEncoder::makeHello());

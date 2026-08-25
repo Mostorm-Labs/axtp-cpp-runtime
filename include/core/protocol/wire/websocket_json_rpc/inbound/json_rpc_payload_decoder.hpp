@@ -13,6 +13,7 @@
 
 #include "core/protocol/wire/payload_sink.hpp"
 #include "core/protocol/generated/registry_lookup.h"
+#include "core/protocol/wire/websocket_json_rpc/endpoint_metadata_codec.hpp"
 
 namespace axtp {
 
@@ -203,6 +204,7 @@ private:
         payload.meta.sourceProtocol = sourceProtocol;
         payload.meta.requestId = payload.requestId;
         payload.meta.jsonSid = parseSid(object);
+        payload.meta.endpoint = decodeEndpointMetadata(object);
     }
 
     static void decodeRequest(const nlohmann::json& object,

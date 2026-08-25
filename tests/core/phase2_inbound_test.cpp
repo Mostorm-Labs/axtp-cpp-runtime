@@ -192,5 +192,62 @@ int main() {
         assert(!sink.rpcs[0].meta.hasRandomSeed);
     }
 
+    {
+        CapturingPayloadSink sink;
+        const std::string request =
+            R"({"sid":"12345678","op":7,"m":{"src":"ep_app","dst":"ep_device","future":"ignored"},"d":{"id":12,"method":"audio.getAlgorithmConfig","params":{}}})";
+        axtp::JsonRpcPayloadDecoder::decode(
+            reinterpret_cast<const axtp::Byte*>(request.data()),
+            request.size(),
+            sink,
+            axtp::SourceProtocol::JsonRpc);
+        assert(sink.rpcs.size() == 1);
+        assert(sink.rpcs[0].meta.endpoint.src == "ep_app");
+        assert(sink.rpcs[0].meta.endpoint.dst == "ep_device");
+    }
+
+    {
+        CapturingPayloadSink sink;
+        const std::string event =
+            R"({"sid":"12345678","op":6,"m":{"src":"ep_device"},"d":{"event":"audio.algorithmConfigChanged","data":{}}})";
+        axtp::JsonRpcPayloadDecoder::decode(
+            reinterpret_cast<const axtp::Byte*>(event.data()),
+            event.size(),
+            sink,
+            axtp::SourceProtocol::JsonRpc);
+        assert(sink.rpcs.size() == 1);
+        assert(sink.rpcs[0].op == axtp::RpcOp::Event);
+        assert(sink.rpcs[0].meta.endpoint.src == "ep_device");
+        assert(!sink.rpcs[0].meta.endpoint.dst.has_value());
+    }
+
+    {
+        CapturingPayloadSink sink;
+        for (const std::string malformed : {
+                 R"({"sid":"12345678","op":7,"m":[],"d":{"id":20,"method":"audio.getAlgorithmConfig"}})",
+                 R"({"sid":"12345678","op":7,"m":{"src":""},"d":{"id":21,"method":"audio.getAlgorithmConfig"}})",
+                 R"({"sid":"12345678","op":7,"m":{"src":7},"d":{"id":22,"method":"audio.getAlgorithmConfig"}})",
+                 R"({"sid":"12345678","op":7,"m":{"dst":["ep_device"]},"d":{"id":23,"method":"audio.getAlgorithmConfig"}})",
+             }) {
+            axtp::JsonRpcPayloadDecoder::decode(
+                reinterpret_cast<const axtp::Byte*>(malformed.data()),
+                malformed.size(),
+                sink,
+                axtp::SourceProtocol::JsonRpc);
+        }
+        assert(sink.rpcs.empty());
+
+        const std::string legacy =
+            R"({"sid":"12345678","op":7,"d":{"id":24,"method":"audio.getAlgorithmConfig","params":{}}})";
+        axtp::JsonRpcPayloadDecoder::decode(
+            reinterpret_cast<const axtp::Byte*>(legacy.data()),
+            legacy.size(),
+            sink,
+            axtp::SourceProtocol::JsonRpc);
+        assert(sink.rpcs.size() == 1);
+        assert(sink.rpcs[0].requestId == 24);
+        assert(!axtp::hasEndpointMetadata(sink.rpcs[0].meta.endpoint));
+    }
+
     return 0;
 }

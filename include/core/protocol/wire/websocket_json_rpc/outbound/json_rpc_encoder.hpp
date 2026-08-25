@@ -9,6 +9,7 @@
 #include "core/protocol/generated/axtp_generated_version.hpp"
 #include "core/protocol/generated/registry_lookup.h"
 #include "core/protocol/model/payload.hpp"
+#include "core/protocol/wire/websocket_json_rpc/endpoint_metadata_codec.hpp"
 
 namespace axtp {
 
@@ -159,6 +160,7 @@ private:
         object["sid"] = responseSid(payload.meta);
         object["op"] = static_cast<std::uint8_t>(RpcOp::RequestResponse);
         object["d"] = std::move(d);
+        addEndpointMetadata(object, payload.meta.endpoint);
         return object.dump();
     }
 
@@ -181,6 +183,7 @@ private:
         object["sid"] = responseSid(payload.meta);
         object["op"] = static_cast<std::uint8_t>(RpcOp::Request);
         object["d"] = std::move(d);
+        addEndpointMetadata(object, payload.meta.endpoint);
         return object.dump();
     }
 
@@ -193,6 +196,7 @@ private:
         object["sid"] = responseSid(payload.meta);
         object["op"] = static_cast<std::uint8_t>(RpcOp::RequestBatchResponse);
         object["d"] = std::move(d);
+        addEndpointMetadata(object, payload.meta.endpoint);
         return object.dump();
     }
 
@@ -213,6 +217,7 @@ private:
         object["sid"] = responseSid(payload.meta);
         object["op"] = static_cast<std::uint8_t>(RpcOp::Event);
         object["d"] = std::move(d);
+        addEndpointMetadata(object, payload.meta.endpoint);
         return object.dump();
     }
 };
