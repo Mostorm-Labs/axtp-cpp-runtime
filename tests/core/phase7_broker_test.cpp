@@ -1,4 +1,5 @@
 #include <cassert>
+#include <cstdint>
 #include <memory>
 #include <optional>
 #include <string_view>
@@ -33,6 +34,63 @@ struct CapturingPayloadSink : axtp::IPayloadSink {
     }
 
     void onStream(axtp::StreamPayload) override {}
+};
+
+struct CountingReplyTransport final : axtp::ITransport {
+    struct SentBytes {
+        std::uint64_t reply_target = 0;
+        axtp::Bytes bytes;
+    };
+
+    void bind(axtp::IByteSink& sink) override {
+        sink_ = &sink;
+    }
+
+    void open() override {}
+    void close() override {}
+
+    void poll() override {
+        ++poll_count;
+    }
+
+    void sendBytes(const axtp::Byte* data, std::size_t size) override {
+        sent.push_back({0, axtp::Bytes(data, data + size)});
+    }
+
+    std::uint64_t currentReplyTarget() const override {
+        return current_reply_target;
+    }
+
+    void sendBytesTo(std::uint64_t reply_target,
+                     const axtp::Byte* data,
+                     std::size_t size) override {
+        sent.push_back({reply_target, axtp::Bytes(data, data + size)});
+    }
+
+    axtp::TransportProfile profile() const override {
+        return profile_value;
+    }
+
+    void injectIncoming(const axtp::Bytes& bytes, std::uint64_t reply_target) {
+        assert(sink_ != nullptr);
+        current_reply_target = reply_target;
+        sink_->onBytes(bytes.data(), bytes.size());
+        current_reply_target = 0;
+    }
+
+    axtp::IByteSink* sink_ = nullptr;
+    std::uint64_t current_reply_target = 0;
+    std::size_t poll_count = 0;
+    std::vector<SentBytes> sent;
+    axtp::TransportProfile profile_value{
+        axtp::TransportKind::Mock,
+        axtp::AxtpWireMode::FramedBinary,
+        axtp::jsonBinaryRpcEncoding(),
+        false,
+        false,
+        true,
+        4096,
+    };
 };
 
 }  // namespace
@@ -318,6 +376,44 @@ int main() {
         }
         assert(destroyedPolls == 0);
         assert(pendingLifetime.expired());
+    }
+
+    {
+        axtp::BasicBroker<> deferredEndpointBroker;
+        axtp::AxtpEndpoint deferredEndpoint(deferredEndpointBroker);
+        CountingReplyTransport replyTransport;
+        deferredEndpoint.attachTransport(replyTransport);
+        bool responseReady = false;
+        deferredEndpointBroker.registerDeferredRawMethod(
+            0xA007,
+            [&responseReady](const axtp::RpcContext&, const axtp::RpcRequestView&) {
+                return [&responseReady]() -> std::optional<axtp::RpcResponseData> {
+                    if (!responseReady) {
+                        return std::nullopt;
+                    }
+                    return axtp::RpcResponseData{axtp::RpcEncoding::Json, {'O', 'K'}};
+                };
+            });
+
+        axtp::RpcPayload deferredRequest;
+        deferredRequest.encoding = axtp::jsonBinaryRpcEncoding();
+        deferredRequest.op = axtp::RpcOp::Request;
+        deferredRequest.requestId = 0xA007;
+        deferredRequest.methodOrEventId = 0xA007;
+        deferredRequest.bodyEncoding = axtp::RpcBodyEncoding::None;
+        CapturingByteWriter deferredWriter;
+        axtp::OutboundProcessor deferredOutbound(deferredWriter);
+        deferredOutbound.sendRpcRequest(deferredRequest);
+        replyTransport.injectIncoming(deferredWriter.bytes, 0xC0DE);
+        deferredEndpoint.poll();
+        assert(replyTransport.poll_count == 1);
+        assert(replyTransport.sent.empty());
+
+        responseReady = true;
+        deferredEndpoint.progress();
+        assert(replyTransport.poll_count == 1);
+        assert(replyTransport.sent.size() == 1);
+        assert(replyTransport.sent[0].reply_target == 0xC0DE);
     }
 
     return 0;

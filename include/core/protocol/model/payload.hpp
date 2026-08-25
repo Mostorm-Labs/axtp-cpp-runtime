@@ -27,6 +27,10 @@ struct PayloadMeta {
     // boundary so deferred broker callbacks can reject data that crossed a
     // logical lease handoff while it was still queued in Core.
     std::uint64_t ingressToken = 0;
+    // Opaque transport-local reply target captured at RPC ingress. It is never
+    // serialized and remains distinct from Endpoint metadata, which is a wire
+    // routing field rather than a connection-local delivery address.
+    std::uint64_t replyTarget = 0;
     EndpointMetadata endpoint;
 };
 
