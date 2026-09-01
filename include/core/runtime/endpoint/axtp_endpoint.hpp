@@ -26,11 +26,15 @@ public:
         _core.resetResponseTracking();
         _core.configure(_transport->profile());
         _transport->bind(_byteSink);
+        _core.setIngressReplyTargetProvider([this]() {
+            return _transport != nullptr ? _transport->currentReplyTarget() : 0;
+        });
     }
 
     void detachTransport() {
         _transport = nullptr;
         _core.resetResponseTracking();
+        _core.setIngressReplyTargetProvider({});
     }
 
     void setIngressTokenProvider(typename AxtpCore::IngressTokenProvider provider) {
@@ -41,6 +45,10 @@ public:
         if (_transport != nullptr) {
             _transport->poll();
         }
+        progress(maxTasks);
+    }
+
+    void progress(std::size_t maxTasks = 8) {
         drainCoreEvents();
         _broker.poll(maxTasks);
         drainBrokerResults();
@@ -134,8 +142,13 @@ public:
         if (_transport == nullptr) {
             return;
         }
-        while (auto bytes = _core.tryPopOutboundBytes()) {
-            _transport->sendBytes(bytes->data(), bytes->size());
+        while (auto packet = _core.tryPopOutboundPacket()) {
+            if (packet->replyTarget != 0) {
+                _transport->sendBytesTo(
+                    packet->replyTarget, packet->bytes.data(), packet->bytes.size());
+            } else {
+                _transport->sendBytes(packet->bytes.data(), packet->bytes.size());
+            }
         }
     }
 

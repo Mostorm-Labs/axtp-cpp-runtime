@@ -93,6 +93,24 @@ int main() {
         rpc.statusCode = axtp::ErrorCode::Success;
         rpc.bodyEncoding = axtp::RpcBodyEncoding::Tlv8;
         rpc.body = {0x01, 0x02, 0x03};
+
+        const auto message = axtp::PayloadEncoder{}.encodeRpc(rpc);
+        assert((message.body == axtp::Bytes{
+                                    0x04,
+                                    0x07,
+                                    0x00,
+                                    0x00,
+                                    0x00,
+                                    0x2A,
+                                    0x01,
+                                    0x01,
+                                    0x00,
+                                    0x00,
+                                    0x01,
+                                    0x01,
+                                    0x02,
+                                    0x03,
+                                }));
         outbound.sendRpcRequest(rpc);
 
         CapturingPayloadSink sink;
@@ -102,6 +120,24 @@ int main() {
         assert(sink.rpcs[0].requestId == 42);
         assert(sink.rpcs[0].methodOrEventId == 0x0101);
         assert((sink.rpcs[0].body == axtp::Bytes{0x01, 0x02, 0x03}));
+    }
+
+    {
+        axtp::RpcPayload rpc;
+        rpc.encoding = axtp::jsonBinaryRpcEncoding();
+        rpc.op = axtp::RpcOp::Request;
+        rpc.requestId = 47;
+        rpc.methodOrEventId = 0x0901;
+        rpc.bodyEncoding = axtp::RpcBodyEncoding::Tlv8;
+        rpc.meta.endpoint.src = "ep_app";
+        rpc.meta.endpoint.dst = "ep_device";
+        bool rejected = false;
+        try {
+            (void)axtp::PayloadEncoder{}.encodeRpc(rpc);
+        } catch (const std::invalid_argument&) {
+            rejected = true;
+        }
+        assert(rejected);
     }
 
     {
@@ -153,6 +189,82 @@ int main() {
         assert(sink.rpcs[0].methodOrEventId == 0x0901);
         assert(sink.rpcs[0].meta.jsonSid == "1234abcd");
         assert((sink.rpcs[0].body == axtp::Bytes{'{', '}'}));
+    }
+
+    {
+        axtp::RpcPayload legacy;
+        legacy.encoding = axtp::RpcEncoding::Json;
+        legacy.op = axtp::RpcOp::Request;
+        legacy.requestId = 41;
+        legacy.methodOrEventId = 0x0901;
+        legacy.bodyEncoding = axtp::RpcBodyEncoding::None;
+        legacy.meta.sourceProtocol = axtp::SourceProtocol::JsonRpc;
+        legacy.meta.jsonSid = "12345678";
+        legacy.meta.jsonMethodOrEventName = "audio.getAlgorithmConfig";
+        legacy.body = {'{', '}'};
+
+        const auto bytes = axtp::JsonRpcEncoder{}.encode(legacy);
+        const std::string text(bytes.begin(), bytes.end());
+        assert(text ==
+               R"({"d":{"id":41,"method":"audio.getAlgorithmConfig","params":{}},"op":7,"sid":"12345678"})");
+    }
+
+    {
+        axtp::RpcPayload request;
+        request.encoding = axtp::RpcEncoding::Json;
+        request.op = axtp::RpcOp::Request;
+        request.requestId = 45;
+        request.methodOrEventId = 0x0901;
+        request.meta.jsonSid = "12345678";
+        request.meta.jsonMethodOrEventName = "audio.getAlgorithmConfig";
+        request.meta.endpoint.src = "ep_app";
+        request.meta.endpoint.dst = "ep_device";
+
+        auto object = nlohmann::json::parse(axtp::JsonRpcEncoder{}.encode(request));
+        assert(object.at("m").at("src") == "ep_app");
+        assert(object.at("m").at("dst") == "ep_device");
+
+        axtp::RpcPayload response;
+        response.encoding = axtp::RpcEncoding::Json;
+        response.op = axtp::RpcOp::RequestResponse;
+        response.requestId = 45;
+        response.meta.jsonSid = "12345678";
+        response.meta.endpoint.src = "ep_device";
+        response.meta.endpoint.dst = "ep_app";
+        object = nlohmann::json::parse(axtp::JsonRpcEncoder{}.encode(response));
+        assert(object.at("m").at("src") == "ep_device");
+        assert(object.at("m").at("dst") == "ep_app");
+
+        axtp::RpcPayload event;
+        event.encoding = axtp::RpcEncoding::Json;
+        event.op = axtp::RpcOp::Event;
+        event.methodOrEventId = 0x0901;
+        event.meta.jsonSid = "12345678";
+        event.meta.jsonMethodOrEventName = "audio.algorithmConfigChanged";
+        event.meta.endpoint.src = "ep_device";
+        object = nlohmann::json::parse(axtp::JsonRpcEncoder{}.encode(event));
+        assert(object.at("m").at("src") == "ep_device");
+        assert(!object.at("m").contains("dst"));
+
+        event.meta.endpoint.dst = "ep_app";
+        object = nlohmann::json::parse(axtp::JsonRpcEncoder{}.encode(event));
+        assert(object.at("m").at("src") == "ep_device");
+        assert(object.at("m").at("dst") == "ep_app");
+    }
+
+    {
+        axtp::RpcPayload request;
+        request.encoding = axtp::RpcEncoding::Json;
+        request.op = axtp::RpcOp::Request;
+        request.requestId = 46;
+        request.meta.endpoint.src = "";
+        bool rejected = false;
+        try {
+            (void)axtp::JsonRpcEncoder{}.encode(request);
+        } catch (const std::invalid_argument&) {
+            rejected = true;
+        }
+        assert(rejected);
     }
 
     {

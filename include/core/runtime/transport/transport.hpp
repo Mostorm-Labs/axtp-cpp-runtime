@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 
 #include "core/support/io/byte_sink.hpp"
 #include "core/protocol/model/bytes.hpp"
@@ -18,6 +19,11 @@ public:
     virtual void poll() {}
 
     virtual void sendBytes(const Byte* data, std::size_t size) = 0;
+    virtual std::uint64_t currentReplyTarget() const { return 0; }
+    virtual void sendBytesTo(std::uint64_t replyTarget, const Byte* data, std::size_t size) {
+        (void)replyTarget;
+        sendBytes(data, size);
+    }
     virtual TransportProfile profile() const = 0;
 };
 

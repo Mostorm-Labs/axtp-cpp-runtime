@@ -28,6 +28,12 @@ class AxtpCore {
 public:
     using JsonRpcNameLookup = InboundProcessor::NameLookup;
     using IngressTokenProvider = std::function<std::uint64_t()>;
+    using IngressReplyTargetProvider = std::function<std::uint64_t()>;
+
+    struct OutboundPacket {
+        Bytes bytes;
+        std::uint64_t replyTarget = 0;
+    };
 
     AxtpCore()
         : _byteSink(*this)
@@ -68,6 +74,10 @@ public:
         _ingressTokenProvider = std::move(provider);
     }
 
+    void setIngressReplyTargetProvider(IngressReplyTargetProvider provider) {
+        _ingressReplyTargetProvider = std::move(provider);
+    }
+
     std::optional<CoreEvent> pollEvent() {
         if (_events.empty()) {
             return std::nullopt;
@@ -78,6 +88,11 @@ public:
     }
 
     void handleBrokerResult(BrokerResult result) {
+        const auto previousReplyTarget = _outboundReplyTarget;
+        if (result.type == BrokerResultType::RpcResponse ||
+            result.type == BrokerResultType::RpcError) {
+            _outboundReplyTarget = result.rpc.meta.replyTarget;
+        }
         switch (result.type) {
         case BrokerResultType::RpcResponse:
             _outbound.sendRpcResponse(std::move(result.rpc));
@@ -95,6 +110,7 @@ public:
         case BrokerResultType::Noop:
             break;
         }
+        _outboundReplyTarget = previousReplyTarget;
     }
 
     bool expectRpcResponse(std::uint32_t requestId) {
@@ -162,6 +178,14 @@ public:
     }
 
     std::optional<Bytes> tryPopOutboundBytes() {
+        auto packet = tryPopOutboundPacket();
+        if (!packet.has_value()) {
+            return std::nullopt;
+        }
+        return std::move(packet->bytes);
+    }
+
+    std::optional<OutboundPacket> tryPopOutboundPacket() {
         if (_outboundBytes.empty()) {
             return std::nullopt;
         }
@@ -254,7 +278,7 @@ private:
     }
 
     void enqueueOutboundBytes(const Byte* data, std::size_t size) {
-        _outboundBytes.push(Bytes(data, data + size));
+        _outboundBytes.push({Bytes(data, data + size), _outboundReplyTarget});
     }
 
     void handleControl(ControlPayload payload) {
@@ -285,6 +309,7 @@ private:
             return;
         }
         if (payload.op == RpcOp::Request) {
+            captureReplyTarget(payload.meta);
             _events.push(CoreEvent::rpcRequest(std::move(payload)));
             return;
         }
@@ -335,6 +360,17 @@ private:
         _events.push(CoreEvent::streamData(std::move(payload)));
     }
 
+    void captureReplyTarget(PayloadMeta& meta) {
+        if (!_ingressReplyTargetProvider) {
+            return;
+        }
+        try {
+            meta.replyTarget = _ingressReplyTargetProvider();
+        } catch (...) {
+            meta.replyTarget = 0;
+        }
+    }
+
     ByteSinkPort _byteSink;
     PayloadSinkPort _payloadSink;
     ByteWriterPort _byteWriter;
@@ -347,10 +383,12 @@ private:
     std::queue<CoreEvent> _events;
     std::queue<RpcPayload> _sessionRpcs;
     std::queue<ControlPayload> _controlNotices;
-    std::queue<Bytes> _outboundBytes;
+    std::queue<OutboundPacket> _outboundBytes;
+    std::uint64_t _outboundReplyTarget = 0;
     std::uint32_t _nextSessionId = 1;
     std::uint64_t _inboundActivityGeneration = 0;
     IngressTokenProvider _ingressTokenProvider;
+    IngressReplyTargetProvider _ingressReplyTargetProvider;
 
     std::string makeSessionId(std::uint32_t randomSeed) {
         auto mixed = randomSeed ^ (_nextSessionId++ * 0x9E3779B9U);

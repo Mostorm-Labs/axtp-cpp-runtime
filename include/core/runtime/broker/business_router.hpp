@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <map>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -19,6 +20,7 @@ struct RpcContext {
     std::string methodName;
     RpcEncoding encoding = RpcEncoding::Json;
     SourceProtocol sourceProtocol = SourceProtocol::AxtpV1;
+    EndpointMetadata endpoint;
 };
 
 struct RpcRequestView {
@@ -40,6 +42,14 @@ struct RpcResponseData {
 using RawRpcHandler = std::function<RpcResponseData(const RpcContext&, const RpcRequestView&)>;
 using JsonRpcHandler = std::function<std::string(const RpcContext&, std::string_view)>;
 using TlvRpcHandler = std::function<Bytes(const RpcContext&, const Bytes&)>;
+using DeferredRpcPoll = std::function<std::optional<RpcResponseData>()>;
+using DeferredRawRpcHandler =
+    std::function<DeferredRpcPoll(const RpcContext&, const RpcRequestView&)>;
+
+struct RpcDispatch {
+    RpcPayload response;
+    DeferredRpcPoll deferredPoll;
+};
 
 class BusinessRouter {
 public:
@@ -71,6 +81,7 @@ public:
                               payload.meta.sessionId = context.sessionId;
                               payload.meta.requestId = context.requestId;
                               payload.meta.jsonMethodOrEventName = context.methodName;
+                              payload.meta.endpoint = context.endpoint;
                               payload.body = request.body;
                               RpcResponseData response;
                               response.body = handler(payload);
@@ -79,7 +90,13 @@ public:
     }
 
     void registerRawMethod(std::uint32_t methodId, RawRpcHandler handler) {
+        _deferredHandlers.erase(methodId);
         _handlers[methodId] = std::move(handler);
+    }
+
+    void registerDeferredRawMethod(std::uint32_t methodId, DeferredRawRpcHandler handler) {
+        _handlers.erase(methodId);
+        _deferredHandlers[methodId] = std::move(handler);
     }
 
     void registerJsonMethod(std::uint32_t methodId, JsonRpcHandler handler) {
@@ -125,6 +142,14 @@ public:
     }
 
     RpcPayload handleRpcRequest(const RpcPayload& request) const {
+        auto dispatch = dispatchRpcRequest(request);
+        if (dispatch.deferredPoll) {
+            dispatch.response.statusCode = ErrorCode::InternalError;
+        }
+        return dispatch.response;
+    }
+
+    RpcDispatch dispatchRpcRequest(const RpcPayload& request) const {
         RpcPayload response;
         response.encoding = request.encoding;
         response.op = RpcOp::RequestResponse;
@@ -133,19 +158,21 @@ public:
         response.statusCode = ErrorCode::Success;
         response.bodyEncoding = request.bodyEncoding;
         response.meta = request.meta;
+        response.meta.endpoint = responseEndpointMetadata(request.meta.endpoint);
 
-        auto it = _handlers.find(request.methodOrEventId);
-        if (it == _handlers.end()) {
+        const auto handler = _handlers.find(request.methodOrEventId);
+        const auto deferredHandler = _deferredHandlers.find(request.methodOrEventId);
+        if (handler == _handlers.end() && deferredHandler == _deferredHandlers.end()) {
             response.statusCode = _registry.findMethodName(request.methodOrEventId).has_value()
                                       ? ErrorCode::NotSupported
                                       : ErrorCode::RpcMethodNotFound;
-            return response;
+            return RpcDispatch{std::move(response), {}};
         }
 
         for (const auto& validator : _validators) {
             if (const auto validation = validator(request); validation != ErrorCode::Success) {
                 response.statusCode = validation;
-                return response;
+                return RpcDispatch{std::move(response), {}};
             }
         }
 
@@ -157,6 +184,7 @@ public:
         context.methodName = methodName.has_value() ? std::string(*methodName) : std::string();
         context.encoding = request.encoding;
         context.sourceProtocol = request.meta.sourceProtocol;
+        context.endpoint = request.meta.endpoint;
 
         RpcRequestView view;
         view.methodId = request.methodOrEventId;
@@ -165,7 +193,24 @@ public:
         view.encoding = request.encoding;
         view.body = request.body;
 
-        const auto data = it->second(context, view);
+        if (handler != _handlers.end()) {
+            applyResponseData(response, handler->second(context, view));
+            return RpcDispatch{std::move(response), {}};
+        }
+
+        try {
+            auto deferredPoll = deferredHandler->second(context, view);
+            if (!deferredPoll) {
+                response.statusCode = ErrorCode::InternalError;
+            }
+            return RpcDispatch{std::move(response), std::move(deferredPoll)};
+        } catch (...) {
+            response.statusCode = ErrorCode::InternalError;
+            return RpcDispatch{std::move(response), {}};
+        }
+    }
+
+    static void applyResponseData(RpcPayload& response, const RpcResponseData& data) {
         if (data.overrideEncoding) {
             response.encoding = data.encoding;
             response.bodyEncoding = bodyEncodingForRpcEncoding(data.encoding);
@@ -174,12 +219,12 @@ public:
             response.statusCode = data.statusCode;
         }
         response.body = data.body;
-        return response;
     }
 
 private:
     MethodRegistry _registry = MethodRegistry::fromGeneratedDefaults();
     std::map<std::uint32_t, RawRpcHandler> _handlers;
+    std::map<std::uint32_t, DeferredRawRpcHandler> _deferredHandlers;
     std::vector<RequestValidator> _validators;
 };
 

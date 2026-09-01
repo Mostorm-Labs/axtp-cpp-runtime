@@ -15,6 +15,7 @@
 
 #include "core/runtime/core/axtp_core.hpp"
 #include "core/protocol/wire/websocket_json_rpc/outbound/json_rpc_encoder.hpp"
+#include "core/protocol/wire/websocket_json_rpc/endpoint_metadata_codec.hpp"
 #include "core/support/io/byte_sink.hpp"
 #include "core/runtime/endpoint/axtp_endpoint.hpp"
 #include "core/runtime/transport/transport.hpp"
@@ -59,6 +60,8 @@ public:
             const std::string text(reinterpret_cast<const char*>(data), size);
             const auto object = nlohmann::json::parse(text);
             const auto op = parseOp(object);
+            const auto responseEndpoint =
+                responseEndpointMetadata(decodeEndpointMetadata(object));
 
             if (op == RpcOp::Identify || op == RpcOp::Reidentify) {
                 handleIdentify(object);
@@ -66,19 +69,31 @@ public:
             }
             if (!_identified && (op == RpcOp::Request || op == RpcOp::RequestBatch)) {
                 sendError(
-                    parseSid(object), parseRequestId(object), ErrorCode::ControlOpenRequired, op);
+                    parseSid(object),
+                    parseRequestId(object),
+                    ErrorCode::ControlOpenRequired,
+                    op,
+                    responseEndpoint);
                 return;
             }
             if (_identified &&
                 (op == RpcOp::Request || op == RpcOp::RequestBatch || op == RpcOp::Event ||
                  op == RpcOp::RequestResponse) &&
                 !isAcceptedSid(parseSid(object))) {
-                sendError(_sid, parseRequestId(object), ErrorCode::RpcPayloadInvalid, op);
+                sendError(_sid,
+                          parseRequestId(object),
+                          ErrorCode::RpcPayloadInvalid,
+                          op,
+                          responseEndpoint);
                 return;
             }
             if (op == RpcOp::RequestBatch) {
                 sendError(
-                    parseSid(object), parseRequestId(object), ErrorCode::RpcBatchUnsupported, op);
+                    parseSid(object),
+                    parseRequestId(object),
+                    ErrorCode::RpcBatchUnsupported,
+                    op,
+                    responseEndpoint);
                 return;
             }
 
@@ -184,8 +199,11 @@ private:
         sendRpc(JsonRpcEncoder::makeIdentified(_sid));
     }
 
-    void
-    sendError(const std::string& sid, std::uint32_t requestId, ErrorCode code, RpcOp requestOp) {
+    void sendError(const std::string& sid,
+                   std::uint32_t requestId,
+                   ErrorCode code,
+                   RpcOp requestOp,
+                   EndpointMetadata endpoint = {}) {
         RpcPayload response;
         response.encoding = RpcEncoding::Json;
         response.op =
@@ -195,6 +213,7 @@ private:
         response.bodyEncoding = RpcBodyEncoding::None;
         response.meta.sourceProtocol = SourceProtocol::JsonRpc;
         response.meta.jsonSid = sid.empty() ? _sid : sid;
+        response.meta.endpoint = std::move(endpoint);
         sendRpc(std::move(response));
     }
 

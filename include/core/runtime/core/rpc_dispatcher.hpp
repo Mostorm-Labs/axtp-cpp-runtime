@@ -29,6 +29,7 @@ public:
         response.methodOrEventId = request.methodOrEventId;
         response.bodyEncoding = request.bodyEncoding;
         response.meta = request.meta;
+        response.meta.endpoint = responseEndpointMetadata(request.meta.endpoint);
         response.meta.requestId = request.requestId;
 
         auto it = _handlers.find(request.methodOrEventId);

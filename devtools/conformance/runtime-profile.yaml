@@ -3,6 +3,7 @@ spec_min: spec/v0.0.2
 required_levels:
   - core
   - websocket-jsonrpc
+  - endpoint-relay
 optional_levels:
   - event
 # Deferred until runtime artifacts can be regenerated from a pinned

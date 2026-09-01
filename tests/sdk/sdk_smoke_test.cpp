@@ -40,6 +40,46 @@ struct CapturingPayloadSink : axtp::IPayloadSink {
     }
 };
 
+class JsonMockTransport final : public axtp::ITransport {
+public:
+    void bind(axtp::IByteSink& sink) override {
+        _sink = &sink;
+    }
+
+    void open() override {}
+
+    void close() override {}
+
+    void sendBytes(const axtp::Byte* data, std::size_t size) override {
+        _outgoing.assign(data, data + size);
+    }
+
+    axtp::TransportProfile profile() const override {
+        return axtp::TransportProfile{
+            axtp::TransportKind::WebSocket,
+            axtp::AxtpWireMode::WebSocketJsonRpc,
+            axtp::RpcEncoding::Json,
+            true,
+            true,
+            false,
+            4096,
+        };
+    }
+
+    void injectIncoming(const axtp::Bytes& bytes) {
+        assert(_sink != nullptr);
+        _sink->onBytes(bytes.data(), bytes.size());
+    }
+
+    axtp::Bytes takeOutgoing() {
+        return std::move(_outgoing);
+    }
+
+private:
+    axtp::IByteSink* _sink = nullptr;
+    axtp::Bytes _outgoing;
+};
+
 axtp::Bytes encodeControl(axtp::ControlPayload payload) {
     CapturingByteWriter writer;
     axtp::OutboundProcessor outbound(writer);
@@ -205,6 +245,45 @@ int main() {
     auto response = client.callRaw(raw);
     assert(response.statusCode == axtp::ErrorCode::Success);
     assert(response.op == axtp::RpcOp::RequestResponse);
+
+    {
+        axtp::sdk::AxtpServer server;
+        auto transport = std::make_unique<JsonMockTransport>();
+        auto* transportPtr = transport.get();
+        bool handled = false;
+        server.onRaw(0x0901, [&](const axtp::RpcPayload& request) {
+            handled = true;
+            assert(request.meta.endpoint.src == "ep_app");
+            assert(request.meta.endpoint.dst == "ep_device");
+            return axtp::Bytes{'{', '}'};
+        });
+        server.attachTransport(std::move(transport));
+
+        axtp::RpcPayload request;
+        request.encoding = axtp::RpcEncoding::Json;
+        request.op = axtp::RpcOp::Request;
+        request.requestId = 91;
+        request.methodOrEventId = 0x0901;
+        request.bodyEncoding = axtp::RpcBodyEncoding::None;
+        request.meta.sourceProtocol = axtp::SourceProtocol::JsonRpc;
+        request.meta.endpoint.src = "ep_app";
+        request.meta.endpoint.dst = "ep_device";
+        request.body = {'{', '}'};
+        transportPtr->injectIncoming(axtp::JsonRpcEncoder{}.encode(request));
+        server.poll();
+
+        assert(handled);
+        const auto bytes = transportPtr->takeOutgoing();
+        assert(!bytes.empty());
+        CapturingPayloadSink sink;
+        axtp::JsonRpcPayloadDecoder::decode(bytes.data(),
+                                            bytes.size(),
+                                            sink,
+                                            axtp::SourceProtocol::JsonRpc);
+        assert(sink.rpcs.size() == 1);
+        assert(sink.rpcs[0].meta.endpoint.src == "ep_device");
+        assert(sink.rpcs[0].meta.endpoint.dst == "ep_app");
+    }
 
     const auto dynamicJsonByName = client.callJson("audio.getAlgorithmConfig", "{}");
     assert(dynamicJsonByName.find("noiseSuppression") != std::string::npos);

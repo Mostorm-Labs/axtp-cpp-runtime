@@ -1,6 +1,8 @@
 #include <cassert>
 #include <cstdint>
+#include <stdexcept>
 
+#include "core/protocol/endpoint/endpoint_identity.hpp"
 #include "core/support/io/byte_buffer.hpp"
 #include "core/support/io/byte_reader.hpp"
 #include "core/support/io/byte_writer.hpp"
@@ -9,6 +11,20 @@
 #include "core/protocol/model/payload.hpp"
 
 int main() {
+    [[maybe_unused]] const axtp::PayloadMeta legacyAggregateMeta{
+        axtp::SourceProtocol::JsonRpc,
+        1,
+        2,
+        false,
+        0,
+        "legacy-sid",
+        "legacy.method",
+        "legacy.*",
+        false,
+        3,
+    };
+    assert(!axtp::hasEndpointMetadata(legacyAggregateMeta.endpoint));
+
     {
         axtp::ByteWriter writer;
         writer.writeU8(0x12);
@@ -133,6 +149,36 @@ int main() {
         stream.data = {0x30};
         assert(axtp::kStreamPayloadHeaderSize == 16);
         assert(stream.data.size() == 1);
+    }
+
+    {
+        axtp::EndpointMetadata empty;
+        assert(!axtp::hasEndpointMetadata(empty));
+
+        axtp::EndpointMetadata request;
+        request.src = "ep_app";
+        request.dst = "ep_device";
+        assert(axtp::hasEndpointMetadata(request));
+
+        const auto response = axtp::responseEndpointMetadata(request);
+        assert(response.src == request.dst);
+        assert(response.dst == request.src);
+
+        assert(axtp::endpointIdFromKey(
+                   "device:axtp:hid:1234:5678:SERIAL-1") ==
+               "ep_3340a334b47934f471968db6b1470da6");
+        assert(axtp::endpointIdFromKey("app:nearcast:install-001") ==
+               "ep_db5025fc9bd10de9f235ad2637585242");
+        assert(axtp::endpointIdFromKey("service:lab:receiver-slot-a") ==
+               "ep_20d54d9fc87018d571995be978620d21");
+
+        bool emptyKeyRejected = false;
+        try {
+            (void)axtp::endpointIdFromKey("");
+        } catch (const std::invalid_argument&) {
+            emptyKeyRejected = true;
+        }
+        assert(emptyKeyRejected);
     }
 
     return 0;

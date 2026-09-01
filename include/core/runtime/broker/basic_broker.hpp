@@ -6,6 +6,7 @@
 #include <queue>
 #include <string_view>
 #include <utility>
+#include <vector>
 
 #include "core/runtime/broker/broker_flow_control.hpp"
 #include "core/runtime/broker/broker_result.hpp"
@@ -35,6 +36,7 @@ public:
     }
 
     void poll(std::size_t maxTasks = 8) {
+        pollPendingCompletions();
         std::size_t processed = 0;
         while (!_tasks.empty() && processed < maxTasks) {
             auto task = std::move(_tasks.front());
@@ -44,11 +46,12 @@ public:
                 continue;
             }
             if (task.type == BrokerTaskType::RpcRequest) {
-                auto response = _executor.executeRpcRequest(_router, task);
-                if (response.statusCode == ErrorCode::Success) {
-                    _results.push(BrokerResult::rpcResponse(std::move(response)));
+                auto dispatch = _executor.executeRpcRequest(_router, task);
+                if (dispatch.deferredPoll) {
+                    _pendingCompletions.push_back(
+                        PendingCompletion{std::move(dispatch.response), std::move(dispatch.deferredPoll)});
                 } else {
-                    _results.push(BrokerResult::rpcError(std::move(response)));
+                    enqueueRpcResult(std::move(dispatch.response));
                 }
                 continue;
             }
@@ -90,6 +93,10 @@ public:
         _router.registerRawMethod(methodId, std::move(handler));
     }
 
+    void registerDeferredRawMethod(std::uint32_t methodId, DeferredRawRpcHandler handler) {
+        _router.registerDeferredRawMethod(methodId, std::move(handler));
+    }
+
     void registerRequestValidator(BusinessRouter::RequestValidator validator) {
         _router.registerRequestValidator(std::move(validator));
     }
@@ -127,8 +134,40 @@ public:
     }
 
 private:
+    struct PendingCompletion {
+        RpcPayload response;
+        DeferredRpcPoll poll;
+    };
+
+    void enqueueRpcResult(RpcPayload response) {
+        if (response.statusCode == ErrorCode::Success) {
+            _results.push(BrokerResult::rpcResponse(std::move(response)));
+        } else {
+            _results.push(BrokerResult::rpcError(std::move(response)));
+        }
+    }
+
+    void pollPendingCompletions() {
+        auto pending = _pendingCompletions.begin();
+        while (pending != _pendingCompletions.end()) {
+            try {
+                auto data = pending->poll();
+                if (!data.has_value()) {
+                    ++pending;
+                    continue;
+                }
+                _executor.completeRpcRequest(pending->response, *data);
+            } catch (...) {
+                pending->response.statusCode = ErrorCode::InternalError;
+            }
+            enqueueRpcResult(std::move(pending->response));
+            pending = _pendingCompletions.erase(pending);
+        }
+    }
+
     std::queue<BrokerTask> _tasks;
     std::queue<BrokerResult> _results;
+    std::vector<PendingCompletion> _pendingCompletions;
     MiddlewareChain _middleware;
     BrokerFlowControl _flowControl;
     BusinessRouter _router;

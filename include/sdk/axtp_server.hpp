@@ -42,12 +42,14 @@ public:
     void onRaw(std::uint32_t methodId, RawMethodHandler handler) {
         _broker.registerRawMethod(
             methodId,
-            [handler = std::move(handler)](const RpcContext&, const RpcRequestView& request) {
+            [handler = std::move(handler)](const RpcContext& context,
+                                           const RpcRequestView& request) {
                 RpcPayload payload;
                 payload.encoding = request.encoding;
                 payload.op = RpcOp::Request;
                 payload.requestId = request.requestId;
                 payload.methodOrEventId = request.methodId;
+                payload.meta.endpoint = context.endpoint;
                 payload.body = request.body;
                 RpcResponseData response;
                 response.body = handler(payload);

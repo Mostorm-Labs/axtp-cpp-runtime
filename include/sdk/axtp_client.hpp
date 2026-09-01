@@ -593,6 +593,7 @@ public:
             response.statusCode = ErrorCode::Success;
             response.bodyEncoding = request.bodyEncoding;
             response.meta = request.meta;
+            response.meta.endpoint = responseEndpointMetadata(request.meta.endpoint);
             try {
                 response.body = local->second(request);
             } catch (...) {
@@ -753,6 +754,7 @@ public:
                                           ? SourceProtocol::JsonRpc
                                           : SourceProtocol::AxtpV1;
         payload.meta.jsonMethodOrEventName = MethodTraits<Id>::name;
+        payload.meta.endpoint = options.endpoint;
         return payload;
     }
 
@@ -785,7 +787,7 @@ private:
     RpcPayload makeDynamicRequest(std::uint32_t methodId,
                                   RpcEncoding encoding,
                                   Bytes body,
-                                  const CallOptions&) const {
+                                  const CallOptions& options) const {
         RpcPayload payload;
         payload.encoding = encoding;
         payload.op = RpcOp::Request;
@@ -797,6 +799,7 @@ private:
         if (const auto methodName = _registry.findMethodName(methodId)) {
             payload.meta.jsonMethodOrEventName = std::string(*methodName);
         }
+        payload.meta.endpoint = options.endpoint;
         return payload;
     }
 
@@ -865,6 +868,15 @@ private:
     }
 
     bool normalizeRequest(RpcPayload& request, const CallOptions& options) {
+        const auto invalidEndpoint = [](const EndpointMetadata& endpoint) {
+            return (endpoint.src.has_value() && endpoint.src->empty()) ||
+                   (endpoint.dst.has_value() && endpoint.dst->empty());
+        };
+        if (invalidEndpoint(request.meta.endpoint) ||
+            (isJsonBinaryRpcEncoding(request.encoding) &&
+             hasEndpointMetadata(request.meta.endpoint))) {
+            return false;
+        }
         if (request.requestId == 0) {
             if (!allocateRequestId(request.requestId)) {
                 return false;
@@ -914,6 +926,7 @@ private:
         response.statusCode = code;
         response.bodyEncoding = request.bodyEncoding;
         response.meta = request.meta;
+        response.meta.endpoint = responseEndpointMetadata(request.meta.endpoint);
         return response;
     }
 
