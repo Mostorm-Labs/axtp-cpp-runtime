@@ -650,6 +650,62 @@ struct MethodTraits<MethodId::SoftwareResetUpdatePolicy> {
     static constexpr const char* name = "software.resetUpdatePolicy";
 };
 
+template <>
+struct MethodTraits<MethodId::SportGetEventDetectionCapabilities> {
+    using Request = GetEventDetectionCapabilitiesParams;
+    using Response = GetEventDetectionCapabilitiesResult;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::SportGetEventDetectionCapabilities);
+    static constexpr const char* name = "sport.getEventDetectionCapabilities";
+};
+
+template <>
+struct MethodTraits<MethodId::SportGetEventDetectionConfig> {
+    using Request = GetEventDetectionConfigParams;
+    using Response = SportEventDetectionState;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::SportGetEventDetectionConfig);
+    static constexpr const char* name = "sport.getEventDetectionConfig";
+};
+
+template <>
+struct MethodTraits<MethodId::SportSetEventDetectionConfig> {
+    using Request = SetEventDetectionConfigParams;
+    using Response = SetEventDetectionConfigResult;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::SportSetEventDetectionConfig);
+    static constexpr const char* name = "sport.setEventDetectionConfig";
+};
+
+template <>
+struct MethodTraits<MethodId::SportGetGoalShotWatermarkConfig> {
+    using Request = SportConfigTargetParams;
+    using Response = SportGoalShotWatermarkConfig;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::SportGetGoalShotWatermarkConfig);
+    static constexpr const char* name = "sport.getGoalShotWatermarkConfig";
+};
+
+template <>
+struct MethodTraits<MethodId::SportSetGoalShotWatermarkConfig> {
+    using Request = SportSetGoalShotWatermarkConfigParams;
+    using Response = Empty;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::SportSetGoalShotWatermarkConfig);
+    static constexpr const char* name = "sport.setGoalShotWatermarkConfig";
+};
+
+template <>
+struct MethodTraits<MethodId::SportGetEventClipConfig> {
+    using Request = SportConfigTargetParams;
+    using Response = SportEventClipConfig;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::SportGetEventClipConfig);
+    static constexpr const char* name = "sport.getEventClipConfig";
+};
+
+template <>
+struct MethodTraits<MethodId::SportSetEventClipConfig> {
+    using Request = SportSetEventClipConfigParams;
+    using Response = Empty;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::SportSetEventClipConfig);
+    static constexpr const char* name = "sport.setEventClipConfig";
+};
+
 template <EventId Id>
 struct EventTraits;
 
@@ -910,6 +966,20 @@ struct EventTraits<EventId::SoftwareUpdatePolicyChanged> {
     using Event = SoftwareUpdatePolicyChangedEvent;
     static constexpr std::uint16_t id = static_cast<std::uint16_t>(EventId::SoftwareUpdatePolicyChanged);
     static constexpr const char* name = "software.updatePolicyChanged";
+};
+
+template <>
+struct EventTraits<EventId::SportEventDetectionStateChanged> {
+    using Event = SportEventDetectionStateChangedEvent;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(EventId::SportEventDetectionStateChanged);
+    static constexpr const char* name = "sport.eventDetectionStateChanged";
+};
+
+template <>
+struct EventTraits<EventId::SportEventDetected> {
+    using Event = SportEventDetectedEvent;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(EventId::SportEventDetected);
+    static constexpr const char* name = "sport.eventDetected";
 };
 
 } // namespace axtp

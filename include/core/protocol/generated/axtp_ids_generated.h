@@ -139,6 +139,13 @@ enum class MethodId : std::uint16_t {
     SoftwareGetUpdatePolicy = 0x1704,
     SoftwareSetUpdatePolicy = 0x1705,
     SoftwareResetUpdatePolicy = 0x1706,
+    SportGetEventDetectionCapabilities = 0x1801,
+    SportGetEventDetectionConfig = 0x1802,
+    SportSetEventDetectionConfig = 0x1803,
+    SportGetGoalShotWatermarkConfig = 0x1804,
+    SportSetGoalShotWatermarkConfig = 0x1805,
+    SportGetEventClipConfig = 0x1806,
+    SportSetEventClipConfig = 0x1807,
 };
 
 enum class EventId : std::uint16_t {
@@ -179,6 +186,8 @@ enum class EventId : std::uint16_t {
     CastFlowControlChanged = 0x160C,
     SoftwareConfigChanged = 0x1701,
     SoftwareUpdatePolicyChanged = 0x1702,
+    SportEventDetectionStateChanged = 0x1801,
+    SportEventDetected = 0x1802,
 };
 
 enum class ErrorCode : std::uint16_t {
@@ -366,6 +375,8 @@ enum class CapabilityId : std::uint16_t {
     CastStatus = 0x1607,
     SoftwareConfig = 0x1701,
     SoftwareUpdatePolicy = 0x1702,
+    SportEventDetection = 0x1801,
+    SportBasketball = 0x1802,
 };
 
 } // namespace axtp
