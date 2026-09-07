@@ -1597,6 +1597,134 @@ constexpr std::uint8_t SUPPORTS_SCHEDULE = 0x03;
 constexpr std::uint8_t SUPPORTS_RESET = 0x04;
 }
 
+namespace fields::sport_config_target_params {
+constexpr std::uint8_t MAC_ADDRESS = 0x01;
+constexpr std::uint8_t SPORT_TYPE = 0x02;
+}
+
+namespace fields::sport_goal_shot_watermark_config {
+constexpr std::uint8_t MAC_ADDRESS = 0x01;
+constexpr std::uint8_t SPORT_TYPE = 0x02;
+constexpr std::uint8_t GOAL_VISIBLE = 0x03;
+constexpr std::uint8_t SHOT_VISIBLE = 0x04;
+}
+
+namespace fields::sport_set_goal_shot_watermark_config_params {
+constexpr std::uint8_t MAC_ADDRESS = 0x01;
+constexpr std::uint8_t SPORT_TYPE = 0x02;
+constexpr std::uint8_t GOAL_VISIBLE = 0x03;
+constexpr std::uint8_t SHOT_VISIBLE = 0x04;
+}
+
+namespace fields::sport_event_clip_config {
+constexpr std::uint8_t MAC_ADDRESS = 0x01;
+constexpr std::uint8_t SPORT_TYPE = 0x02;
+constexpr std::uint8_t BEFORE_OFFSET_SECONDS = 0x03;
+constexpr std::uint8_t AFTER_OFFSET_SECONDS = 0x04;
+}
+
+namespace fields::sport_set_event_clip_config_params {
+constexpr std::uint8_t MAC_ADDRESS = 0x01;
+constexpr std::uint8_t SPORT_TYPE = 0x02;
+constexpr std::uint8_t BEFORE_OFFSET_SECONDS = 0x03;
+constexpr std::uint8_t AFTER_OFFSET_SECONDS = 0x04;
+}
+
+namespace fields::get_event_detection_capabilities_params {
+constexpr std::uint8_t SPORT_TYPES = 0x01;
+constexpr std::uint8_t INCLUDE_RUNTIME_STATE = 0x02;
+}
+
+namespace fields::get_event_detection_capabilities_result {
+constexpr std::uint8_t CAPABILITY = 0x01;
+}
+
+namespace fields::sport_event_detection_sport_descriptor {
+constexpr std::uint8_t SPORT_TYPE = 0x01;
+constexpr std::uint8_t SUPPORTED_EVENTS = 0x02;
+constexpr std::uint8_t SUPPORTS_TOGGLE = 0x03;
+constexpr std::uint8_t DETAILS_SCHEMAS = 0x04;
+constexpr std::uint8_t SUPPORTED_CONFIG_METHODS = 0x05;
+}
+
+namespace fields::sport_event_detection_capabilities {
+constexpr std::uint8_t CAPABILITY = 0x01;
+constexpr std::uint8_t SUPPORTED_SPORTS = 0x02;
+constexpr std::uint8_t CONCURRENT_SPORT_TYPES = 0x03;
+constexpr std::uint8_t SUPPORTS_STATE_EVENT = 0x04;
+constexpr std::uint8_t SUPPORTS_UNIFIED_EVENT = 0x05;
+constexpr std::uint8_t PERSISTENCE_POLICY = 0x06;
+}
+
+namespace fields::get_event_detection_config_params {
+constexpr std::uint8_t SPORT_TYPE = 0x01;
+}
+
+namespace fields::sport_event_detection_state {
+constexpr std::uint8_t SPORT_TYPE = 0x01;
+constexpr std::uint8_t EFFECTIVE_ENABLED = 0x02;
+constexpr std::uint8_t RUNTIME_STATE = 0x03;
+constexpr std::uint8_t APPLY_STATE = 0x04;
+constexpr std::uint8_t REASON = 0x05;
+constexpr std::uint8_t STATE_REVISION = 0x06;
+constexpr std::uint8_t UPDATED_AT = 0x07;
+}
+
+namespace fields::set_event_detection_config_params {
+constexpr std::uint8_t SPORT_TYPE = 0x01;
+constexpr std::uint8_t ENABLED = 0x02;
+constexpr std::uint8_t EXPECTED_STATE_REVISION = 0x03;
+}
+
+namespace fields::set_event_detection_config_result {
+constexpr std::uint8_t ACCEPTED = 0x01;
+constexpr std::uint8_t STATE = 0x02;
+}
+
+namespace fields::sport_event_detection_state_changed_event {
+constexpr std::uint8_t STATE = 0x01;
+constexpr std::uint8_t SOURCE = 0x02;
+constexpr std::uint8_t REASON = 0x03;
+}
+
+namespace fields::sport_event_details {
+constexpr std::uint8_t SHOT_ID = 0x01;
+constexpr std::uint8_t GOAL_ID = 0x02;
+constexpr std::uint8_t RELEASE_TYPE = 0x03;
+constexpr std::uint8_t GOAL_TYPE = 0x04;
+}
+
+namespace fields::sport_event_detected_event {
+constexpr std::uint8_t EVENT_ID = 0x01;
+constexpr std::uint8_t SEQUENCE = 0x02;
+constexpr std::uint8_t SPORT_TYPE = 0x03;
+constexpr std::uint8_t EVENT_TYPE = 0x04;
+constexpr std::uint8_t OCCURRED_AT = 0x05;
+constexpr std::uint8_t CONFIDENCE = 0x06;
+constexpr std::uint8_t TRAINING_SESSION_ID = 0x07;
+constexpr std::uint8_t DETAILS = 0x08;
+}
+
+namespace fields::sport_basketball_capability {
+constexpr std::uint8_t CAPABILITY = 0x01;
+constexpr std::uint8_t SPORT_TYPE = 0x02;
+constexpr std::uint8_t SUPPORTED_EVENTS = 0x03;
+constexpr std::uint8_t DETAILS_SCHEMAS = 0x04;
+constexpr std::uint8_t REQUIRES_EVENT_DETECTION_TOGGLE = 0x05;
+constexpr std::uint8_t GOAL_REQUIRES_SHOT_REFERENCE = 0x06;
+}
+
+namespace fields::sport_basketball_shot_details {
+constexpr std::uint8_t SHOT_ID = 0x01;
+constexpr std::uint8_t RELEASE_TYPE = 0x02;
+}
+
+namespace fields::sport_basketball_goal_details {
+constexpr std::uint8_t GOAL_ID = 0x01;
+constexpr std::uint8_t SHOT_ID = 0x02;
+constexpr std::uint8_t GOAL_TYPE = 0x03;
+}
+
 namespace fields::stream_flow_control_capabilities {
 constexpr std::uint8_t CAPABILITY = 0x01;
 constexpr std::uint8_t SUPPORTS_ACK = 0x02;
@@ -4100,6 +4228,152 @@ struct SoftwareUpdatePolicyCapability {
     bool has_supportsReset = false;
 };
 
+struct SportConfigTargetParams {
+    const char* macAddress = nullptr;
+    const char* sportType = nullptr;
+};
+
+struct SportGoalShotWatermarkConfig {
+    const char* macAddress = nullptr;
+    const char* sportType = nullptr;
+    bool goalVisible = false;
+    bool shotVisible = false;
+};
+
+struct SportSetGoalShotWatermarkConfigParams {
+    const char* macAddress = nullptr;
+    const char* sportType = nullptr;
+    bool goalVisible = false;
+    bool shotVisible = false;
+};
+
+struct SportEventClipConfig {
+    const char* macAddress = nullptr;
+    const char* sportType = nullptr;
+    std::uint32_t beforeOffsetSeconds = 0;
+    std::uint32_t afterOffsetSeconds = 0;
+};
+
+struct SportSetEventClipConfigParams {
+    const char* macAddress = nullptr;
+    const char* sportType = nullptr;
+    std::uint32_t beforeOffsetSeconds = 0;
+    std::uint32_t afterOffsetSeconds = 0;
+};
+
+struct GetEventDetectionCapabilitiesParams {
+    std::uint32_t sportTypes = 0;
+    bool has_sportTypes = false;
+    bool includeRuntimeState = false;
+    bool has_includeRuntimeState = false;
+};
+
+struct GetEventDetectionCapabilitiesResult {
+    std::uint32_t capability = 0;
+};
+
+struct SportEventDetectionSportDescriptor {
+    const char* sportType = nullptr;
+    std::uint32_t supportedEvents = 0;
+    bool supportsToggle = false;
+    std::uint32_t detailsSchemas = 0;
+    bool has_detailsSchemas = false;
+    std::uint32_t supportedConfigMethods = 0;
+    bool has_supportedConfigMethods = false;
+};
+
+struct SportEventDetectionCapabilities {
+    const char* capability = nullptr;
+    std::uint32_t supportedSports = 0;
+    bool concurrentSportTypes = false;
+    bool supportsStateEvent = false;
+    bool supportsUnifiedEvent = false;
+    std::uint32_t persistencePolicy = 0;
+};
+
+struct GetEventDetectionConfigParams {
+    const char* sportType = nullptr;
+};
+
+struct SportEventDetectionState {
+    const char* sportType = nullptr;
+    bool effectiveEnabled = false;
+    std::uint32_t runtimeState = 0;
+    std::uint32_t applyState = 0;
+    bool has_applyState = false;
+    const char* reason = nullptr;
+    bool has_reason = false;
+    std::uint32_t stateRevision = 0;
+    bool has_stateRevision = false;
+    const char* updatedAt = nullptr;
+    bool has_updatedAt = false;
+};
+
+struct SetEventDetectionConfigParams {
+    const char* sportType = nullptr;
+    bool enabled = false;
+    std::uint32_t expectedStateRevision = 0;
+    bool has_expectedStateRevision = false;
+};
+
+struct SetEventDetectionConfigResult {
+    bool accepted = false;
+    std::uint32_t state = 0;
+};
+
+struct SportEventDetectionStateChangedEvent {
+    std::uint32_t state = 0;
+    std::uint32_t source = 0;
+    const char* reason = nullptr;
+    bool has_reason = false;
+};
+
+struct SportEventDetails {
+    const char* shotId = nullptr;
+    bool has_shotId = false;
+    const char* goalId = nullptr;
+    bool has_goalId = false;
+    std::uint32_t releaseType = 0;
+    bool has_releaseType = false;
+    std::uint32_t goalType = 0;
+    bool has_goalType = false;
+};
+
+struct SportEventDetectedEvent {
+    const char* eventId = nullptr;
+    std::uint64_t sequence = 0;
+    const char* sportType = nullptr;
+    const char* eventType = nullptr;
+    const char* occurredAt = nullptr;
+    std::uint32_t confidence = 0;
+    bool has_confidence = false;
+    const char* trainingSessionId = nullptr;
+    bool has_trainingSessionId = false;
+    std::uint32_t details = 0;
+};
+
+struct SportBasketballCapability {
+    const char* capability = nullptr;
+    const char* sportType = nullptr;
+    std::uint32_t supportedEvents = 0;
+    std::uint32_t detailsSchemas = 0;
+    bool requiresEventDetectionToggle = false;
+    bool goalRequiresShotReference = false;
+};
+
+struct SportBasketballShotDetails {
+    const char* shotId = nullptr;
+    std::uint32_t releaseType = 0;
+    bool has_releaseType = false;
+};
+
+struct SportBasketballGoalDetails {
+    const char* goalId = nullptr;
+    const char* shotId = nullptr;
+    std::uint32_t goalType = 0;
+    bool has_goalType = false;
+};
+
 struct StreamFlowControlCapabilities {
     const char* capability = nullptr;
     bool supportsAck = false;
@@ -5150,6 +5424,63 @@ bool DecodeUpdateConditions(TlvReader& reader, UpdateConditions* output, ErrorCo
 
 bool EncodeSoftwareUpdatePolicyCapability(const SoftwareUpdatePolicyCapability& input, TlvWriter& writer, ErrorCode* error);
 bool DecodeSoftwareUpdatePolicyCapability(TlvReader& reader, SoftwareUpdatePolicyCapability* output, ErrorCode* error);
+
+bool EncodeSportConfigTargetParams(const SportConfigTargetParams& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeSportConfigTargetParams(TlvReader& reader, SportConfigTargetParams* output, ErrorCode* error);
+
+bool EncodeSportGoalShotWatermarkConfig(const SportGoalShotWatermarkConfig& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeSportGoalShotWatermarkConfig(TlvReader& reader, SportGoalShotWatermarkConfig* output, ErrorCode* error);
+
+bool EncodeSportSetGoalShotWatermarkConfigParams(const SportSetGoalShotWatermarkConfigParams& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeSportSetGoalShotWatermarkConfigParams(TlvReader& reader, SportSetGoalShotWatermarkConfigParams* output, ErrorCode* error);
+
+bool EncodeSportEventClipConfig(const SportEventClipConfig& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeSportEventClipConfig(TlvReader& reader, SportEventClipConfig* output, ErrorCode* error);
+
+bool EncodeSportSetEventClipConfigParams(const SportSetEventClipConfigParams& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeSportSetEventClipConfigParams(TlvReader& reader, SportSetEventClipConfigParams* output, ErrorCode* error);
+
+bool EncodeGetEventDetectionCapabilitiesParams(const GetEventDetectionCapabilitiesParams& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeGetEventDetectionCapabilitiesParams(TlvReader& reader, GetEventDetectionCapabilitiesParams* output, ErrorCode* error);
+
+bool EncodeGetEventDetectionCapabilitiesResult(const GetEventDetectionCapabilitiesResult& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeGetEventDetectionCapabilitiesResult(TlvReader& reader, GetEventDetectionCapabilitiesResult* output, ErrorCode* error);
+
+bool EncodeSportEventDetectionSportDescriptor(const SportEventDetectionSportDescriptor& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeSportEventDetectionSportDescriptor(TlvReader& reader, SportEventDetectionSportDescriptor* output, ErrorCode* error);
+
+bool EncodeSportEventDetectionCapabilities(const SportEventDetectionCapabilities& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeSportEventDetectionCapabilities(TlvReader& reader, SportEventDetectionCapabilities* output, ErrorCode* error);
+
+bool EncodeGetEventDetectionConfigParams(const GetEventDetectionConfigParams& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeGetEventDetectionConfigParams(TlvReader& reader, GetEventDetectionConfigParams* output, ErrorCode* error);
+
+bool EncodeSportEventDetectionState(const SportEventDetectionState& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeSportEventDetectionState(TlvReader& reader, SportEventDetectionState* output, ErrorCode* error);
+
+bool EncodeSetEventDetectionConfigParams(const SetEventDetectionConfigParams& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeSetEventDetectionConfigParams(TlvReader& reader, SetEventDetectionConfigParams* output, ErrorCode* error);
+
+bool EncodeSetEventDetectionConfigResult(const SetEventDetectionConfigResult& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeSetEventDetectionConfigResult(TlvReader& reader, SetEventDetectionConfigResult* output, ErrorCode* error);
+
+bool EncodeSportEventDetectionStateChangedEvent(const SportEventDetectionStateChangedEvent& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeSportEventDetectionStateChangedEvent(TlvReader& reader, SportEventDetectionStateChangedEvent* output, ErrorCode* error);
+
+bool EncodeSportEventDetails(const SportEventDetails& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeSportEventDetails(TlvReader& reader, SportEventDetails* output, ErrorCode* error);
+
+bool EncodeSportEventDetectedEvent(const SportEventDetectedEvent& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeSportEventDetectedEvent(TlvReader& reader, SportEventDetectedEvent* output, ErrorCode* error);
+
+bool EncodeSportBasketballCapability(const SportBasketballCapability& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeSportBasketballCapability(TlvReader& reader, SportBasketballCapability* output, ErrorCode* error);
+
+bool EncodeSportBasketballShotDetails(const SportBasketballShotDetails& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeSportBasketballShotDetails(TlvReader& reader, SportBasketballShotDetails* output, ErrorCode* error);
+
+bool EncodeSportBasketballGoalDetails(const SportBasketballGoalDetails& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeSportBasketballGoalDetails(TlvReader& reader, SportBasketballGoalDetails* output, ErrorCode* error);
 
 bool EncodeStreamFlowControlCapabilities(const StreamFlowControlCapabilities& input, TlvWriter& writer, ErrorCode* error);
 bool DecodeStreamFlowControlCapabilities(TlvReader& reader, StreamFlowControlCapabilities* output, ErrorCode* error);

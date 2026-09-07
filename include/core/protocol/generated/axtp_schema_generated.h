@@ -1627,6 +1627,134 @@ inline constexpr FieldDescriptor kSoftwareUpdatePolicyCapabilityFields[] = {
     { 0x04, "supportsReset", FieldType::Bool, false, 0, 0 },
 };
 
+inline constexpr FieldDescriptor kSportConfigTargetParamsFields[] = {
+    { 0x01, "macAddress", FieldType::String, true, 0, 0 },
+    { 0x02, "sportType", FieldType::String, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kSportGoalShotWatermarkConfigFields[] = {
+    { 0x01, "macAddress", FieldType::String, true, 0, 0 },
+    { 0x02, "sportType", FieldType::String, true, 0, 0 },
+    { 0x03, "goalVisible", FieldType::Bool, true, 0, 0 },
+    { 0x04, "shotVisible", FieldType::Bool, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kSportSetGoalShotWatermarkConfigParamsFields[] = {
+    { 0x01, "macAddress", FieldType::String, true, 0, 0 },
+    { 0x02, "sportType", FieldType::String, true, 0, 0 },
+    { 0x03, "goalVisible", FieldType::Bool, true, 0, 0 },
+    { 0x04, "shotVisible", FieldType::Bool, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kSportEventClipConfigFields[] = {
+    { 0x01, "macAddress", FieldType::String, true, 0, 0 },
+    { 0x02, "sportType", FieldType::String, true, 0, 0 },
+    { 0x03, "beforeOffsetSeconds", FieldType::Uint32, true, 0, 0 },
+    { 0x04, "afterOffsetSeconds", FieldType::Uint32, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kSportSetEventClipConfigParamsFields[] = {
+    { 0x01, "macAddress", FieldType::String, true, 0, 0 },
+    { 0x02, "sportType", FieldType::String, true, 0, 0 },
+    { 0x03, "beforeOffsetSeconds", FieldType::Uint32, true, 0, 0 },
+    { 0x04, "afterOffsetSeconds", FieldType::Uint32, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kGetEventDetectionCapabilitiesParamsFields[] = {
+    { 0x01, "sportTypes", FieldType::Array, false, 0, 0 },
+    { 0x02, "includeRuntimeState", FieldType::Bool, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kGetEventDetectionCapabilitiesResultFields[] = {
+    { 0x01, "capability", FieldType::Object, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kSportEventDetectionSportDescriptorFields[] = {
+    { 0x01, "sportType", FieldType::String, true, 0, 0 },
+    { 0x02, "supportedEvents", FieldType::Array, true, 0, 0 },
+    { 0x03, "supportsToggle", FieldType::Bool, true, 0, 0 },
+    { 0x04, "detailsSchemas", FieldType::Array, false, 0, 0 },
+    { 0x05, "supportedConfigMethods", FieldType::Array, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kSportEventDetectionCapabilitiesFields[] = {
+    { 0x01, "capability", FieldType::String, true, 0, 0 },
+    { 0x02, "supportedSports", FieldType::Array, true, 0, 0 },
+    { 0x03, "concurrentSportTypes", FieldType::Bool, true, 0, 0 },
+    { 0x04, "supportsStateEvent", FieldType::Bool, true, 0, 0 },
+    { 0x05, "supportsUnifiedEvent", FieldType::Bool, true, 0, 0 },
+    { 0x06, "persistencePolicy", FieldType::Enum, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kGetEventDetectionConfigParamsFields[] = {
+    { 0x01, "sportType", FieldType::String, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kSportEventDetectionStateFields[] = {
+    { 0x01, "sportType", FieldType::String, true, 0, 0 },
+    { 0x02, "effectiveEnabled", FieldType::Bool, true, 0, 0 },
+    { 0x03, "runtimeState", FieldType::Enum, true, 0, 0 },
+    { 0x04, "applyState", FieldType::Enum, false, 0, 0 },
+    { 0x05, "reason", FieldType::String, false, 0, 0 },
+    { 0x06, "stateRevision", FieldType::Uint32, false, 0, 0 },
+    { 0x07, "updatedAt", FieldType::String, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kSetEventDetectionConfigParamsFields[] = {
+    { 0x01, "sportType", FieldType::String, true, 0, 0 },
+    { 0x02, "enabled", FieldType::Bool, true, 0, 0 },
+    { 0x03, "expectedStateRevision", FieldType::Uint32, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kSetEventDetectionConfigResultFields[] = {
+    { 0x01, "accepted", FieldType::Bool, true, 0, 0 },
+    { 0x02, "state", FieldType::Object, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kSportEventDetectionStateChangedEventFields[] = {
+    { 0x01, "state", FieldType::Object, true, 0, 0 },
+    { 0x02, "source", FieldType::Enum, true, 0, 0 },
+    { 0x03, "reason", FieldType::String, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kSportEventDetailsFields[] = {
+    { 0x01, "shotId", FieldType::String, false, 0, 0 },
+    { 0x02, "goalId", FieldType::String, false, 0, 0 },
+    { 0x03, "releaseType", FieldType::Enum, false, 0, 0 },
+    { 0x04, "goalType", FieldType::Enum, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kSportEventDetectedEventFields[] = {
+    { 0x01, "eventId", FieldType::String, true, 0, 0 },
+    { 0x02, "sequence", FieldType::Uint64, true, 0, 0 },
+    { 0x03, "sportType", FieldType::String, true, 0, 0 },
+    { 0x04, "eventType", FieldType::String, true, 0, 0 },
+    { 0x05, "occurredAt", FieldType::String, true, 0, 0 },
+    { 0x06, "confidence", FieldType::Object, false, 0, 1 },
+    { 0x07, "trainingSessionId", FieldType::String, false, 0, 0 },
+    { 0x08, "details", FieldType::Object, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kSportBasketballCapabilityFields[] = {
+    { 0x01, "capability", FieldType::String, true, 0, 0 },
+    { 0x02, "sportType", FieldType::String, true, 0, 0 },
+    { 0x03, "supportedEvents", FieldType::Array, true, 0, 0 },
+    { 0x04, "detailsSchemas", FieldType::Array, true, 0, 0 },
+    { 0x05, "requiresEventDetectionToggle", FieldType::Bool, true, 0, 0 },
+    { 0x06, "goalRequiresShotReference", FieldType::Bool, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kSportBasketballShotDetailsFields[] = {
+    { 0x01, "shotId", FieldType::String, true, 0, 0 },
+    { 0x02, "releaseType", FieldType::Enum, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kSportBasketballGoalDetailsFields[] = {
+    { 0x01, "goalId", FieldType::String, true, 0, 0 },
+    { 0x02, "shotId", FieldType::String, true, 0, 0 },
+    { 0x03, "goalType", FieldType::Enum, false, 0, 0 },
+};
+
 inline constexpr FieldDescriptor kStreamFlowControlCapabilitiesFields[] = {
     { 0x01, "capability", FieldType::String, true, 0, 0 },
     { 0x02, "supportsAck", FieldType::Bool, true, 0, 0 },
@@ -2126,6 +2254,25 @@ inline constexpr SchemaDescriptor kLauncherUpdatePolicySchema = { "LauncherUpdat
 inline constexpr SchemaDescriptor kUpdateScheduleSchema = { "UpdateSchedule", kUpdateScheduleFields, 3 };
 inline constexpr SchemaDescriptor kUpdateConditionsSchema = { "UpdateConditions", kUpdateConditionsFields, 2 };
 inline constexpr SchemaDescriptor kSoftwareUpdatePolicyCapabilitySchema = { "SoftwareUpdatePolicyCapability", kSoftwareUpdatePolicyCapabilityFields, 4 };
+inline constexpr SchemaDescriptor kSportConfigTargetParamsSchema = { "SportConfigTargetParams", kSportConfigTargetParamsFields, 2 };
+inline constexpr SchemaDescriptor kSportGoalShotWatermarkConfigSchema = { "SportGoalShotWatermarkConfig", kSportGoalShotWatermarkConfigFields, 4 };
+inline constexpr SchemaDescriptor kSportSetGoalShotWatermarkConfigParamsSchema = { "SportSetGoalShotWatermarkConfigParams", kSportSetGoalShotWatermarkConfigParamsFields, 4 };
+inline constexpr SchemaDescriptor kSportEventClipConfigSchema = { "SportEventClipConfig", kSportEventClipConfigFields, 4 };
+inline constexpr SchemaDescriptor kSportSetEventClipConfigParamsSchema = { "SportSetEventClipConfigParams", kSportSetEventClipConfigParamsFields, 4 };
+inline constexpr SchemaDescriptor kGetEventDetectionCapabilitiesParamsSchema = { "GetEventDetectionCapabilitiesParams", kGetEventDetectionCapabilitiesParamsFields, 2 };
+inline constexpr SchemaDescriptor kGetEventDetectionCapabilitiesResultSchema = { "GetEventDetectionCapabilitiesResult", kGetEventDetectionCapabilitiesResultFields, 1 };
+inline constexpr SchemaDescriptor kSportEventDetectionSportDescriptorSchema = { "SportEventDetectionSportDescriptor", kSportEventDetectionSportDescriptorFields, 5 };
+inline constexpr SchemaDescriptor kSportEventDetectionCapabilitiesSchema = { "SportEventDetectionCapabilities", kSportEventDetectionCapabilitiesFields, 6 };
+inline constexpr SchemaDescriptor kGetEventDetectionConfigParamsSchema = { "GetEventDetectionConfigParams", kGetEventDetectionConfigParamsFields, 1 };
+inline constexpr SchemaDescriptor kSportEventDetectionStateSchema = { "SportEventDetectionState", kSportEventDetectionStateFields, 7 };
+inline constexpr SchemaDescriptor kSetEventDetectionConfigParamsSchema = { "SetEventDetectionConfigParams", kSetEventDetectionConfigParamsFields, 3 };
+inline constexpr SchemaDescriptor kSetEventDetectionConfigResultSchema = { "SetEventDetectionConfigResult", kSetEventDetectionConfigResultFields, 2 };
+inline constexpr SchemaDescriptor kSportEventDetectionStateChangedEventSchema = { "SportEventDetectionStateChangedEvent", kSportEventDetectionStateChangedEventFields, 3 };
+inline constexpr SchemaDescriptor kSportEventDetailsSchema = { "SportEventDetails", kSportEventDetailsFields, 4 };
+inline constexpr SchemaDescriptor kSportEventDetectedEventSchema = { "SportEventDetectedEvent", kSportEventDetectedEventFields, 8 };
+inline constexpr SchemaDescriptor kSportBasketballCapabilitySchema = { "SportBasketballCapability", kSportBasketballCapabilityFields, 6 };
+inline constexpr SchemaDescriptor kSportBasketballShotDetailsSchema = { "SportBasketballShotDetails", kSportBasketballShotDetailsFields, 2 };
+inline constexpr SchemaDescriptor kSportBasketballGoalDetailsSchema = { "SportBasketballGoalDetails", kSportBasketballGoalDetailsFields, 3 };
 inline constexpr SchemaDescriptor kStreamFlowControlCapabilitiesSchema = { "StreamFlowControlCapabilities", kStreamFlowControlCapabilitiesFields, 9 };
 inline constexpr SchemaDescriptor kStreamSelectorSchema = { "StreamSelector", kStreamSelectorFields, 1 };
 inline constexpr SchemaDescriptor kStreamStateSchema = { "StreamState", kStreamStateFields, 8 };

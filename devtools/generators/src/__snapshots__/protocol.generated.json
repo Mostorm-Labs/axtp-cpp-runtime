@@ -9467,6 +9467,739 @@
       ]
     },
     {
+      "name": "SportConfigTargetParams",
+      "kind": "object",
+      "description": "Target selector shared by sport configuration queries in multi-device App sessions.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "macAddress",
+          "type": "string",
+          "required": true,
+          "maxLength": 17,
+          "description": "Target device MAC address in uppercase colon-separated form, for example AA:BB:CC:DD:EE:FF."
+        },
+        {
+          "fieldId": 2,
+          "name": "sportType",
+          "type": "string",
+          "required": true,
+          "maxLength": 32,
+          "description": "Capability-supported sport type whose configuration is requested."
+        }
+      ]
+    },
+    {
+      "name": "SportGoalShotWatermarkConfig",
+      "kind": "object",
+      "description": "Complete Goal and Shot watermark visibility configuration for one device and sport type.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "macAddress",
+          "type": "string",
+          "required": true,
+          "maxLength": 17,
+          "description": "Target device MAC address in canonical uppercase colon-separated form."
+        },
+        {
+          "fieldId": 2,
+          "name": "sportType",
+          "type": "string",
+          "required": true,
+          "maxLength": 32,
+          "description": "Sport type represented by this configuration."
+        },
+        {
+          "fieldId": 3,
+          "name": "goalVisible",
+          "type": "bool",
+          "required": true,
+          "description": "Whether Goal watermarks are displayed for detected Goal events."
+        },
+        {
+          "fieldId": 4,
+          "name": "shotVisible",
+          "type": "bool",
+          "required": true,
+          "description": "Whether Shot watermarks are displayed for detected Shot events."
+        }
+      ]
+    },
+    {
+      "name": "SportSetGoalShotWatermarkConfigParams",
+      "kind": "object",
+      "description": "Full atomic update of Goal and Shot watermark visibility for one device and sport type.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "macAddress",
+          "type": "string",
+          "required": true,
+          "maxLength": 17,
+          "description": "Target device MAC address in uppercase colon-separated form, for example AA:BB:CC:DD:EE:FF."
+        },
+        {
+          "fieldId": 2,
+          "name": "sportType",
+          "type": "string",
+          "required": true,
+          "maxLength": 32,
+          "description": "Capability-supported sport type to configure."
+        },
+        {
+          "fieldId": 3,
+          "name": "goalVisible",
+          "type": "bool",
+          "required": true,
+          "description": "Desired Goal watermark visibility."
+        },
+        {
+          "fieldId": 4,
+          "name": "shotVisible",
+          "type": "bool",
+          "required": true,
+          "description": "Desired Shot watermark visibility."
+        }
+      ]
+    },
+    {
+      "name": "SportEventClipConfig",
+      "kind": "object",
+      "description": "Complete video clip window configuration centered on Goal and Shot events for one device and sport type.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "macAddress",
+          "type": "string",
+          "required": true,
+          "maxLength": 17,
+          "description": "Target device MAC address in canonical uppercase colon-separated form."
+        },
+        {
+          "fieldId": 2,
+          "name": "sportType",
+          "type": "string",
+          "required": true,
+          "maxLength": 32,
+          "description": "Sport type represented by this configuration."
+        },
+        {
+          "fieldId": 3,
+          "name": "beforeOffsetSeconds",
+          "type": "uint32",
+          "required": true,
+          "description": "Number of whole seconds included before the detected event timestamp."
+        },
+        {
+          "fieldId": 4,
+          "name": "afterOffsetSeconds",
+          "type": "uint32",
+          "required": true,
+          "description": "Number of whole seconds included after the detected event timestamp."
+        }
+      ]
+    },
+    {
+      "name": "SportSetEventClipConfigParams",
+      "kind": "object",
+      "description": "Full atomic update of the video clip window centered on Goal and Shot events for one device and sport type.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "macAddress",
+          "type": "string",
+          "required": true,
+          "maxLength": 17,
+          "description": "Target device MAC address in uppercase colon-separated form, for example AA:BB:CC:DD:EE:FF."
+        },
+        {
+          "fieldId": 2,
+          "name": "sportType",
+          "type": "string",
+          "required": true,
+          "maxLength": 32,
+          "description": "Capability-supported sport type to configure."
+        },
+        {
+          "fieldId": 3,
+          "name": "beforeOffsetSeconds",
+          "type": "uint32",
+          "required": true,
+          "description": "Number of whole seconds to include before the detected event timestamp."
+        },
+        {
+          "fieldId": 4,
+          "name": "afterOffsetSeconds",
+          "type": "uint32",
+          "required": true,
+          "description": "Number of whole seconds to include after the detected event timestamp."
+        }
+      ]
+    },
+    {
+      "name": "GetEventDetectionCapabilitiesParams",
+      "kind": "object",
+      "description": "Optional selector for event detection capability discovery.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "sportTypes",
+          "type": "array",
+          "required": false,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Optional sport type filter; omitted means return all supported sport types."
+        },
+        {
+          "fieldId": 2,
+          "name": "includeRuntimeState",
+          "type": "bool",
+          "required": false,
+          "default": false,
+          "description": "Whether to include a runtime state summary in the capability snapshot; detailed state is returned by the config query."
+        }
+      ]
+    },
+    {
+      "name": "GetEventDetectionCapabilitiesResult",
+      "kind": "object",
+      "description": "Result wrapper for cross-sport event detection capability discovery.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "capability",
+          "type": "SportEventDetectionCapabilities",
+          "required": true,
+          "description": "Cross-sport event detection capability descriptor."
+        }
+      ]
+    },
+    {
+      "name": "SportEventDetectionSportDescriptor",
+      "kind": "object",
+      "description": "Capability descriptor for one supported sport type, its registered event types, and optional sport-specific configuration methods.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "sportType",
+          "type": "string",
+          "required": true,
+          "maxLength": 32,
+          "description": "Stable sport type discriminator, such as basketball, football, baseball, or tennis."
+        },
+        {
+          "fieldId": 2,
+          "name": "supportedEvents",
+          "type": "array",
+          "required": true,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Event type discriminators supported for this sport type."
+        },
+        {
+          "fieldId": 3,
+          "name": "supportsToggle",
+          "type": "bool",
+          "required": true,
+          "description": "Whether sport.setEventDetectionConfig can control this sport type."
+        },
+        {
+          "fieldId": 4,
+          "name": "detailsSchemas",
+          "type": "array",
+          "required": false,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Registered sport-specific detail schema names for the supported event types."
+        },
+        {
+          "fieldId": 5,
+          "name": "supportedConfigMethods",
+          "type": "array",
+          "required": false,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Optional registered sport configuration methods supported for this sport type, such as Goal/Shot watermark or event clip configuration."
+        }
+      ]
+    },
+    {
+      "name": "SportEventDetectionCapabilities",
+      "kind": "object",
+      "description": "Cross-sport event detection capability descriptor.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "capability",
+          "type": "string",
+          "required": true,
+          "maxLength": 64,
+          "description": "Fixed capability name sport.eventDetection."
+        },
+        {
+          "fieldId": 2,
+          "name": "supportedSports",
+          "type": "array",
+          "required": true,
+          "array": {
+            "itemType": "SportEventDetectionSportDescriptor",
+            "itemSchema": "SportEventDetectionSportDescriptor"
+          },
+          "description": "Supported sport types, events, toggle support, and detail schema names."
+        },
+        {
+          "fieldId": 3,
+          "name": "concurrentSportTypes",
+          "type": "bool",
+          "required": true,
+          "description": "Whether more than one sport type may be enabled at the same time; the MVP default is false."
+        },
+        {
+          "fieldId": 4,
+          "name": "supportsStateEvent",
+          "type": "bool",
+          "required": true,
+          "description": "Whether the device emits sport.eventDetectionStateChanged."
+        },
+        {
+          "fieldId": 5,
+          "name": "supportsUnifiedEvent",
+          "type": "bool",
+          "required": true,
+          "description": "Whether the device emits sport.eventDetected."
+        },
+        {
+          "fieldId": 6,
+          "name": "persistencePolicy",
+          "type": "enum",
+          "required": true,
+          "enumValues": [
+            "volatile",
+            "persistent",
+            "profileControlled"
+          ],
+          "description": "Persistence policy for sport detection toggles; this adoption selects persistent for VM33PRO and factory reset returns disabled."
+        }
+      ]
+    },
+    {
+      "name": "GetEventDetectionConfigParams",
+      "kind": "object",
+      "description": "Selector for one sport type event detection state.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "sportType",
+          "type": "string",
+          "required": true,
+          "maxLength": 32,
+          "description": "Supported sport type whose effective state is requested."
+        }
+      ]
+    },
+    {
+      "name": "SportEventDetectionState",
+      "kind": "object",
+      "description": "Effective event detection configuration and runtime state for one sport type.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "sportType",
+          "type": "string",
+          "required": true,
+          "maxLength": 32,
+          "description": "Sport type represented by this state snapshot."
+        },
+        {
+          "fieldId": 2,
+          "name": "effectiveEnabled",
+          "type": "bool",
+          "required": true,
+          "description": "Whether event detection is effectively enabled for this sport type."
+        },
+        {
+          "fieldId": 3,
+          "name": "runtimeState",
+          "type": "enum",
+          "required": true,
+          "enumValues": [
+            "disabled",
+            "enabling",
+            "ready",
+            "degraded",
+            "unavailable",
+            "disabling"
+          ],
+          "description": "Current detector runtime state."
+        },
+        {
+          "fieldId": 4,
+          "name": "applyState",
+          "type": "enum",
+          "required": false,
+          "enumValues": [
+            "applied",
+            "pending"
+          ],
+          "description": "Whether the latest toggle request is fully applied."
+        },
+        {
+          "fieldId": 5,
+          "name": "reason",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "State transition, degraded, or unavailable reason summary."
+        },
+        {
+          "fieldId": 6,
+          "name": "stateRevision",
+          "type": "uint32",
+          "required": false,
+          "description": "Monotonic state revision for client calibration and optional compare-and-set."
+        },
+        {
+          "fieldId": 7,
+          "name": "updatedAt",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "Device timestamp of this state snapshot."
+        }
+      ]
+    },
+    {
+      "name": "SetEventDetectionConfigParams",
+      "kind": "object",
+      "description": "Request to enable or disable event detection for one sport type.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "sportType",
+          "type": "string",
+          "required": true,
+          "maxLength": 32,
+          "description": "Supported sport type to control."
+        },
+        {
+          "fieldId": 2,
+          "name": "enabled",
+          "type": "bool",
+          "required": true,
+          "description": "Desired effective detection toggle."
+        },
+        {
+          "fieldId": 3,
+          "name": "expectedStateRevision",
+          "type": "uint32",
+          "required": false,
+          "description": "Optional compare-and-set state revision."
+        }
+      ]
+    },
+    {
+      "name": "SetEventDetectionConfigResult",
+      "kind": "object",
+      "description": "Accepted or effective state returned from a sport detection toggle request.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "accepted",
+          "type": "bool",
+          "required": true,
+          "description": "Whether the device accepted the toggle request."
+        },
+        {
+          "fieldId": 2,
+          "name": "state",
+          "type": "SportEventDetectionState",
+          "required": true,
+          "description": "Effective or pending state after processing the request."
+        }
+      ]
+    },
+    {
+      "name": "SportEventDetectionStateChangedEvent",
+      "kind": "object",
+      "description": "State change event for one sport type.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "state",
+          "type": "SportEventDetectionState",
+          "required": true,
+          "description": "Complete state after the change."
+        },
+        {
+          "fieldId": 2,
+          "name": "source",
+          "type": "enum",
+          "required": true,
+          "enumValues": [
+            "remoteApp",
+            "localPolicy",
+            "restart",
+            "restore",
+            "unknown"
+          ],
+          "description": "Source of the state change."
+        },
+        {
+          "fieldId": 3,
+          "name": "reason",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "State change or unavailable reason summary."
+        }
+      ]
+    },
+    {
+      "name": "SportEventDetails",
+      "kind": "object",
+      "description": "Common discriminator-qualified detail carrier. Fields are interpreted according to sportType and eventType; new sports add optional fields or a dedicated event schema through a later amendment.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "shotId",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "Basketball shot identifier when eventType is shot or goal."
+        },
+        {
+          "fieldId": 2,
+          "name": "goalId",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "Basketball goal identifier when eventType is goal."
+        },
+        {
+          "fieldId": 3,
+          "name": "releaseType",
+          "type": "enum",
+          "required": false,
+          "enumValues": [
+            "unknown",
+            "setShot",
+            "jumpShot",
+            "layup",
+            "other"
+          ],
+          "description": "Basketball shot release type when eventType is shot."
+        },
+        {
+          "fieldId": 4,
+          "name": "goalType",
+          "type": "enum",
+          "required": false,
+          "enumValues": [
+            "fieldGoal",
+            "freeThrow",
+            "unknown"
+          ],
+          "description": "Basketball goal type when eventType is goal."
+        }
+      ]
+    },
+    {
+      "name": "SportEventDetectedEvent",
+      "kind": "object",
+      "description": "Common low-frequency sport event envelope with discriminator-qualified details.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "eventId",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Device event identifier used for deduplication."
+        },
+        {
+          "fieldId": 2,
+          "name": "sequence",
+          "type": "uint64",
+          "required": true,
+          "description": "Monotonic candidate event sequence used for ordering."
+        },
+        {
+          "fieldId": 3,
+          "name": "sportType",
+          "type": "string",
+          "required": true,
+          "maxLength": 32,
+          "description": "Sport type discriminator."
+        },
+        {
+          "fieldId": 4,
+          "name": "eventType",
+          "type": "string",
+          "required": true,
+          "maxLength": 64,
+          "description": "Registered event type discriminator within the sport type."
+        },
+        {
+          "fieldId": 5,
+          "name": "occurredAt",
+          "type": "string",
+          "required": true,
+          "maxLength": 64,
+          "description": "Device timestamp of the detected event."
+        },
+        {
+          "fieldId": 6,
+          "name": "confidence",
+          "type": "number",
+          "required": false,
+          "min": 0,
+          "max": 1,
+          "description": "Optional detector confidence in the range 0.0 to 1.0."
+        },
+        {
+          "fieldId": 7,
+          "name": "trainingSessionId",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "Optional training session association."
+        },
+        {
+          "fieldId": 8,
+          "name": "details",
+          "type": "SportEventDetails",
+          "required": true,
+          "description": "Discriminator-qualified event details; the MVP basketball projection uses shotId, goalId, releaseType, and goalType."
+        }
+      ]
+    },
+    {
+      "name": "SportBasketballCapability",
+      "kind": "object",
+      "description": "Basketball specialization capability descriptor.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "capability",
+          "type": "string",
+          "required": true,
+          "maxLength": 64,
+          "description": "Fixed capability name sport.basketball."
+        },
+        {
+          "fieldId": 2,
+          "name": "sportType",
+          "type": "string",
+          "required": true,
+          "maxLength": 32,
+          "description": "Fixed discriminator basketball."
+        },
+        {
+          "fieldId": 3,
+          "name": "supportedEvents",
+          "type": "array",
+          "required": true,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Basketball event types supported by the device."
+        },
+        {
+          "fieldId": 4,
+          "name": "detailsSchemas",
+          "type": "array",
+          "required": true,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Basketball detail schema names advertised to the App."
+        },
+        {
+          "fieldId": 5,
+          "name": "requiresEventDetectionToggle",
+          "type": "bool",
+          "required": true,
+          "description": "Whether basketball events require the common event detection toggle."
+        },
+        {
+          "fieldId": 6,
+          "name": "goalRequiresShotReference",
+          "type": "bool",
+          "required": true,
+          "description": "MVP policy: every goal must reference one shotId."
+        }
+      ]
+    },
+    {
+      "name": "SportBasketballShotDetails",
+      "kind": "object",
+      "description": "Basketball shot detail projection for sport.eventDetected with eventType shot.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "shotId",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Business identifier for the valid basketball shot attempt."
+        },
+        {
+          "fieldId": 2,
+          "name": "releaseType",
+          "type": "enum",
+          "required": false,
+          "enumValues": [
+            "unknown",
+            "setShot",
+            "jumpShot",
+            "layup",
+            "other"
+          ],
+          "description": "Optional shot release type."
+        }
+      ]
+    },
+    {
+      "name": "SportBasketballGoalDetails",
+      "kind": "object",
+      "description": "Basketball goal detail projection for sport.eventDetected with eventType goal.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "goalId",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Business identifier for the basketball goal result."
+        },
+        {
+          "fieldId": 2,
+          "name": "shotId",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Required reference to the shot that produced this goal."
+        },
+        {
+          "fieldId": 3,
+          "name": "goalType",
+          "type": "enum",
+          "required": false,
+          "enumValues": [
+            "fieldGoal",
+            "freeThrow",
+            "unknown"
+          ],
+          "description": "Optional goal type."
+        }
+      ]
+    },
+    {
       "name": "StreamFlowControlCapabilities",
       "kind": "object",
       "description": "Common STREAM runtime flow-control and diagnostics capability summary.",
@@ -13148,6 +13881,229 @@
       ]
     },
     {
+      "name": "sport.getEventDetectionCapabilities",
+      "description": "Return supported sport types, event types, sport-specific detail schemas, and runtime constraints for event detection.",
+      "methodId": 6145,
+      "bitOffset": 0,
+      "domain": "sport",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "GetEventDetectionCapabilitiesParams"
+      },
+      "response": {
+        "type": "GetEventDetectionCapabilitiesResult"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "sport.eventDetection"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "INVALID_ARGUMENT",
+        "NOT_SUPPORTED",
+        "PERMISSION_DENIED",
+        "UNAVAILABLE"
+      ]
+    },
+    {
+      "name": "sport.getEventDetectionConfig",
+      "description": "Return the effective event detection configuration and runtime state for one sport type.",
+      "methodId": 6146,
+      "bitOffset": 1,
+      "domain": "sport",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "GetEventDetectionConfigParams"
+      },
+      "response": {
+        "type": "SportEventDetectionState"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "sport.eventDetection"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "INVALID_ARGUMENT",
+        "NOT_SUPPORTED",
+        "PERMISSION_DENIED",
+        "UNAVAILABLE"
+      ]
+    },
+    {
+      "name": "sport.setEventDetectionConfig",
+      "description": "Enable or disable event detection for one sport type and return the accepted or effective state.",
+      "methodId": 6147,
+      "bitOffset": 2,
+      "domain": "sport",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "SetEventDetectionConfigParams"
+      },
+      "response": {
+        "type": "SetEventDetectionConfigResult"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "sport.eventDetection"
+      ],
+      "events": [
+        "sport.eventDetectionStateChanged"
+      ],
+      "errors": [
+        "SUCCESS",
+        "INVALID_ARGUMENT",
+        "NOT_SUPPORTED",
+        "INVALID_STATE",
+        "BUSY",
+        "PERMISSION_DENIED",
+        "UNAVAILABLE"
+      ]
+    },
+    {
+      "name": "sport.getGoalShotWatermarkConfig",
+      "description": "Return Goal and Shot watermark visibility for one device and sport type.",
+      "methodId": 6148,
+      "bitOffset": 3,
+      "domain": "sport",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "SportConfigTargetParams"
+      },
+      "response": {
+        "type": "SportGoalShotWatermarkConfig"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "sport.eventDetection"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "INVALID_ARGUMENT",
+        "NOT_SUPPORTED",
+        "NOT_FOUND",
+        "PERMISSION_DENIED",
+        "UNAVAILABLE"
+      ]
+    },
+    {
+      "name": "sport.setGoalShotWatermarkConfig",
+      "description": "Atomically set Goal and Shot watermark visibility for one device and sport type; success is represented only by the standard RPC status.",
+      "methodId": 6149,
+      "bitOffset": 4,
+      "domain": "sport",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "SportSetGoalShotWatermarkConfigParams"
+      },
+      "response": {
+        "type": "Empty"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "sport.eventDetection"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "INVALID_ARGUMENT",
+        "NOT_SUPPORTED",
+        "NOT_FOUND",
+        "INVALID_STATE",
+        "BUSY",
+        "PERMISSION_DENIED",
+        "UNAVAILABLE"
+      ]
+    },
+    {
+      "name": "sport.getEventClipConfig",
+      "description": "Return the video clip window before and after a Goal or Shot event for one device and sport type.",
+      "methodId": 6150,
+      "bitOffset": 5,
+      "domain": "sport",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "SportConfigTargetParams"
+      },
+      "response": {
+        "type": "SportEventClipConfig"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "sport.eventDetection"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "INVALID_ARGUMENT",
+        "NOT_SUPPORTED",
+        "NOT_FOUND",
+        "PERMISSION_DENIED",
+        "UNAVAILABLE"
+      ]
+    },
+    {
+      "name": "sport.setEventClipConfig",
+      "description": "Atomically set the video clip window before and after a Goal or Shot event for one device and sport type; success is represented only by the standard RPC status.",
+      "methodId": 6151,
+      "bitOffset": 6,
+      "domain": "sport",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "SportSetEventClipConfigParams"
+      },
+      "response": {
+        "type": "Empty"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "sport.eventDetection"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "INVALID_ARGUMENT",
+        "OUT_OF_RANGE",
+        "NOT_SUPPORTED",
+        "NOT_FOUND",
+        "INVALID_STATE",
+        "BUSY",
+        "PERMISSION_DENIED",
+        "UNAVAILABLE"
+      ]
+    },
+    {
       "name": "stream.getCapabilities",
       "description": "Return common STREAM runtime flow-control, statistics, and clock-report capabilities.",
       "methodId": 1281,
@@ -14228,6 +15184,50 @@
       ],
       "capabilities": [
         "software.updatePolicy"
+      ]
+    },
+    {
+      "name": "sport.eventDetectionStateChanged",
+      "description": "Emitted when one sport type changes effective enabled state, runtime state, availability, or apply state.",
+      "eventId": 6145,
+      "bitOffset": 0,
+      "domain": "sport",
+      "since": "1.0.0",
+      "status": "draft",
+      "payload": {
+        "type": "SportEventDetectionStateChangedEvent"
+      },
+      "severity": "info",
+      "trigger": [
+        "sport.setEventDetectionConfig",
+        "device restart",
+        "restore default",
+        "local policy",
+        "detector availability change"
+      ],
+      "capabilities": [
+        "sport.eventDetection"
+      ]
+    },
+    {
+      "name": "sport.eventDetected",
+      "description": "Emitted when an enabled sport detector identifies a registered business event using a sport and event type discriminator.",
+      "eventId": 6146,
+      "bitOffset": 1,
+      "domain": "sport",
+      "since": "1.0.0",
+      "status": "draft",
+      "payload": {
+        "type": "SportEventDetectedEvent"
+      },
+      "severity": "info",
+      "trigger": [
+        "registered sport event detected",
+        "detector ready",
+        "detector degraded when policy permits"
+      ],
+      "capabilities": [
+        "sport.eventDetection"
       ]
     },
     {
@@ -16165,6 +17165,26 @@
       "status": "draft",
       "type": "object",
       "schema": "SoftwareUpdatePolicyCapability"
+    },
+    {
+      "name": "sport.eventDetection",
+      "description": "Device supports cross-sport event detection capability discovery, per-sport toggle control, runtime state events, and unified sport event delivery.",
+      "capabilityId": 6145,
+      "domain": "sport",
+      "since": "1.0.0",
+      "status": "draft",
+      "type": "object",
+      "schema": "SportEventDetectionCapabilities"
+    },
+    {
+      "name": "sport.basketball",
+      "description": "Device supports basketball shot and goal event semantics through sport.eventDetection.",
+      "capabilityId": 6146,
+      "domain": "sport",
+      "since": "1.0.0",
+      "status": "draft",
+      "type": "object",
+      "schema": "SportBasketballCapability"
     },
     {
       "name": "stream.flowControl",

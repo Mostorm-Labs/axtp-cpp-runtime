@@ -18,6 +18,7 @@
   - [network Methods](#network-methods)
   - [signage Methods](#signage-methods)
   - [software Methods](#software-methods)
+  - [sport Methods](#sport-methods)
   - [stream Methods](#stream-methods)
   - [video Methods](#video-methods)
 - [Events](#events)
@@ -28,6 +29,7 @@
   - [network Events](#network-events)
   - [signage Events](#signage-events)
   - [software Events](#software-events)
+  - [sport Events](#sport-events)
   - [stream Events](#stream-events)
   - [video Events](#video-events)
 - [Additional Types](#additional-types)
@@ -45,6 +47,7 @@
 | network | 18 | 8 |
 | signage | 5 | 1 |
 | software | 6 | 2 |
+| sport | 7 | 2 |
 | stream | 8 | 4 |
 | video | 6 | 3 |
 
@@ -212,6 +215,8 @@ Generated capabilities are the feature-level switches that runtimes and devices 
 | 0x1607 | cast.status | cast | draft | object | CastStatusCapability | Device supports current cast receiver status snapshot query. |
 | 0x1701 | software.config | software | draft | object | SoftwareConfigCapability | Device supports reading, setting, and resetting the runtime configuration of software objects (such as the Launcher) and emitting configuration change notifications. |
 | 0x1702 | software.updatePolicy | software | draft | object | SoftwareUpdatePolicyCapability | Device supports reading, setting, and resetting the automatic update policy of software objects (such as the Launcher) and emitting update policy change notifications. |
+| 0x1801 | sport.eventDetection | sport | draft | object | SportEventDetectionCapabilities | Device supports cross-sport event detection capability discovery, per-sport toggle control, runtime state events, and unified sport event delivery. |
+| 0x1802 | sport.basketball | sport | draft | object | SportBasketballCapability | Device supports basketball shot and goal event semantics through sport.eventDetection. |
 
 ## Generated Method Index
 
@@ -226,6 +231,7 @@ The generated registry groups methods by domain. Each method keeps a stable `bit
 | network | 2: network.getIpConfig<br>3: network.setIpConfig<br>5: network.getWifiConfig<br>6: network.setWifiConfig<br>7: network.scanWifi<br>8: network.connectWifi<br>9: network.disconnectWifi<br>10: network.getWifiState<br>12: network.getApConfig<br>13: network.setApConfig<br>15: network.startAp<br>16: network.stopAp<br>14: network.getApState<br>0: network.getInterfaces<br>1: network.getInterfaceInfo<br>4: network.getWifiCapabilities<br>11: network.getApCapabilities<br>17: network.getApClients |
 | signage | 0: signage.getPlaylistCapabilities<br>1: signage.getPlaylistConfig<br>2: signage.setPlaylistConfig<br>3: signage.resetPlaylistConfig<br>4: signage.getPlaylistItemUrl |
 | software | 0: software.getConfig<br>1: software.setConfig<br>2: software.resetConfig<br>3: software.getUpdatePolicy<br>4: software.setUpdatePolicy<br>5: software.resetUpdatePolicy |
+| sport | 0: sport.getEventDetectionCapabilities<br>1: sport.getEventDetectionConfig<br>2: sport.setEventDetectionConfig<br>3: sport.getGoalShotWatermarkConfig<br>4: sport.setGoalShotWatermarkConfig<br>5: sport.getEventClipConfig<br>6: sport.setEventClipConfig |
 | stream | 0: stream.getCapabilities<br>1: stream.getState<br>2: stream.getStats<br>3: stream.ack<br>4: stream.windowUpdate<br>5: stream.pause<br>6: stream.resume<br>7: stream.abort |
 | video | 1: video.openStream<br>2: video.closeStream<br>3: video.getStreamState<br>0: video.getStreamCapabilities<br>4: video.getStreamSourceState<br>5: video.requestKeyFrame |
 
@@ -2864,6 +2870,264 @@ Type: `SoftwareUpdatePolicy`
 
 ---
 
+## sport Methods
+
+### Methods in this domain
+
+- [sport.getEventDetectionCapabilities](#sportgeteventdetectioncapabilities)
+- [sport.getEventDetectionConfig](#sportgeteventdetectionconfig)
+- [sport.setEventDetectionConfig](#sportseteventdetectionconfig)
+- [sport.getGoalShotWatermarkConfig](#sportgetgoalshotwatermarkconfig)
+- [sport.setGoalShotWatermarkConfig](#sportsetgoalshotwatermarkconfig)
+- [sport.getEventClipConfig](#sportgeteventclipconfig)
+- [sport.setEventClipConfig](#sportseteventclipconfig)
+
+---
+
+### sport.getEventDetectionCapabilities
+
+Return supported sport types, event types, sport-specific detail schemas, and runtime constraints for event detection.
+
+- Method ID: `0x1801`
+- Domain: `sport`
+- bitOffset: `0`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `sport.eventDetection`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `NOT_SUPPORTED`, `PERMISSION_DENIED`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `GetEventDetectionCapabilitiesParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?sportTypes | Array<String> | 0x01 | Optional sport type filter; omitted means return all supported sport types. | array.itemType=string | Omit if not used. |
+| ?includeRuntimeState | Boolean | 0x02 | Whether to include a runtime state summary in the capability snapshot; detailed state is returned by the config query. | None | Default: false |
+
+#### Response Fields
+
+Type: `GetEventDetectionCapabilitiesResult`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| capability | SportEventDetectionCapabilities | 0x01 | Cross-sport event detection capability descriptor. | None | N/A |
+
+---
+
+### sport.getEventDetectionConfig
+
+Return the effective event detection configuration and runtime state for one sport type.
+
+- Method ID: `0x1802`
+- Domain: `sport`
+- bitOffset: `1`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `sport.eventDetection`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `NOT_SUPPORTED`, `PERMISSION_DENIED`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `GetEventDetectionConfigParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| sportType | String | 0x01 | Supported sport type whose effective state is requested. | maxLength=32 | N/A |
+
+#### Response Fields
+
+Type: `SportEventDetectionState`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| sportType | String | 0x01 | Sport type represented by this state snapshot. | maxLength=32 | N/A |
+| effectiveEnabled | Boolean | 0x02 | Whether event detection is effectively enabled for this sport type. | None | N/A |
+| runtimeState | Enum | 0x03 | Current detector runtime state. | enum=disabled/enabling/ready/degraded/unavailable/disabling | N/A |
+| ?applyState | Enum | 0x04 | Whether the latest toggle request is fully applied. | enum=applied/pending | Omit if not used. |
+| ?reason | String | 0x05 | State transition, degraded, or unavailable reason summary. | maxLength=128 | Omit if not used. |
+| ?stateRevision | UInt32 | 0x06 | Monotonic state revision for client calibration and optional compare-and-set. | None | Omit if not used. |
+| ?updatedAt | String | 0x07 | Device timestamp of this state snapshot. | maxLength=64 | Omit if not used. |
+
+---
+
+### sport.setEventDetectionConfig
+
+Enable or disable event detection for one sport type and return the accepted or effective state.
+
+- Method ID: `0x1803`
+- Domain: `sport`
+- bitOffset: `2`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `sport.eventDetection`
+- Possible Events: `sport.eventDetectionStateChanged`
+- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `NOT_SUPPORTED`, `INVALID_STATE`, `BUSY`, `PERMISSION_DENIED`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `SetEventDetectionConfigParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| sportType | String | 0x01 | Supported sport type to control. | maxLength=32 | N/A |
+| enabled | Boolean | 0x02 | Desired effective detection toggle. | None | N/A |
+| ?expectedStateRevision | UInt32 | 0x03 | Optional compare-and-set state revision. | None | Omit if not used. |
+
+#### Response Fields
+
+Type: `SetEventDetectionConfigResult`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| accepted | Boolean | 0x01 | Whether the device accepted the toggle request. | None | N/A |
+| state | SportEventDetectionState | 0x02 | Effective or pending state after processing the request. | None | N/A |
+
+---
+
+### sport.getGoalShotWatermarkConfig
+
+Return Goal and Shot watermark visibility for one device and sport type.
+
+- Method ID: `0x1804`
+- Domain: `sport`
+- bitOffset: `3`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `sport.eventDetection`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `NOT_SUPPORTED`, `NOT_FOUND`, `PERMISSION_DENIED`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `SportConfigTargetParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| macAddress | String | 0x01 | Target device MAC address in uppercase colon-separated form, for example AA:BB:CC:DD:EE:FF. | maxLength=17 | N/A |
+| sportType | String | 0x02 | Capability-supported sport type whose configuration is requested. | maxLength=32 | N/A |
+
+#### Response Fields
+
+Type: `SportGoalShotWatermarkConfig`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| macAddress | String | 0x01 | Target device MAC address in canonical uppercase colon-separated form. | maxLength=17 | N/A |
+| sportType | String | 0x02 | Sport type represented by this configuration. | maxLength=32 | N/A |
+| goalVisible | Boolean | 0x03 | Whether Goal watermarks are displayed for detected Goal events. | None | N/A |
+| shotVisible | Boolean | 0x04 | Whether Shot watermarks are displayed for detected Shot events. | None | N/A |
+
+---
+
+### sport.setGoalShotWatermarkConfig
+
+Atomically set Goal and Shot watermark visibility for one device and sport type; success is represented only by the standard RPC status.
+
+- Method ID: `0x1805`
+- Domain: `sport`
+- bitOffset: `4`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `sport.eventDetection`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `NOT_SUPPORTED`, `NOT_FOUND`, `INVALID_STATE`, `BUSY`, `PERMISSION_DENIED`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `SportSetGoalShotWatermarkConfigParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| macAddress | String | 0x01 | Target device MAC address in uppercase colon-separated form, for example AA:BB:CC:DD:EE:FF. | maxLength=17 | N/A |
+| sportType | String | 0x02 | Capability-supported sport type to configure. | maxLength=32 | N/A |
+| goalVisible | Boolean | 0x03 | Desired Goal watermark visibility. | None | N/A |
+| shotVisible | Boolean | 0x04 | Desired Shot watermark visibility. | None | N/A |
+
+#### Response Fields
+
+Type: `Empty`
+
+No fields.
+
+---
+
+### sport.getEventClipConfig
+
+Return the video clip window before and after a Goal or Shot event for one device and sport type.
+
+- Method ID: `0x1806`
+- Domain: `sport`
+- bitOffset: `5`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `sport.eventDetection`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `NOT_SUPPORTED`, `NOT_FOUND`, `PERMISSION_DENIED`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `SportConfigTargetParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| macAddress | String | 0x01 | Target device MAC address in uppercase colon-separated form, for example AA:BB:CC:DD:EE:FF. | maxLength=17 | N/A |
+| sportType | String | 0x02 | Capability-supported sport type whose configuration is requested. | maxLength=32 | N/A |
+
+#### Response Fields
+
+Type: `SportEventClipConfig`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| macAddress | String | 0x01 | Target device MAC address in canonical uppercase colon-separated form. | maxLength=17 | N/A |
+| sportType | String | 0x02 | Sport type represented by this configuration. | maxLength=32 | N/A |
+| beforeOffsetSeconds | UInt32 | 0x03 | Number of whole seconds included before the detected event timestamp. | None | N/A |
+| afterOffsetSeconds | UInt32 | 0x04 | Number of whole seconds included after the detected event timestamp. | None | N/A |
+
+---
+
+### sport.setEventClipConfig
+
+Atomically set the video clip window before and after a Goal or Shot event for one device and sport type; success is represented only by the standard RPC status.
+
+- Method ID: `0x1807`
+- Domain: `sport`
+- bitOffset: `6`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `sport.eventDetection`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `OUT_OF_RANGE`, `NOT_SUPPORTED`, `NOT_FOUND`, `INVALID_STATE`, `BUSY`, `PERMISSION_DENIED`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `SportSetEventClipConfigParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| macAddress | String | 0x01 | Target device MAC address in uppercase colon-separated form, for example AA:BB:CC:DD:EE:FF. | maxLength=17 | N/A |
+| sportType | String | 0x02 | Capability-supported sport type to configure. | maxLength=32 | N/A |
+| beforeOffsetSeconds | UInt32 | 0x03 | Number of whole seconds to include before the detected event timestamp. | None | N/A |
+| afterOffsetSeconds | UInt32 | 0x04 | Number of whole seconds to include after the detected event timestamp. | None | N/A |
+
+#### Response Fields
+
+Type: `Empty`
+
+No fields.
+
+---
+
 ## stream Methods
 
 ### Methods in this domain
@@ -4324,6 +4588,70 @@ Type: `SoftwareUpdatePolicyChangedEvent`
 
 ---
 
+## sport Events
+
+### Events in this domain
+
+- [sport.eventDetectionStateChanged](#sporteventdetectionstatechanged)
+- [sport.eventDetected](#sporteventdetected)
+
+---
+
+### sport.eventDetectionStateChanged
+
+Emitted when one sport type changes effective enabled state, runtime state, availability, or apply state.
+
+- Event ID: `0x1801`
+- Domain: `sport`
+- bitOffset: `0`
+- Status: `draft`
+- Severity: `info`
+- Added in v1.0.0
+- Trigger: `sport.setEventDetectionConfig`, `device restart`, `restore default`, `local policy`, `detector availability change`
+- Required Capabilities: `sport.eventDetection`
+
+#### Payload Fields
+
+Type: `SportEventDetectionStateChangedEvent`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| state | SportEventDetectionState | 0x01 | Complete state after the change. | None | N/A |
+| source | Enum | 0x02 | Source of the state change. | enum=remoteApp/localPolicy/restart/restore/unknown | N/A |
+| ?reason | String | 0x03 | State change or unavailable reason summary. | maxLength=128 | Omit if not used. |
+
+---
+
+### sport.eventDetected
+
+Emitted when an enabled sport detector identifies a registered business event using a sport and event type discriminator.
+
+- Event ID: `0x1802`
+- Domain: `sport`
+- bitOffset: `1`
+- Status: `draft`
+- Severity: `info`
+- Added in v1.0.0
+- Trigger: `registered sport event detected`, `detector ready`, `detector degraded when policy permits`
+- Required Capabilities: `sport.eventDetection`
+
+#### Payload Fields
+
+Type: `SportEventDetectedEvent`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| eventId | String | 0x01 | Device event identifier used for deduplication. | maxLength=128 | N/A |
+| sequence | UInt64 | 0x02 | Monotonic candidate event sequence used for ordering. | None | N/A |
+| sportType | String | 0x03 | Sport type discriminator. | maxLength=32 | N/A |
+| eventType | String | 0x04 | Registered event type discriminator within the sport type. | maxLength=64 | N/A |
+| occurredAt | String | 0x05 | Device timestamp of the detected event. | maxLength=64 | N/A |
+| ?confidence | Number | 0x06 | Optional detector confidence in the range 0.0 to 1.0. | min=0, max=1 | Omit if not used. |
+| ?trainingSessionId | String | 0x07 | Optional training session association. | maxLength=128 | Omit if not used. |
+| details | SportEventDetails | 0x08 | Discriminator-qualified event details; the MVP basketball projection uses shotId, goalId, releaseType, and goalType. | None | N/A |
+
+---
+
 ## stream Events
 
 ### Events in this domain
@@ -5172,6 +5500,42 @@ Aggregated playlist item settings spanning all item types. Only the subset match
 | ?refreshIntervalSecs | UInt32 | 0x07 | website type: page refresh interval in seconds. 0 or absent means no refresh. | min=1 | Omit if not used. |
 | ?clocks | Array<SignagePlaylistClockEntry> | 0x08 | clock type: non-empty playlist clock entry objects. | schema=SignagePlaylistClockEntry, array.itemType=SignagePlaylistClockEntry, array.itemSchema=SignagePlaylistClockEntry | Omit if not used. |
 | ?photos | Array<SignagePlaylistUnsplashPhoto> | 0x09 | unsplash type: non-empty playlist unsplash photo objects. | schema=SignagePlaylistUnsplashPhoto, array.itemType=SignagePlaylistUnsplashPhoto, array.itemSchema=SignagePlaylistUnsplashPhoto | Omit if not used. |
+
+---
+
+## SportBasketballGoalDetails
+
+Basketball goal detail projection for sport.eventDetected with eventType goal.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| goalId | String | 0x01 | Business identifier for the basketball goal result. | maxLength=128 | N/A |
+| shotId | String | 0x02 | Required reference to the shot that produced this goal. | maxLength=128 | N/A |
+| ?goalType | Enum | 0x03 | Optional goal type. | enum=fieldGoal/freeThrow/unknown | Omit if not used. |
+
+---
+
+## SportBasketballShotDetails
+
+Basketball shot detail projection for sport.eventDetected with eventType shot.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| shotId | String | 0x01 | Business identifier for the valid basketball shot attempt. | maxLength=128 | N/A |
+| ?releaseType | Enum | 0x02 | Optional shot release type. | enum=unknown/setShot/jumpShot/layup/other | Omit if not used. |
+
+---
+
+## SportEventDetails
+
+Common discriminator-qualified detail carrier. Fields are interpreted according to sportType and eventType; new sports add optional fields or a dedicated event schema through a later amendment.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?shotId | String | 0x01 | Basketball shot identifier when eventType is shot or goal. | maxLength=128 | Omit if not used. |
+| ?goalId | String | 0x02 | Basketball goal identifier when eventType is goal. | maxLength=128 | Omit if not used. |
+| ?releaseType | Enum | 0x03 | Basketball shot release type when eventType is shot. | enum=unknown/setShot/jumpShot/layup/other | Omit if not used. |
+| ?goalType | Enum | 0x04 | Basketball goal type when eventType is goal. | enum=fieldGoal/freeThrow/unknown | Omit if not used. |
 
 ---
 

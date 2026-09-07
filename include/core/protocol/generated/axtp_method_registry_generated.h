@@ -94,8 +94,15 @@ inline constexpr MethodDescriptor kMethodRegistry[] = {
     { 0x1704, "software.getUpdatePolicy", "software", "SoftwareGetUpdatePolicyParams", "SoftwareUpdatePolicy" },
     { 0x1705, "software.setUpdatePolicy", "software", "SoftwareSetUpdatePolicyParams", "SoftwareSetUpdatePolicyResult" },
     { 0x1706, "software.resetUpdatePolicy", "software", "SoftwareResetUpdatePolicyParams", "SoftwareUpdatePolicy" },
+    { 0x1801, "sport.getEventDetectionCapabilities", "sport", "GetEventDetectionCapabilitiesParams", "GetEventDetectionCapabilitiesResult" },
+    { 0x1802, "sport.getEventDetectionConfig", "sport", "GetEventDetectionConfigParams", "SportEventDetectionState" },
+    { 0x1803, "sport.setEventDetectionConfig", "sport", "SetEventDetectionConfigParams", "SetEventDetectionConfigResult" },
+    { 0x1804, "sport.getGoalShotWatermarkConfig", "sport", "SportConfigTargetParams", "SportGoalShotWatermarkConfig" },
+    { 0x1805, "sport.setGoalShotWatermarkConfig", "sport", "SportSetGoalShotWatermarkConfigParams", "Empty" },
+    { 0x1806, "sport.getEventClipConfig", "sport", "SportConfigTargetParams", "SportEventClipConfig" },
+    { 0x1807, "sport.setEventClipConfig", "sport", "SportSetEventClipConfigParams", "Empty" },
 };
 
-inline constexpr std::size_t kMethodRegistryCount = 80;
+inline constexpr std::size_t kMethodRegistryCount = 87;
 
 } // namespace axtp
