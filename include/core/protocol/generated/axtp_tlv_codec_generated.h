@@ -826,6 +826,7 @@ constexpr std::uint8_t SESSIONS = 0x0C;
 constexpr std::uint8_t PRESENTATION = 0x0D;
 constexpr std::uint8_t AUDIO_POLICY = 0x0E;
 constexpr std::uint8_t PRESENTATION_SETTINGS = 0x0F;
+constexpr std::uint8_t WEBCAST_BACKEND = 0x10;
 }
 
 namespace fields::cast_session_capability {
@@ -927,6 +928,7 @@ constexpr std::uint8_t AUDIO_POLICY = 0x07;
 constexpr std::uint8_t OPERATIONS = 0x08;
 constexpr std::uint8_t PROFILE_HINTS = 0x09;
 constexpr std::uint8_t PRESENTATION_SETTINGS = 0x0A;
+constexpr std::uint8_t WEBCAST_BACKEND = 0x0B;
 }
 
 namespace fields::cast_presentation_capability {
@@ -1170,6 +1172,54 @@ constexpr std::uint8_t AUDIO_POLICY = 0x02;
 namespace fields::cast_control_operation_changed_event {
 constexpr std::uint8_t CONTEXT = 0x01;
 constexpr std::uint8_t OPERATION = 0x02;
+}
+
+namespace fields::cast_get_web_cast_backend_state_params {
+constexpr std::uint8_t CONTROL_VERSION = 0x01;
+}
+
+namespace fields::cast_web_cast_backend_context {
+constexpr std::uint8_t CONTROL_VERSION = 0x01;
+constexpr std::uint8_t RUNTIME_INSTANCE_ID = 0x02;
+constexpr std::uint8_t BACKEND_REVISION = 0x03;
+constexpr std::uint8_t BACKEND_EVENT_SEQUENCE = 0x04;
+}
+
+namespace fields::cast_web_cast_signaling_state {
+constexpr std::uint8_t STATE = 0x01;
+constexpr std::uint8_t TRANSPORT_CONNECTED = 0x02;
+constexpr std::uint8_t RETAINED_PEER_COUNT = 0x03;
+constexpr std::uint8_t CONNECTED_PEER_COUNT = 0x04;
+constexpr std::uint8_t LAST_NETWORK_ERROR = 0x05;
+}
+
+namespace fields::cast_web_cast_local_backend_state {
+constexpr std::uint8_t FALLBACK_ENABLED = 0x01;
+constexpr std::uint8_t SERVICE_STATE = 0x02;
+constexpr std::uint8_t SERVICE_PORT = 0x03;
+constexpr std::uint8_t START_ATTEMPTS = 0x04;
+constexpr std::uint8_t LAST_START_ERROR = 0x05;
+constexpr std::uint8_t SIGNALING = 0x06;
+}
+
+namespace fields::cast_web_cast_backend_state {
+constexpr std::uint8_t ENABLED = 0x01;
+constexpr std::uint8_t STATE = 0x02;
+constexpr std::uint8_t SELECTED_BACKEND = 0x03;
+constexpr std::uint8_t CLOUD = 0x04;
+constexpr std::uint8_t LOCAL = 0x05;
+}
+
+namespace fields::cast_web_cast_backend_snapshot {
+constexpr std::uint8_t BACKEND_CONTEXT = 0x01;
+constexpr std::uint8_t STATE = 0x02;
+}
+
+namespace fields::cast_web_cast_backend_capability {
+constexpr std::uint8_t SUPPORTS_SNAPSHOT = 0x01;
+constexpr std::uint8_t SUPPORTS_EVENTS = 0x02;
+constexpr std::uint8_t BACKEND_TYPES = 0x03;
+constexpr std::uint8_t SEQUENCE_MODEL = 0x04;
 }
 
 namespace fields::get_device_info_params {
@@ -3538,6 +3588,8 @@ struct CastStatus {
     bool has_audioPolicy = false;
     std::uint32_t presentationSettings = 0;
     bool has_presentationSettings = false;
+    std::uint32_t webcastBackend = 0;
+    bool has_webcastBackend = false;
 };
 
 struct CastSessionCapability {
@@ -3678,6 +3730,8 @@ struct CastControlCapabilities {
     bool has_profileHints = false;
     std::uint32_t presentationSettings = 0;
     bool has_presentationSettings = false;
+    std::uint32_t webcastBackend = 0;
+    bool has_webcastBackend = false;
 };
 
 struct CastPresentationCapability {
@@ -3965,6 +4019,57 @@ struct CastAudioPolicyChangedEvent {
 struct CastControlOperationChangedEvent {
     std::uint32_t context = 0;
     std::uint32_t operation = 0;
+};
+
+struct CastGetWebCastBackendStateParams {
+    std::uint32_t controlVersion = 0;
+};
+
+struct CastWebCastBackendContext {
+    std::uint32_t controlVersion = 0;
+    const char* runtimeInstanceId = nullptr;
+    const char* backendRevision = nullptr;
+    const char* backendEventSequence = nullptr;
+};
+
+struct CastWebCastSignalingState {
+    std::uint32_t state = 0;
+    bool transportConnected = false;
+    std::uint32_t retainedPeerCount = 0;
+    std::uint32_t connectedPeerCount = 0;
+    std::uint32_t lastNetworkError = 0;
+    bool has_lastNetworkError = false;
+};
+
+struct CastWebCastLocalBackendState {
+    bool fallbackEnabled = false;
+    std::uint32_t serviceState = 0;
+    std::uint32_t servicePort = 0;
+    bool has_servicePort = false;
+    const char* startAttempts = nullptr;
+    std::uint32_t lastStartError = 0;
+    bool has_lastStartError = false;
+    std::uint32_t signaling = 0;
+};
+
+struct CastWebCastBackendState {
+    bool enabled = false;
+    std::uint32_t state = 0;
+    std::uint32_t selectedBackend = 0;
+    std::uint32_t cloud = 0;
+    std::uint32_t local = 0;
+};
+
+struct CastWebCastBackendSnapshot {
+    std::uint32_t backendContext = 0;
+    std::uint32_t state = 0;
+};
+
+struct CastWebCastBackendCapability {
+    bool supportsSnapshot = false;
+    bool supportsEvents = false;
+    std::uint32_t backendTypes = 0;
+    std::uint32_t sequenceModel = 0;
 };
 
 struct GetDeviceInfoParams {
@@ -5893,6 +5998,27 @@ bool DecodeCastAudioPolicyChangedEvent(TlvReader& reader, CastAudioPolicyChanged
 
 bool EncodeCastControlOperationChangedEvent(const CastControlOperationChangedEvent& input, TlvWriter& writer, ErrorCode* error);
 bool DecodeCastControlOperationChangedEvent(TlvReader& reader, CastControlOperationChangedEvent* output, ErrorCode* error);
+
+bool EncodeCastGetWebCastBackendStateParams(const CastGetWebCastBackendStateParams& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastGetWebCastBackendStateParams(TlvReader& reader, CastGetWebCastBackendStateParams* output, ErrorCode* error);
+
+bool EncodeCastWebCastBackendContext(const CastWebCastBackendContext& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastWebCastBackendContext(TlvReader& reader, CastWebCastBackendContext* output, ErrorCode* error);
+
+bool EncodeCastWebCastSignalingState(const CastWebCastSignalingState& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastWebCastSignalingState(TlvReader& reader, CastWebCastSignalingState* output, ErrorCode* error);
+
+bool EncodeCastWebCastLocalBackendState(const CastWebCastLocalBackendState& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastWebCastLocalBackendState(TlvReader& reader, CastWebCastLocalBackendState* output, ErrorCode* error);
+
+bool EncodeCastWebCastBackendState(const CastWebCastBackendState& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastWebCastBackendState(TlvReader& reader, CastWebCastBackendState* output, ErrorCode* error);
+
+bool EncodeCastWebCastBackendSnapshot(const CastWebCastBackendSnapshot& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastWebCastBackendSnapshot(TlvReader& reader, CastWebCastBackendSnapshot* output, ErrorCode* error);
+
+bool EncodeCastWebCastBackendCapability(const CastWebCastBackendCapability& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastWebCastBackendCapability(TlvReader& reader, CastWebCastBackendCapability* output, ErrorCode* error);
 
 bool EncodeGetDeviceInfoParams(const GetDeviceInfoParams& input, TlvWriter& writer, ErrorCode* error);
 bool DecodeGetDeviceInfoParams(TlvReader& reader, GetDeviceInfoParams* output, ErrorCode* error);

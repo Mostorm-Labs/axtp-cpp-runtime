@@ -47,6 +47,20 @@ int main() {
         }
         require(axtp::MethodRegistry::fromGeneratedDefaults().findMethodId("cast.setPresentationSettings")==0x1619,"generated P1 method");
         require(axtp::MethodRegistry::fromGeneratedDefaults().findMethodId("cast.getSession")==0x1601,"legacy method unchanged");
+        const nlohmann::json context={{"controlVersion",1},{"runtimeInstanceId","11111111-1111-4111-8111-111111111111"},
+            {"backendRevision","9007199254740993"},{"backendEventSequence","18446744073709551615"}};
+        const auto wire=axtp::SchemaObjectCodec::encodeTlv8("CastWebCastBackendContext",context);
+        require(wire.has_value(),"generated backend context TLV encoding");
+        require(axtp::SchemaObjectCodec::decodeTlv8("CastWebCastBackendContext",*wire)==context,"backend exact uint64 string roundtrip");
+        auto future=context;future["unknownOptional"]=true;
+        require(axtp::SchemaObjectCodec::decodeJson("CastWebCastBackendContext",future.dump()).has_value(),"backend future optional JSON");
+        auto extra=*wire;extra.insert(extra.end(),{0xFE,1,0x01});
+        require(axtp::SchemaObjectCodec::decodeTlv8("CastWebCastBackendContext",extra)==context,"backend future optional TLV");
+        for(const auto& bad:nlohmann::json::array({1,"01","-1","18446744073709551616"})) {
+            future=context;future["backendRevision"]=bad;
+            require(!axtp::SchemaObjectCodec::validate("CastWebCastBackendContext",future),"backend invalid decimal counter rejected");
+        }
+        require(axtp::MethodRegistry::fromGeneratedDefaults().findMethodId("cast.getWebCastBackendState")==0x161A,"new generated backend method");
         std::cout << "cast object codec vectors passed: " << count << '\n';
     } catch(const std::exception& error) {std::cerr<<error.what()<<'\n';return 1;}
 }

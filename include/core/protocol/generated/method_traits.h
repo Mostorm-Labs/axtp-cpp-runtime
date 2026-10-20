@@ -651,6 +651,14 @@ struct MethodTraits<MethodId::CastSetPresentationSettings> {
 };
 
 template <>
+struct MethodTraits<MethodId::CastGetWebCastBackendState> {
+    using Request = CastGetWebCastBackendStateParams;
+    using Response = CastWebCastBackendSnapshot;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::CastGetWebCastBackendState);
+    static constexpr const char* name = "cast.getWebCastBackendState";
+};
+
+template <>
 struct MethodTraits<MethodId::SoftwareGetConfig> {
     using Request = SoftwareGetConfigParams;
     using Response = SoftwareConfig;
@@ -1042,6 +1050,13 @@ struct EventTraits<EventId::CastPresentationSettingsChanged> {
     using Event = CastPresentationSettingsChangedEvent;
     static constexpr std::uint16_t id = static_cast<std::uint16_t>(EventId::CastPresentationSettingsChanged);
     static constexpr const char* name = "cast.presentationSettingsChanged";
+};
+
+template <>
+struct EventTraits<EventId::CastWebcastBackendChanged> {
+    using Event = CastWebCastBackendSnapshot;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(EventId::CastWebcastBackendChanged);
+    static constexpr const char* name = "cast.webcastBackendChanged";
 };
 
 template <>

@@ -54,12 +54,13 @@ inline constexpr EventDescriptor kEventRegistry[] = {
     { 0x1610, "cast.audioPolicyChanged", "cast", "CastAudioPolicyChangedEvent" },
     { 0x1611, "cast.controlOperationChanged", "cast", "CastControlOperationChangedEvent" },
     { 0x1612, "cast.presentationSettingsChanged", "cast", "CastPresentationSettingsChangedEvent" },
+    { 0x1613, "cast.webcastBackendChanged", "cast", "CastWebCastBackendSnapshot" },
     { 0x1701, "software.configChanged", "software", "SoftwareConfigChangedEvent" },
     { 0x1702, "software.updatePolicyChanged", "software", "SoftwareUpdatePolicyChangedEvent" },
     { 0x1801, "sport.eventDetectionStateChanged", "sport", "SportEventDetectionStateChangedEvent" },
     { 0x1802, "sport.eventDetected", "sport", "SportEventDetectedEvent" },
 };
 
-inline constexpr std::size_t kEventRegistryCount = 45;
+inline constexpr std::size_t kEventRegistryCount = 46;
 
 } // namespace axtp

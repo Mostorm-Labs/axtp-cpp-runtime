@@ -856,6 +856,7 @@ inline constexpr FieldDescriptor kCastStatusFields[] = {
     { 0x0D, "presentation", FieldType::Object, false, 0, 0 },
     { 0x0E, "audioPolicy", FieldType::Object, false, 0, 0 },
     { 0x0F, "presentationSettings", FieldType::Object, false, 0, 0 },
+    { 0x10, "webcastBackend", FieldType::Object, false, 0, 0 },
 };
 
 inline constexpr FieldDescriptor kCastSessionCapabilityFields[] = {
@@ -957,6 +958,7 @@ inline constexpr FieldDescriptor kCastControlCapabilitiesFields[] = {
     { 0x08, "operations", FieldType::Object, false, 0, 0 },
     { 0x09, "profileHints", FieldType::Array, false, 0, 0 },
     { 0x0A, "presentationSettings", FieldType::Object, false, 0, 0 },
+    { 0x0B, "webcastBackend", FieldType::Object, false, 0, 0 },
 };
 
 inline constexpr FieldDescriptor kCastPresentationCapabilityFields[] = {
@@ -1200,6 +1202,54 @@ inline constexpr FieldDescriptor kCastAudioPolicyChangedEventFields[] = {
 inline constexpr FieldDescriptor kCastControlOperationChangedEventFields[] = {
     { 0x01, "context", FieldType::Object, true, 0, 0 },
     { 0x02, "operation", FieldType::Object, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastGetWebCastBackendStateParamsFields[] = {
+    { 0x01, "controlVersion", FieldType::Uint32, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastWebCastBackendContextFields[] = {
+    { 0x01, "controlVersion", FieldType::Uint32, true, 0, 0 },
+    { 0x02, "runtimeInstanceId", FieldType::String, true, 0, 0 },
+    { 0x03, "backendRevision", FieldType::String, true, 0, 0 },
+    { 0x04, "backendEventSequence", FieldType::String, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastWebCastSignalingStateFields[] = {
+    { 0x01, "state", FieldType::Enum, true, 0, 0 },
+    { 0x02, "transportConnected", FieldType::Bool, true, 0, 0 },
+    { 0x03, "retainedPeerCount", FieldType::Uint32, true, 0, 0 },
+    { 0x04, "connectedPeerCount", FieldType::Uint32, true, 0, 0 },
+    { 0x05, "lastNetworkError", FieldType::Uint32, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastWebCastLocalBackendStateFields[] = {
+    { 0x01, "fallbackEnabled", FieldType::Bool, true, 0, 0 },
+    { 0x02, "serviceState", FieldType::Enum, true, 0, 0 },
+    { 0x03, "servicePort", FieldType::Uint32, false, 1, 65535 },
+    { 0x04, "startAttempts", FieldType::String, true, 0, 0 },
+    { 0x05, "lastStartError", FieldType::Uint32, false, 0, 0 },
+    { 0x06, "signaling", FieldType::Object, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastWebCastBackendStateFields[] = {
+    { 0x01, "enabled", FieldType::Bool, true, 0, 0 },
+    { 0x02, "state", FieldType::Enum, true, 0, 0 },
+    { 0x03, "selectedBackend", FieldType::Enum, true, 0, 0 },
+    { 0x04, "cloud", FieldType::Object, true, 0, 0 },
+    { 0x05, "local", FieldType::Object, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastWebCastBackendSnapshotFields[] = {
+    { 0x01, "backendContext", FieldType::Object, true, 0, 0 },
+    { 0x02, "state", FieldType::Object, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastWebCastBackendCapabilityFields[] = {
+    { 0x01, "supportsSnapshot", FieldType::Bool, true, 0, 0 },
+    { 0x02, "supportsEvents", FieldType::Bool, true, 0, 0 },
+    { 0x03, "backendTypes", FieldType::Array, true, 0, 0 },
+    { 0x04, "sequenceModel", FieldType::Enum, true, 0, 0 },
 };
 
 inline constexpr FieldDescriptor kGetDeviceInfoParamsFields[] = {
@@ -2461,7 +2511,7 @@ inline constexpr SchemaDescriptor kCastGetStatusParamsSchema = { "CastGetStatusP
 inline constexpr SchemaDescriptor kCastReceiverSummarySchema = { "CastReceiverSummary", kCastReceiverSummaryFields, 4 };
 inline constexpr SchemaDescriptor kCastSessionStatusSummarySchema = { "CastSessionStatusSummary", kCastSessionStatusSummaryFields, 5 };
 inline constexpr SchemaDescriptor kCastPinCodeStatusSummarySchema = { "CastPinCodeStatusSummary", kCastPinCodeStatusSummaryFields, 6 };
-inline constexpr SchemaDescriptor kCastStatusSchema = { "CastStatus", kCastStatusFields, 15 };
+inline constexpr SchemaDescriptor kCastStatusSchema = { "CastStatus", kCastStatusFields, 16 };
 inline constexpr SchemaDescriptor kCastSessionCapabilitySchema = { "CastSessionCapability", kCastSessionCapabilityFields, 5 };
 inline constexpr SchemaDescriptor kCastAudioCapabilitySchema = { "CastAudioCapability", kCastAudioCapabilityFields, 6 };
 inline constexpr SchemaDescriptor kCastPinCodeCapabilitySchema = { "CastPinCodeCapability", kCastPinCodeCapabilityFields, 5 };
@@ -2473,7 +2523,7 @@ inline constexpr SchemaDescriptor kCastSessionRefSchema = { "CastSessionRef", kC
 inline constexpr SchemaDescriptor kCastControlTargetSchema = { "CastControlTarget", kCastControlTargetFields, 4 };
 inline constexpr SchemaDescriptor kCastControlSnapshotCursorSchema = { "CastControlSnapshotCursor", kCastControlSnapshotCursorFields, 4 };
 inline constexpr SchemaDescriptor kCastControlEventContextSchema = { "CastControlEventContext", kCastControlEventContextFields, 7 };
-inline constexpr SchemaDescriptor kCastControlCapabilitiesSchema = { "CastControlCapabilities", kCastControlCapabilitiesFields, 10 };
+inline constexpr SchemaDescriptor kCastControlCapabilitiesSchema = { "CastControlCapabilities", kCastControlCapabilitiesFields, 11 };
 inline constexpr SchemaDescriptor kCastPresentationCapabilitySchema = { "CastPresentationCapability", kCastPresentationCapabilityFields, 6 };
 inline constexpr SchemaDescriptor kCastAudioPolicyCapabilitySchema = { "CastAudioPolicyCapability", kCastAudioPolicyCapabilityFields, 4 };
 inline constexpr SchemaDescriptor kCastControlOperationsCapabilitySchema = { "CastControlOperationsCapability", kCastControlOperationsCapabilityFields, 3 };
@@ -2502,6 +2552,13 @@ inline constexpr SchemaDescriptor kCastSessionsChangedEventSchema = { "CastSessi
 inline constexpr SchemaDescriptor kCastPresentationChangedEventSchema = { "CastPresentationChangedEvent", kCastPresentationChangedEventFields, 2 };
 inline constexpr SchemaDescriptor kCastAudioPolicyChangedEventSchema = { "CastAudioPolicyChangedEvent", kCastAudioPolicyChangedEventFields, 2 };
 inline constexpr SchemaDescriptor kCastControlOperationChangedEventSchema = { "CastControlOperationChangedEvent", kCastControlOperationChangedEventFields, 2 };
+inline constexpr SchemaDescriptor kCastGetWebCastBackendStateParamsSchema = { "CastGetWebCastBackendStateParams", kCastGetWebCastBackendStateParamsFields, 1 };
+inline constexpr SchemaDescriptor kCastWebCastBackendContextSchema = { "CastWebCastBackendContext", kCastWebCastBackendContextFields, 4 };
+inline constexpr SchemaDescriptor kCastWebCastSignalingStateSchema = { "CastWebCastSignalingState", kCastWebCastSignalingStateFields, 5 };
+inline constexpr SchemaDescriptor kCastWebCastLocalBackendStateSchema = { "CastWebCastLocalBackendState", kCastWebCastLocalBackendStateFields, 6 };
+inline constexpr SchemaDescriptor kCastWebCastBackendStateSchema = { "CastWebCastBackendState", kCastWebCastBackendStateFields, 5 };
+inline constexpr SchemaDescriptor kCastWebCastBackendSnapshotSchema = { "CastWebCastBackendSnapshot", kCastWebCastBackendSnapshotFields, 2 };
+inline constexpr SchemaDescriptor kCastWebCastBackendCapabilitySchema = { "CastWebCastBackendCapability", kCastWebCastBackendCapabilityFields, 4 };
 inline constexpr SchemaDescriptor kGetDeviceInfoParamsSchema = { "GetDeviceInfoParams", kGetDeviceInfoParamsFields, 1 };
 inline constexpr SchemaDescriptor kDeviceInfoSchema = { "DeviceInfo", kDeviceInfoFields, 7 };
 inline constexpr SchemaDescriptor kDeviceIdentitySchema = { "DeviceIdentity", kDeviceIdentityFields, 4 };

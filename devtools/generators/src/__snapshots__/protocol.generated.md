@@ -41,7 +41,7 @@
 | Domain | Methods | Events |
 | ---- | ---- | ---- |
 | audio | 9 | 4 |
-| cast | 25 | 18 |
+| cast | 26 | 19 |
 | device | 4 | 1 |
 | firmware | 4 | 2 |
 | network | 18 | 8 |
@@ -217,6 +217,7 @@ Generated capabilities are the feature-level switches that runtimes and devices 
 | 0x1609 | cast.audioPolicy | cast | draft | object | CastAudioPolicyCapability | Optional explicit per-session audio intent and separate effective participation reporting. |
 | 0x160A | cast.controlOperations | cast | draft | object | CastControlOperationsCapability | Optional asynchronous operation query and bounded same-intent deduplication/retention guarantees. |
 | 0x160B | cast.presentationSettings | cast | draft | object | CastPresentationSettingsCapability | Optional one-field host settings with declared live/restart behavior, independent synchronization and truthful field-only persistence/application results. |
+| 0x160C | cast.webcastBackend | cast | draft | object | CastWebCastBackendCapability | Optional secret-free WebCast cloud/local backend state query and independent full-state changes. |
 | 0x1701 | software.config | software | draft | object | SoftwareConfigCapability | Device supports reading, setting, and resetting the runtime configuration of software objects (such as the Launcher) and emitting configuration change notifications. |
 | 0x1702 | software.updatePolicy | software | draft | object | SoftwareUpdatePolicyCapability | Device supports reading, setting, and resetting the automatic update policy of software objects (such as the Launcher) and emitting update policy change notifications. |
 | 0x1801 | sport.eventDetection | sport | draft | object | SportEventDetectionCapabilities | Device supports cross-sport event detection capability discovery, per-sport toggle control, runtime state events, and unified sport event delivery. |
@@ -229,7 +230,7 @@ The generated registry groups methods by domain. Each method keeps a stable `bit
 | Domain | Methods |
 | ---- | ---- |
 | audio | 1: audio.getAlgorithmConfig<br>2: audio.setAlgorithmConfig<br>0: audio.getAlgorithmCapabilities<br>3: audio.resetAlgorithmConfig<br>4: audio.getStreamCapabilities<br>5: audio.openStream<br>6: audio.closeStream<br>7: audio.getStreamState<br>8: audio.getStreamSourceState |
-| cast | 0: cast.getSession<br>1: cast.stopSession<br>2: cast.getAirPlayName<br>3: cast.setAirPlayName<br>4: cast.getAudio<br>5: cast.setAudio<br>6: cast.setMuted<br>7: cast.getPinCodeConfig<br>8: cast.setPinCodeConfig<br>9: cast.setPinCode<br>10: cast.getWindowState<br>11: cast.setWindowState<br>12: cast.getBackendStatus<br>13: cast.restartBackend<br>14: cast.getFlowControlState<br>15: cast.setRenderFps<br>16: cast.setFlowPolicy<br>17: cast.getStatus<br>18: cast.setAudioDelay<br>19: cast.setVideoStreamParams<br>20: cast.getControlCapabilities<br>21: cast.stopPresentation<br>22: cast.setSessionAudioEnabled<br>23: cast.getControlOperation<br>24: cast.setPresentationSettings |
+| cast | 0: cast.getSession<br>1: cast.stopSession<br>2: cast.getAirPlayName<br>3: cast.setAirPlayName<br>4: cast.getAudio<br>5: cast.setAudio<br>6: cast.setMuted<br>7: cast.getPinCodeConfig<br>8: cast.setPinCodeConfig<br>9: cast.setPinCode<br>10: cast.getWindowState<br>11: cast.setWindowState<br>12: cast.getBackendStatus<br>13: cast.restartBackend<br>14: cast.getFlowControlState<br>15: cast.setRenderFps<br>16: cast.setFlowPolicy<br>17: cast.getStatus<br>18: cast.setAudioDelay<br>19: cast.setVideoStreamParams<br>20: cast.getControlCapabilities<br>21: cast.stopPresentation<br>22: cast.setSessionAudioEnabled<br>23: cast.getControlOperation<br>24: cast.setPresentationSettings<br>25: cast.getWebCastBackendState |
 | device | 0: device.getInfo<br>1: device.getPairingCode<br>2: device.getEnrollmentState<br>3: device.setEnrollmentState |
 | firmware | 0: firmware.getUpdateCapabilities<br>1: firmware.beginUpdate<br>3: firmware.getUpdateState<br>2: firmware.finishUpdate |
 | network | 2: network.getIpConfig<br>3: network.setIpConfig<br>5: network.getWifiConfig<br>6: network.setWifiConfig<br>7: network.scanWifi<br>8: network.connectWifi<br>9: network.disconnectWifi<br>10: network.getWifiState<br>12: network.getApConfig<br>13: network.setApConfig<br>15: network.startAp<br>16: network.stopAp<br>14: network.getApState<br>0: network.getInterfaces<br>1: network.getInterfaceInfo<br>4: network.getWifiCapabilities<br>11: network.getApCapabilities<br>17: network.getApClients |
@@ -660,6 +661,7 @@ Type: `AudioStreamSourceState`
 - [cast.setSessionAudioEnabled](#castsetsessionaudioenabled)
 - [cast.getControlOperation](#castgetcontroloperation)
 - [cast.setPresentationSettings](#castsetpresentationsettings)
+- [cast.getWebCastBackendState](#castgetwebcastbackendstate)
 
 ---
 
@@ -1440,6 +1442,7 @@ Type: `CastStatus`
 | ?presentation | CastPresentationState | 0x0D | Required in v1 unifiedControl; does not replace old single-source summaries. | None | Omit if not used. |
 | ?audioPolicy | CastAudioPolicyState | 0x0E | Required in v1 unifiedControl; selected intent and effective participation are separate from legacy audio. | None | Omit if not used. |
 | ?presentationSettings | CastPresentationSettingsState | 0x0F | Required only when P1 is supported and explicitly requested; combined P0/P1 capture shares one host commit boundary and keeps independent event barriers. | None | Omit if not used. |
+| ?webcastBackend | CastWebCastBackendSnapshot | 0x10 | Explicit optional backend snapshot with its own barrier; not implied by unifiedControl or settings. | None | Omit if not used. |
 
 ---
 
@@ -1563,6 +1566,7 @@ Type: `CastControlCapabilities`
 | ?operations | CastControlOperationsCapability | 0x08 | Required when cast.controlOperations is supported. | None | Omit if not used. |
 | ?profileHints | Array<String> | 0x09 | Non-secret host profile hints; not media profiles or implicit defaults. | array.itemType=string | Omit if not used. |
 | ?presentationSettings | CastPresentationSettingsCapability | 0x0A | Required iff P1 is supported together with its method/event/status section; absence does not imply support. | None | Omit if not used. |
+| ?webcastBackend | CastWebCastBackendCapability | 0x0B | Required iff this independent backend method/event/status section is supported. | None | Omit if not used. |
 
 ---
 
@@ -1762,6 +1766,39 @@ Type: `CastControlOperation`
 | ?outcomeReason | String | 0x0C | Required terminal bounded business reason; not a new numeric error space and never secret data. | maxLength=64 | Omit if not used. |
 | ?ownerCleanup | Enum | 0x0D | Cleanup observation at terminalization for the target owner only; not entire receiver exit. | enum=notApplicable/pending/complete/failed | Omit if not used. |
 | ?settingsResult | CastPresentationSettingsOperationResult | 0x0E | Required for kind=setPresentationSettings including queued/rejected/failed; reports configuration/application/persistence separately. | None | Omit if not used. |
+
+---
+
+### cast.getWebCastBackendState
+
+Read a secret-free WebCast signaling backend snapshot and independent event barrier; selection for new joins is separate from retained peers.
+
+- Method ID: `0x161A`
+- Domain: `cast`
+- bitOffset: `25`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `cast.webcastBackend`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `CastGetWebCastBackendStateParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| controlVersion | UInt32 | 0x01 | Supported control version; this feature uses 1. | None | N/A |
+
+#### Response Fields
+
+Type: `CastWebCastBackendSnapshot`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| backendContext | CastWebCastBackendContext | 0x01 | Epoch and independent revision/event barrier committed with this state. | None | N/A |
+| state | CastWebCastBackendState | 0x02 | Complete safe backend state rather than a delta. | None | N/A |
 
 ---
 
@@ -4131,6 +4168,7 @@ Type: `AudioStreamStatsReportedEvent`
 - [cast.audioPolicyChanged](#castaudiopolicychanged)
 - [cast.controlOperationChanged](#castcontroloperationchanged)
 - [cast.presentationSettingsChanged](#castpresentationsettingschanged)
+- [cast.webcastBackendChanged](#castwebcastbackendchanged)
 
 ---
 
@@ -4615,6 +4653,30 @@ Type: `CastPresentationSettingsChangedEvent`
 | ---- | :---: | :---: | ---- | :---: | ---- |
 | settingsContext | CastSettingsEventContext | 0x01 | Independent required settings cursor matching payload versions. | None | N/A |
 | settings | CastPresentationSettingsState | 0x02 | Full post-commit settings state | None | N/A |
+
+---
+
+### cast.webcastBackendChanged
+
+Replace complete WebCast backend state using independent backendContext; never consumes P0 or settings event sequences.
+
+- Event ID: `0x1613`
+- Domain: `cast`
+- bitOffset: `18`
+- Status: `draft`
+- Severity: `info`
+- Added in v1.0.0
+- Trigger: `join backend selection changed`, `signaling availability changed`, `local listener lifecycle changed`, `peer connectivity changed`, `backend error changed`
+- Required Capabilities: `cast.webcastBackend`
+
+#### Payload Fields
+
+Type: `CastWebCastBackendSnapshot`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| backendContext | CastWebCastBackendContext | 0x01 | Epoch and independent revision/event barrier committed with this state. | None | N/A |
+| state | CastWebCastBackendState | 0x02 | Complete safe backend state rather than a delta. | None | N/A |
 
 ---
 
@@ -5948,6 +6010,62 @@ Desired and effective cast source video stream parameters and reconfiguration st
 | ?rollbackApplied | Boolean | 0x0E | Whether the previous stream parameters were restored after a failed reconfiguration. | None | Omit if not used. |
 | ?lastError | CastLastError | 0x0F | Last reconfiguration or stream lifecycle error, when available. | None | Omit if not used. |
 | ?changedFields | Array<String> | 0x10 | Video parameter fields changed by the most recent operation. | array.itemType=string | Omit if not used. |
+
+---
+
+## CastWebCastBackendContext
+
+Independent full-state event cursor; not part of P0 control or P1 settings sequences.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| controlVersion | UInt32 | 0x01 | Selected supported control version; uses 1. | None | N/A |
+| runtimeInstanceId | String | 0x02 | Canonical lower-case host UUID; changes at restart and equals the advertised control epoch. | maxLength=36 | N/A |
+| backendRevision | String | 0x03 | Canonical decimal uint64 independent backend-state revision. | maxLength=20 | N/A |
+| backendEventSequence | String | 0x04 | Canonical decimal uint64 barrier covering complete backend replacement events through this snapshot. | maxLength=20 | N/A |
+
+---
+
+## CastWebCastBackendState
+
+Actual WebCast signaling backend selection and independent cloud/local observations; no automatic migration or recovery policy is mandated.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| enabled | Boolean | 0x01 | Whether WebCast was enabled for this host instance; false is reported explicitly. | None | N/A |
+| state | Enum | 0x02 | Current ability to admit a new WebCast join; does not describe existing media quality. | enum=disabled/starting/ready/failed/stopped | N/A |
+| selectedBackend | Enum | 0x03 | Authoritative backend currently offered for new joins; none when no usable room exists. Existing peers may belong to the other backend. | enum=none/cloud/local | N/A |
+| cloud | CastWebCastSignalingState | 0x04 | Cloud room and peer observations. | None | N/A |
+| local | CastWebCastLocalBackendState | 0x05 | Local listener and room observations; retained local peers need not migrate when cloud returns. | None | N/A |
+
+---
+
+## CastWebCastLocalBackendState
+
+Receiver-owned optional local signaling listener and its independent room.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| fallbackEnabled | Boolean | 0x01 | Whether local fallback is enabled in the active receiver instance. | None | N/A |
+| serviceState | Enum | 0x02 | Local listener lifecycle; dormant means permitted but not yet started. | enum=disabled/dormant/running/failed/stopped | N/A |
+| ?servicePort | UInt32 | 0x03 | Actual owned listener port in 1..65535; present iff serviceState is running. | min=1, max=65535 | Omit if not used. |
+| startAttempts | String | 0x04 | Canonical decimal uint64 local-start attempts for this host lifetime. | maxLength=20 | N/A |
+| ?lastStartError | UInt32 | 0x05 | Sanitized last local startup error code; no path or exception text. | None | Omit if not used. |
+| signaling | CastWebCastSignalingState | 0x06 | Local room signaling and peer connectivity independent of cloud recovery. | None | N/A |
+
+---
+
+## CastWebCastSignalingState
+
+Current room signaling availability and retained native peer connectivity; no media-quality claim or secret material.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| state | Enum | 0x01 | Ready requires an authoritative usable room and code; transport-open alone is insufficient. | enum=disabled/offline/creatingRoom/awaitingRestore/ready/failed/stopped | N/A |
+| transportConnected | Boolean | 0x02 | Current signaling transport connectivity independent of existing P2P media. | None | N/A |
+| retainedPeerCount | UInt32 | 0x03 | Native peers retained by this backend including peers still negotiating. | None | N/A |
+| connectedPeerCount | UInt32 | 0x04 | Retained peers with an open data/control channel; never proof of presented video or audible output. | None | N/A |
+| ?lastNetworkError | UInt32 | 0x05 | Historical sanitized transport error code; not an override of current state. | None | Omit if not used. |
 
 ---
 
