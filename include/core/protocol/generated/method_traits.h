@@ -299,6 +299,14 @@ struct MethodTraits<MethodId::SignageGetPlaylistItemUrl> {
 };
 
 template <>
+struct MethodTraits<MethodId::SignageGetPlaylistItem> {
+    using Request = SignageGetPlaylistItemParams;
+    using Response = SignageGetPlaylistItemResult;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::SignageGetPlaylistItem);
+    static constexpr const char* name = "signage.getPlaylistItem";
+};
+
+template <>
 struct MethodTraits<MethodId::NetworkGetIpConfig> {
     using Request = NetworkGetIpConfigParams;
     using Response = NetworkIpConfig;
@@ -603,6 +611,46 @@ struct MethodTraits<MethodId::CastSetVideoStreamParams> {
 };
 
 template <>
+struct MethodTraits<MethodId::CastGetControlCapabilities> {
+    using Request = Empty;
+    using Response = CastControlCapabilities;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::CastGetControlCapabilities);
+    static constexpr const char* name = "cast.getControlCapabilities";
+};
+
+template <>
+struct MethodTraits<MethodId::CastStopPresentation> {
+    using Request = CastStopPresentationParams;
+    using Response = CastControlOperation;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::CastStopPresentation);
+    static constexpr const char* name = "cast.stopPresentation";
+};
+
+template <>
+struct MethodTraits<MethodId::CastSetSessionAudioEnabled> {
+    using Request = CastSetSessionAudioEnabledParams;
+    using Response = CastControlOperation;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::CastSetSessionAudioEnabled);
+    static constexpr const char* name = "cast.setSessionAudioEnabled";
+};
+
+template <>
+struct MethodTraits<MethodId::CastGetControlOperation> {
+    using Request = CastGetControlOperationParams;
+    using Response = CastControlOperation;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::CastGetControlOperation);
+    static constexpr const char* name = "cast.getControlOperation";
+};
+
+template <>
+struct MethodTraits<MethodId::CastSetPresentationSettings> {
+    using Request = CastSetPresentationSettingsParams;
+    using Response = CastControlOperation;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::CastSetPresentationSettings);
+    static constexpr const char* name = "cast.setPresentationSettings";
+};
+
+template <>
 struct MethodTraits<MethodId::SoftwareGetConfig> {
     using Request = SoftwareGetConfigParams;
     using Response = SoftwareConfig;
@@ -648,6 +696,62 @@ struct MethodTraits<MethodId::SoftwareResetUpdatePolicy> {
     using Response = SoftwareUpdatePolicy;
     static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::SoftwareResetUpdatePolicy);
     static constexpr const char* name = "software.resetUpdatePolicy";
+};
+
+template <>
+struct MethodTraits<MethodId::SportGetEventDetectionCapabilities> {
+    using Request = GetEventDetectionCapabilitiesParams;
+    using Response = GetEventDetectionCapabilitiesResult;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::SportGetEventDetectionCapabilities);
+    static constexpr const char* name = "sport.getEventDetectionCapabilities";
+};
+
+template <>
+struct MethodTraits<MethodId::SportGetEventDetectionConfig> {
+    using Request = GetEventDetectionConfigParams;
+    using Response = SportEventDetectionState;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::SportGetEventDetectionConfig);
+    static constexpr const char* name = "sport.getEventDetectionConfig";
+};
+
+template <>
+struct MethodTraits<MethodId::SportSetEventDetectionConfig> {
+    using Request = SetEventDetectionConfigParams;
+    using Response = SetEventDetectionConfigResult;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::SportSetEventDetectionConfig);
+    static constexpr const char* name = "sport.setEventDetectionConfig";
+};
+
+template <>
+struct MethodTraits<MethodId::SportGetGoalShotWatermarkConfig> {
+    using Request = SportConfigTargetParams;
+    using Response = SportGoalShotWatermarkConfig;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::SportGetGoalShotWatermarkConfig);
+    static constexpr const char* name = "sport.getGoalShotWatermarkConfig";
+};
+
+template <>
+struct MethodTraits<MethodId::SportSetGoalShotWatermarkConfig> {
+    using Request = SportSetGoalShotWatermarkConfigParams;
+    using Response = Empty;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::SportSetGoalShotWatermarkConfig);
+    static constexpr const char* name = "sport.setGoalShotWatermarkConfig";
+};
+
+template <>
+struct MethodTraits<MethodId::SportGetEventClipConfig> {
+    using Request = SportConfigTargetParams;
+    using Response = SportEventClipConfig;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::SportGetEventClipConfig);
+    static constexpr const char* name = "sport.getEventClipConfig";
+};
+
+template <>
+struct MethodTraits<MethodId::SportSetEventClipConfig> {
+    using Request = SportSetEventClipConfigParams;
+    using Response = Empty;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::SportSetEventClipConfig);
+    static constexpr const char* name = "sport.setEventClipConfig";
 };
 
 template <EventId Id>
@@ -899,6 +1003,48 @@ struct EventTraits<EventId::CastFlowControlChanged> {
 };
 
 template <>
+struct EventTraits<EventId::CastReceiversChanged> {
+    using Event = CastReceiversChangedEvent;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(EventId::CastReceiversChanged);
+    static constexpr const char* name = "cast.receiversChanged";
+};
+
+template <>
+struct EventTraits<EventId::CastSessionsChanged> {
+    using Event = CastSessionsChangedEvent;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(EventId::CastSessionsChanged);
+    static constexpr const char* name = "cast.sessionsChanged";
+};
+
+template <>
+struct EventTraits<EventId::CastPresentationChanged> {
+    using Event = CastPresentationChangedEvent;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(EventId::CastPresentationChanged);
+    static constexpr const char* name = "cast.presentationChanged";
+};
+
+template <>
+struct EventTraits<EventId::CastAudioPolicyChanged> {
+    using Event = CastAudioPolicyChangedEvent;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(EventId::CastAudioPolicyChanged);
+    static constexpr const char* name = "cast.audioPolicyChanged";
+};
+
+template <>
+struct EventTraits<EventId::CastControlOperationChanged> {
+    using Event = CastControlOperationChangedEvent;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(EventId::CastControlOperationChanged);
+    static constexpr const char* name = "cast.controlOperationChanged";
+};
+
+template <>
+struct EventTraits<EventId::CastPresentationSettingsChanged> {
+    using Event = CastPresentationSettingsChangedEvent;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(EventId::CastPresentationSettingsChanged);
+    static constexpr const char* name = "cast.presentationSettingsChanged";
+};
+
+template <>
 struct EventTraits<EventId::SoftwareConfigChanged> {
     using Event = SoftwareConfigChangedEvent;
     static constexpr std::uint16_t id = static_cast<std::uint16_t>(EventId::SoftwareConfigChanged);
@@ -910,6 +1056,20 @@ struct EventTraits<EventId::SoftwareUpdatePolicyChanged> {
     using Event = SoftwareUpdatePolicyChangedEvent;
     static constexpr std::uint16_t id = static_cast<std::uint16_t>(EventId::SoftwareUpdatePolicyChanged);
     static constexpr const char* name = "software.updatePolicyChanged";
+};
+
+template <>
+struct EventTraits<EventId::SportEventDetectionStateChanged> {
+    using Event = SportEventDetectionStateChangedEvent;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(EventId::SportEventDetectionStateChanged);
+    static constexpr const char* name = "sport.eventDetectionStateChanged";
+};
+
+template <>
+struct EventTraits<EventId::SportEventDetected> {
+    using Event = SportEventDetectedEvent;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(EventId::SportEventDetected);
+    static constexpr const char* name = "sport.eventDetected";
 };
 
 } // namespace axtp

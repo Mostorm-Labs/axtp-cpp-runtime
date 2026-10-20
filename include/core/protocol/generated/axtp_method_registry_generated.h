@@ -50,6 +50,7 @@ inline constexpr MethodDescriptor kMethodRegistry[] = {
     { 0x0D03, "signage.setPlaylistConfig", "signage", "SignageSetPlaylistConfigParams", "SignageSetPlaylistConfigResult" },
     { 0x0D04, "signage.resetPlaylistConfig", "signage", "SignageResetPlaylistConfigParams", "SignagePlaylistConfigResult" },
     { 0x0D05, "signage.getPlaylistItemUrl", "signage", "SignageGetPlaylistItemUrlParams", "SignageGetPlaylistItemUrlResult" },
+    { 0x0D06, "signage.getPlaylistItem", "signage", "SignageGetPlaylistItemParams", "SignageGetPlaylistItemResult" },
     { 0x0E02, "network.getIpConfig", "network", "NetworkGetIpConfigParams", "NetworkIpConfig" },
     { 0x0E03, "network.setIpConfig", "network", "NetworkSetIpConfigParams", "NetworkSetIpConfigResult" },
     { 0x0E04, "network.getWifiConfig", "network", "NetworkGetWifiConfigParams", "NetworkWifiConfig" },
@@ -88,14 +89,26 @@ inline constexpr MethodDescriptor kMethodRegistry[] = {
     { 0x1612, "cast.getStatus", "cast", "CastGetStatusParams", "CastStatus" },
     { 0x1613, "cast.setAudioDelay", "cast", "CastSetAudioDelayParams", "CastAudioState" },
     { 0x1614, "cast.setVideoStreamParams", "cast", "CastSetVideoStreamParamsParams", "CastSetVideoStreamParamsResult" },
+    { 0x1615, "cast.getControlCapabilities", "cast", "Empty", "CastControlCapabilities" },
+    { 0x1616, "cast.stopPresentation", "cast", "CastStopPresentationParams", "CastControlOperation" },
+    { 0x1617, "cast.setSessionAudioEnabled", "cast", "CastSetSessionAudioEnabledParams", "CastControlOperation" },
+    { 0x1618, "cast.getControlOperation", "cast", "CastGetControlOperationParams", "CastControlOperation" },
+    { 0x1619, "cast.setPresentationSettings", "cast", "CastSetPresentationSettingsParams", "CastControlOperation" },
     { 0x1701, "software.getConfig", "software", "SoftwareGetConfigParams", "SoftwareConfig" },
     { 0x1702, "software.setConfig", "software", "SoftwareSetConfigParams", "SoftwareSetConfigResult" },
     { 0x1703, "software.resetConfig", "software", "SoftwareResetConfigParams", "SoftwareConfig" },
     { 0x1704, "software.getUpdatePolicy", "software", "SoftwareGetUpdatePolicyParams", "SoftwareUpdatePolicy" },
     { 0x1705, "software.setUpdatePolicy", "software", "SoftwareSetUpdatePolicyParams", "SoftwareSetUpdatePolicyResult" },
     { 0x1706, "software.resetUpdatePolicy", "software", "SoftwareResetUpdatePolicyParams", "SoftwareUpdatePolicy" },
+    { 0x1801, "sport.getEventDetectionCapabilities", "sport", "GetEventDetectionCapabilitiesParams", "GetEventDetectionCapabilitiesResult" },
+    { 0x1802, "sport.getEventDetectionConfig", "sport", "GetEventDetectionConfigParams", "SportEventDetectionState" },
+    { 0x1803, "sport.setEventDetectionConfig", "sport", "SetEventDetectionConfigParams", "SetEventDetectionConfigResult" },
+    { 0x1804, "sport.getGoalShotWatermarkConfig", "sport", "SportConfigTargetParams", "SportGoalShotWatermarkConfig" },
+    { 0x1805, "sport.setGoalShotWatermarkConfig", "sport", "SportSetGoalShotWatermarkConfigParams", "Empty" },
+    { 0x1806, "sport.getEventClipConfig", "sport", "SportConfigTargetParams", "SportEventClipConfig" },
+    { 0x1807, "sport.setEventClipConfig", "sport", "SportSetEventClipConfigParams", "Empty" },
 };
 
-inline constexpr std::size_t kMethodRegistryCount = 80;
+inline constexpr std::size_t kMethodRegistryCount = 93;
 
 } // namespace axtp

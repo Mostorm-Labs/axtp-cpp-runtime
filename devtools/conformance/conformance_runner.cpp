@@ -201,8 +201,12 @@ std::string shellQuote(const std::string& value) {
 #endif
 
 nlohmann::json loadYaml(const std::string& path) {
-    const auto command = std::string("ruby ") + shellQuote(AXTP_CONFORMANCE_YAML_READER) +
+    auto command = shellQuote(AXTP_CONFORMANCE_YAML_EXECUTABLE) + " " + shellQuote(AXTP_CONFORMANCE_YAML_READER) +
                          " " + shellQuote(path) + " 2>&1";
+#if defined(_WIN32)
+    // cmd /c needs an outer quoted command when the executable is quoted too.
+    command = "\"" + command + "\"";
+#endif
     FILE* pipe = AXTP_POPEN(command.c_str(), "r");
     if (!pipe) throw std::runtime_error("cannot start YAML reader for " + path);
     std::string output;

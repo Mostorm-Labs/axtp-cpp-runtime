@@ -39,6 +39,7 @@ function fieldToTypeField(field: Field): TypeField {
     derivedFrom: field.derivedFrom,
     schema: field.schema,
     enumValues,
+    variants: field.variants,
     repeated: field.repeated,
     array: field.type === "array" || field.repeated ? {
       itemType,

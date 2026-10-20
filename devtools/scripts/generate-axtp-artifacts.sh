@@ -4,6 +4,8 @@ set -euo pipefail
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 spec="${AXTP_SPEC_PATH:-$root/third_party/axtp-spec}"
 
+node "$root/devtools/scripts/axtp-spec-input.mjs"
+
 if [[ ! -d "$spec/registry" && ! -d "$spec/contract/registry" ]]; then
   echo "AXTP_SPEC_PATH must point to an AXTP spec checkout with registry/ or contract/registry/." >&2
   echo "Current value: $spec" >&2

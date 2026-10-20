@@ -1,6 +1,6 @@
 import { GeneratorError } from "./errors.js";
 import { buildSourceDomainByHighByte, type DomainByHighByte } from "./domainRegistry.js";
-import type { Capability, ErrorCode, Event, Method, Schema, SpecModel } from "./models.js";
+import type { Capability, ErrorCode, Event, Field, Method, Schema, SpecModel } from "./models.js";
 import { hex } from "./util.js";
 
 function assertUniqueIds<T extends { id: number; name: string }>(items: T[], label: string, file: string): void {
@@ -274,6 +274,49 @@ function assertLegacyMappings(spec: SpecModel): void {
   }
 }
 
+function assertValidVariants(field: Field, schema: Schema, schemaNames: Set<string>, objectSchemaNames: Set<string>): void {
+  const variants = field.variants!;
+  const failVariant = (key: string, message: string): never => {
+    throw new GeneratorError({
+      code: "AXTP-GEN-1004",
+      file: "contract/registry/*.yaml",
+      entry: schema.name,
+      field: `${field.name}.${key}`,
+      message
+    });
+  };
+  if (field.type !== "object") {
+    failVariant("variants", `field with variants must use type object: ${field.type}`);
+  }
+  const discriminator = schema.fields.find((item) => item.name === variants.discriminator);
+  if (!discriminator) {
+    failVariant("variants.discriminator", `variants.discriminator must reference a sibling field in the same schema: ${variants.discriminator}`);
+  }
+  const enumValues = Array.isArray(discriminator!.enum)
+    ? discriminator!.enum.map(String)
+    : discriminator!.enum === undefined ? undefined : [String(discriminator!.enum)];
+  if (discriminator!.type !== "enum" || enumValues === undefined || enumValues.length === 0) {
+    failVariant("variants.discriminator", `variants.discriminator must reference an enum field with declared enum values: ${discriminator!.name}`);
+  }
+  for (const key of Object.keys(variants.mapping)) {
+    if (!enumValues!.includes(key)) {
+      failVariant("variants.mapping", `variants.mapping key is not a declared enum value of ${discriminator!.name}: ${key}`);
+    }
+  }
+  for (const value of enumValues!) {
+    if (!(value in variants.mapping)) {
+      failVariant("variants.mapping", `variants.mapping must cover all enum values of ${discriminator!.name}: missing ${value}`);
+    }
+  }
+  for (const target of Object.values(variants.mapping)) {
+    assertKnownSchema(target, schemaNames, schema.name, `${field.name}.variants.mapping`);
+    if (!objectSchemaNames.has(target)) {
+      failVariant("variants.mapping", `variants.mapping must reference an object schema: ${target}`);
+    }
+  }
+}
+
+
 export function validateSpec(spec: SpecModel): string[] {
   const domainByHighByte = buildSourceDomainByHighByte(spec);
 
@@ -306,8 +349,10 @@ export function validateSpec(spec: SpecModel): string[] {
   for (const capability of spec.capabilities) {
     assertKnownSchema(capability.schema, schemaNames, capability.name, "schema");
   }
+  const objectSchemaNames = new Set(spec.schemas.filter((item) => item.type === "object").map((item) => item.name));
   for (const schema of spec.schemas) {
     for (const field of schema.fields) {
+      if (field.variants) assertValidVariants(field, schema, schemaNames, objectSchemaNames);
       if (field.schema) assertKnownSchema(field.schema, schemaNames, schema.name, field.name);
       if (field.array?.itemSchema) assertKnownSchema(field.array.itemSchema, schemaNames, schema.name, `${field.name}.array.itemSchema`);
       if (field.array?.itemType) assertKnownFieldItemType(field.array.itemType, schemaNames, schema.name, `${field.name}.array.itemType`);

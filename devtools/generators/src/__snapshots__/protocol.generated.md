@@ -18,6 +18,7 @@
   - [network Methods](#network-methods)
   - [signage Methods](#signage-methods)
   - [software Methods](#software-methods)
+  - [sport Methods](#sport-methods)
   - [stream Methods](#stream-methods)
   - [video Methods](#video-methods)
 - [Events](#events)
@@ -28,6 +29,7 @@
   - [network Events](#network-events)
   - [signage Events](#signage-events)
   - [software Events](#software-events)
+  - [sport Events](#sport-events)
   - [stream Events](#stream-events)
   - [video Events](#video-events)
 - [Additional Types](#additional-types)
@@ -39,12 +41,13 @@
 | Domain | Methods | Events |
 | ---- | ---- | ---- |
 | audio | 9 | 4 |
-| cast | 20 | 12 |
+| cast | 25 | 18 |
 | device | 4 | 1 |
 | firmware | 4 | 2 |
 | network | 18 | 8 |
-| signage | 5 | 1 |
+| signage | 6 | 1 |
 | software | 6 | 2 |
+| sport | 7 | 2 |
 | stream | 8 | 4 |
 | video | 6 | 3 |
 
@@ -198,7 +201,7 @@ Generated capabilities are the feature-level switches that runtimes and devices 
 | 0x0801 | video.stream | video | draft | object | VideoStreamCapabilities | Device supports real-time video STREAM setup, close, state, source state, key frame requests, and stats events. |
 | 0x0901 | audio.algorithm | audio | stable | object | AudioAlgorithmCapability | Device supports runtime audio algorithm capability discovery, configuration, reset, and change notification. |
 | 0x0902 | audio.stream | audio | draft | object | AudioStreamCapabilities | Device supports real-time audio STREAM setup, close, state, source state, and stats events. |
-| 0x0D01 | signage.playlist | signage | draft | object | SignagePlaylistCapability | Device supports digital signage playlist full sync, query, reset, playlist item URL refresh, and playlist config change notification. |
+| 0x0D01 | signage.playlist | signage | draft | object | SignagePlaylistCapability | Device supports digital signage playlist full sync, query, reset, playlist item URL refresh, playlist item refresh, and playlist config change notification. |
 | 0x0E01 | network.interface | network | draft | object | NetworkInterfaceCapability | Device supports network interface enumeration and state observation. |
 | 0x0E02 | network.ip | network | draft | object | NetworkIpCapability | Device supports IP configuration query, update, and change notification. |
 | 0x0E03 | network.wifi | network | draft | object | NetworkWifiCapabilities | Device supports Wi-Fi station profile, scan, connection, and state operations. |
@@ -210,8 +213,14 @@ Generated capabilities are the feature-level switches that runtimes and devices 
 | 0x1605 | cast.backend | cast | draft | object | CastBackendCapability | Device supports cast backend status query and restart control. |
 | 0x1606 | cast.flowControl | cast | draft | object | CastFlowControlCapability | Device supports receiver-local cast render fps, queue, drop, overlay, and diagnostics control. |
 | 0x1607 | cast.status | cast | draft | object | CastStatusCapability | Device supports current cast receiver status snapshot query. |
+| 0x1608 | cast.presentation | cast | draft | object | CastPresentationCapability | Optional concurrent receiver/session projection, atomic snapshots and exact presentation targets. |
+| 0x1609 | cast.audioPolicy | cast | draft | object | CastAudioPolicyCapability | Optional explicit per-session audio intent and separate effective participation reporting. |
+| 0x160A | cast.controlOperations | cast | draft | object | CastControlOperationsCapability | Optional asynchronous operation query and bounded same-intent deduplication/retention guarantees. |
+| 0x160B | cast.presentationSettings | cast | draft | object | CastPresentationSettingsCapability | Optional one-field host settings with declared live/restart behavior, independent synchronization and truthful field-only persistence/application results. |
 | 0x1701 | software.config | software | draft | object | SoftwareConfigCapability | Device supports reading, setting, and resetting the runtime configuration of software objects (such as the Launcher) and emitting configuration change notifications. |
 | 0x1702 | software.updatePolicy | software | draft | object | SoftwareUpdatePolicyCapability | Device supports reading, setting, and resetting the automatic update policy of software objects (such as the Launcher) and emitting update policy change notifications. |
+| 0x1801 | sport.eventDetection | sport | draft | object | SportEventDetectionCapabilities | Device supports cross-sport event detection capability discovery, per-sport toggle control, runtime state events, and unified sport event delivery. |
+| 0x1802 | sport.basketball | sport | draft | object | SportBasketballCapability | Device supports basketball shot and goal event semantics through sport.eventDetection. |
 
 ## Generated Method Index
 
@@ -220,12 +229,13 @@ The generated registry groups methods by domain. Each method keeps a stable `bit
 | Domain | Methods |
 | ---- | ---- |
 | audio | 1: audio.getAlgorithmConfig<br>2: audio.setAlgorithmConfig<br>0: audio.getAlgorithmCapabilities<br>3: audio.resetAlgorithmConfig<br>4: audio.getStreamCapabilities<br>5: audio.openStream<br>6: audio.closeStream<br>7: audio.getStreamState<br>8: audio.getStreamSourceState |
-| cast | 0: cast.getSession<br>1: cast.stopSession<br>2: cast.getAirPlayName<br>3: cast.setAirPlayName<br>4: cast.getAudio<br>5: cast.setAudio<br>6: cast.setMuted<br>7: cast.getPinCodeConfig<br>8: cast.setPinCodeConfig<br>9: cast.setPinCode<br>10: cast.getWindowState<br>11: cast.setWindowState<br>12: cast.getBackendStatus<br>13: cast.restartBackend<br>14: cast.getFlowControlState<br>15: cast.setRenderFps<br>16: cast.setFlowPolicy<br>17: cast.getStatus<br>18: cast.setAudioDelay<br>19: cast.setVideoStreamParams |
+| cast | 0: cast.getSession<br>1: cast.stopSession<br>2: cast.getAirPlayName<br>3: cast.setAirPlayName<br>4: cast.getAudio<br>5: cast.setAudio<br>6: cast.setMuted<br>7: cast.getPinCodeConfig<br>8: cast.setPinCodeConfig<br>9: cast.setPinCode<br>10: cast.getWindowState<br>11: cast.setWindowState<br>12: cast.getBackendStatus<br>13: cast.restartBackend<br>14: cast.getFlowControlState<br>15: cast.setRenderFps<br>16: cast.setFlowPolicy<br>17: cast.getStatus<br>18: cast.setAudioDelay<br>19: cast.setVideoStreamParams<br>20: cast.getControlCapabilities<br>21: cast.stopPresentation<br>22: cast.setSessionAudioEnabled<br>23: cast.getControlOperation<br>24: cast.setPresentationSettings |
 | device | 0: device.getInfo<br>1: device.getPairingCode<br>2: device.getEnrollmentState<br>3: device.setEnrollmentState |
 | firmware | 0: firmware.getUpdateCapabilities<br>1: firmware.beginUpdate<br>3: firmware.getUpdateState<br>2: firmware.finishUpdate |
 | network | 2: network.getIpConfig<br>3: network.setIpConfig<br>5: network.getWifiConfig<br>6: network.setWifiConfig<br>7: network.scanWifi<br>8: network.connectWifi<br>9: network.disconnectWifi<br>10: network.getWifiState<br>12: network.getApConfig<br>13: network.setApConfig<br>15: network.startAp<br>16: network.stopAp<br>14: network.getApState<br>0: network.getInterfaces<br>1: network.getInterfaceInfo<br>4: network.getWifiCapabilities<br>11: network.getApCapabilities<br>17: network.getApClients |
-| signage | 0: signage.getPlaylistCapabilities<br>1: signage.getPlaylistConfig<br>2: signage.setPlaylistConfig<br>3: signage.resetPlaylistConfig<br>4: signage.getPlaylistItemUrl |
+| signage | 0: signage.getPlaylistCapabilities<br>1: signage.getPlaylistConfig<br>2: signage.setPlaylistConfig<br>3: signage.resetPlaylistConfig<br>4: signage.getPlaylistItemUrl<br>5: signage.getPlaylistItem |
 | software | 0: software.getConfig<br>1: software.setConfig<br>2: software.resetConfig<br>3: software.getUpdatePolicy<br>4: software.setUpdatePolicy<br>5: software.resetUpdatePolicy |
+| sport | 0: sport.getEventDetectionCapabilities<br>1: sport.getEventDetectionConfig<br>2: sport.setEventDetectionConfig<br>3: sport.getGoalShotWatermarkConfig<br>4: sport.setGoalShotWatermarkConfig<br>5: sport.getEventClipConfig<br>6: sport.setEventClipConfig |
 | stream | 0: stream.getCapabilities<br>1: stream.getState<br>2: stream.getStats<br>3: stream.ack<br>4: stream.windowUpdate<br>5: stream.pause<br>6: stream.resume<br>7: stream.abort |
 | video | 1: video.openStream<br>2: video.closeStream<br>3: video.getStreamState<br>0: video.getStreamCapabilities<br>4: video.getStreamSourceState<br>5: video.requestKeyFrame |
 
@@ -645,6 +655,11 @@ Type: `AudioStreamSourceState`
 - [cast.getStatus](#castgetstatus)
 - [cast.setAudioDelay](#castsetaudiodelay)
 - [cast.setVideoStreamParams](#castsetvideostreamparams)
+- [cast.getControlCapabilities](#castgetcontrolcapabilities)
+- [cast.stopPresentation](#caststoppresentation)
+- [cast.setSessionAudioEnabled](#castsetsessionaudioenabled)
+- [cast.getControlOperation](#castgetcontroloperation)
+- [cast.setPresentationSettings](#castsetpresentationsettings)
 
 ---
 
@@ -1392,7 +1407,7 @@ Return a current cast receiver snapshot for UI reload, reconnect, or event-loss 
 - Encodings: `json`, `tlv`
 - Required Capabilities: `cast.status`
 - Possible Events: `None`
-- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `UNAVAILABLE`
+- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `UNAVAILABLE`, `NOT_SUPPORTED`
 
 #### Request Fields
 
@@ -1402,6 +1417,7 @@ Type: `CastGetStatusParams`
 | ---- | :---: | :---: | ---- | :---: | ---- |
 | ?include | Array<String> | 0x01 | Optional status sections to include. | array.itemType=string | Omit if not used. |
 | ?includeSensitive | Boolean | 0x02 | Whether authorized callers request sensitive summary fields. | None | Default: false |
+| ?controlVersion | UInt32 | 0x03 | Explicit multi-control version; v1 unifiedControl requires a complete atomic six-section projection. Unknown versions return NOT_SUPPORTED. | None | Omit if not used. |
 
 #### Response Fields
 
@@ -1418,6 +1434,12 @@ Type: `CastStatus`
 | ?flowControl | CastFlowControlState | 0x07 | Flow control summary. | None | Omit if not used. |
 | sampledAt | String | 0x08 | Timestamp for this status snapshot. | maxLength=64 | N/A |
 | ?redacted | Boolean | 0x09 | Whether any sensitive snapshot fields were withheld. | None | Omit if not used. |
+| ?controlSync | CastControlSnapshotCursor | 0x0A | Required with requested v1 sections; atomic capture revision and published event barrier in one runtime epoch. | None | Omit if not used. |
+| ?receivers | Array<CastReceiverState> | 0x0B | Required in v1 unifiedControl; full bounded receiver set including disabled and failed receivers. | array.itemType=CastReceiverState | Omit if not used. |
+| ?sessions | Array<CastMultiSessionState> | 0x0C | Required in v1 unifiedControl; full bounded current session set, possibly empty, captured with slots and audio. | array.itemType=CastMultiSessionState | Omit if not used. |
+| ?presentation | CastPresentationState | 0x0D | Required in v1 unifiedControl; does not replace old single-source summaries. | None | Omit if not used. |
+| ?audioPolicy | CastAudioPolicyState | 0x0E | Required in v1 unifiedControl; selected intent and effective participation are separate from legacy audio. | None | Omit if not used. |
+| ?presentationSettings | CastPresentationSettingsState | 0x0F | Required only when P1 is supported and explicitly requested; combined P0/P1 capture shares one host commit boundary and keeps independent event barriers. | None | Omit if not used. |
 
 ---
 
@@ -1502,6 +1524,244 @@ Type: `CastSetVideoStreamParamsResult`
 | ?previousStreamId | UInt32 | 0x05 | Previously active video stream id when the operation replaced a stream. | None | Omit if not used. |
 | ?activeStreamId | UInt32 | 0x06 | Currently active video stream id after the operation. | None | Omit if not used. |
 | sourceVideo | CastVideoStreamParamsState | 0x07 | Effective source video stream parameter state after the request. | None | N/A |
+
+---
+
+### cast.getControlCapabilities
+
+Discover supported control versions, runtime epoch and bounded multi-presentation guarantees before selecting a version.
+
+- Method ID: `0x1615`
+- Domain: `cast`
+- bitOffset: `20`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `cast.presentation`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `Empty`
+
+No fields.
+
+#### Response Fields
+
+Type: `CastControlCapabilities`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| supportedControlVersions | Array<UInt32> | 0x01 | Explicit supported control versions. | array.itemType=uint32 | N/A |
+| runtimeInstanceId | String | 0x02 | Canonical lower-case UUID for this host lifetime. | maxLength=36 | N/A |
+| methods | Array<String> | 0x03 | Actual registered method names supported by this instance. | array.itemType=string | N/A |
+| events | Array<String> | 0x04 | Actual feature event names supported by this instance. | array.itemType=string | N/A |
+| statusSections | Array<String> | 0x05 | Actual supported status section names. | array.itemType=string | N/A |
+| ?presentation | CastPresentationCapability | 0x06 | Required when cast.presentation is supported. | None | Omit if not used. |
+| ?audioPolicy | CastAudioPolicyCapability | 0x07 | Required when cast.audioPolicy is supported. | None | Omit if not used. |
+| ?operations | CastControlOperationsCapability | 0x08 | Required when cast.controlOperations is supported. | None | Omit if not used. |
+| ?profileHints | Array<String> | 0x09 | Non-secret host profile hints; not media profiles or implicit defaults. | array.itemType=string | Omit if not used. |
+| ?presentationSettings | CastPresentationSettingsCapability | 0x0A | Required iff P1 is supported together with its method/event/status section; absence does not imply support. | None | Omit if not used. |
+
+---
+
+### cast.stopPresentation
+
+Withdraw one exact presentation after atomic owner-side fence validation; success returns an admitted operation, not receiver shutdown.
+
+- Method ID: `0x1616`
+- Domain: `cast`
+- bitOffset: `21`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `cast.presentation`, `cast.controlOperations`
+- Possible Events: `cast.sessionsChanged`, `cast.presentationChanged`, `cast.audioPolicyChanged`, `cast.controlOperationChanged`
+- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `INVALID_STATE`, `BUSY`, `UNAVAILABLE`, `INTERNAL_ERROR`
+
+#### Request Fields
+
+Type: `CastStopPresentationParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| controlVersion | UInt32 | 0x01 | Explicit selected control version; P0 uses 1. | None | N/A |
+| runtimeInstanceId | String | 0x02 | Canonical lower-case UUID of the targeted runtime epoch. | maxLength=36 | N/A |
+| clientInstanceId | String | 0x03 | Canonical lower-case client UUID; not authorization. | maxLength=36 | N/A |
+| commandId | String | 0x04 | Canonical lower-case UUID identifying one user intent. | maxLength=36 | N/A |
+| target | CastControlTarget | 0x05 | Original exact target checked atomically at mutation after admission. | None | N/A |
+| ?reason | String | 0x06 | Optional non-secret withdrawal reason. | maxLength=64 | Omit if not used. |
+
+#### Response Fields
+
+Type: `CastControlOperation`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| operationId | String | 0x01 | Nonempty opaque operation record ID; not media session identity. | maxLength=128 | N/A |
+| runtimeInstanceId | String | 0x02 | Canonical lower-case runtime epoch UUID. | maxLength=36 | N/A |
+| clientInstanceId | String | 0x03 | Canonical lower-case UUID of the submitting client. | maxLength=36 | N/A |
+| commandId | String | 0x04 | Canonical lower-case original intent UUID. | maxLength=36 | N/A |
+| kind | Enum | 0x05 | Intent kind; settings is a global P1 operation with settingsResult and no presentation target. | enum=stopPresentation/setSessionAudioEnabled/setPresentationSettings | N/A |
+| state | Enum | 0x06 | Admission or truthful terminal result; queued is not media success. | enum=queued/applied/rejected/failed | N/A |
+| submittedAt | String | 0x07 | UTC RFC3339 submission display time; expiry uses host monotonic time. | maxLength=64 | N/A |
+| ?target | CastControlTarget | 0x08 | Required for both P0 per-session kinds and retains the original exact target; omitted for P1 settings. | None | Omit if not used. |
+| ?completedAt | String | 0x09 | UTC RFC3339 time required for applied/rejected/failed. | maxLength=64 | Omit if not used. |
+| ?appliedRevision | String | 0x0A | Canonical decimal uint64 string required iff a P0 logical control commit occurred; settings-only metadata uses settingsResult.settingsRevision instead. | maxLength=20 | Omit if not used. |
+| ?statusCode | UInt32 | 0x0B | Required terminal standard AXTP status code; applied uses SUCCESS and failures use non-success. | None | Omit if not used. |
+| ?outcomeReason | String | 0x0C | Required terminal bounded business reason; not a new numeric error space and never secret data. | maxLength=64 | Omit if not used. |
+| ?ownerCleanup | Enum | 0x0D | Cleanup observation at terminalization for the target owner only; not entire receiver exit. | enum=notApplicable/pending/complete/failed | Omit if not used. |
+| ?settingsResult | CastPresentationSettingsOperationResult | 0x0E | Required for kind=setPresentationSettings including queued/rejected/failed; reports configuration/application/persistence separately. | None | Omit if not used. |
+
+---
+
+### cast.setSessionAudioEnabled
+
+Set explicit enabled intent for one exact presented session; effective audio participation is reported separately.
+
+- Method ID: `0x1617`
+- Domain: `cast`
+- bitOffset: `22`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `cast.audioPolicy`, `cast.controlOperations`
+- Possible Events: `cast.audioPolicyChanged`, `cast.controlOperationChanged`
+- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `INVALID_STATE`, `BUSY`, `UNAVAILABLE`, `INTERNAL_ERROR`
+
+#### Request Fields
+
+Type: `CastSetSessionAudioEnabledParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| controlVersion | UInt32 | 0x01 | Explicit selected control version; P0 uses 1. | None | N/A |
+| runtimeInstanceId | String | 0x02 | Canonical lower-case UUID of the targeted runtime epoch. | maxLength=36 | N/A |
+| clientInstanceId | String | 0x03 | Canonical lower-case client UUID; not authorization. | maxLength=36 | N/A |
+| commandId | String | 0x04 | Canonical lower-case UUID identifying one user intent. | maxLength=36 | N/A |
+| target | CastControlTarget | 0x05 | Original exact target checked atomically at mutation. | None | N/A |
+| enabled | Boolean | 0x06 | Explicit desired intent; applied does not imply effective playback. | None | N/A |
+
+#### Response Fields
+
+Type: `CastControlOperation`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| operationId | String | 0x01 | Nonempty opaque operation record ID; not media session identity. | maxLength=128 | N/A |
+| runtimeInstanceId | String | 0x02 | Canonical lower-case runtime epoch UUID. | maxLength=36 | N/A |
+| clientInstanceId | String | 0x03 | Canonical lower-case UUID of the submitting client. | maxLength=36 | N/A |
+| commandId | String | 0x04 | Canonical lower-case original intent UUID. | maxLength=36 | N/A |
+| kind | Enum | 0x05 | Intent kind; settings is a global P1 operation with settingsResult and no presentation target. | enum=stopPresentation/setSessionAudioEnabled/setPresentationSettings | N/A |
+| state | Enum | 0x06 | Admission or truthful terminal result; queued is not media success. | enum=queued/applied/rejected/failed | N/A |
+| submittedAt | String | 0x07 | UTC RFC3339 submission display time; expiry uses host monotonic time. | maxLength=64 | N/A |
+| ?target | CastControlTarget | 0x08 | Required for both P0 per-session kinds and retains the original exact target; omitted for P1 settings. | None | Omit if not used. |
+| ?completedAt | String | 0x09 | UTC RFC3339 time required for applied/rejected/failed. | maxLength=64 | Omit if not used. |
+| ?appliedRevision | String | 0x0A | Canonical decimal uint64 string required iff a P0 logical control commit occurred; settings-only metadata uses settingsResult.settingsRevision instead. | maxLength=20 | Omit if not used. |
+| ?statusCode | UInt32 | 0x0B | Required terminal standard AXTP status code; applied uses SUCCESS and failures use non-success. | None | Omit if not used. |
+| ?outcomeReason | String | 0x0C | Required terminal bounded business reason; not a new numeric error space and never secret data. | maxLength=64 | Omit if not used. |
+| ?ownerCleanup | Enum | 0x0D | Cleanup observation at terminalization for the target owner only; not entire receiver exit. | enum=notApplicable/pending/complete/failed | Omit if not used. |
+| ?settingsResult | CastPresentationSettingsOperationResult | 0x0E | Required for kind=setPresentationSettings including queued/rejected/failed; reports configuration/application/persistence separately. | None | Omit if not used. |
+
+---
+
+### cast.getControlOperation
+
+Query the original intent by runtime, client and command identity; NOT_FOUND means unknown outcome rather than not executed.
+
+- Method ID: `0x1618`
+- Domain: `cast`
+- bitOffset: `23`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `cast.controlOperations`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `INVALID_STATE`, `NOT_FOUND`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `CastGetControlOperationParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| controlVersion | UInt32 | 0x01 | Explicit selected control version; P0 uses 1. | None | N/A |
+| runtimeInstanceId | String | 0x02 | Canonical lower-case UUID of the original runtime epoch. | maxLength=36 | N/A |
+| clientInstanceId | String | 0x03 | Original canonical lower-case client UUID. | maxLength=36 | N/A |
+| commandId | String | 0x04 | Original canonical lower-case command UUID. | maxLength=36 | N/A |
+
+#### Response Fields
+
+Type: `CastControlOperation`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| operationId | String | 0x01 | Nonempty opaque operation record ID; not media session identity. | maxLength=128 | N/A |
+| runtimeInstanceId | String | 0x02 | Canonical lower-case runtime epoch UUID. | maxLength=36 | N/A |
+| clientInstanceId | String | 0x03 | Canonical lower-case UUID of the submitting client. | maxLength=36 | N/A |
+| commandId | String | 0x04 | Canonical lower-case original intent UUID. | maxLength=36 | N/A |
+| kind | Enum | 0x05 | Intent kind; settings is a global P1 operation with settingsResult and no presentation target. | enum=stopPresentation/setSessionAudioEnabled/setPresentationSettings | N/A |
+| state | Enum | 0x06 | Admission or truthful terminal result; queued is not media success. | enum=queued/applied/rejected/failed | N/A |
+| submittedAt | String | 0x07 | UTC RFC3339 submission display time; expiry uses host monotonic time. | maxLength=64 | N/A |
+| ?target | CastControlTarget | 0x08 | Required for both P0 per-session kinds and retains the original exact target; omitted for P1 settings. | None | Omit if not used. |
+| ?completedAt | String | 0x09 | UTC RFC3339 time required for applied/rejected/failed. | maxLength=64 | Omit if not used. |
+| ?appliedRevision | String | 0x0A | Canonical decimal uint64 string required iff a P0 logical control commit occurred; settings-only metadata uses settingsResult.settingsRevision instead. | maxLength=20 | Omit if not used. |
+| ?statusCode | UInt32 | 0x0B | Required terminal standard AXTP status code; applied uses SUCCESS and failures use non-success. | None | Omit if not used. |
+| ?outcomeReason | String | 0x0C | Required terminal bounded business reason; not a new numeric error space and never secret data. | maxLength=64 | Omit if not used. |
+| ?ownerCleanup | Enum | 0x0D | Cleanup observation at terminalization for the target owner only; not entire receiver exit. | enum=notApplicable/pending/complete/failed | Omit if not used. |
+| ?settingsResult | CastPresentationSettingsOperationResult | 0x0E | Required for kind=setPresentationSettings including queued/rejected/failed; reports configuration/application/persistence separately. | None | Omit if not used. |
+
+---
+
+### cast.setPresentationSettings
+
+Set exactly one supported host setting with optimistic revision, bounded dedup and explicit field-only persistence; returns per-stage asynchronous results without automatic restart.
+
+- Method ID: `0x1619`
+- Domain: `cast`
+- bitOffset: `24`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `cast.presentationSettings`, `cast.controlOperations`
+- Possible Events: `cast.presentationSettingsChanged`, `cast.presentationChanged`, `cast.audioPolicyChanged`
+- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `INVALID_STATE`, `OUT_OF_RANGE`, `BUSY`, `UNAVAILABLE`, `INTERNAL_ERROR`
+
+#### Request Fields
+
+Type: `CastSetPresentationSettingsParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| controlVersion | UInt32 | 0x01 | Selected control version; P1 uses 1 with separate capability. | None | N/A |
+| runtimeInstanceId | String | 0x02 | Canonical lower-case runtime UUID; no automatic replay into a new epoch. | maxLength=36 | N/A |
+| clientInstanceId | String | 0x03 | Canonical lower-case client UUID; not authorization. | maxLength=36 | N/A |
+| commandId | String | 0x04 | Canonical lower-case UUID for this explicit settings intent. | maxLength=36 | N/A |
+| expectedSettingsRevision | String | 0x05 | Canonical decimal uint64 optimistic version; rechecked after dedup and queueing. | maxLength=20 | N/A |
+| patch | CastPresentationSettingsPatch | 0x06 | Exactly one known supported setting key; empty/multiple/unknown keys are INVALID_ARGUMENT. | None | N/A |
+| persist | Boolean | 0x07 | Explicit save choice; true saves only the patch field before configuration commit and live apply. | None | N/A |
+
+#### Response Fields
+
+Type: `CastControlOperation`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| operationId | String | 0x01 | Nonempty opaque operation record ID; not media session identity. | maxLength=128 | N/A |
+| runtimeInstanceId | String | 0x02 | Canonical lower-case runtime epoch UUID. | maxLength=36 | N/A |
+| clientInstanceId | String | 0x03 | Canonical lower-case UUID of the submitting client. | maxLength=36 | N/A |
+| commandId | String | 0x04 | Canonical lower-case original intent UUID. | maxLength=36 | N/A |
+| kind | Enum | 0x05 | Intent kind; settings is a global P1 operation with settingsResult and no presentation target. | enum=stopPresentation/setSessionAudioEnabled/setPresentationSettings | N/A |
+| state | Enum | 0x06 | Admission or truthful terminal result; queued is not media success. | enum=queued/applied/rejected/failed | N/A |
+| submittedAt | String | 0x07 | UTC RFC3339 submission display time; expiry uses host monotonic time. | maxLength=64 | N/A |
+| ?target | CastControlTarget | 0x08 | Required for both P0 per-session kinds and retains the original exact target; omitted for P1 settings. | None | Omit if not used. |
+| ?completedAt | String | 0x09 | UTC RFC3339 time required for applied/rejected/failed. | maxLength=64 | Omit if not used. |
+| ?appliedRevision | String | 0x0A | Canonical decimal uint64 string required iff a P0 logical control commit occurred; settings-only metadata uses settingsResult.settingsRevision instead. | maxLength=20 | Omit if not used. |
+| ?statusCode | UInt32 | 0x0B | Required terminal standard AXTP status code; applied uses SUCCESS and failures use non-success. | None | Omit if not used. |
+| ?outcomeReason | String | 0x0C | Required terminal bounded business reason; not a new numeric error space and never secret data. | maxLength=64 | Omit if not used. |
+| ?ownerCleanup | Enum | 0x0D | Cleanup observation at terminalization for the target owner only; not entire receiver exit. | enum=notApplicable/pending/complete/failed | Omit if not used. |
+| ?settingsResult | CastPresentationSettingsOperationResult | 0x0E | Required for kind=setPresentationSettings including queued/rejected/failed; reports configuration/application/persistence separately. | None | Omit if not used. |
 
 ---
 
@@ -2496,6 +2756,7 @@ Type: `NetworkApClients`
 - [signage.setPlaylistConfig](#signagesetplaylistconfig)
 - [signage.resetPlaylistConfig](#signageresetplaylistconfig)
 - [signage.getPlaylistItemUrl](#signagegetplaylistitemurl)
+- [signage.getPlaylistItem](#signagegetplaylistitem)
 
 ---
 
@@ -2525,7 +2786,7 @@ Type: `SignagePlaylistCapabilitiesResult`
 
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
-| supportedItemTypes | Array<String> | 0x01 | Supported playlist item type strings; candidate values include image, website, video, clock, and unsplash. | array.itemType=string | N/A |
+| supportedItemTypes | Array<String> | 0x01 | Supported playlist item types as a subset of the SignagePlaylistItem.type enum values (image, website, video, clock, unsplash, powerbi). | array.itemType=string | N/A |
 | ?maxPlaylists | UInt32 | 0x02 | Maximum number of playlists; product-defined. | None | Omit if not used. |
 | ?maxItemsPerPlaylist | UInt32 | 0x03 | Maximum number of playlist items per playlist; product-defined. | None | Omit if not used. |
 | supportsScheduledPlaylist | Boolean | 0x04 | Whether scheduled playlists are supported. | None | N/A |
@@ -2626,7 +2887,7 @@ Type: `SignagePlaylistConfigResult`
 
 ### signage.getPlaylistItemUrl
 
-Fetch the latest resource URL for a playlist item by itemId (URL refresh). The device calls this proactively when an item URL is about to expire. Clock items have no URL resource and return NOT_SUPPORTED.
+Fetch the latest resource URL for a playlist item by itemId (URL refresh). The device calls this proactively when an item URL is about to expire. Clock items have no URL resource and powerbi items carry a non-URL embed-token resource; both return NOT_SUPPORTED (powerbi refresh MUST use signage.getPlaylistItem).
 
 - Method ID: `0x0D05`
 - Domain: `signage`
@@ -2652,8 +2913,40 @@ Type: `SignageGetPlaylistItemUrlResult`
 
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
-| type | Enum | 0x01 | Playlist item type used to discriminate the settings structure; candidate values include image, video, website, and unsplash. Clock is excluded from URL refresh. | None | N/A |
-| settings | SignagePlaylistItemSettings | 0x02 | Refreshed complete settings; the device may replace the locally cached settings with this value. | None | N/A |
+| type | Enum | 0x01 | Playlist item type used to discriminate the settings structure; clock and powerbi are excluded from URL refresh and return NOT_SUPPORTED (powerbi refresh uses signage.getPlaylistItem). | enum=image/video/website/unsplash | N/A |
+| settings | object | 0x02 | Refreshed complete settings; the device may replace the locally cached settings with this value. The type field value selects the variant schema. | None | N/A |
+
+---
+
+### signage.getPlaylistItem
+
+Fetch the complete playlist item by itemId (item refresh). The device calls this proactively when settings.expiresAt is near expiry and replaces the local playlist item with the returned one. Non-URL resource types (powerbi) MUST use this method; URL resource types MAY use this or signage.getPlaylistItemUrl.
+
+- Method ID: `0x0D06`
+- Domain: `signage`
+- bitOffset: `5`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `signage.playlist`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `NOT_FOUND`, `INTERNAL_ERROR`
+
+#### Request Fields
+
+Type: `SignageGetPlaylistItemParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| itemId | String | 0x01 | Playlist item unique identifier (UUID); same identifier space as signage.getPlaylistItemUrl. | maxLength=64 | N/A |
+
+#### Response Fields
+
+Type: `SignageGetPlaylistItemResult`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| item | SignagePlaylistItem | 0x01 | Complete playlist item (id, type, duration, sort, settings). The device replaces the locally cached item with this value. | None | N/A |
 
 ---
 
@@ -2861,6 +3154,264 @@ Type: `SoftwareUpdatePolicy`
 | ---- | :---: | :---: | ---- | :---: | ---- |
 | target | String | 0x01 | Software object this update policy belongs to. | maxLength=64 | N/A |
 | policy | LauncherUpdatePolicy | 0x02 | Target-specific update policy fragment. For the launcher target this is the LauncherUpdatePolicy structure (updateMode plus schedule, channel, conditions); see the LauncherUpdatePolicy, UpdateSchedule, and UpdateConditions schemas. | None | N/A |
+
+---
+
+## sport Methods
+
+### Methods in this domain
+
+- [sport.getEventDetectionCapabilities](#sportgeteventdetectioncapabilities)
+- [sport.getEventDetectionConfig](#sportgeteventdetectionconfig)
+- [sport.setEventDetectionConfig](#sportseteventdetectionconfig)
+- [sport.getGoalShotWatermarkConfig](#sportgetgoalshotwatermarkconfig)
+- [sport.setGoalShotWatermarkConfig](#sportsetgoalshotwatermarkconfig)
+- [sport.getEventClipConfig](#sportgeteventclipconfig)
+- [sport.setEventClipConfig](#sportseteventclipconfig)
+
+---
+
+### sport.getEventDetectionCapabilities
+
+Return supported sport types, event types, sport-specific detail schemas, and runtime constraints for event detection.
+
+- Method ID: `0x1801`
+- Domain: `sport`
+- bitOffset: `0`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `sport.eventDetection`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `NOT_SUPPORTED`, `PERMISSION_DENIED`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `GetEventDetectionCapabilitiesParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?sportTypes | Array<String> | 0x01 | Optional sport type filter; omitted means return all supported sport types. | array.itemType=string | Omit if not used. |
+| ?includeRuntimeState | Boolean | 0x02 | Whether to include a runtime state summary in the capability snapshot; detailed state is returned by the config query. | None | Default: false |
+
+#### Response Fields
+
+Type: `GetEventDetectionCapabilitiesResult`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| capability | SportEventDetectionCapabilities | 0x01 | Cross-sport event detection capability descriptor. | None | N/A |
+
+---
+
+### sport.getEventDetectionConfig
+
+Return the effective event detection configuration and runtime state for one sport type.
+
+- Method ID: `0x1802`
+- Domain: `sport`
+- bitOffset: `1`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `sport.eventDetection`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `NOT_SUPPORTED`, `PERMISSION_DENIED`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `GetEventDetectionConfigParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| sportType | String | 0x01 | Supported sport type whose effective state is requested. | maxLength=32 | N/A |
+
+#### Response Fields
+
+Type: `SportEventDetectionState`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| sportType | String | 0x01 | Sport type represented by this state snapshot. | maxLength=32 | N/A |
+| effectiveEnabled | Boolean | 0x02 | Whether event detection is effectively enabled for this sport type. | None | N/A |
+| runtimeState | Enum | 0x03 | Current detector runtime state. | enum=disabled/enabling/ready/degraded/unavailable/disabling | N/A |
+| ?applyState | Enum | 0x04 | Whether the latest toggle request is fully applied. | enum=applied/pending | Omit if not used. |
+| ?reason | String | 0x05 | State transition, degraded, or unavailable reason summary. | maxLength=128 | Omit if not used. |
+| ?stateRevision | UInt32 | 0x06 | Monotonic state revision for client calibration and optional compare-and-set. | None | Omit if not used. |
+| ?updatedAt | String | 0x07 | Device timestamp of this state snapshot. | maxLength=64 | Omit if not used. |
+
+---
+
+### sport.setEventDetectionConfig
+
+Enable or disable event detection for one sport type and return the accepted or effective state.
+
+- Method ID: `0x1803`
+- Domain: `sport`
+- bitOffset: `2`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `sport.eventDetection`
+- Possible Events: `sport.eventDetectionStateChanged`
+- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `NOT_SUPPORTED`, `INVALID_STATE`, `BUSY`, `PERMISSION_DENIED`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `SetEventDetectionConfigParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| sportType | String | 0x01 | Supported sport type to control. | maxLength=32 | N/A |
+| enabled | Boolean | 0x02 | Desired effective detection toggle. | None | N/A |
+| ?expectedStateRevision | UInt32 | 0x03 | Optional compare-and-set state revision. | None | Omit if not used. |
+
+#### Response Fields
+
+Type: `SetEventDetectionConfigResult`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| accepted | Boolean | 0x01 | Whether the device accepted the toggle request. | None | N/A |
+| state | SportEventDetectionState | 0x02 | Effective or pending state after processing the request. | None | N/A |
+
+---
+
+### sport.getGoalShotWatermarkConfig
+
+Return Goal and Shot watermark visibility for one device and sport type.
+
+- Method ID: `0x1804`
+- Domain: `sport`
+- bitOffset: `3`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `sport.eventDetection`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `NOT_SUPPORTED`, `NOT_FOUND`, `PERMISSION_DENIED`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `SportConfigTargetParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| macAddress | String | 0x01 | Target device MAC address in uppercase colon-separated form, for example AA:BB:CC:DD:EE:FF. | maxLength=17 | N/A |
+| sportType | String | 0x02 | Capability-supported sport type whose configuration is requested. | maxLength=32 | N/A |
+
+#### Response Fields
+
+Type: `SportGoalShotWatermarkConfig`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| macAddress | String | 0x01 | Target device MAC address in canonical uppercase colon-separated form. | maxLength=17 | N/A |
+| sportType | String | 0x02 | Sport type represented by this configuration. | maxLength=32 | N/A |
+| goalVisible | Boolean | 0x03 | Whether Goal watermarks are displayed for detected Goal events. | None | N/A |
+| shotVisible | Boolean | 0x04 | Whether Shot watermarks are displayed for detected Shot events. | None | N/A |
+
+---
+
+### sport.setGoalShotWatermarkConfig
+
+Atomically set Goal and Shot watermark visibility for one device and sport type; success is represented only by the standard RPC status.
+
+- Method ID: `0x1805`
+- Domain: `sport`
+- bitOffset: `4`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `sport.eventDetection`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `NOT_SUPPORTED`, `NOT_FOUND`, `INVALID_STATE`, `BUSY`, `PERMISSION_DENIED`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `SportSetGoalShotWatermarkConfigParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| macAddress | String | 0x01 | Target device MAC address in uppercase colon-separated form, for example AA:BB:CC:DD:EE:FF. | maxLength=17 | N/A |
+| sportType | String | 0x02 | Capability-supported sport type to configure. | maxLength=32 | N/A |
+| goalVisible | Boolean | 0x03 | Desired Goal watermark visibility. | None | N/A |
+| shotVisible | Boolean | 0x04 | Desired Shot watermark visibility. | None | N/A |
+
+#### Response Fields
+
+Type: `Empty`
+
+No fields.
+
+---
+
+### sport.getEventClipConfig
+
+Return the video clip window before and after a Goal or Shot event for one device and sport type.
+
+- Method ID: `0x1806`
+- Domain: `sport`
+- bitOffset: `5`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `sport.eventDetection`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `NOT_SUPPORTED`, `NOT_FOUND`, `PERMISSION_DENIED`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `SportConfigTargetParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| macAddress | String | 0x01 | Target device MAC address in uppercase colon-separated form, for example AA:BB:CC:DD:EE:FF. | maxLength=17 | N/A |
+| sportType | String | 0x02 | Capability-supported sport type whose configuration is requested. | maxLength=32 | N/A |
+
+#### Response Fields
+
+Type: `SportEventClipConfig`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| macAddress | String | 0x01 | Target device MAC address in canonical uppercase colon-separated form. | maxLength=17 | N/A |
+| sportType | String | 0x02 | Sport type represented by this configuration. | maxLength=32 | N/A |
+| beforeOffsetSeconds | UInt32 | 0x03 | Number of whole seconds included before the detected event timestamp. | None | N/A |
+| afterOffsetSeconds | UInt32 | 0x04 | Number of whole seconds included after the detected event timestamp. | None | N/A |
+
+---
+
+### sport.setEventClipConfig
+
+Atomically set the video clip window before and after a Goal or Shot event for one device and sport type; success is represented only by the standard RPC status.
+
+- Method ID: `0x1807`
+- Domain: `sport`
+- bitOffset: `6`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `sport.eventDetection`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `OUT_OF_RANGE`, `NOT_SUPPORTED`, `NOT_FOUND`, `INVALID_STATE`, `BUSY`, `PERMISSION_DENIED`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `SportSetEventClipConfigParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| macAddress | String | 0x01 | Target device MAC address in uppercase colon-separated form, for example AA:BB:CC:DD:EE:FF. | maxLength=17 | N/A |
+| sportType | String | 0x02 | Capability-supported sport type to configure. | maxLength=32 | N/A |
+| beforeOffsetSeconds | UInt32 | 0x03 | Number of whole seconds to include before the detected event timestamp. | None | N/A |
+| afterOffsetSeconds | UInt32 | 0x04 | Number of whole seconds to include after the detected event timestamp. | None | N/A |
+
+#### Response Fields
+
+Type: `Empty`
+
+No fields.
 
 ---
 
@@ -3574,6 +4125,12 @@ Type: `AudioStreamStatsReportedEvent`
 - [cast.windowChanged](#castwindowchanged)
 - [cast.backendChanged](#castbackendchanged)
 - [cast.flowControlChanged](#castflowcontrolchanged)
+- [cast.receiversChanged](#castreceiverschanged)
+- [cast.sessionsChanged](#castsessionschanged)
+- [cast.presentationChanged](#castpresentationchanged)
+- [cast.audioPolicyChanged](#castaudiopolicychanged)
+- [cast.controlOperationChanged](#castcontroloperationchanged)
+- [cast.presentationSettingsChanged](#castpresentationsettingschanged)
 
 ---
 
@@ -3856,6 +4413,7 @@ Type: `CastWindowChangedEvent`
 | state | CastWindowState | 0x02 | Window state after the change. | None | N/A |
 | ?reason | Enum | 0x03 | Change reason. | enum=externalSet/localUi/sessionStarted/sessionStopped/unknown | Omit if not used. |
 | ?updatedAt | String | 0x04 | Timestamp for this event. | maxLength=64 | Omit if not used. |
+| ?controlContext | CastControlEventContext | 0x05 | Optional v1 commit context; absent legacy events do not advance the multi-control sequence. | None | Omit if not used. |
 
 ---
 
@@ -3913,6 +4471,150 @@ Type: `CastFlowControlChangedEvent`
 | ?sampledAt | String | 0x04 | Timestamp for this event. | maxLength=64 | Omit if not used. |
 | ?sourceVideo | CastVideoStreamParamsState | 0x05 | Effective source video stream parameter state associated with this event. | None | Omit if not used. |
 | ?reconfigureId | String | 0x06 | Video stream reconfiguration operation id associated with this event. | maxLength=128 | Omit if not used. |
+
+---
+
+### cast.receiversChanged
+
+Replace the receiver section after a logical control commit; not a full status event.
+
+- Event ID: `0x160D`
+- Domain: `cast`
+- bitOffset: `12`
+- Status: `draft`
+- Severity: `info`
+- Added in v1.0.0
+- Trigger: `receiver availability changed`
+- Required Capabilities: `cast.presentation`
+
+#### Payload Fields
+
+Type: `CastReceiversChangedEvent`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| context | CastControlEventContext | 0x01 | Required v1 commit context. | None | N/A |
+| receivers | Array<CastReceiverState> | 0x02 | Complete current bounded receiver collection. | array.itemType=CastReceiverState | N/A |
+
+---
+
+### cast.sessionsChanged
+
+Replace the current multi-session collection as one part of an atomic control commit group.
+
+- Event ID: `0x160E`
+- Domain: `cast`
+- bitOffset: `13`
+- Status: `draft`
+- Severity: `info`
+- Added in v1.0.0
+- Trigger: `session joined`, `session removed`, `session media state changed`
+- Required Capabilities: `cast.presentation`
+
+#### Payload Fields
+
+Type: `CastSessionsChangedEvent`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| context | CastControlEventContext | 0x01 | Required v1 commit context. | None | N/A |
+| sessions | Array<CastMultiSessionState> | 0x02 | Complete current bounded session collection. | array.itemType=CastMultiSessionState | N/A |
+
+---
+
+### cast.presentationChanged
+
+Replace only presentation slots, layout and capacity after a logical control commit.
+
+- Event ID: `0x160F`
+- Domain: `cast`
+- bitOffset: `14`
+- Status: `draft`
+- Severity: `info`
+- Added in v1.0.0
+- Trigger: `presentation binding changed`, `lifecycle changed`, `capacity changed`, `layout changed`
+- Required Capabilities: `cast.presentation`
+
+#### Payload Fields
+
+Type: `CastPresentationChangedEvent`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| context | CastControlEventContext | 0x01 | Required v1 commit context. | None | N/A |
+| presentation | CastPresentationState | 0x02 | Complete current presentation state. | None | N/A |
+
+---
+
+### cast.audioPolicyChanged
+
+Replace audio policy intent and effective participation sets after a control commit.
+
+- Event ID: `0x1610`
+- Domain: `cast`
+- bitOffset: `15`
+- Status: `draft`
+- Severity: `info`
+- Added in v1.0.0
+- Trigger: `enabled intent changed`, `effective audio participation changed`, `audio policy changed`
+- Required Capabilities: `cast.audioPolicy`
+
+#### Payload Fields
+
+Type: `CastAudioPolicyChangedEvent`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| context | CastControlEventContext | 0x01 | Required v1 commit context. | None | N/A |
+| audioPolicy | CastAudioPolicyState | 0x02 | Complete selected/effective audio policy state. | None | N/A |
+
+---
+
+### cast.controlOperationChanged
+
+Publish one admitted P0 per-session operation record; P1 settings progress uses RPC/query and its independent settings event, never this sequence.
+
+- Event ID: `0x1611`
+- Domain: `cast`
+- bitOffset: `16`
+- Status: `draft`
+- Severity: `info`
+- Added in v1.0.0
+- Trigger: `operation admitted`, `operation terminal`
+- Required Capabilities: `cast.controlOperations`
+
+#### Payload Fields
+
+Type: `CastControlOperationChangedEvent`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| context | CastControlEventContext | 0x01 | Required v1 commit context; may be an operation-only group. | None | N/A |
+| operation | CastControlOperation | 0x02 | One admitted queued or terminal operation record. | None | N/A |
+
+---
+
+### cast.presentationSettingsChanged
+
+Replace complete settings state using independent settingsContext/settingsEventSequence; never consumes the P0 eventSequence.
+
+- Event ID: `0x1612`
+- Domain: `cast`
+- bitOffset: `17`
+- Status: `draft`
+- Severity: `info`
+- Added in v1.0.0
+- Trigger: `desired setting committed`, `adopted policy changed`, `storage observation changed`, `settings issue or lock changed`
+- Required Capabilities: `cast.presentationSettings`
+
+#### Payload Fields
+
+Type: `CastPresentationSettingsChangedEvent`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| settingsContext | CastSettingsEventContext | 0x01 | Independent required settings cursor matching payload versions. | None | N/A |
+| settings | CastPresentationSettingsState | 0x02 | Full post-commit settings state | None | N/A |
 
 ---
 
@@ -4258,7 +4960,7 @@ Type: `SignagePlaylistConfigChangedEvent`
 
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
-| reason | Enum | 0x01 | Change reason; candidate values include set_config (triggered by setPlaylistConfig) and reset_config (triggered by resetPlaylistConfig). | None | N/A |
+| reason | Enum | 0x01 | Change reason; set_config (configuration replaced via signage.setPlaylistConfig) and reset_config (configuration restored to factory default via signage.resetPlaylistConfig). | enum=set_config/reset_config | N/A |
 | ?playlists | Array<SignagePlaylist> | 0x02 | Optional playlist objects representing the full post-change configuration. The device MAY omit it to shrink the payload; when omitted the client MUST call signage.getPlaylistConfig to reconcile. | schema=SignagePlaylist, array.itemType=SignagePlaylist, array.itemSchema=SignagePlaylist | Omit if not used. |
 
 ---
@@ -4321,6 +5023,70 @@ Type: `SoftwareUpdatePolicyChangedEvent`
 | policy | LauncherUpdatePolicy | 0x02 | Full post-change update policy fragment (not a patch). For the launcher target this is the LauncherUpdatePolicy structure; see SoftwareUpdatePolicy.policy. | None | N/A |
 | ?changedFields | Array<String> | 0x03 | Optional changed field paths using dot notation for nested levels, e.g. schedule.start. Omitted when the device cannot compute the diff. | array.itemType=string | Omit if not used. |
 | ?reason | Enum | 0x04 | Change reason; candidate values include user_request (triggered by setUpdatePolicy), restore_default (triggered by resetUpdatePolicy), device_policy (triggered by device-internal policy), and unknown (default when the reason is not reported). | None | Omit if not used. |
+
+---
+
+## sport Events
+
+### Events in this domain
+
+- [sport.eventDetectionStateChanged](#sporteventdetectionstatechanged)
+- [sport.eventDetected](#sporteventdetected)
+
+---
+
+### sport.eventDetectionStateChanged
+
+Emitted when one sport type changes effective enabled state, runtime state, availability, or apply state.
+
+- Event ID: `0x1801`
+- Domain: `sport`
+- bitOffset: `0`
+- Status: `draft`
+- Severity: `info`
+- Added in v1.0.0
+- Trigger: `sport.setEventDetectionConfig`, `device restart`, `restore default`, `local policy`, `detector availability change`
+- Required Capabilities: `sport.eventDetection`
+
+#### Payload Fields
+
+Type: `SportEventDetectionStateChangedEvent`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| state | SportEventDetectionState | 0x01 | Complete state after the change. | None | N/A |
+| source | Enum | 0x02 | Source of the state change. | enum=remoteApp/localPolicy/restart/restore/unknown | N/A |
+| ?reason | String | 0x03 | State change or unavailable reason summary. | maxLength=128 | Omit if not used. |
+
+---
+
+### sport.eventDetected
+
+Emitted when an enabled sport detector identifies a registered business event using a sport and event type discriminator.
+
+- Event ID: `0x1802`
+- Domain: `sport`
+- bitOffset: `1`
+- Status: `draft`
+- Severity: `info`
+- Added in v1.0.0
+- Trigger: `registered sport event detected`, `detector ready`, `detector degraded when policy permits`
+- Required Capabilities: `sport.eventDetection`
+
+#### Payload Fields
+
+Type: `SportEventDetectedEvent`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| eventId | String | 0x01 | Device event identifier used for deduplication. | maxLength=128 | N/A |
+| sequence | UInt64 | 0x02 | Monotonic candidate event sequence used for ordering. | None | N/A |
+| sportType | String | 0x03 | Sport type discriminator. | maxLength=32 | N/A |
+| eventType | String | 0x04 | Registered event type discriminator within the sport type. | maxLength=64 | N/A |
+| occurredAt | String | 0x05 | Device timestamp of the detected event. | maxLength=64 | N/A |
+| ?confidence | Number | 0x06 | Optional detector confidence in the range 0.0 to 1.0. | min=0, max=1 | Omit if not used. |
+| ?trainingSessionId | String | 0x07 | Optional training session association. | maxLength=128 | Omit if not used. |
+| details | SportEventDetails | 0x08 | Discriminator-qualified event details; the MVP basketball projection uses shotId, goalId, releaseType, and goalType. | None | N/A |
 
 ---
 
@@ -4803,6 +5569,78 @@ Voice activity detection configuration object.
 
 ---
 
+## CastAudioPolicyState
+
+Selected intent and effective audio participation captured with the same session/slot projection.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| controlMode | Enum | 0x01 | Current control policy; writes do not implicitly reset it. | enum=automatic/manual | N/A |
+| mixMode | Enum | 0x02 | Current mixing policy. | enum=exclusive/mix | N/A |
+| enabledSessions | Array<CastSessionRef> | 0x03 | Unique current session references with enabled intent. | array.itemType=CastSessionRef | N/A |
+| effectiveAudioSessions | Array<CastSessionRef> | 0x04 | Unique current effective participants; neither set proves human-audible sound. | array.itemType=CastSessionRef | N/A |
+
+---
+
+## CastControlEventContext
+
+Atomic feature commit group context; all parts share epoch/version/revision/batchId/partCount.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| controlVersion | UInt32 | 0x01 | Selected control version; P0 uses 1. | None | N/A |
+| runtimeInstanceId | String | 0x02 | Canonical lower-case UUID identifying the current host epoch. | maxLength=36 | N/A |
+| revision | String | 0x03 | Canonical decimal uint64 control revision; operation-only batches may retain the current revision. | maxLength=20 | N/A |
+| eventSequence | String | 0x04 | Canonical decimal uint64 string equal to batchId plus partIndex. | maxLength=20 | N/A |
+| batchId | String | 0x05 | Canonical decimal uint64 string equal to the first eventSequence of the group. | maxLength=20 | N/A |
+| partIndex | UInt32 | 0x06 | Zero-based part index strictly less than partCount. | None | N/A |
+| partCount | UInt32 | 0x07 | Positive complete group size; clients apply only after every part is present. | min=1 | N/A |
+
+---
+
+## CastControlLimits
+
+Instance-specific positive uint32 limits; admission reserves result storage and returns BUSY on saturation.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| maxPendingOperations | UInt32 | 0x01 | Maximum globally pending admitted operations. | min=1 | N/A |
+| maxPendingPerClient | UInt32 | 0x02 | Maximum pending operations for one client instance. | min=1 | N/A |
+| maxRetainedResults | UInt32 | 0x03 | Maximum retained records including reserved pending results. | min=1 | N/A |
+| replayWindowMs | UInt32 | 0x04 | Guaranteed dedup/result window from admission using host monotonic time; pending records survive until terminal. | min=1 | N/A |
+| maxEventBufferEvents | UInt32 | 0x05 | Bounded event count used for initial sync and slow-client handling. | min=1 | N/A |
+| maxEventBufferBytes | UInt32 | 0x06 | Bounded buffered event bytes. | min=1 | N/A |
+| maxRequestBytes | UInt32 | 0x07 | Maximum admitted request bytes. | min=1 | N/A |
+| maxSnapshotBytes | UInt32 | 0x08 | Maximum atomic snapshot bytes including bounded collections. | min=1 | N/A |
+
+---
+
+## CastControlSnapshotCursor
+
+One atomic logical capture and its complete published-event barrier; counters never wrap within an epoch.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| controlVersion | UInt32 | 0x01 | Selected control version; P0 uses 1. | None | N/A |
+| runtimeInstanceId | String | 0x02 | Canonical lower-case UUID text; fresh for each host start. | maxLength=36 | N/A |
+| revision | String | 0x03 | Canonical decimal uint64 logical control revision. | maxLength=20 | N/A |
+| eventSequence | String | 0x04 | Canonical decimal uint64 string; snapshot includes every complete published batch through this barrier. | maxLength=20 | N/A |
+
+---
+
+## CastControlTarget
+
+Exact presentation fences; params.runtimeInstanceId completes the target and all fences are rechecked atomically at mutation.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| session | CastSessionRef | 0x01 | Shared runtime session and generation. | None | N/A |
+| slotId | UInt32 | 0x02 | Opaque slot identifier; never an array index. | None | N/A |
+| bindingGeneration | String | 0x03 | Canonical decimal uint64 string fencing slot reuse. | maxLength=20 | N/A |
+| lifecycleGeneration | String | 0x04 | Canonical decimal uint64 string fencing presentation lifecycle replacement. | maxLength=20 | N/A |
+
+---
+
 ## CastLastError
 
 Redactable backend or receiver error summary.
@@ -4832,6 +5670,24 @@ Low-frequency media summary for a cast session.
 
 ---
 
+## CastMultiSessionState
+
+Current shared runtime session with independent connection, eligibility and media facts.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| session | CastSessionRef | 0x01 | Shared runtime session reference. | None | N/A |
+| receiverId | String | 0x02 | Nonempty reference to a receiver in the same projection. | maxLength=128 | N/A |
+| protocol | Enum | 0x03 | Actual session protocol; legacy enums remain unchanged. | enum=hid/airplay/webcast/unknown | N/A |
+| receiverState | Enum | 0x04 | Protocol receiver session state; no frames does not imply disconnection. | enum=opening/open/mediaStarting/mediaActive/stopping/closed/failed | N/A |
+| presentationEligibility | Enum | 0x05 | Presentation eligibility distinct from authentication and connection. | enum=notEligible/priming/mediaReady/presented/withdrawing/notPresented | N/A |
+| videoTrackOpen | Boolean | 0x06 | Whether the video track is open; not proof of rendered frames. | None | N/A |
+| audioTrackOpen | Boolean | 0x07 | Whether the audio track is open; not proof of audible output. | None | N/A |
+| ?audioReadiness | Enum | 0x08 | Audio readiness when observed. | enum=unknown/absent/priming/ready/recovering | Omit if not used. |
+| ?displayName | String | 0x09 | Safe user-visible name; not a target identity. | maxLength=128 | Omit if not used. |
+
+---
+
 ## CastPinCodeStatusSummary
 
 Snapshot PIN summary for status views.
@@ -4844,6 +5700,151 @@ Snapshot PIN summary for status views.
 | ?pinCode | String | 0x04 | Plaintext PIN value when visible to the caller. | None | Omit if not used. |
 | ?redacted | Boolean | 0x05 | Whether sensitive fields were withheld. | None | Omit if not used. |
 | ?visibility | Enum | 0x06 | Visibility policy applied to this summary. | enum=hidden/authorizedOnly/localUi/both | Omit if not used. |
+
+---
+
+## CastPresentationSettingIssue
+
+One safe supported-field observation; historical failure and current policy remain distinct.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| field | String | 0x01 | One supported setting field name. | maxLength=64 | N/A |
+| kind | Enum | 0x02 | Structured limitation/failure classification. | enum=limitedByValidation/limitedByHardLimit/liveApplyFailed/startupFailed/locked/unknown | N/A |
+| ?reason | String | 0x03 | Bounded sanitized reason; no secret/path leakage. | maxLength=128 | Omit if not used. |
+| ?statusCode | UInt32 | 0x04 | Optional standard AXTP numeric status. | None | Omit if not used. |
+
+---
+
+## CastPresentationSettingsOperationResult
+
+Truthful independent configuration/application/persistence results; failed may still include stored/configured commits.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| field | String | 0x01 | Unique requested setting field. | maxLength=64 | N/A |
+| settingsRevision | String | 0x02 | Canonical decimal uint64 most recently confirmed settings revision; terminal uses completion/check version. | maxLength=20 | N/A |
+| configurationStatus | Enum | 0x03 | Whether this intent changed desired configuration. | enum=notCommitted/unchanged/committed | N/A |
+| applicationStatus | Enum | 0x04 | Confirmed policy adoption or deferred restart intent; not media audibility/restart proof. | enum=notAttempted/unchanged/applied/pendingRestart/failed | N/A |
+| persistenceStatus | Enum | 0x05 | Explicit field-only storage outcome distinct from equality with known persistedValues. | enum=notRequested/pending/unchanged/stored/failed | N/A |
+| ?appliedControlRevision | String | 0x06 | Optional canonical decimal uint64 associated P0 policy revision. | maxLength=20 | Omit if not used. |
+
+---
+
+## CastPresentationSettingsPatch
+
+All fields optional structurally but exactly one key required semantically; unknown patch keys rejected and conditional choices come from capability.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?layoutMode | String | 0x01 | Nonempty declared layout identifier. | maxLength=64 | Omit if not used. |
+| ?audioControlMode | Enum | 0x02 | Declared audio control mode; same confirmed value does not reset selection. | enum=automatic/manual | Omit if not used. |
+| ?audioMixMode | Enum | 0x03 | Declared audio mix mode; no implicit inverse-mode rollback. | enum=exclusive/mix | Omit if not used. |
+| ?capacity | UInt32 | 0x04 | One declared capacity choice; no global product maximum or default. | min=1 | Omit if not used. |
+| ?enabledProtocols | Array<String> | 0x05 | Duplicate-free set from declared hid/airplay/webcast protocols; empty only when minEnabledProtocols is explicitly zero. | array.itemType=string | Omit if not used. |
+| ?profileHint | String | 0x06 | Nonempty declared opaque product profile identifier; not a wire profile. | maxLength=64 | Omit if not used. |
+
+---
+
+## CastPresentationSettingsState
+
+Full bounded settings state; desired/adopted/startup/stored facts and two independent event barriers must never be conflated.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| settingsRevision | String | 0x01 | Canonical decimal uint64 settings fact version within the runtime epoch. | maxLength=20 | N/A |
+| settingsEventSequence | String | 0x02 | Canonical decimal uint64 settings publication barrier; independent of P0 eventSequence. | maxLength=20 | N/A |
+| configured | CastPresentationSettingsValues | 0x03 | Complete supported desired settings including temporary changes. | None | N/A |
+| applied | CastPresentationSettingsValues | 0x04 | Confirmed actually adopted values; unconfirmed fields omitted with issues. | None | N/A |
+| activeStartup | CastPresentationStartupSettings | 0x05 | Restart-only intent accepted at current startup; used to compute pendingRestart. | None | N/A |
+| pendingRestart | Array<String> | 0x06 | Unique restart-only fields where configured differs from activeStartup; applied capacity limits do not create permanent pending. | array.itemType=string | N/A |
+| persisted | Boolean | 0x07 | True iff desired settings equal known stored/startup projection; false if unknown and not a disk-write receipt. | None | N/A |
+| unsavedFields | Array<String> | 0x08 | Configured fields differing from known stored values; all supported fields when storage projection unknown. | array.itemType=string | N/A |
+| unappliedFields | Array<String> | 0x09 | Live fields differing from confirmed adopted policy; layout animation alone does not qualify. | array.itemType=string | N/A |
+| storageState | Enum | 0x0A | Truthful store observation; invalid/unknown files are preserved rather than silently overwritten. | enum=absent/loaded/saved/invalid/unavailable | N/A |
+| lockedFields | Array<String> | 0x0B | Unique supported field names currently locked by explicit deployment/authorization policy. | array.itemType=string | N/A |
+| applicationIssues | Array<CastPresentationSettingIssue> | 0x0C | Safe field-specific limitation/failure/lock observations. | array.itemType=CastPresentationSettingIssue | N/A |
+| ?persistedValues | CastPresentationSettingsValues | 0x0D | Complete known persistent startup projection; omitted if invalid/unavailable/unknown. | None | Omit if not used. |
+| ?storeRevision | String | 0x0E | Canonical decimal uint64 known valid store version; absent without valid file. | maxLength=20 | Omit if not used. |
+| ?appliedControlRevision | String | 0x0F | Associated P0 adopted-policy revision lower bound for cross-stream synchronization. | maxLength=20 | Omit if not used. |
+| ?persistError | String | 0x10 | Sanitized bounded storage diagnostic; no raw request/secret/private path. | maxLength=512 | Omit if not used. |
+
+---
+
+## CastPresentationSettingsValues
+
+Supported setting values only; configured/known persisted projections are complete, while unconfirmed applied fields are absent with issues.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?layoutMode | String | 0x01 | Declared layout policy identifier. | maxLength=64 | Omit if not used. |
+| ?audioControlMode | Enum | 0x02 | Adopted or desired control policy; not proof of sound. | enum=automatic/manual | Omit if not used. |
+| ?audioMixMode | Enum | 0x03 | Adopted or desired audio mixing policy. | enum=exclusive/mix | Omit if not used. |
+| ?capacity | UInt32 | 0x04 | Desired capacity or actually adopted capacity according to containing projection; applied may be limited. | min=1 | Omit if not used. |
+| ?enabledProtocols | Array<String> | 0x05 | Adopted or desired enable policy; not receiver readiness. | array.itemType=string | Omit if not used. |
+| ?profileHint | String | 0x06 | Declared product combination profile identifier. | maxLength=64 | Omit if not used. |
+
+---
+
+## CastPresentationSlotState
+
+Current slot binding; target is required iff occupied and must match this slot and current lifecycle.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| slotId | UInt32 | 0x01 | Unique slot identifier within the presentation. | None | N/A |
+| bindingGeneration | String | 0x02 | Canonical decimal uint64 slot-binding generation. | maxLength=20 | N/A |
+| occupied | Boolean | 0x03 | Whether the slot currently has an exact target. | None | N/A |
+| ?target | CastControlTarget | 0x04 | Required iff occupied; omitted otherwise; null is invalid. | None | Omit if not used. |
+
+---
+
+## CastPresentationStartupSettings
+
+Exactly the capability-declared restart-only intent accepted at this host startup; distinct from effective/applied limits and stored values.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?layoutMode | String | 0x01 | Present only if this implementation declares layoutMode restart-only. | maxLength=64 | Omit if not used. |
+| ?audioControlMode | Enum | 0x02 | Present only if audioControlMode is restart-only. | enum=automatic/manual | Omit if not used. |
+| ?audioMixMode | Enum | 0x03 | Present only if audioMixMode is restart-only. | enum=exclusive/mix | Omit if not used. |
+| ?capacity | UInt32 | 0x04 | Startup accepted capacity intent before runtime validation limitations. | min=1 | Omit if not used. |
+| ?enabledProtocols | Array<String> | 0x05 | Startup accepted receiver enable policy; does not claim Ready. | array.itemType=string | Omit if not used. |
+| ?profileHint | String | 0x06 | Startup accepted product profile when declared restart-only. | maxLength=64 | Omit if not used. |
+
+---
+
+## CastPresentationState
+
+Atomically captured presentation lifecycle, capacity and slots; zero effective/applied capacity does not imply no media.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| started | Boolean | 0x01 | Whether the presentation lifecycle is started. | None | N/A |
+| lifecycleGeneration | String | 0x02 | Canonical decimal uint64 lifecycle generation. | maxLength=20 | N/A |
+| configuredCapacity | UInt32 | 0x03 | Positive configured capacity. | min=1 | N/A |
+| validationAvailable | Boolean | 0x04 | Whether validatedCapacity is currently known. | None | N/A |
+| ?validatedCapacity | UInt32 | 0x05 | Required iff validationAvailable; omitted when unknown. | min=1 | Omit if not used. |
+| effectiveCapacity | UInt32 | 0x06 | Current host capacity-policy result; may be zero. | None | N/A |
+| appliedCapacity | UInt32 | 0x07 | Capacity currently applied to presentation; may be zero. | None | N/A |
+| layoutMode | String | 0x08 | One of the layout identifiers advertised by this instance. | maxLength=64 | N/A |
+| layoutSettling | Boolean | 0x09 | Whether the host reports layout settling. | None | N/A |
+| slots | Array<CastPresentationSlotState> | 0x0A | Full bounded current slot set with no removed-session ghost binding. | array.itemType=CastPresentationSlotState | N/A |
+
+---
+
+## CastReceiverState
+
+Real receiver availability; historical lastError does not override current state. No secrets.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| receiverId | String | 0x01 | Nonempty opaque receiver identity. | maxLength=128 | N/A |
+| protocol | Enum | 0x02 | Actual receiver protocol; unknown is not a supported-path alias. | enum=hid/airplay/webcast/unknown | N/A |
+| state | Enum | 0x03 | Current receiver availability independent of session media. | enum=disabled/starting/ready/degraded/stopping/failed | N/A |
+| observedAt | String | 0x04 | UTC RFC3339 observation time for display only. | maxLength=64 | N/A |
+| ?displayName | String | 0x05 | Safe user-visible name; not identity or secret material. | maxLength=128 | Omit if not used. |
+| ?lastError | CastLastError | 0x06 | Historical redacted error summary; never passwords/tokens/SDP/ICE/private keys. | None | Omit if not used. |
 
 ---
 
@@ -4873,6 +5874,17 @@ Cast window rectangle in screen coordinates.
 
 ---
 
+## CastSessionRef
+
+Shared runtime session identity, distinct from a protocol-local legacy sessionId.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| id | String | 0x01 | Nonempty opaque shared runtime session ID. | maxLength=128 | N/A |
+| generation | String | 0x02 | Canonical decimal uint64 string (0 or nonzero-leading digits, at most 18446744073709551615); encoded as UTF-8 in TLV. | maxLength=20 | N/A |
+
+---
+
 ## CastSessionStatusSummary
 
 Snapshot active session summary for status views.
@@ -4884,6 +5896,19 @@ Snapshot active session summary for status views.
 | ?sessionState | Enum | 0x03 | Backend-specific session state. | enum=idle/incoming/waitingForPassword/authenticated/preparing/casting/interrupted/stopping/ended/failed | Omit if not used. |
 | ?protocol | Enum | 0x04 | Protocol path represented by the active session. | enum=airplay/hid/unknown | Omit if not used. |
 | ?sourceName | String | 0x05 | User-visible source name. | maxLength=128 | Omit if not used. |
+
+---
+
+## CastSettingsEventContext
+
+Independent settings event cursor; payload revision/sequence must match and this event never consumes P0 sequence.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| controlVersion | UInt32 | 0x01 | Selected control version; P1 uses 1. | None | N/A |
+| runtimeInstanceId | String | 0x02 | Canonical lower-case runtime epoch UUID. | maxLength=36 | N/A |
+| settingsRevision | String | 0x03 | Canonical decimal uint64 settings state version. | maxLength=20 | N/A |
+| settingsEventSequence | String | 0x04 | Canonical decimal uint64 settings publication sequence; snapshot barrier may be zero. | maxLength=20 | N/A |
 
 ---
 
@@ -5157,21 +6182,122 @@ Network interface administrative and link state.
 
 ---
 
-## SignagePlaylistItemSettings
+## SignageClockItemSettings
 
-Aggregated playlist item settings spanning all item types. Only the subset matching the enclosing item type is meaningful; see the per-type rules in the signage.playlist draft.
+Settings for the clock playlist item type; selected via PlaylistItem.settings variants when type is clock.
 
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
-| ?urls | Array<String> | 0x01 | image type: non-empty image URLs. | array.itemType=string | Omit if not used. |
-| ?delaySeconds | UInt32 | 0x02 | image and unsplash types: per-image display interval in seconds. | min=1 | Default: 5 |
-| ?expiresAt | UInt64 | 0x03 | image, video, and unsplash types: Unix timestamp URL expiry. 0 or absent means never expires. | None | Omit if not used. |
-| ?url | String | 0x04 | video and website types: media or page URL. | maxLength=2048 | Omit if not used. |
-| ?muted | Boolean | 0x05 | video type: whether to play muted. | None | Default: false |
-| ?ignoreCertificateError | Boolean | 0x06 | website type: whether to ignore TLS certificate errors. Enabling bypasses certificate validation and carries MITM risk; the default policy and caller permission requirements are product-defined. | None | Default: false |
-| ?refreshIntervalSecs | UInt32 | 0x07 | website type: page refresh interval in seconds. 0 or absent means no refresh. | min=1 | Omit if not used. |
-| ?clocks | Array<SignagePlaylistClockEntry> | 0x08 | clock type: non-empty playlist clock entry objects. | schema=SignagePlaylistClockEntry, array.itemType=SignagePlaylistClockEntry, array.itemSchema=SignagePlaylistClockEntry | Omit if not used. |
-| ?photos | Array<SignagePlaylistUnsplashPhoto> | 0x09 | unsplash type: non-empty playlist unsplash photo objects. | schema=SignagePlaylistUnsplashPhoto, array.itemType=SignagePlaylistUnsplashPhoto, array.itemSchema=SignagePlaylistUnsplashPhoto | Omit if not used. |
+| clocks | Array<SignagePlaylistClockEntry> | 0x01 | Non-empty clock entries. | schema=SignagePlaylistClockEntry, array.itemType=SignagePlaylistClockEntry, array.itemSchema=SignagePlaylistClockEntry | N/A |
+
+---
+
+## SignageImageItemSettings
+
+Settings for the image playlist item type; selected via PlaylistItem.settings variants when type is image.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| urls | Array<String> | 0x01 | Non-empty image URL list. | array.itemType=string | N/A |
+| delaySeconds | UInt32 | 0x02 | Per-image display interval in seconds. | min=1 | Default: 5 |
+| ?expiresAt | UInt64 | 0x03 | Unix timestamp URL expiry. 0 or absent means never expires. | None | Omit if not used. |
+
+---
+
+## SignagePlaylistUnsplashUser
+
+Photographer attribution for an Unsplash photo.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| name | String | 0x01 | Photographer name. | maxLength=128 | N/A |
+| link | String | 0x02 | Photographer Unsplash profile link. | maxLength=2048 | N/A |
+
+---
+
+## SignagePowerBiItemSettings
+
+Settings for the powerbi playlist item type; selected via PlaylistItem.settings variants when type is powerbi. All fields are required.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| groupId | String | 0x01 | PowerBI workspace (group) identifier (GUID). | maxLength=64 | N/A |
+| dashboardId | String | 0x02 | PowerBI dashboard identifier (GUID). | maxLength=64 | N/A |
+| embedUrl | String | 0x03 | Dashboard embed URL; stable across token refreshes. The device SHOULD cache and reuse it. | maxLength=2048 | N/A |
+| token | String | 0x04 | AAD access token for the PowerBI audience (https://analysis.windows.net/powerbi/api; tokenType=Aad embedding; typically ~60 minutes). Tenants with many group/role claims issue JWTs of 5-8 KB, hence the generous bound. Sensitive credential transported only via the RPC channel; never embedded in resource URLs and not to be logged. | maxLength=8192 | N/A |
+| expiresAt | UInt64 | 0x05 | Unix timestamp token expiry; MUST be greater than 0 (0 is invalid for powerbi, unlike the 0-equals-never-expires convention of URL-based item types). Always present for powerbi items; drives the device-side signage.getPlaylistItem refresh. | min=1 | N/A |
+
+---
+
+## SignageUnsplashItemSettings
+
+Settings for the unsplash playlist item type; selected via PlaylistItem.settings variants when type is unsplash.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| photos | Array<SignagePlaylistUnsplashPhoto> | 0x01 | Non-empty Unsplash photo entries with photographer attribution. | schema=SignagePlaylistUnsplashPhoto, array.itemType=SignagePlaylistUnsplashPhoto, array.itemSchema=SignagePlaylistUnsplashPhoto | N/A |
+| delaySeconds | UInt32 | 0x02 | Per-photo display interval in seconds. | min=1 | Default: 5 |
+| ?expiresAt | UInt64 | 0x03 | Unix timestamp URL expiry. 0 or absent means never expires. | None | Omit if not used. |
+
+---
+
+## SignageVideoItemSettings
+
+Settings for the video playlist item type; selected via PlaylistItem.settings variants when type is video.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| url | String | 0x01 | Video media URL. | maxLength=2048 | N/A |
+| ?expiresAt | UInt64 | 0x02 | Unix timestamp URL expiry. 0 or absent means never expires. | None | Omit if not used. |
+| ?muted | Boolean | 0x03 | Whether to play muted. | None | Default: false |
+
+---
+
+## SignageWebsiteItemSettings
+
+Settings for the website playlist item type; selected via PlaylistItem.settings variants when type is website.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| url | String | 0x01 | Web page URL. | maxLength=2048 | N/A |
+| ?ignoreCertificateError | Boolean | 0x02 | Whether to ignore TLS certificate errors. Enabling bypasses certificate validation and carries MITM risk; the default policy and caller permission requirements are product-defined. | None | Default: false |
+| ?refreshIntervalSecs | UInt32 | 0x03 | Page refresh interval in seconds. 0 or absent means no refresh. | min=1 | Omit if not used. |
+
+---
+
+## SportBasketballGoalDetails
+
+Basketball goal detail projection for sport.eventDetected with eventType goal.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| goalId | String | 0x01 | Business identifier for the basketball goal result. | maxLength=128 | N/A |
+| shotId | String | 0x02 | Required reference to the shot that produced this goal. | maxLength=128 | N/A |
+| ?goalType | Enum | 0x03 | Optional goal type. | enum=fieldGoal/freeThrow/unknown | Omit if not used. |
+
+---
+
+## SportBasketballShotDetails
+
+Basketball shot detail projection for sport.eventDetected with eventType shot.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| shotId | String | 0x01 | Business identifier for the valid basketball shot attempt. | maxLength=128 | N/A |
+| ?releaseType | Enum | 0x02 | Optional shot release type. | enum=unknown/setShot/jumpShot/layup/other | Omit if not used. |
+
+---
+
+## SportEventDetails
+
+Common discriminator-qualified detail carrier. Fields are interpreted according to sportType and eventType; new sports add optional fields or a dedicated event schema through a later amendment.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?shotId | String | 0x01 | Basketball shot identifier when eventType is shot or goal. | maxLength=128 | Omit if not used. |
+| ?goalId | String | 0x02 | Basketball goal identifier when eventType is goal. | maxLength=128 | Omit if not used. |
+| ?releaseType | Enum | 0x03 | Basketball shot release type when eventType is shot. | enum=unknown/setShot/jumpShot/layup/other | Omit if not used. |
+| ?goalType | Enum | 0x04 | Basketball goal type when eventType is goal. | enum=fieldGoal/freeThrow/unknown | Omit if not used. |
 
 ---
 

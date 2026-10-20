@@ -4291,6 +4291,13 @@
           "required": false,
           "maxLength": 64,
           "description": "Timestamp for this event."
+        },
+        {
+          "fieldId": 5,
+          "name": "controlContext",
+          "type": "CastControlEventContext",
+          "required": false,
+          "description": "Optional v1 commit context; absent legacy events do not advance the multi-control sequence."
         }
       ]
     },
@@ -5180,6 +5187,13 @@
           "required": false,
           "default": false,
           "description": "Whether authorized callers request sensitive summary fields."
+        },
+        {
+          "fieldId": 3,
+          "name": "controlVersion",
+          "type": "uint32",
+          "required": false,
+          "description": "Explicit multi-control version; v1 unifiedControl requires a complete atomic six-section projection. Unknown versions return NOT_SUPPORTED."
         }
       ]
     },
@@ -5445,6 +5459,54 @@
           "type": "bool",
           "required": false,
           "description": "Whether any sensitive snapshot fields were withheld."
+        },
+        {
+          "fieldId": 10,
+          "name": "controlSync",
+          "type": "CastControlSnapshotCursor",
+          "required": false,
+          "description": "Required with requested v1 sections; atomic capture revision and published event barrier in one runtime epoch."
+        },
+        {
+          "fieldId": 11,
+          "name": "receivers",
+          "type": "array",
+          "required": false,
+          "array": {
+            "itemType": "CastReceiverState"
+          },
+          "description": "Required in v1 unifiedControl; full bounded receiver set including disabled and failed receivers."
+        },
+        {
+          "fieldId": 12,
+          "name": "sessions",
+          "type": "array",
+          "required": false,
+          "array": {
+            "itemType": "CastMultiSessionState"
+          },
+          "description": "Required in v1 unifiedControl; full bounded current session set, possibly empty, captured with slots and audio."
+        },
+        {
+          "fieldId": 13,
+          "name": "presentation",
+          "type": "CastPresentationState",
+          "required": false,
+          "description": "Required in v1 unifiedControl; does not replace old single-source summaries."
+        },
+        {
+          "fieldId": 14,
+          "name": "audioPolicy",
+          "type": "CastAudioPolicyState",
+          "required": false,
+          "description": "Required in v1 unifiedControl; selected intent and effective participation are separate from legacy audio."
+        },
+        {
+          "fieldId": 15,
+          "name": "presentationSettings",
+          "type": "CastPresentationSettingsState",
+          "required": false,
+          "description": "Required only when P1 is supported and explicitly requested; combined P0/P1 capture shares one host commit boundary and keeps independent event barriers."
         }
       ]
     },
@@ -5796,7 +5858,7 @@
           "array": {
             "itemType": "string"
           },
-          "description": "Status snapshot sections the receiver can report."
+          "description": "Status snapshot sections the receiver can report; v1 adds unifiedControl, controlSync, receivers, sessions, presentation and audioPolicy and reuses window; P1 adds explicitly requested presentationSettings."
         },
         {
           "fieldId": 2,
@@ -5805,6 +5867,1846 @@
           "required": false,
           "default": true,
           "description": "Whether sensitive status fields can be withheld and marked redacted."
+        },
+        {
+          "fieldId": 3,
+          "name": "supportedControlVersions",
+          "type": "array",
+          "required": false,
+          "array": {
+            "itemType": "uint32"
+          },
+          "description": "Explicit supported multi-control versions; absence is unknown rather than v1 support."
+        },
+        {
+          "fieldId": 4,
+          "name": "supportsAtomicUnifiedSnapshot",
+          "type": "bool",
+          "required": false,
+          "description": "Whether unifiedControl is captured atomically in full; absence is not a verified false or true value."
+        }
+      ]
+    },
+    {
+      "name": "CastSessionRef",
+      "kind": "object",
+      "description": "Shared runtime session identity, distinct from a protocol-local legacy sessionId.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "id",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Nonempty opaque shared runtime session ID."
+        },
+        {
+          "fieldId": 2,
+          "name": "generation",
+          "type": "string",
+          "required": true,
+          "maxLength": 20,
+          "description": "Canonical decimal uint64 string (0 or nonzero-leading digits, at most 18446744073709551615); encoded as UTF-8 in TLV."
+        }
+      ]
+    },
+    {
+      "name": "CastControlTarget",
+      "kind": "object",
+      "description": "Exact presentation fences; params.runtimeInstanceId completes the target and all fences are rechecked atomically at mutation.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "session",
+          "type": "CastSessionRef",
+          "required": true,
+          "description": "Shared runtime session and generation."
+        },
+        {
+          "fieldId": 2,
+          "name": "slotId",
+          "type": "uint32",
+          "required": true,
+          "description": "Opaque slot identifier; never an array index."
+        },
+        {
+          "fieldId": 3,
+          "name": "bindingGeneration",
+          "type": "string",
+          "required": true,
+          "maxLength": 20,
+          "description": "Canonical decimal uint64 string fencing slot reuse."
+        },
+        {
+          "fieldId": 4,
+          "name": "lifecycleGeneration",
+          "type": "string",
+          "required": true,
+          "maxLength": 20,
+          "description": "Canonical decimal uint64 string fencing presentation lifecycle replacement."
+        }
+      ]
+    },
+    {
+      "name": "CastControlSnapshotCursor",
+      "kind": "object",
+      "description": "One atomic logical capture and its complete published-event barrier; counters never wrap within an epoch.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "controlVersion",
+          "type": "uint32",
+          "required": true,
+          "description": "Selected control version; P0 uses 1."
+        },
+        {
+          "fieldId": 2,
+          "name": "runtimeInstanceId",
+          "type": "string",
+          "required": true,
+          "maxLength": 36,
+          "description": "Canonical lower-case UUID text; fresh for each host start."
+        },
+        {
+          "fieldId": 3,
+          "name": "revision",
+          "type": "string",
+          "required": true,
+          "maxLength": 20,
+          "description": "Canonical decimal uint64 logical control revision."
+        },
+        {
+          "fieldId": 4,
+          "name": "eventSequence",
+          "type": "string",
+          "required": true,
+          "maxLength": 20,
+          "description": "Canonical decimal uint64 string; snapshot includes every complete published batch through this barrier."
+        }
+      ]
+    },
+    {
+      "name": "CastControlEventContext",
+      "kind": "object",
+      "description": "Atomic feature commit group context; all parts share epoch/version/revision/batchId/partCount.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "controlVersion",
+          "type": "uint32",
+          "required": true,
+          "description": "Selected control version; P0 uses 1."
+        },
+        {
+          "fieldId": 2,
+          "name": "runtimeInstanceId",
+          "type": "string",
+          "required": true,
+          "maxLength": 36,
+          "description": "Canonical lower-case UUID identifying the current host epoch."
+        },
+        {
+          "fieldId": 3,
+          "name": "revision",
+          "type": "string",
+          "required": true,
+          "maxLength": 20,
+          "description": "Canonical decimal uint64 control revision; operation-only batches may retain the current revision."
+        },
+        {
+          "fieldId": 4,
+          "name": "eventSequence",
+          "type": "string",
+          "required": true,
+          "maxLength": 20,
+          "description": "Canonical decimal uint64 string equal to batchId plus partIndex."
+        },
+        {
+          "fieldId": 5,
+          "name": "batchId",
+          "type": "string",
+          "required": true,
+          "maxLength": 20,
+          "description": "Canonical decimal uint64 string equal to the first eventSequence of the group."
+        },
+        {
+          "fieldId": 6,
+          "name": "partIndex",
+          "type": "uint32",
+          "required": true,
+          "description": "Zero-based part index strictly less than partCount."
+        },
+        {
+          "fieldId": 7,
+          "name": "partCount",
+          "type": "uint32",
+          "required": true,
+          "min": 1,
+          "description": "Positive complete group size; clients apply only after every part is present."
+        }
+      ]
+    },
+    {
+      "name": "CastControlCapabilities",
+      "kind": "object",
+      "description": "Dynamic optional multi-control surface; partial descriptors do not imply complete v1 support. No secrets.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "supportedControlVersions",
+          "type": "array",
+          "required": true,
+          "array": {
+            "itemType": "uint32"
+          },
+          "description": "Explicit supported control versions."
+        },
+        {
+          "fieldId": 2,
+          "name": "runtimeInstanceId",
+          "type": "string",
+          "required": true,
+          "maxLength": 36,
+          "description": "Canonical lower-case UUID for this host lifetime."
+        },
+        {
+          "fieldId": 3,
+          "name": "methods",
+          "type": "array",
+          "required": true,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Actual registered method names supported by this instance."
+        },
+        {
+          "fieldId": 4,
+          "name": "events",
+          "type": "array",
+          "required": true,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Actual feature event names supported by this instance."
+        },
+        {
+          "fieldId": 5,
+          "name": "statusSections",
+          "type": "array",
+          "required": true,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Actual supported status section names."
+        },
+        {
+          "fieldId": 6,
+          "name": "presentation",
+          "type": "CastPresentationCapability",
+          "required": false,
+          "description": "Required when cast.presentation is supported."
+        },
+        {
+          "fieldId": 7,
+          "name": "audioPolicy",
+          "type": "CastAudioPolicyCapability",
+          "required": false,
+          "description": "Required when cast.audioPolicy is supported."
+        },
+        {
+          "fieldId": 8,
+          "name": "operations",
+          "type": "CastControlOperationsCapability",
+          "required": false,
+          "description": "Required when cast.controlOperations is supported."
+        },
+        {
+          "fieldId": 9,
+          "name": "profileHints",
+          "type": "array",
+          "required": false,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Non-secret host profile hints; not media profiles or implicit defaults."
+        },
+        {
+          "fieldId": 10,
+          "name": "presentationSettings",
+          "type": "CastPresentationSettingsCapability",
+          "required": false,
+          "description": "Required iff P1 is supported together with its method/event/status section; absence does not imply support."
+        }
+      ]
+    },
+    {
+      "name": "CastPresentationCapability",
+      "kind": "object",
+      "description": "Supported presentation protocols and logical capture/target guarantees; no product layout algorithm.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "protocols",
+          "type": "array",
+          "required": true,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Supported subset of hid/airplay/webcast; unknown is not a supported protocol."
+        },
+        {
+          "fieldId": 2,
+          "name": "supportsAtomicSnapshot",
+          "type": "bool",
+          "required": true,
+          "description": "Must be true for a complete v1 unifiedControl implementation."
+        },
+        {
+          "fieldId": 3,
+          "name": "supportsStrictTargets",
+          "type": "bool",
+          "required": true,
+          "description": "Must be true for exact per-presentation writes."
+        },
+        {
+          "fieldId": 4,
+          "name": "maxPresentationCapacity",
+          "type": "uint32",
+          "required": true,
+          "min": 1,
+          "description": "Positive host-specific presentation capacity bound."
+        },
+        {
+          "fieldId": 5,
+          "name": "capacityChoices",
+          "type": "array",
+          "required": false,
+          "array": {
+            "itemType": "uint32"
+          },
+          "description": "Positive supported capacities no greater than maxPresentationCapacity."
+        },
+        {
+          "fieldId": 6,
+          "name": "layoutModes",
+          "type": "array",
+          "required": true,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Supported layout identifiers; geometry remains host-owned."
+        }
+      ]
+    },
+    {
+      "name": "CastAudioPolicyCapability",
+      "kind": "object",
+      "description": "Audio intent and effective-set reporting guarantees.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "controlModes",
+          "type": "array",
+          "required": true,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Supported subset of automatic/manual."
+        },
+        {
+          "fieldId": 2,
+          "name": "mixModes",
+          "type": "array",
+          "required": true,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Supported subset of exclusive/mix."
+        },
+        {
+          "fieldId": 3,
+          "name": "supportsPerSessionEnable",
+          "type": "bool",
+          "required": true,
+          "description": "Whether explicit per-session enabled intent is available."
+        },
+        {
+          "fieldId": 4,
+          "name": "reportsEffectiveSet",
+          "type": "bool",
+          "required": true,
+          "description": "Whether effective participants are reported separately from selected intent."
+        }
+      ]
+    },
+    {
+      "name": "CastControlOperationsCapability",
+      "kind": "object",
+      "description": "Query and deduplication guarantees bounded by declared limits.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "supportsQuery",
+          "type": "bool",
+          "required": true,
+          "description": "Whether original command results can be queried."
+        },
+        {
+          "fieldId": 2,
+          "name": "supportsDedup",
+          "type": "bool",
+          "required": true,
+          "description": "Whether same-key same-value commands return the original operation."
+        },
+        {
+          "fieldId": 3,
+          "name": "limits",
+          "type": "CastControlLimits",
+          "required": true,
+          "description": "Nonzero finite bounds; guaranteed records cannot be silently evicted."
+        }
+      ]
+    },
+    {
+      "name": "CastControlLimits",
+      "kind": "object",
+      "description": "Instance-specific positive uint32 limits; admission reserves result storage and returns BUSY on saturation.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "maxPendingOperations",
+          "type": "uint32",
+          "required": true,
+          "min": 1,
+          "description": "Maximum globally pending admitted operations."
+        },
+        {
+          "fieldId": 2,
+          "name": "maxPendingPerClient",
+          "type": "uint32",
+          "required": true,
+          "min": 1,
+          "description": "Maximum pending operations for one client instance."
+        },
+        {
+          "fieldId": 3,
+          "name": "maxRetainedResults",
+          "type": "uint32",
+          "required": true,
+          "min": 1,
+          "description": "Maximum retained records including reserved pending results."
+        },
+        {
+          "fieldId": 4,
+          "name": "replayWindowMs",
+          "type": "uint32",
+          "required": true,
+          "min": 1,
+          "description": "Guaranteed dedup/result window from admission using host monotonic time; pending records survive until terminal."
+        },
+        {
+          "fieldId": 5,
+          "name": "maxEventBufferEvents",
+          "type": "uint32",
+          "required": true,
+          "min": 1,
+          "description": "Bounded event count used for initial sync and slow-client handling."
+        },
+        {
+          "fieldId": 6,
+          "name": "maxEventBufferBytes",
+          "type": "uint32",
+          "required": true,
+          "min": 1,
+          "description": "Bounded buffered event bytes."
+        },
+        {
+          "fieldId": 7,
+          "name": "maxRequestBytes",
+          "type": "uint32",
+          "required": true,
+          "min": 1,
+          "description": "Maximum admitted request bytes."
+        },
+        {
+          "fieldId": 8,
+          "name": "maxSnapshotBytes",
+          "type": "uint32",
+          "required": true,
+          "min": 1,
+          "description": "Maximum atomic snapshot bytes including bounded collections."
+        }
+      ]
+    },
+    {
+      "name": "CastReceiverState",
+      "kind": "object",
+      "description": "Real receiver availability; historical lastError does not override current state. No secrets.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "receiverId",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Nonempty opaque receiver identity."
+        },
+        {
+          "fieldId": 2,
+          "name": "protocol",
+          "type": "enum",
+          "required": true,
+          "enumValues": [
+            "hid",
+            "airplay",
+            "webcast",
+            "unknown"
+          ],
+          "description": "Actual receiver protocol; unknown is not a supported-path alias."
+        },
+        {
+          "fieldId": 3,
+          "name": "state",
+          "type": "enum",
+          "required": true,
+          "enumValues": [
+            "disabled",
+            "starting",
+            "ready",
+            "degraded",
+            "stopping",
+            "failed"
+          ],
+          "description": "Current receiver availability independent of session media."
+        },
+        {
+          "fieldId": 4,
+          "name": "observedAt",
+          "type": "string",
+          "required": true,
+          "maxLength": 64,
+          "description": "UTC RFC3339 observation time for display only."
+        },
+        {
+          "fieldId": 5,
+          "name": "displayName",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "Safe user-visible name; not identity or secret material."
+        },
+        {
+          "fieldId": 6,
+          "name": "lastError",
+          "type": "CastLastError",
+          "required": false,
+          "description": "Historical redacted error summary; never passwords/tokens/SDP/ICE/private keys."
+        }
+      ]
+    },
+    {
+      "name": "CastMultiSessionState",
+      "kind": "object",
+      "description": "Current shared runtime session with independent connection, eligibility and media facts.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "session",
+          "type": "CastSessionRef",
+          "required": true,
+          "description": "Shared runtime session reference."
+        },
+        {
+          "fieldId": 2,
+          "name": "receiverId",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Nonempty reference to a receiver in the same projection."
+        },
+        {
+          "fieldId": 3,
+          "name": "protocol",
+          "type": "enum",
+          "required": true,
+          "enumValues": [
+            "hid",
+            "airplay",
+            "webcast",
+            "unknown"
+          ],
+          "description": "Actual session protocol; legacy enums remain unchanged."
+        },
+        {
+          "fieldId": 4,
+          "name": "receiverState",
+          "type": "enum",
+          "required": true,
+          "enumValues": [
+            "opening",
+            "open",
+            "mediaStarting",
+            "mediaActive",
+            "stopping",
+            "closed",
+            "failed"
+          ],
+          "description": "Protocol receiver session state; no frames does not imply disconnection."
+        },
+        {
+          "fieldId": 5,
+          "name": "presentationEligibility",
+          "type": "enum",
+          "required": true,
+          "enumValues": [
+            "notEligible",
+            "priming",
+            "mediaReady",
+            "presented",
+            "withdrawing",
+            "notPresented"
+          ],
+          "description": "Presentation eligibility distinct from authentication and connection."
+        },
+        {
+          "fieldId": 6,
+          "name": "videoTrackOpen",
+          "type": "bool",
+          "required": true,
+          "description": "Whether the video track is open; not proof of rendered frames."
+        },
+        {
+          "fieldId": 7,
+          "name": "audioTrackOpen",
+          "type": "bool",
+          "required": true,
+          "description": "Whether the audio track is open; not proof of audible output."
+        },
+        {
+          "fieldId": 8,
+          "name": "audioReadiness",
+          "type": "enum",
+          "required": false,
+          "enumValues": [
+            "unknown",
+            "absent",
+            "priming",
+            "ready",
+            "recovering"
+          ],
+          "description": "Audio readiness when observed."
+        },
+        {
+          "fieldId": 9,
+          "name": "displayName",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "Safe user-visible name; not a target identity."
+        }
+      ]
+    },
+    {
+      "name": "CastPresentationSlotState",
+      "kind": "object",
+      "description": "Current slot binding; target is required iff occupied and must match this slot and current lifecycle.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "slotId",
+          "type": "uint32",
+          "required": true,
+          "description": "Unique slot identifier within the presentation."
+        },
+        {
+          "fieldId": 2,
+          "name": "bindingGeneration",
+          "type": "string",
+          "required": true,
+          "maxLength": 20,
+          "description": "Canonical decimal uint64 slot-binding generation."
+        },
+        {
+          "fieldId": 3,
+          "name": "occupied",
+          "type": "bool",
+          "required": true,
+          "description": "Whether the slot currently has an exact target."
+        },
+        {
+          "fieldId": 4,
+          "name": "target",
+          "type": "CastControlTarget",
+          "required": false,
+          "description": "Required iff occupied; omitted otherwise; null is invalid."
+        }
+      ]
+    },
+    {
+      "name": "CastPresentationState",
+      "kind": "object",
+      "description": "Atomically captured presentation lifecycle, capacity and slots; zero effective/applied capacity does not imply no media.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "started",
+          "type": "bool",
+          "required": true,
+          "description": "Whether the presentation lifecycle is started."
+        },
+        {
+          "fieldId": 2,
+          "name": "lifecycleGeneration",
+          "type": "string",
+          "required": true,
+          "maxLength": 20,
+          "description": "Canonical decimal uint64 lifecycle generation."
+        },
+        {
+          "fieldId": 3,
+          "name": "configuredCapacity",
+          "type": "uint32",
+          "required": true,
+          "min": 1,
+          "description": "Positive configured capacity."
+        },
+        {
+          "fieldId": 4,
+          "name": "validationAvailable",
+          "type": "bool",
+          "required": true,
+          "description": "Whether validatedCapacity is currently known."
+        },
+        {
+          "fieldId": 5,
+          "name": "validatedCapacity",
+          "type": "uint32",
+          "required": false,
+          "min": 1,
+          "description": "Required iff validationAvailable; omitted when unknown."
+        },
+        {
+          "fieldId": 6,
+          "name": "effectiveCapacity",
+          "type": "uint32",
+          "required": true,
+          "description": "Current host capacity-policy result; may be zero."
+        },
+        {
+          "fieldId": 7,
+          "name": "appliedCapacity",
+          "type": "uint32",
+          "required": true,
+          "description": "Capacity currently applied to presentation; may be zero."
+        },
+        {
+          "fieldId": 8,
+          "name": "layoutMode",
+          "type": "string",
+          "required": true,
+          "maxLength": 64,
+          "description": "One of the layout identifiers advertised by this instance."
+        },
+        {
+          "fieldId": 9,
+          "name": "layoutSettling",
+          "type": "bool",
+          "required": true,
+          "description": "Whether the host reports layout settling."
+        },
+        {
+          "fieldId": 10,
+          "name": "slots",
+          "type": "array",
+          "required": true,
+          "array": {
+            "itemType": "CastPresentationSlotState"
+          },
+          "description": "Full bounded current slot set with no removed-session ghost binding."
+        }
+      ]
+    },
+    {
+      "name": "CastAudioPolicyState",
+      "kind": "object",
+      "description": "Selected intent and effective audio participation captured with the same session/slot projection.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "controlMode",
+          "type": "enum",
+          "required": true,
+          "enumValues": [
+            "automatic",
+            "manual"
+          ],
+          "description": "Current control policy; writes do not implicitly reset it."
+        },
+        {
+          "fieldId": 2,
+          "name": "mixMode",
+          "type": "enum",
+          "required": true,
+          "enumValues": [
+            "exclusive",
+            "mix"
+          ],
+          "description": "Current mixing policy."
+        },
+        {
+          "fieldId": 3,
+          "name": "enabledSessions",
+          "type": "array",
+          "required": true,
+          "array": {
+            "itemType": "CastSessionRef"
+          },
+          "description": "Unique current session references with enabled intent."
+        },
+        {
+          "fieldId": 4,
+          "name": "effectiveAudioSessions",
+          "type": "array",
+          "required": true,
+          "array": {
+            "itemType": "CastSessionRef"
+          },
+          "description": "Unique current effective participants; neither set proves human-audible sound."
+        }
+      ]
+    },
+    {
+      "name": "CastStopPresentationParams",
+      "kind": "object",
+      "description": "One exact withdrawal intent; same runtime/client/command key deduplicates canonical parsed values.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "controlVersion",
+          "type": "uint32",
+          "required": true,
+          "description": "Explicit selected control version; P0 uses 1."
+        },
+        {
+          "fieldId": 2,
+          "name": "runtimeInstanceId",
+          "type": "string",
+          "required": true,
+          "maxLength": 36,
+          "description": "Canonical lower-case UUID of the targeted runtime epoch."
+        },
+        {
+          "fieldId": 3,
+          "name": "clientInstanceId",
+          "type": "string",
+          "required": true,
+          "maxLength": 36,
+          "description": "Canonical lower-case client UUID; not authorization."
+        },
+        {
+          "fieldId": 4,
+          "name": "commandId",
+          "type": "string",
+          "required": true,
+          "maxLength": 36,
+          "description": "Canonical lower-case UUID identifying one user intent."
+        },
+        {
+          "fieldId": 5,
+          "name": "target",
+          "type": "CastControlTarget",
+          "required": true,
+          "description": "Original exact target checked atomically at mutation after admission."
+        },
+        {
+          "fieldId": 6,
+          "name": "reason",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "Optional non-secret withdrawal reason."
+        }
+      ]
+    },
+    {
+      "name": "CastSetSessionAudioEnabledParams",
+      "kind": "object",
+      "description": "One explicit audio enable intent for an exact presentation; no toggle semantics.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "controlVersion",
+          "type": "uint32",
+          "required": true,
+          "description": "Explicit selected control version; P0 uses 1."
+        },
+        {
+          "fieldId": 2,
+          "name": "runtimeInstanceId",
+          "type": "string",
+          "required": true,
+          "maxLength": 36,
+          "description": "Canonical lower-case UUID of the targeted runtime epoch."
+        },
+        {
+          "fieldId": 3,
+          "name": "clientInstanceId",
+          "type": "string",
+          "required": true,
+          "maxLength": 36,
+          "description": "Canonical lower-case client UUID; not authorization."
+        },
+        {
+          "fieldId": 4,
+          "name": "commandId",
+          "type": "string",
+          "required": true,
+          "maxLength": 36,
+          "description": "Canonical lower-case UUID identifying one user intent."
+        },
+        {
+          "fieldId": 5,
+          "name": "target",
+          "type": "CastControlTarget",
+          "required": true,
+          "description": "Original exact target checked atomically at mutation."
+        },
+        {
+          "fieldId": 6,
+          "name": "enabled",
+          "type": "bool",
+          "required": true,
+          "description": "Explicit desired intent; applied does not imply effective playback."
+        }
+      ]
+    },
+    {
+      "name": "CastGetControlOperationParams",
+      "kind": "object",
+      "description": "Original deduplication key query; missing history is unknown outcome.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "controlVersion",
+          "type": "uint32",
+          "required": true,
+          "description": "Explicit selected control version; P0 uses 1."
+        },
+        {
+          "fieldId": 2,
+          "name": "runtimeInstanceId",
+          "type": "string",
+          "required": true,
+          "maxLength": 36,
+          "description": "Canonical lower-case UUID of the original runtime epoch."
+        },
+        {
+          "fieldId": 3,
+          "name": "clientInstanceId",
+          "type": "string",
+          "required": true,
+          "maxLength": 36,
+          "description": "Original canonical lower-case client UUID."
+        },
+        {
+          "fieldId": 4,
+          "name": "commandId",
+          "type": "string",
+          "required": true,
+          "maxLength": 36,
+          "description": "Original canonical lower-case command UUID."
+        }
+      ]
+    },
+    {
+      "name": "CastControlOperation",
+      "kind": "object",
+      "description": "Admitted queued or immutable terminal operation; terminal requires completedAt/statusCode/outcomeReason, P0 commit requires appliedRevision and P1 requires settingsResult.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "operationId",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Nonempty opaque operation record ID; not media session identity."
+        },
+        {
+          "fieldId": 2,
+          "name": "runtimeInstanceId",
+          "type": "string",
+          "required": true,
+          "maxLength": 36,
+          "description": "Canonical lower-case runtime epoch UUID."
+        },
+        {
+          "fieldId": 3,
+          "name": "clientInstanceId",
+          "type": "string",
+          "required": true,
+          "maxLength": 36,
+          "description": "Canonical lower-case UUID of the submitting client."
+        },
+        {
+          "fieldId": 4,
+          "name": "commandId",
+          "type": "string",
+          "required": true,
+          "maxLength": 36,
+          "description": "Canonical lower-case original intent UUID."
+        },
+        {
+          "fieldId": 5,
+          "name": "kind",
+          "type": "enum",
+          "required": true,
+          "enumValues": [
+            "stopPresentation",
+            "setSessionAudioEnabled",
+            "setPresentationSettings"
+          ],
+          "description": "Intent kind; settings is a global P1 operation with settingsResult and no presentation target."
+        },
+        {
+          "fieldId": 6,
+          "name": "state",
+          "type": "enum",
+          "required": true,
+          "enumValues": [
+            "queued",
+            "applied",
+            "rejected",
+            "failed"
+          ],
+          "description": "Admission or truthful terminal result; queued is not media success."
+        },
+        {
+          "fieldId": 7,
+          "name": "submittedAt",
+          "type": "string",
+          "required": true,
+          "maxLength": 64,
+          "description": "UTC RFC3339 submission display time; expiry uses host monotonic time."
+        },
+        {
+          "fieldId": 8,
+          "name": "target",
+          "type": "CastControlTarget",
+          "required": false,
+          "description": "Required for both P0 per-session kinds and retains the original exact target; omitted for P1 settings."
+        },
+        {
+          "fieldId": 9,
+          "name": "completedAt",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "UTC RFC3339 time required for applied/rejected/failed."
+        },
+        {
+          "fieldId": 10,
+          "name": "appliedRevision",
+          "type": "string",
+          "required": false,
+          "maxLength": 20,
+          "description": "Canonical decimal uint64 string required iff a P0 logical control commit occurred; settings-only metadata uses settingsResult.settingsRevision instead."
+        },
+        {
+          "fieldId": 11,
+          "name": "statusCode",
+          "type": "uint32",
+          "required": false,
+          "description": "Required terminal standard AXTP status code; applied uses SUCCESS and failures use non-success."
+        },
+        {
+          "fieldId": 12,
+          "name": "outcomeReason",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "Required terminal bounded business reason; not a new numeric error space and never secret data."
+        },
+        {
+          "fieldId": 13,
+          "name": "ownerCleanup",
+          "type": "enum",
+          "required": false,
+          "enumValues": [
+            "notApplicable",
+            "pending",
+            "complete",
+            "failed"
+          ],
+          "description": "Cleanup observation at terminalization for the target owner only; not entire receiver exit."
+        },
+        {
+          "fieldId": 14,
+          "name": "settingsResult",
+          "type": "CastPresentationSettingsOperationResult",
+          "required": false,
+          "description": "Required for kind=setPresentationSettings including queued/rejected/failed; reports configuration/application/persistence separately."
+        }
+      ]
+    },
+    {
+      "name": "CastSetPresentationSettingsParams",
+      "kind": "object",
+      "description": "Global one-field settings intent; same-key dedup precedes owner-side optimistic version comparison and persist never saves another temporary field.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "controlVersion",
+          "type": "uint32",
+          "required": true,
+          "description": "Selected control version; P1 uses 1 with separate capability."
+        },
+        {
+          "fieldId": 2,
+          "name": "runtimeInstanceId",
+          "type": "string",
+          "required": true,
+          "maxLength": 36,
+          "description": "Canonical lower-case runtime UUID; no automatic replay into a new epoch."
+        },
+        {
+          "fieldId": 3,
+          "name": "clientInstanceId",
+          "type": "string",
+          "required": true,
+          "maxLength": 36,
+          "description": "Canonical lower-case client UUID; not authorization."
+        },
+        {
+          "fieldId": 4,
+          "name": "commandId",
+          "type": "string",
+          "required": true,
+          "maxLength": 36,
+          "description": "Canonical lower-case UUID for this explicit settings intent."
+        },
+        {
+          "fieldId": 5,
+          "name": "expectedSettingsRevision",
+          "type": "string",
+          "required": true,
+          "maxLength": 20,
+          "description": "Canonical decimal uint64 optimistic version; rechecked after dedup and queueing."
+        },
+        {
+          "fieldId": 6,
+          "name": "patch",
+          "type": "CastPresentationSettingsPatch",
+          "required": true,
+          "description": "Exactly one known supported setting key; empty/multiple/unknown keys are INVALID_ARGUMENT."
+        },
+        {
+          "fieldId": 7,
+          "name": "persist",
+          "type": "bool",
+          "required": true,
+          "description": "Explicit save choice; true saves only the patch field before configuration commit and live apply."
+        }
+      ]
+    },
+    {
+      "name": "CastPresentationSettingsPatch",
+      "kind": "object",
+      "description": "All fields optional structurally but exactly one key required semantically; unknown patch keys rejected and conditional choices come from capability.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "layoutMode",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "Nonempty declared layout identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "audioControlMode",
+          "type": "enum",
+          "required": false,
+          "enumValues": [
+            "automatic",
+            "manual"
+          ],
+          "description": "Declared audio control mode; same confirmed value does not reset selection."
+        },
+        {
+          "fieldId": 3,
+          "name": "audioMixMode",
+          "type": "enum",
+          "required": false,
+          "enumValues": [
+            "exclusive",
+            "mix"
+          ],
+          "description": "Declared audio mix mode; no implicit inverse-mode rollback."
+        },
+        {
+          "fieldId": 4,
+          "name": "capacity",
+          "type": "uint32",
+          "required": false,
+          "min": 1,
+          "description": "One declared capacity choice; no global product maximum or default."
+        },
+        {
+          "fieldId": 5,
+          "name": "enabledProtocols",
+          "type": "array",
+          "required": false,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Duplicate-free set from declared hid/airplay/webcast protocols; empty only when minEnabledProtocols is explicitly zero."
+        },
+        {
+          "fieldId": 6,
+          "name": "profileHint",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "Nonempty declared opaque product profile identifier; not a wire profile."
+        }
+      ]
+    },
+    {
+      "name": "CastPresentationSettingsValues",
+      "kind": "object",
+      "description": "Supported setting values only; configured/known persisted projections are complete, while unconfirmed applied fields are absent with issues.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "layoutMode",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "Declared layout policy identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "audioControlMode",
+          "type": "enum",
+          "required": false,
+          "enumValues": [
+            "automatic",
+            "manual"
+          ],
+          "description": "Adopted or desired control policy; not proof of sound."
+        },
+        {
+          "fieldId": 3,
+          "name": "audioMixMode",
+          "type": "enum",
+          "required": false,
+          "enumValues": [
+            "exclusive",
+            "mix"
+          ],
+          "description": "Adopted or desired audio mixing policy."
+        },
+        {
+          "fieldId": 4,
+          "name": "capacity",
+          "type": "uint32",
+          "required": false,
+          "min": 1,
+          "description": "Desired capacity or actually adopted capacity according to containing projection; applied may be limited."
+        },
+        {
+          "fieldId": 5,
+          "name": "enabledProtocols",
+          "type": "array",
+          "required": false,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Adopted or desired enable policy; not receiver readiness."
+        },
+        {
+          "fieldId": 6,
+          "name": "profileHint",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "Declared product combination profile identifier."
+        }
+      ]
+    },
+    {
+      "name": "CastPresentationStartupSettings",
+      "kind": "object",
+      "description": "Exactly the capability-declared restart-only intent accepted at this host startup; distinct from effective/applied limits and stored values.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "layoutMode",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "Present only if this implementation declares layoutMode restart-only."
+        },
+        {
+          "fieldId": 2,
+          "name": "audioControlMode",
+          "type": "enum",
+          "required": false,
+          "enumValues": [
+            "automatic",
+            "manual"
+          ],
+          "description": "Present only if audioControlMode is restart-only."
+        },
+        {
+          "fieldId": 3,
+          "name": "audioMixMode",
+          "type": "enum",
+          "required": false,
+          "enumValues": [
+            "exclusive",
+            "mix"
+          ],
+          "description": "Present only if audioMixMode is restart-only."
+        },
+        {
+          "fieldId": 4,
+          "name": "capacity",
+          "type": "uint32",
+          "required": false,
+          "min": 1,
+          "description": "Startup accepted capacity intent before runtime validation limitations."
+        },
+        {
+          "fieldId": 5,
+          "name": "enabledProtocols",
+          "type": "array",
+          "required": false,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Startup accepted receiver enable policy; does not claim Ready."
+        },
+        {
+          "fieldId": 6,
+          "name": "profileHint",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "Startup accepted product profile when declared restart-only."
+        }
+      ]
+    },
+    {
+      "name": "CastPresentationSettingsState",
+      "kind": "object",
+      "description": "Full bounded settings state; desired/adopted/startup/stored facts and two independent event barriers must never be conflated.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "settingsRevision",
+          "type": "string",
+          "required": true,
+          "maxLength": 20,
+          "description": "Canonical decimal uint64 settings fact version within the runtime epoch."
+        },
+        {
+          "fieldId": 2,
+          "name": "settingsEventSequence",
+          "type": "string",
+          "required": true,
+          "maxLength": 20,
+          "description": "Canonical decimal uint64 settings publication barrier; independent of P0 eventSequence."
+        },
+        {
+          "fieldId": 3,
+          "name": "configured",
+          "type": "CastPresentationSettingsValues",
+          "required": true,
+          "description": "Complete supported desired settings including temporary changes."
+        },
+        {
+          "fieldId": 4,
+          "name": "applied",
+          "type": "CastPresentationSettingsValues",
+          "required": true,
+          "description": "Confirmed actually adopted values; unconfirmed fields omitted with issues."
+        },
+        {
+          "fieldId": 5,
+          "name": "activeStartup",
+          "type": "CastPresentationStartupSettings",
+          "required": true,
+          "description": "Restart-only intent accepted at current startup; used to compute pendingRestart."
+        },
+        {
+          "fieldId": 6,
+          "name": "pendingRestart",
+          "type": "array",
+          "required": true,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Unique restart-only fields where configured differs from activeStartup; applied capacity limits do not create permanent pending."
+        },
+        {
+          "fieldId": 7,
+          "name": "persisted",
+          "type": "bool",
+          "required": true,
+          "description": "True iff desired settings equal known stored/startup projection; false if unknown and not a disk-write receipt."
+        },
+        {
+          "fieldId": 8,
+          "name": "unsavedFields",
+          "type": "array",
+          "required": true,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Configured fields differing from known stored values; all supported fields when storage projection unknown."
+        },
+        {
+          "fieldId": 9,
+          "name": "unappliedFields",
+          "type": "array",
+          "required": true,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Live fields differing from confirmed adopted policy; layout animation alone does not qualify."
+        },
+        {
+          "fieldId": 10,
+          "name": "storageState",
+          "type": "enum",
+          "required": true,
+          "enumValues": [
+            "absent",
+            "loaded",
+            "saved",
+            "invalid",
+            "unavailable"
+          ],
+          "description": "Truthful store observation; invalid/unknown files are preserved rather than silently overwritten."
+        },
+        {
+          "fieldId": 11,
+          "name": "lockedFields",
+          "type": "array",
+          "required": true,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Unique supported field names currently locked by explicit deployment/authorization policy."
+        },
+        {
+          "fieldId": 12,
+          "name": "applicationIssues",
+          "type": "array",
+          "required": true,
+          "array": {
+            "itemType": "CastPresentationSettingIssue"
+          },
+          "description": "Safe field-specific limitation/failure/lock observations."
+        },
+        {
+          "fieldId": 13,
+          "name": "persistedValues",
+          "type": "CastPresentationSettingsValues",
+          "required": false,
+          "description": "Complete known persistent startup projection; omitted if invalid/unavailable/unknown."
+        },
+        {
+          "fieldId": 14,
+          "name": "storeRevision",
+          "type": "string",
+          "required": false,
+          "maxLength": 20,
+          "description": "Canonical decimal uint64 known valid store version; absent without valid file."
+        },
+        {
+          "fieldId": 15,
+          "name": "appliedControlRevision",
+          "type": "string",
+          "required": false,
+          "maxLength": 20,
+          "description": "Associated P0 adopted-policy revision lower bound for cross-stream synchronization."
+        },
+        {
+          "fieldId": 16,
+          "name": "persistError",
+          "type": "string",
+          "required": false,
+          "maxLength": 512,
+          "description": "Sanitized bounded storage diagnostic; no raw request/secret/private path."
+        }
+      ]
+    },
+    {
+      "name": "CastPresentationSettingIssue",
+      "kind": "object",
+      "description": "One safe supported-field observation; historical failure and current policy remain distinct.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "field",
+          "type": "string",
+          "required": true,
+          "maxLength": 64,
+          "description": "One supported setting field name."
+        },
+        {
+          "fieldId": 2,
+          "name": "kind",
+          "type": "enum",
+          "required": true,
+          "enumValues": [
+            "limitedByValidation",
+            "limitedByHardLimit",
+            "liveApplyFailed",
+            "startupFailed",
+            "locked",
+            "unknown"
+          ],
+          "description": "Structured limitation/failure classification."
+        },
+        {
+          "fieldId": 3,
+          "name": "reason",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "Bounded sanitized reason; no secret/path leakage."
+        },
+        {
+          "fieldId": 4,
+          "name": "statusCode",
+          "type": "uint32",
+          "required": false,
+          "description": "Optional standard AXTP numeric status."
+        }
+      ]
+    },
+    {
+      "name": "CastPresentationSettingsCapability",
+      "kind": "object",
+      "description": "Optional P1 field and effect partition; conditional choices/modes/minimum are required for corresponding supported keys, never inferred defaults.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "fields",
+          "type": "array",
+          "required": true,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Unique supported subset of the six settings keys."
+        },
+        {
+          "fieldId": 2,
+          "name": "liveFields",
+          "type": "array",
+          "required": true,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Live effect subset; disjoint from restartOnlyFields and together exactly fields."
+        },
+        {
+          "fieldId": 3,
+          "name": "restartOnlyFields",
+          "type": "array",
+          "required": true,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Restart-only subset; updates never automatically restart current media."
+        },
+        {
+          "fieldId": 4,
+          "name": "supportsPersistence",
+          "type": "bool",
+          "required": true,
+          "description": "Whether explicit field-only save requests are supported."
+        },
+        {
+          "fieldId": 5,
+          "name": "capacityChoices",
+          "type": "array",
+          "required": false,
+          "array": {
+            "itemType": "uint32"
+          },
+          "description": "Nonempty unique positive choices required when capacity supported."
+        },
+        {
+          "fieldId": 6,
+          "name": "layoutModes",
+          "type": "array",
+          "required": false,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Nonempty unique bounded mode identifiers required when layoutMode supported."
+        },
+        {
+          "fieldId": 7,
+          "name": "profileHints",
+          "type": "array",
+          "required": false,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Nonempty unique bounded product profile identifiers required when profileHint supported."
+        },
+        {
+          "fieldId": 8,
+          "name": "minEnabledProtocols",
+          "type": "uint32",
+          "required": false,
+          "description": "Required when enabledProtocols supported; zero explicitly permits empty if control/settings can remain available independently."
+        }
+      ]
+    },
+    {
+      "name": "CastPresentationSettingsOperationResult",
+      "kind": "object",
+      "description": "Truthful independent configuration/application/persistence results; failed may still include stored/configured commits.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "field",
+          "type": "string",
+          "required": true,
+          "maxLength": 64,
+          "description": "Unique requested setting field."
+        },
+        {
+          "fieldId": 2,
+          "name": "settingsRevision",
+          "type": "string",
+          "required": true,
+          "maxLength": 20,
+          "description": "Canonical decimal uint64 most recently confirmed settings revision; terminal uses completion/check version."
+        },
+        {
+          "fieldId": 3,
+          "name": "configurationStatus",
+          "type": "enum",
+          "required": true,
+          "enumValues": [
+            "notCommitted",
+            "unchanged",
+            "committed"
+          ],
+          "description": "Whether this intent changed desired configuration."
+        },
+        {
+          "fieldId": 4,
+          "name": "applicationStatus",
+          "type": "enum",
+          "required": true,
+          "enumValues": [
+            "notAttempted",
+            "unchanged",
+            "applied",
+            "pendingRestart",
+            "failed"
+          ],
+          "description": "Confirmed policy adoption or deferred restart intent; not media audibility/restart proof."
+        },
+        {
+          "fieldId": 5,
+          "name": "persistenceStatus",
+          "type": "enum",
+          "required": true,
+          "enumValues": [
+            "notRequested",
+            "pending",
+            "unchanged",
+            "stored",
+            "failed"
+          ],
+          "description": "Explicit field-only storage outcome distinct from equality with known persistedValues."
+        },
+        {
+          "fieldId": 6,
+          "name": "appliedControlRevision",
+          "type": "string",
+          "required": false,
+          "maxLength": 20,
+          "description": "Optional canonical decimal uint64 associated P0 policy revision."
+        }
+      ]
+    },
+    {
+      "name": "CastSettingsEventContext",
+      "kind": "object",
+      "description": "Independent settings event cursor; payload revision/sequence must match and this event never consumes P0 sequence.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "controlVersion",
+          "type": "uint32",
+          "required": true,
+          "description": "Selected control version; P1 uses 1."
+        },
+        {
+          "fieldId": 2,
+          "name": "runtimeInstanceId",
+          "type": "string",
+          "required": true,
+          "maxLength": 36,
+          "description": "Canonical lower-case runtime epoch UUID."
+        },
+        {
+          "fieldId": 3,
+          "name": "settingsRevision",
+          "type": "string",
+          "required": true,
+          "maxLength": 20,
+          "description": "Canonical decimal uint64 settings state version."
+        },
+        {
+          "fieldId": 4,
+          "name": "settingsEventSequence",
+          "type": "string",
+          "required": true,
+          "maxLength": 20,
+          "description": "Canonical decimal uint64 settings publication sequence; snapshot barrier may be zero."
+        }
+      ]
+    },
+    {
+      "name": "CastPresentationSettingsChangedEvent",
+      "kind": "object",
+      "description": "Complete settings state replacement in its own bounded ordered event stream; no P0 context or batch fields.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "settingsContext",
+          "type": "CastSettingsEventContext",
+          "required": true,
+          "description": "Independent required settings cursor matching payload versions."
+        },
+        {
+          "fieldId": 2,
+          "name": "settings",
+          "type": "CastPresentationSettingsState",
+          "required": true,
+          "description": "Full post-commit settings state"
+        }
+      ]
+    },
+    {
+      "name": "CastReceiversChangedEvent",
+      "kind": "object",
+      "description": "Full receiver-section replacement in one control group part.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "context",
+          "type": "CastControlEventContext",
+          "required": true,
+          "description": "Required v1 commit context."
+        },
+        {
+          "fieldId": 2,
+          "name": "receivers",
+          "type": "array",
+          "required": true,
+          "array": {
+            "itemType": "CastReceiverState"
+          },
+          "description": "Complete current bounded receiver collection."
+        }
+      ]
+    },
+    {
+      "name": "CastSessionsChangedEvent",
+      "kind": "object",
+      "description": "Full session-section replacement in one control group part.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "context",
+          "type": "CastControlEventContext",
+          "required": true,
+          "description": "Required v1 commit context."
+        },
+        {
+          "fieldId": 2,
+          "name": "sessions",
+          "type": "array",
+          "required": true,
+          "array": {
+            "itemType": "CastMultiSessionState"
+          },
+          "description": "Complete current bounded session collection."
+        }
+      ]
+    },
+    {
+      "name": "CastPresentationChangedEvent",
+      "kind": "object",
+      "description": "Full presentation-section replacement; never a receiver/session/audio aggregate.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "context",
+          "type": "CastControlEventContext",
+          "required": true,
+          "description": "Required v1 commit context."
+        },
+        {
+          "fieldId": 2,
+          "name": "presentation",
+          "type": "CastPresentationState",
+          "required": true,
+          "description": "Complete current presentation state."
+        }
+      ]
+    },
+    {
+      "name": "CastAudioPolicyChangedEvent",
+      "kind": "object",
+      "description": "Full audio-policy-section replacement in one control group part.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "context",
+          "type": "CastControlEventContext",
+          "required": true,
+          "description": "Required v1 commit context."
+        },
+        {
+          "fieldId": 2,
+          "name": "audioPolicy",
+          "type": "CastAudioPolicyState",
+          "required": true,
+          "description": "Complete selected/effective audio policy state."
+        }
+      ]
+    },
+    {
+      "name": "CastControlOperationChangedEvent",
+      "kind": "object",
+      "description": "One P0 per-session operation record with ordered control publication context; setPresentationSettings is excluded from this event stream.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "context",
+          "type": "CastControlEventContext",
+          "required": true,
+          "description": "Required v1 commit context; may be an operation-only group."
+        },
+        {
+          "fieldId": 2,
+          "name": "operation",
+          "type": "CastControlOperation",
+          "required": true,
+          "description": "One admitted queued or terminal operation record."
         }
       ]
     },
@@ -8573,7 +10475,7 @@
           "array": {
             "itemType": "string"
           },
-          "description": "Supported playlist item type strings; candidate values include image, website, video, clock, and unsplash."
+          "description": "Supported playlist item types as a subset of the SignagePlaylistItem.type enum values (image, website, video, clock, unsplash, powerbi)."
         },
         {
           "fieldId": 2,
@@ -8668,21 +10570,65 @@
     {
       "name": "SignageGetPlaylistItemUrlResult",
       "kind": "object",
-      "description": "Refreshed playlist item URL result. The internal structure of settings depends on type.",
+      "description": "Refreshed playlist item URL result; the type field value selects the settings variant schema.",
       "fields": [
         {
           "fieldId": 1,
           "name": "type",
           "type": "enum",
           "required": true,
-          "description": "Playlist item type used to discriminate the settings structure; candidate values include image, video, website, and unsplash. Clock is excluded from URL refresh."
+          "enumValues": [
+            "image",
+            "video",
+            "website",
+            "unsplash"
+          ],
+          "description": "Playlist item type used to discriminate the settings structure; clock and powerbi are excluded from URL refresh and return NOT_SUPPORTED (powerbi refresh uses signage.getPlaylistItem)."
         },
         {
           "fieldId": 2,
           "name": "settings",
-          "type": "SignagePlaylistItemSettings",
+          "type": "object",
           "required": true,
-          "description": "Refreshed complete settings; the device may replace the locally cached settings with this value."
+          "variants": {
+            "discriminator": "type",
+            "mapping": {
+              "image": "SignageImageItemSettings",
+              "video": "SignageVideoItemSettings",
+              "website": "SignageWebsiteItemSettings",
+              "unsplash": "SignageUnsplashItemSettings"
+            }
+          },
+          "description": "Refreshed complete settings; the device may replace the locally cached settings with this value. The type field value selects the variant schema."
+        }
+      ]
+    },
+    {
+      "name": "SignageGetPlaylistItemParams",
+      "kind": "object",
+      "description": "Request to refresh a complete playlist item by itemId.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "itemId",
+          "type": "string",
+          "required": true,
+          "maxLength": 64,
+          "description": "Playlist item unique identifier (UUID); same identifier space as signage.getPlaylistItemUrl."
+        }
+      ]
+    },
+    {
+      "name": "SignageGetPlaylistItemResult",
+      "kind": "object",
+      "description": "Refreshed complete playlist item; structurally identical to the SignagePlaylistItem elements carried in setPlaylistConfig / getPlaylistConfig payloads.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "item",
+          "type": "SignagePlaylistItem",
+          "required": true,
+          "description": "Complete playlist item (id, type, duration, sort, settings). The device replaces the locally cached item with this value."
         }
       ]
     },
@@ -8696,7 +10642,11 @@
           "name": "reason",
           "type": "enum",
           "required": true,
-          "description": "Change reason; candidate values include set_config (triggered by setPlaylistConfig) and reset_config (triggered by resetPlaylistConfig)."
+          "enumValues": [
+            "set_config",
+            "reset_config"
+          ],
+          "description": "Change reason; set_config (configuration replaced via signage.setPlaylistConfig) and reset_config (configuration restored to factory default via signage.resetPlaylistConfig)."
         },
         {
           "fieldId": 2,
@@ -8730,7 +10680,11 @@
           "name": "type",
           "type": "enum",
           "required": true,
-          "description": "Playlist type; candidate values include default (always-on default playlist) and scheduled (time-windowed playlist)."
+          "enumValues": [
+            "default",
+            "scheduled"
+          ],
+          "description": "Playlist type; default (always-on default playlist) and scheduled (time-windowed playlist; startDate, endDate, startTime, endTime, and days are required, see each field for ordering constraints)."
         },
         {
           "fieldId": 3,
@@ -8806,7 +10760,15 @@
           "name": "type",
           "type": "enum",
           "required": true,
-          "description": "Playlist item type; candidate values include image, website, video, clock, and unsplash."
+          "enumValues": [
+            "image",
+            "website",
+            "video",
+            "clock",
+            "unsplash",
+            "powerbi"
+          ],
+          "description": "Playlist item type; image (rotating image set), website (embedded web page), video (video media URL), clock (clock face list), unsplash (Unsplash photo set), and powerbi (embedded PowerBI dashboard). The value selects the settings variant schema."
         },
         {
           "fieldId": 3,
@@ -8829,98 +10791,215 @@
         {
           "fieldId": 5,
           "name": "settings",
-          "type": "SignagePlaylistItemSettings",
+          "type": "object",
           "required": true,
-          "description": "Playlist item settings; structure varies by type."
+          "variants": {
+            "discriminator": "type",
+            "mapping": {
+              "image": "SignageImageItemSettings",
+              "website": "SignageWebsiteItemSettings",
+              "video": "SignageVideoItemSettings",
+              "clock": "SignageClockItemSettings",
+              "unsplash": "SignageUnsplashItemSettings",
+              "powerbi": "SignagePowerBiItemSettings"
+            }
+          },
+          "description": "Per-type playlist item settings; the type field value selects the variant schema applied to this field."
         }
       ]
     },
     {
-      "name": "SignagePlaylistItemSettings",
+      "name": "SignageImageItemSettings",
       "kind": "object",
-      "description": "Aggregated playlist item settings spanning all item types. Only the subset matching the enclosing item type is meaningful; see the per-type rules in the signage.playlist draft.",
+      "description": "Settings for the image playlist item type; selected via PlaylistItem.settings variants when type is image.",
       "fields": [
         {
           "fieldId": 1,
           "name": "urls",
           "type": "array",
-          "required": false,
+          "required": true,
           "array": {
             "itemType": "string"
           },
-          "description": "image type: non-empty image URLs."
+          "description": "Non-empty image URL list."
         },
         {
           "fieldId": 2,
           "name": "delaySeconds",
           "type": "uint32",
-          "required": false,
+          "required": true,
           "min": 1,
           "default": 5,
-          "description": "image and unsplash types: per-image display interval in seconds."
+          "description": "Per-image display interval in seconds."
         },
         {
           "fieldId": 3,
           "name": "expiresAt",
           "type": "uint64",
           "required": false,
-          "description": "image, video, and unsplash types: Unix timestamp URL expiry. 0 or absent means never expires."
-        },
+          "description": "Unix timestamp URL expiry. 0 or absent means never expires."
+        }
+      ]
+    },
+    {
+      "name": "SignageVideoItemSettings",
+      "kind": "object",
+      "description": "Settings for the video playlist item type; selected via PlaylistItem.settings variants when type is video.",
+      "fields": [
         {
-          "fieldId": 4,
+          "fieldId": 1,
           "name": "url",
           "type": "string",
-          "required": false,
+          "required": true,
           "maxLength": 2048,
-          "description": "video and website types: media or page URL."
+          "description": "Video media URL."
         },
         {
-          "fieldId": 5,
+          "fieldId": 2,
+          "name": "expiresAt",
+          "type": "uint64",
+          "required": false,
+          "description": "Unix timestamp URL expiry. 0 or absent means never expires."
+        },
+        {
+          "fieldId": 3,
           "name": "muted",
           "type": "bool",
           "required": false,
           "default": false,
-          "description": "video type: whether to play muted."
+          "description": "Whether to play muted."
+        }
+      ]
+    },
+    {
+      "name": "SignageWebsiteItemSettings",
+      "kind": "object",
+      "description": "Settings for the website playlist item type; selected via PlaylistItem.settings variants when type is website.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "url",
+          "type": "string",
+          "required": true,
+          "maxLength": 2048,
+          "description": "Web page URL."
         },
         {
-          "fieldId": 6,
+          "fieldId": 2,
           "name": "ignoreCertificateError",
           "type": "bool",
           "required": false,
           "default": false,
-          "description": "website type: whether to ignore TLS certificate errors. Enabling bypasses certificate validation and carries MITM risk; the default policy and caller permission requirements are product-defined."
+          "description": "Whether to ignore TLS certificate errors. Enabling bypasses certificate validation and carries MITM risk; the default policy and caller permission requirements are product-defined."
         },
         {
-          "fieldId": 7,
+          "fieldId": 3,
           "name": "refreshIntervalSecs",
           "type": "uint32",
           "required": false,
           "min": 1,
-          "description": "website type: page refresh interval in seconds. 0 or absent means no refresh."
-        },
+          "description": "Page refresh interval in seconds. 0 or absent means no refresh."
+        }
+      ]
+    },
+    {
+      "name": "SignageClockItemSettings",
+      "kind": "object",
+      "description": "Settings for the clock playlist item type; selected via PlaylistItem.settings variants when type is clock.",
+      "fields": [
         {
-          "fieldId": 8,
+          "fieldId": 1,
           "name": "clocks",
           "type": "array",
-          "required": false,
+          "required": true,
           "schema": "SignagePlaylistClockEntry",
           "array": {
             "itemType": "SignagePlaylistClockEntry",
             "itemSchema": "SignagePlaylistClockEntry"
           },
-          "description": "clock type: non-empty playlist clock entry objects."
-        },
+          "description": "Non-empty clock entries."
+        }
+      ]
+    },
+    {
+      "name": "SignageUnsplashItemSettings",
+      "kind": "object",
+      "description": "Settings for the unsplash playlist item type; selected via PlaylistItem.settings variants when type is unsplash.",
+      "fields": [
         {
-          "fieldId": 9,
+          "fieldId": 1,
           "name": "photos",
           "type": "array",
-          "required": false,
+          "required": true,
           "schema": "SignagePlaylistUnsplashPhoto",
           "array": {
             "itemType": "SignagePlaylistUnsplashPhoto",
             "itemSchema": "SignagePlaylistUnsplashPhoto"
           },
-          "description": "unsplash type: non-empty playlist unsplash photo objects."
+          "description": "Non-empty Unsplash photo entries with photographer attribution."
+        },
+        {
+          "fieldId": 2,
+          "name": "delaySeconds",
+          "type": "uint32",
+          "required": true,
+          "min": 1,
+          "default": 5,
+          "description": "Per-photo display interval in seconds."
+        },
+        {
+          "fieldId": 3,
+          "name": "expiresAt",
+          "type": "uint64",
+          "required": false,
+          "description": "Unix timestamp URL expiry. 0 or absent means never expires."
+        }
+      ]
+    },
+    {
+      "name": "SignagePowerBiItemSettings",
+      "kind": "object",
+      "description": "Settings for the powerbi playlist item type; selected via PlaylistItem.settings variants when type is powerbi. All fields are required.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "groupId",
+          "type": "string",
+          "required": true,
+          "maxLength": 64,
+          "description": "PowerBI workspace (group) identifier (GUID)."
+        },
+        {
+          "fieldId": 2,
+          "name": "dashboardId",
+          "type": "string",
+          "required": true,
+          "maxLength": 64,
+          "description": "PowerBI dashboard identifier (GUID)."
+        },
+        {
+          "fieldId": 3,
+          "name": "embedUrl",
+          "type": "string",
+          "required": true,
+          "maxLength": 2048,
+          "description": "Dashboard embed URL; stable across token refreshes. The device SHOULD cache and reuse it."
+        },
+        {
+          "fieldId": 4,
+          "name": "token",
+          "type": "string",
+          "required": true,
+          "maxLength": 8192,
+          "description": "AAD access token for the PowerBI audience (https://analysis.windows.net/powerbi/api; tokenType=Aad embedding; typically ~60 minutes). Tenants with many group/role claims issue JWTs of 5-8 KB, hence the generous bound. Sensitive credential transported only via the RPC channel; never embedded in resource URLs and not to be logged."
+        },
+        {
+          "fieldId": 5,
+          "name": "expiresAt",
+          "type": "uint64",
+          "required": true,
+          "min": 1,
+          "description": "Unix timestamp token expiry; MUST be greater than 0 (0 is invalid for powerbi, unlike the 0-equals-never-expires convention of URL-based item types). Always present for powerbi items; drives the device-side signage.getPlaylistItem refresh."
         }
       ]
     },
@@ -8962,15 +11041,29 @@
         },
         {
           "fieldId": 2,
-          "name": "userName",
+          "name": "user",
+          "type": "SignagePlaylistUnsplashUser",
+          "required": true,
+          "description": "Photographer attribution."
+        }
+      ]
+    },
+    {
+      "name": "SignagePlaylistUnsplashUser",
+      "kind": "object",
+      "description": "Photographer attribution for an Unsplash photo.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "name",
           "type": "string",
           "required": true,
           "maxLength": 128,
           "description": "Photographer name."
         },
         {
-          "fieldId": 3,
-          "name": "userLink",
+          "fieldId": 2,
+          "name": "link",
           "type": "string",
           "required": true,
           "maxLength": 2048,
@@ -8991,7 +11084,7 @@
           "array": {
             "itemType": "string"
           },
-          "description": "Supported playlist item type strings; candidate values include image, website, video, clock, and unsplash."
+          "description": "Supported playlist item types as a subset of the SignagePlaylistItem.type enum values (image, website, video, clock, unsplash, powerbi)."
         },
         {
           "fieldId": 2,
@@ -9463,6 +11556,739 @@
           "type": "bool",
           "required": false,
           "description": "Whether restoring defaults via resetUpdatePolicy is supported."
+        }
+      ]
+    },
+    {
+      "name": "SportConfigTargetParams",
+      "kind": "object",
+      "description": "Target selector shared by sport configuration queries in multi-device App sessions.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "macAddress",
+          "type": "string",
+          "required": true,
+          "maxLength": 17,
+          "description": "Target device MAC address in uppercase colon-separated form, for example AA:BB:CC:DD:EE:FF."
+        },
+        {
+          "fieldId": 2,
+          "name": "sportType",
+          "type": "string",
+          "required": true,
+          "maxLength": 32,
+          "description": "Capability-supported sport type whose configuration is requested."
+        }
+      ]
+    },
+    {
+      "name": "SportGoalShotWatermarkConfig",
+      "kind": "object",
+      "description": "Complete Goal and Shot watermark visibility configuration for one device and sport type.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "macAddress",
+          "type": "string",
+          "required": true,
+          "maxLength": 17,
+          "description": "Target device MAC address in canonical uppercase colon-separated form."
+        },
+        {
+          "fieldId": 2,
+          "name": "sportType",
+          "type": "string",
+          "required": true,
+          "maxLength": 32,
+          "description": "Sport type represented by this configuration."
+        },
+        {
+          "fieldId": 3,
+          "name": "goalVisible",
+          "type": "bool",
+          "required": true,
+          "description": "Whether Goal watermarks are displayed for detected Goal events."
+        },
+        {
+          "fieldId": 4,
+          "name": "shotVisible",
+          "type": "bool",
+          "required": true,
+          "description": "Whether Shot watermarks are displayed for detected Shot events."
+        }
+      ]
+    },
+    {
+      "name": "SportSetGoalShotWatermarkConfigParams",
+      "kind": "object",
+      "description": "Full atomic update of Goal and Shot watermark visibility for one device and sport type.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "macAddress",
+          "type": "string",
+          "required": true,
+          "maxLength": 17,
+          "description": "Target device MAC address in uppercase colon-separated form, for example AA:BB:CC:DD:EE:FF."
+        },
+        {
+          "fieldId": 2,
+          "name": "sportType",
+          "type": "string",
+          "required": true,
+          "maxLength": 32,
+          "description": "Capability-supported sport type to configure."
+        },
+        {
+          "fieldId": 3,
+          "name": "goalVisible",
+          "type": "bool",
+          "required": true,
+          "description": "Desired Goal watermark visibility."
+        },
+        {
+          "fieldId": 4,
+          "name": "shotVisible",
+          "type": "bool",
+          "required": true,
+          "description": "Desired Shot watermark visibility."
+        }
+      ]
+    },
+    {
+      "name": "SportEventClipConfig",
+      "kind": "object",
+      "description": "Complete video clip window configuration centered on Goal and Shot events for one device and sport type.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "macAddress",
+          "type": "string",
+          "required": true,
+          "maxLength": 17,
+          "description": "Target device MAC address in canonical uppercase colon-separated form."
+        },
+        {
+          "fieldId": 2,
+          "name": "sportType",
+          "type": "string",
+          "required": true,
+          "maxLength": 32,
+          "description": "Sport type represented by this configuration."
+        },
+        {
+          "fieldId": 3,
+          "name": "beforeOffsetSeconds",
+          "type": "uint32",
+          "required": true,
+          "description": "Number of whole seconds included before the detected event timestamp."
+        },
+        {
+          "fieldId": 4,
+          "name": "afterOffsetSeconds",
+          "type": "uint32",
+          "required": true,
+          "description": "Number of whole seconds included after the detected event timestamp."
+        }
+      ]
+    },
+    {
+      "name": "SportSetEventClipConfigParams",
+      "kind": "object",
+      "description": "Full atomic update of the video clip window centered on Goal and Shot events for one device and sport type.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "macAddress",
+          "type": "string",
+          "required": true,
+          "maxLength": 17,
+          "description": "Target device MAC address in uppercase colon-separated form, for example AA:BB:CC:DD:EE:FF."
+        },
+        {
+          "fieldId": 2,
+          "name": "sportType",
+          "type": "string",
+          "required": true,
+          "maxLength": 32,
+          "description": "Capability-supported sport type to configure."
+        },
+        {
+          "fieldId": 3,
+          "name": "beforeOffsetSeconds",
+          "type": "uint32",
+          "required": true,
+          "description": "Number of whole seconds to include before the detected event timestamp."
+        },
+        {
+          "fieldId": 4,
+          "name": "afterOffsetSeconds",
+          "type": "uint32",
+          "required": true,
+          "description": "Number of whole seconds to include after the detected event timestamp."
+        }
+      ]
+    },
+    {
+      "name": "GetEventDetectionCapabilitiesParams",
+      "kind": "object",
+      "description": "Optional selector for event detection capability discovery.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "sportTypes",
+          "type": "array",
+          "required": false,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Optional sport type filter; omitted means return all supported sport types."
+        },
+        {
+          "fieldId": 2,
+          "name": "includeRuntimeState",
+          "type": "bool",
+          "required": false,
+          "default": false,
+          "description": "Whether to include a runtime state summary in the capability snapshot; detailed state is returned by the config query."
+        }
+      ]
+    },
+    {
+      "name": "GetEventDetectionCapabilitiesResult",
+      "kind": "object",
+      "description": "Result wrapper for cross-sport event detection capability discovery.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "capability",
+          "type": "SportEventDetectionCapabilities",
+          "required": true,
+          "description": "Cross-sport event detection capability descriptor."
+        }
+      ]
+    },
+    {
+      "name": "SportEventDetectionSportDescriptor",
+      "kind": "object",
+      "description": "Capability descriptor for one supported sport type, its registered event types, and optional sport-specific configuration methods.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "sportType",
+          "type": "string",
+          "required": true,
+          "maxLength": 32,
+          "description": "Stable sport type discriminator, such as basketball, football, baseball, or tennis."
+        },
+        {
+          "fieldId": 2,
+          "name": "supportedEvents",
+          "type": "array",
+          "required": true,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Event type discriminators supported for this sport type."
+        },
+        {
+          "fieldId": 3,
+          "name": "supportsToggle",
+          "type": "bool",
+          "required": true,
+          "description": "Whether sport.setEventDetectionConfig can control this sport type."
+        },
+        {
+          "fieldId": 4,
+          "name": "detailsSchemas",
+          "type": "array",
+          "required": false,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Registered sport-specific detail schema names for the supported event types."
+        },
+        {
+          "fieldId": 5,
+          "name": "supportedConfigMethods",
+          "type": "array",
+          "required": false,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Optional registered sport configuration methods supported for this sport type, such as Goal/Shot watermark or event clip configuration."
+        }
+      ]
+    },
+    {
+      "name": "SportEventDetectionCapabilities",
+      "kind": "object",
+      "description": "Cross-sport event detection capability descriptor.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "capability",
+          "type": "string",
+          "required": true,
+          "maxLength": 64,
+          "description": "Fixed capability name sport.eventDetection."
+        },
+        {
+          "fieldId": 2,
+          "name": "supportedSports",
+          "type": "array",
+          "required": true,
+          "array": {
+            "itemType": "SportEventDetectionSportDescriptor",
+            "itemSchema": "SportEventDetectionSportDescriptor"
+          },
+          "description": "Supported sport types, events, toggle support, and detail schema names."
+        },
+        {
+          "fieldId": 3,
+          "name": "concurrentSportTypes",
+          "type": "bool",
+          "required": true,
+          "description": "Whether more than one sport type may be enabled at the same time; the MVP default is false."
+        },
+        {
+          "fieldId": 4,
+          "name": "supportsStateEvent",
+          "type": "bool",
+          "required": true,
+          "description": "Whether the device emits sport.eventDetectionStateChanged."
+        },
+        {
+          "fieldId": 5,
+          "name": "supportsUnifiedEvent",
+          "type": "bool",
+          "required": true,
+          "description": "Whether the device emits sport.eventDetected."
+        },
+        {
+          "fieldId": 6,
+          "name": "persistencePolicy",
+          "type": "enum",
+          "required": true,
+          "enumValues": [
+            "volatile",
+            "persistent",
+            "profileControlled"
+          ],
+          "description": "Persistence policy for sport detection toggles; this adoption selects persistent for VM33PRO and factory reset returns disabled."
+        }
+      ]
+    },
+    {
+      "name": "GetEventDetectionConfigParams",
+      "kind": "object",
+      "description": "Selector for one sport type event detection state.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "sportType",
+          "type": "string",
+          "required": true,
+          "maxLength": 32,
+          "description": "Supported sport type whose effective state is requested."
+        }
+      ]
+    },
+    {
+      "name": "SportEventDetectionState",
+      "kind": "object",
+      "description": "Effective event detection configuration and runtime state for one sport type.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "sportType",
+          "type": "string",
+          "required": true,
+          "maxLength": 32,
+          "description": "Sport type represented by this state snapshot."
+        },
+        {
+          "fieldId": 2,
+          "name": "effectiveEnabled",
+          "type": "bool",
+          "required": true,
+          "description": "Whether event detection is effectively enabled for this sport type."
+        },
+        {
+          "fieldId": 3,
+          "name": "runtimeState",
+          "type": "enum",
+          "required": true,
+          "enumValues": [
+            "disabled",
+            "enabling",
+            "ready",
+            "degraded",
+            "unavailable",
+            "disabling"
+          ],
+          "description": "Current detector runtime state."
+        },
+        {
+          "fieldId": 4,
+          "name": "applyState",
+          "type": "enum",
+          "required": false,
+          "enumValues": [
+            "applied",
+            "pending"
+          ],
+          "description": "Whether the latest toggle request is fully applied."
+        },
+        {
+          "fieldId": 5,
+          "name": "reason",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "State transition, degraded, or unavailable reason summary."
+        },
+        {
+          "fieldId": 6,
+          "name": "stateRevision",
+          "type": "uint32",
+          "required": false,
+          "description": "Monotonic state revision for client calibration and optional compare-and-set."
+        },
+        {
+          "fieldId": 7,
+          "name": "updatedAt",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "Device timestamp of this state snapshot."
+        }
+      ]
+    },
+    {
+      "name": "SetEventDetectionConfigParams",
+      "kind": "object",
+      "description": "Request to enable or disable event detection for one sport type.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "sportType",
+          "type": "string",
+          "required": true,
+          "maxLength": 32,
+          "description": "Supported sport type to control."
+        },
+        {
+          "fieldId": 2,
+          "name": "enabled",
+          "type": "bool",
+          "required": true,
+          "description": "Desired effective detection toggle."
+        },
+        {
+          "fieldId": 3,
+          "name": "expectedStateRevision",
+          "type": "uint32",
+          "required": false,
+          "description": "Optional compare-and-set state revision."
+        }
+      ]
+    },
+    {
+      "name": "SetEventDetectionConfigResult",
+      "kind": "object",
+      "description": "Accepted or effective state returned from a sport detection toggle request.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "accepted",
+          "type": "bool",
+          "required": true,
+          "description": "Whether the device accepted the toggle request."
+        },
+        {
+          "fieldId": 2,
+          "name": "state",
+          "type": "SportEventDetectionState",
+          "required": true,
+          "description": "Effective or pending state after processing the request."
+        }
+      ]
+    },
+    {
+      "name": "SportEventDetectionStateChangedEvent",
+      "kind": "object",
+      "description": "State change event for one sport type.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "state",
+          "type": "SportEventDetectionState",
+          "required": true,
+          "description": "Complete state after the change."
+        },
+        {
+          "fieldId": 2,
+          "name": "source",
+          "type": "enum",
+          "required": true,
+          "enumValues": [
+            "remoteApp",
+            "localPolicy",
+            "restart",
+            "restore",
+            "unknown"
+          ],
+          "description": "Source of the state change."
+        },
+        {
+          "fieldId": 3,
+          "name": "reason",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "State change or unavailable reason summary."
+        }
+      ]
+    },
+    {
+      "name": "SportEventDetails",
+      "kind": "object",
+      "description": "Common discriminator-qualified detail carrier. Fields are interpreted according to sportType and eventType; new sports add optional fields or a dedicated event schema through a later amendment.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "shotId",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "Basketball shot identifier when eventType is shot or goal."
+        },
+        {
+          "fieldId": 2,
+          "name": "goalId",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "Basketball goal identifier when eventType is goal."
+        },
+        {
+          "fieldId": 3,
+          "name": "releaseType",
+          "type": "enum",
+          "required": false,
+          "enumValues": [
+            "unknown",
+            "setShot",
+            "jumpShot",
+            "layup",
+            "other"
+          ],
+          "description": "Basketball shot release type when eventType is shot."
+        },
+        {
+          "fieldId": 4,
+          "name": "goalType",
+          "type": "enum",
+          "required": false,
+          "enumValues": [
+            "fieldGoal",
+            "freeThrow",
+            "unknown"
+          ],
+          "description": "Basketball goal type when eventType is goal."
+        }
+      ]
+    },
+    {
+      "name": "SportEventDetectedEvent",
+      "kind": "object",
+      "description": "Common low-frequency sport event envelope with discriminator-qualified details.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "eventId",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Device event identifier used for deduplication."
+        },
+        {
+          "fieldId": 2,
+          "name": "sequence",
+          "type": "uint64",
+          "required": true,
+          "description": "Monotonic candidate event sequence used for ordering."
+        },
+        {
+          "fieldId": 3,
+          "name": "sportType",
+          "type": "string",
+          "required": true,
+          "maxLength": 32,
+          "description": "Sport type discriminator."
+        },
+        {
+          "fieldId": 4,
+          "name": "eventType",
+          "type": "string",
+          "required": true,
+          "maxLength": 64,
+          "description": "Registered event type discriminator within the sport type."
+        },
+        {
+          "fieldId": 5,
+          "name": "occurredAt",
+          "type": "string",
+          "required": true,
+          "maxLength": 64,
+          "description": "Device timestamp of the detected event."
+        },
+        {
+          "fieldId": 6,
+          "name": "confidence",
+          "type": "number",
+          "required": false,
+          "min": 0,
+          "max": 1,
+          "description": "Optional detector confidence in the range 0.0 to 1.0."
+        },
+        {
+          "fieldId": 7,
+          "name": "trainingSessionId",
+          "type": "string",
+          "required": false,
+          "maxLength": 128,
+          "description": "Optional training session association."
+        },
+        {
+          "fieldId": 8,
+          "name": "details",
+          "type": "SportEventDetails",
+          "required": true,
+          "description": "Discriminator-qualified event details; the MVP basketball projection uses shotId, goalId, releaseType, and goalType."
+        }
+      ]
+    },
+    {
+      "name": "SportBasketballCapability",
+      "kind": "object",
+      "description": "Basketball specialization capability descriptor.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "capability",
+          "type": "string",
+          "required": true,
+          "maxLength": 64,
+          "description": "Fixed capability name sport.basketball."
+        },
+        {
+          "fieldId": 2,
+          "name": "sportType",
+          "type": "string",
+          "required": true,
+          "maxLength": 32,
+          "description": "Fixed discriminator basketball."
+        },
+        {
+          "fieldId": 3,
+          "name": "supportedEvents",
+          "type": "array",
+          "required": true,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Basketball event types supported by the device."
+        },
+        {
+          "fieldId": 4,
+          "name": "detailsSchemas",
+          "type": "array",
+          "required": true,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Basketball detail schema names advertised to the App."
+        },
+        {
+          "fieldId": 5,
+          "name": "requiresEventDetectionToggle",
+          "type": "bool",
+          "required": true,
+          "description": "Whether basketball events require the common event detection toggle."
+        },
+        {
+          "fieldId": 6,
+          "name": "goalRequiresShotReference",
+          "type": "bool",
+          "required": true,
+          "description": "MVP policy: every goal must reference one shotId."
+        }
+      ]
+    },
+    {
+      "name": "SportBasketballShotDetails",
+      "kind": "object",
+      "description": "Basketball shot detail projection for sport.eventDetected with eventType shot.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "shotId",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Business identifier for the valid basketball shot attempt."
+        },
+        {
+          "fieldId": 2,
+          "name": "releaseType",
+          "type": "enum",
+          "required": false,
+          "enumValues": [
+            "unknown",
+            "setShot",
+            "jumpShot",
+            "layup",
+            "other"
+          ],
+          "description": "Optional shot release type."
+        }
+      ]
+    },
+    {
+      "name": "SportBasketballGoalDetails",
+      "kind": "object",
+      "description": "Basketball goal detail projection for sport.eventDetected with eventType goal.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "goalId",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Business identifier for the basketball goal result."
+        },
+        {
+          "fieldId": 2,
+          "name": "shotId",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Required reference to the shot that produced this goal."
+        },
+        {
+          "fieldId": 3,
+          "name": "goalType",
+          "type": "enum",
+          "required": false,
+          "enumValues": [
+            "fieldGoal",
+            "freeThrow",
+            "unknown"
+          ],
+          "description": "Optional goal type."
         }
       ]
     },
@@ -11960,7 +14786,8 @@
       "errors": [
         "SUCCESS",
         "INVALID_ARGUMENT",
-        "UNAVAILABLE"
+        "UNAVAILABLE",
+        "NOT_SUPPORTED"
       ]
     },
     {
@@ -12000,6 +14827,177 @@
         "MEDIA_STREAM_START_FAILED",
         "MEDIA_STREAM_STOP_FAILED",
         "UNAVAILABLE"
+      ]
+    },
+    {
+      "name": "cast.getControlCapabilities",
+      "description": "Discover supported control versions, runtime epoch and bounded multi-presentation guarantees before selecting a version.",
+      "methodId": 5653,
+      "bitOffset": 20,
+      "domain": "cast",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "Empty"
+      },
+      "response": {
+        "type": "CastControlCapabilities"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "cast.presentation"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "UNAVAILABLE"
+      ]
+    },
+    {
+      "name": "cast.stopPresentation",
+      "description": "Withdraw one exact presentation after atomic owner-side fence validation; success returns an admitted operation, not receiver shutdown.",
+      "methodId": 5654,
+      "bitOffset": 21,
+      "domain": "cast",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "CastStopPresentationParams"
+      },
+      "response": {
+        "type": "CastControlOperation"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "cast.presentation",
+        "cast.controlOperations"
+      ],
+      "events": [
+        "cast.sessionsChanged",
+        "cast.presentationChanged",
+        "cast.audioPolicyChanged",
+        "cast.controlOperationChanged"
+      ],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "INVALID_ARGUMENT",
+        "INVALID_STATE",
+        "BUSY",
+        "UNAVAILABLE",
+        "INTERNAL_ERROR"
+      ]
+    },
+    {
+      "name": "cast.setSessionAudioEnabled",
+      "description": "Set explicit enabled intent for one exact presented session; effective audio participation is reported separately.",
+      "methodId": 5655,
+      "bitOffset": 22,
+      "domain": "cast",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "CastSetSessionAudioEnabledParams"
+      },
+      "response": {
+        "type": "CastControlOperation"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "cast.audioPolicy",
+        "cast.controlOperations"
+      ],
+      "events": [
+        "cast.audioPolicyChanged",
+        "cast.controlOperationChanged"
+      ],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "INVALID_ARGUMENT",
+        "INVALID_STATE",
+        "BUSY",
+        "UNAVAILABLE",
+        "INTERNAL_ERROR"
+      ]
+    },
+    {
+      "name": "cast.getControlOperation",
+      "description": "Query the original intent by runtime, client and command identity; NOT_FOUND means unknown outcome rather than not executed.",
+      "methodId": 5656,
+      "bitOffset": 23,
+      "domain": "cast",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "CastGetControlOperationParams"
+      },
+      "response": {
+        "type": "CastControlOperation"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "cast.controlOperations"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "INVALID_ARGUMENT",
+        "INVALID_STATE",
+        "NOT_FOUND",
+        "UNAVAILABLE"
+      ]
+    },
+    {
+      "name": "cast.setPresentationSettings",
+      "description": "Set exactly one supported host setting with optimistic revision, bounded dedup and explicit field-only persistence; returns per-stage asynchronous results without automatic restart.",
+      "methodId": 5657,
+      "bitOffset": 24,
+      "domain": "cast",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "CastSetPresentationSettingsParams"
+      },
+      "response": {
+        "type": "CastControlOperation"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "cast.presentationSettings",
+        "cast.controlOperations"
+      ],
+      "events": [
+        "cast.presentationSettingsChanged",
+        "cast.presentationChanged",
+        "cast.audioPolicyChanged"
+      ],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "INVALID_ARGUMENT",
+        "INVALID_STATE",
+        "OUT_OF_RANGE",
+        "BUSY",
+        "UNAVAILABLE",
+        "INTERNAL_ERROR"
       ]
     },
     {
@@ -12939,7 +15937,7 @@
     },
     {
       "name": "signage.getPlaylistItemUrl",
-      "description": "Fetch the latest resource URL for a playlist item by itemId (URL refresh). The device calls this proactively when an item URL is about to expire. Clock items have no URL resource and return NOT_SUPPORTED.",
+      "description": "Fetch the latest resource URL for a playlist item by itemId (URL refresh). The device calls this proactively when an item URL is about to expire. Clock items have no URL resource and powerbi items carry a non-URL embed-token resource; both return NOT_SUPPORTED (powerbi refresh MUST use signage.getPlaylistItem).",
       "methodId": 3333,
       "bitOffset": 4,
       "domain": "signage",
@@ -12950,6 +15948,35 @@
       },
       "response": {
         "type": "SignageGetPlaylistItemUrlResult"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "signage.playlist"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "NOT_FOUND",
+        "INTERNAL_ERROR"
+      ]
+    },
+    {
+      "name": "signage.getPlaylistItem",
+      "description": "Fetch the complete playlist item by itemId (item refresh). The device calls this proactively when settings.expiresAt is near expiry and replaces the local playlist item with the returned one. Non-URL resource types (powerbi) MUST use this method; URL resource types MAY use this or signage.getPlaylistItemUrl.",
+      "methodId": 3334,
+      "bitOffset": 5,
+      "domain": "signage",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "SignageGetPlaylistItemParams"
+      },
+      "response": {
+        "type": "SignageGetPlaylistItemResult"
       },
       "encodings": [
         "json",
@@ -13145,6 +16172,229 @@
         "NOT_SUPPORTED",
         "PERMISSION_DENIED",
         "INVALID_STATE"
+      ]
+    },
+    {
+      "name": "sport.getEventDetectionCapabilities",
+      "description": "Return supported sport types, event types, sport-specific detail schemas, and runtime constraints for event detection.",
+      "methodId": 6145,
+      "bitOffset": 0,
+      "domain": "sport",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "GetEventDetectionCapabilitiesParams"
+      },
+      "response": {
+        "type": "GetEventDetectionCapabilitiesResult"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "sport.eventDetection"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "INVALID_ARGUMENT",
+        "NOT_SUPPORTED",
+        "PERMISSION_DENIED",
+        "UNAVAILABLE"
+      ]
+    },
+    {
+      "name": "sport.getEventDetectionConfig",
+      "description": "Return the effective event detection configuration and runtime state for one sport type.",
+      "methodId": 6146,
+      "bitOffset": 1,
+      "domain": "sport",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "GetEventDetectionConfigParams"
+      },
+      "response": {
+        "type": "SportEventDetectionState"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "sport.eventDetection"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "INVALID_ARGUMENT",
+        "NOT_SUPPORTED",
+        "PERMISSION_DENIED",
+        "UNAVAILABLE"
+      ]
+    },
+    {
+      "name": "sport.setEventDetectionConfig",
+      "description": "Enable or disable event detection for one sport type and return the accepted or effective state.",
+      "methodId": 6147,
+      "bitOffset": 2,
+      "domain": "sport",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "SetEventDetectionConfigParams"
+      },
+      "response": {
+        "type": "SetEventDetectionConfigResult"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "sport.eventDetection"
+      ],
+      "events": [
+        "sport.eventDetectionStateChanged"
+      ],
+      "errors": [
+        "SUCCESS",
+        "INVALID_ARGUMENT",
+        "NOT_SUPPORTED",
+        "INVALID_STATE",
+        "BUSY",
+        "PERMISSION_DENIED",
+        "UNAVAILABLE"
+      ]
+    },
+    {
+      "name": "sport.getGoalShotWatermarkConfig",
+      "description": "Return Goal and Shot watermark visibility for one device and sport type.",
+      "methodId": 6148,
+      "bitOffset": 3,
+      "domain": "sport",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "SportConfigTargetParams"
+      },
+      "response": {
+        "type": "SportGoalShotWatermarkConfig"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "sport.eventDetection"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "INVALID_ARGUMENT",
+        "NOT_SUPPORTED",
+        "NOT_FOUND",
+        "PERMISSION_DENIED",
+        "UNAVAILABLE"
+      ]
+    },
+    {
+      "name": "sport.setGoalShotWatermarkConfig",
+      "description": "Atomically set Goal and Shot watermark visibility for one device and sport type; success is represented only by the standard RPC status.",
+      "methodId": 6149,
+      "bitOffset": 4,
+      "domain": "sport",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "SportSetGoalShotWatermarkConfigParams"
+      },
+      "response": {
+        "type": "Empty"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "sport.eventDetection"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "INVALID_ARGUMENT",
+        "NOT_SUPPORTED",
+        "NOT_FOUND",
+        "INVALID_STATE",
+        "BUSY",
+        "PERMISSION_DENIED",
+        "UNAVAILABLE"
+      ]
+    },
+    {
+      "name": "sport.getEventClipConfig",
+      "description": "Return the video clip window before and after a Goal or Shot event for one device and sport type.",
+      "methodId": 6150,
+      "bitOffset": 5,
+      "domain": "sport",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "SportConfigTargetParams"
+      },
+      "response": {
+        "type": "SportEventClipConfig"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "sport.eventDetection"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "INVALID_ARGUMENT",
+        "NOT_SUPPORTED",
+        "NOT_FOUND",
+        "PERMISSION_DENIED",
+        "UNAVAILABLE"
+      ]
+    },
+    {
+      "name": "sport.setEventClipConfig",
+      "description": "Atomically set the video clip window before and after a Goal or Shot event for one device and sport type; success is represented only by the standard RPC status.",
+      "methodId": 6151,
+      "bitOffset": 6,
+      "domain": "sport",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "SportSetEventClipConfigParams"
+      },
+      "response": {
+        "type": "Empty"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "sport.eventDetection"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "INVALID_ARGUMENT",
+        "OUT_OF_RANGE",
+        "NOT_SUPPORTED",
+        "NOT_FOUND",
+        "INVALID_STATE",
+        "BUSY",
+        "PERMISSION_DENIED",
+        "UNAVAILABLE"
       ]
     },
     {
@@ -13942,6 +17192,131 @@
       ]
     },
     {
+      "name": "cast.receiversChanged",
+      "description": "Replace the receiver section after a logical control commit; not a full status event.",
+      "eventId": 5645,
+      "bitOffset": 12,
+      "domain": "cast",
+      "since": "1.0.0",
+      "status": "draft",
+      "payload": {
+        "type": "CastReceiversChangedEvent"
+      },
+      "severity": "info",
+      "trigger": [
+        "receiver availability changed"
+      ],
+      "capabilities": [
+        "cast.presentation"
+      ]
+    },
+    {
+      "name": "cast.sessionsChanged",
+      "description": "Replace the current multi-session collection as one part of an atomic control commit group.",
+      "eventId": 5646,
+      "bitOffset": 13,
+      "domain": "cast",
+      "since": "1.0.0",
+      "status": "draft",
+      "payload": {
+        "type": "CastSessionsChangedEvent"
+      },
+      "severity": "info",
+      "trigger": [
+        "session joined",
+        "session removed",
+        "session media state changed"
+      ],
+      "capabilities": [
+        "cast.presentation"
+      ]
+    },
+    {
+      "name": "cast.presentationChanged",
+      "description": "Replace only presentation slots, layout and capacity after a logical control commit.",
+      "eventId": 5647,
+      "bitOffset": 14,
+      "domain": "cast",
+      "since": "1.0.0",
+      "status": "draft",
+      "payload": {
+        "type": "CastPresentationChangedEvent"
+      },
+      "severity": "info",
+      "trigger": [
+        "presentation binding changed",
+        "lifecycle changed",
+        "capacity changed",
+        "layout changed"
+      ],
+      "capabilities": [
+        "cast.presentation"
+      ]
+    },
+    {
+      "name": "cast.audioPolicyChanged",
+      "description": "Replace audio policy intent and effective participation sets after a control commit.",
+      "eventId": 5648,
+      "bitOffset": 15,
+      "domain": "cast",
+      "since": "1.0.0",
+      "status": "draft",
+      "payload": {
+        "type": "CastAudioPolicyChangedEvent"
+      },
+      "severity": "info",
+      "trigger": [
+        "enabled intent changed",
+        "effective audio participation changed",
+        "audio policy changed"
+      ],
+      "capabilities": [
+        "cast.audioPolicy"
+      ]
+    },
+    {
+      "name": "cast.controlOperationChanged",
+      "description": "Publish one admitted P0 per-session operation record; P1 settings progress uses RPC/query and its independent settings event, never this sequence.",
+      "eventId": 5649,
+      "bitOffset": 16,
+      "domain": "cast",
+      "since": "1.0.0",
+      "status": "draft",
+      "payload": {
+        "type": "CastControlOperationChangedEvent"
+      },
+      "severity": "info",
+      "trigger": [
+        "operation admitted",
+        "operation terminal"
+      ],
+      "capabilities": [
+        "cast.controlOperations"
+      ]
+    },
+    {
+      "name": "cast.presentationSettingsChanged",
+      "description": "Replace complete settings state using independent settingsContext/settingsEventSequence; never consumes the P0 eventSequence.",
+      "eventId": 5650,
+      "bitOffset": 17,
+      "domain": "cast",
+      "since": "1.0.0",
+      "status": "draft",
+      "payload": {
+        "type": "CastPresentationSettingsChangedEvent"
+      },
+      "severity": "info",
+      "trigger": [
+        "desired setting committed",
+        "adopted policy changed",
+        "storage observation changed",
+        "settings issue or lock changed"
+      ],
+      "capabilities": [
+        "cast.presentationSettings"
+      ]
+    },
+    {
       "name": "device.enrollmentStateChanged",
       "description": "Emitted after device.setEnrollmentState actually changes the enrollment state, or after a device-internal policy modifies it (e.g. pairing code expiry fallback, server-side revoke).",
       "eventId": 258,
@@ -14228,6 +17603,50 @@
       ],
       "capabilities": [
         "software.updatePolicy"
+      ]
+    },
+    {
+      "name": "sport.eventDetectionStateChanged",
+      "description": "Emitted when one sport type changes effective enabled state, runtime state, availability, or apply state.",
+      "eventId": 6145,
+      "bitOffset": 0,
+      "domain": "sport",
+      "since": "1.0.0",
+      "status": "draft",
+      "payload": {
+        "type": "SportEventDetectionStateChangedEvent"
+      },
+      "severity": "info",
+      "trigger": [
+        "sport.setEventDetectionConfig",
+        "device restart",
+        "restore default",
+        "local policy",
+        "detector availability change"
+      ],
+      "capabilities": [
+        "sport.eventDetection"
+      ]
+    },
+    {
+      "name": "sport.eventDetected",
+      "description": "Emitted when an enabled sport detector identifies a registered business event using a sport and event type discriminator.",
+      "eventId": 6146,
+      "bitOffset": 1,
+      "domain": "sport",
+      "since": "1.0.0",
+      "status": "draft",
+      "payload": {
+        "type": "SportEventDetectedEvent"
+      },
+      "severity": "info",
+      "trigger": [
+        "registered sport event detected",
+        "detector ready",
+        "detector degraded when policy permits"
+      ],
+      "capabilities": [
+        "sport.eventDetection"
       ]
     },
     {
@@ -16067,6 +19486,46 @@
       "schema": "CastStatusCapability"
     },
     {
+      "name": "cast.presentation",
+      "description": "Optional concurrent receiver/session projection, atomic snapshots and exact presentation targets.",
+      "capabilityId": 5640,
+      "domain": "cast",
+      "since": "1.0.0",
+      "status": "draft",
+      "type": "object",
+      "schema": "CastPresentationCapability"
+    },
+    {
+      "name": "cast.audioPolicy",
+      "description": "Optional explicit per-session audio intent and separate effective participation reporting.",
+      "capabilityId": 5641,
+      "domain": "cast",
+      "since": "1.0.0",
+      "status": "draft",
+      "type": "object",
+      "schema": "CastAudioPolicyCapability"
+    },
+    {
+      "name": "cast.controlOperations",
+      "description": "Optional asynchronous operation query and bounded same-intent deduplication/retention guarantees.",
+      "capabilityId": 5642,
+      "domain": "cast",
+      "since": "1.0.0",
+      "status": "draft",
+      "type": "object",
+      "schema": "CastControlOperationsCapability"
+    },
+    {
+      "name": "cast.presentationSettings",
+      "description": "Optional one-field host settings with declared live/restart behavior, independent synchronization and truthful field-only persistence/application results.",
+      "capabilityId": 5643,
+      "domain": "cast",
+      "since": "1.0.0",
+      "status": "draft",
+      "type": "object",
+      "schema": "CastPresentationSettingsCapability"
+    },
+    {
       "name": "device.info",
       "description": "Device supports read-only device information discovery.",
       "capabilityId": 257,
@@ -16138,7 +19597,7 @@
     },
     {
       "name": "signage.playlist",
-      "description": "Device supports digital signage playlist full sync, query, reset, playlist item URL refresh, and playlist config change notification.",
+      "description": "Device supports digital signage playlist full sync, query, reset, playlist item URL refresh, playlist item refresh, and playlist config change notification.",
       "capabilityId": 3329,
       "domain": "signage",
       "since": "1.0.0",
@@ -16165,6 +19624,26 @@
       "status": "draft",
       "type": "object",
       "schema": "SoftwareUpdatePolicyCapability"
+    },
+    {
+      "name": "sport.eventDetection",
+      "description": "Device supports cross-sport event detection capability discovery, per-sport toggle control, runtime state events, and unified sport event delivery.",
+      "capabilityId": 6145,
+      "domain": "sport",
+      "since": "1.0.0",
+      "status": "draft",
+      "type": "object",
+      "schema": "SportEventDetectionCapabilities"
+    },
+    {
+      "name": "sport.basketball",
+      "description": "Device supports basketball shot and goal event semantics through sport.eventDetection.",
+      "capabilityId": 6146,
+      "domain": "sport",
+      "since": "1.0.0",
+      "status": "draft",
+      "type": "object",
+      "schema": "SportBasketballCapability"
     },
     {
       "name": "stream.flowControl",

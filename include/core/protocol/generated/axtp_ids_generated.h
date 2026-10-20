@@ -95,6 +95,7 @@ enum class MethodId : std::uint16_t {
     SignageSetPlaylistConfig = 0x0D03,
     SignageResetPlaylistConfig = 0x0D04,
     SignageGetPlaylistItemUrl = 0x0D05,
+    SignageGetPlaylistItem = 0x0D06,
     NetworkGetIpConfig = 0x0E02,
     NetworkSetIpConfig = 0x0E03,
     NetworkGetWifiConfig = 0x0E04,
@@ -133,12 +134,24 @@ enum class MethodId : std::uint16_t {
     CastGetStatus = 0x1612,
     CastSetAudioDelay = 0x1613,
     CastSetVideoStreamParams = 0x1614,
+    CastGetControlCapabilities = 0x1615,
+    CastStopPresentation = 0x1616,
+    CastSetSessionAudioEnabled = 0x1617,
+    CastGetControlOperation = 0x1618,
+    CastSetPresentationSettings = 0x1619,
     SoftwareGetConfig = 0x1701,
     SoftwareSetConfig = 0x1702,
     SoftwareResetConfig = 0x1703,
     SoftwareGetUpdatePolicy = 0x1704,
     SoftwareSetUpdatePolicy = 0x1705,
     SoftwareResetUpdatePolicy = 0x1706,
+    SportGetEventDetectionCapabilities = 0x1801,
+    SportGetEventDetectionConfig = 0x1802,
+    SportSetEventDetectionConfig = 0x1803,
+    SportGetGoalShotWatermarkConfig = 0x1804,
+    SportSetGoalShotWatermarkConfig = 0x1805,
+    SportGetEventClipConfig = 0x1806,
+    SportSetEventClipConfig = 0x1807,
 };
 
 enum class EventId : std::uint16_t {
@@ -177,8 +190,16 @@ enum class EventId : std::uint16_t {
     CastWindowChanged = 0x160A,
     CastBackendChanged = 0x160B,
     CastFlowControlChanged = 0x160C,
+    CastReceiversChanged = 0x160D,
+    CastSessionsChanged = 0x160E,
+    CastPresentationChanged = 0x160F,
+    CastAudioPolicyChanged = 0x1610,
+    CastControlOperationChanged = 0x1611,
+    CastPresentationSettingsChanged = 0x1612,
     SoftwareConfigChanged = 0x1701,
     SoftwareUpdatePolicyChanged = 0x1702,
+    SportEventDetectionStateChanged = 0x1801,
+    SportEventDetected = 0x1802,
 };
 
 enum class ErrorCode : std::uint16_t {
@@ -364,8 +385,14 @@ enum class CapabilityId : std::uint16_t {
     CastBackend = 0x1605,
     CastFlowControl = 0x1606,
     CastStatus = 0x1607,
+    CastPresentation = 0x1608,
+    CastAudioPolicy = 0x1609,
+    CastControlOperations = 0x160A,
+    CastPresentationSettings = 0x160B,
     SoftwareConfig = 0x1701,
     SoftwareUpdatePolicy = 0x1702,
+    SportEventDetection = 0x1801,
+    SportBasketball = 0x1802,
 };
 
 } // namespace axtp
