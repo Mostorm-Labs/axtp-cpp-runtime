@@ -659,6 +659,14 @@ struct MethodTraits<MethodId::CastGetWebCastBackendState> {
 };
 
 template <>
+struct MethodTraits<MethodId::CastSetPresentationFocus> {
+    using Request = CastSetPresentationFocusParams;
+    using Response = CastControlOperation;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::CastSetPresentationFocus);
+    static constexpr const char* name = "cast.setPresentationFocus";
+};
+
+template <>
 struct MethodTraits<MethodId::SoftwareGetConfig> {
     using Request = SoftwareGetConfigParams;
     using Response = SoftwareConfig;

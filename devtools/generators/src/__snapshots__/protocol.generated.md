@@ -41,7 +41,7 @@
 | Domain | Methods | Events |
 | ---- | ---- | ---- |
 | audio | 9 | 4 |
-| cast | 26 | 19 |
+| cast | 27 | 19 |
 | device | 4 | 1 |
 | firmware | 4 | 2 |
 | network | 18 | 8 |
@@ -218,6 +218,7 @@ Generated capabilities are the feature-level switches that runtimes and devices 
 | 0x160A | cast.controlOperations | cast | draft | object | CastControlOperationsCapability | Optional asynchronous operation query and bounded same-intent deduplication/retention guarantees. |
 | 0x160B | cast.presentationSettings | cast | draft | object | CastPresentationSettingsCapability | Optional one-field host settings with declared live/restart behavior, independent synchronization and truthful field-only persistence/application results. |
 | 0x160C | cast.webcastBackend | cast | draft | object | CastWebCastBackendCapability | Optional secret-free WebCast cloud/local backend state query and independent full-state changes. |
+| 0x160D | cast.meetingPresentation | cast | draft | object | CastMeetingPresentationCapability | Optional fixed main-plus-preview view with exact focus control and independently remembered audio-follow preference. |
 | 0x1701 | software.config | software | draft | object | SoftwareConfigCapability | Device supports reading, setting, and resetting the runtime configuration of software objects (such as the Launcher) and emitting configuration change notifications. |
 | 0x1702 | software.updatePolicy | software | draft | object | SoftwareUpdatePolicyCapability | Device supports reading, setting, and resetting the automatic update policy of software objects (such as the Launcher) and emitting update policy change notifications. |
 | 0x1801 | sport.eventDetection | sport | draft | object | SportEventDetectionCapabilities | Device supports cross-sport event detection capability discovery, per-sport toggle control, runtime state events, and unified sport event delivery. |
@@ -230,7 +231,7 @@ The generated registry groups methods by domain. Each method keeps a stable `bit
 | Domain | Methods |
 | ---- | ---- |
 | audio | 1: audio.getAlgorithmConfig<br>2: audio.setAlgorithmConfig<br>0: audio.getAlgorithmCapabilities<br>3: audio.resetAlgorithmConfig<br>4: audio.getStreamCapabilities<br>5: audio.openStream<br>6: audio.closeStream<br>7: audio.getStreamState<br>8: audio.getStreamSourceState |
-| cast | 0: cast.getSession<br>1: cast.stopSession<br>2: cast.getAirPlayName<br>3: cast.setAirPlayName<br>4: cast.getAudio<br>5: cast.setAudio<br>6: cast.setMuted<br>7: cast.getPinCodeConfig<br>8: cast.setPinCodeConfig<br>9: cast.setPinCode<br>10: cast.getWindowState<br>11: cast.setWindowState<br>12: cast.getBackendStatus<br>13: cast.restartBackend<br>14: cast.getFlowControlState<br>15: cast.setRenderFps<br>16: cast.setFlowPolicy<br>17: cast.getStatus<br>18: cast.setAudioDelay<br>19: cast.setVideoStreamParams<br>20: cast.getControlCapabilities<br>21: cast.stopPresentation<br>22: cast.setSessionAudioEnabled<br>23: cast.getControlOperation<br>24: cast.setPresentationSettings<br>25: cast.getWebCastBackendState |
+| cast | 0: cast.getSession<br>1: cast.stopSession<br>2: cast.getAirPlayName<br>3: cast.setAirPlayName<br>4: cast.getAudio<br>5: cast.setAudio<br>6: cast.setMuted<br>7: cast.getPinCodeConfig<br>8: cast.setPinCodeConfig<br>9: cast.setPinCode<br>10: cast.getWindowState<br>11: cast.setWindowState<br>12: cast.getBackendStatus<br>13: cast.restartBackend<br>14: cast.getFlowControlState<br>15: cast.setRenderFps<br>16: cast.setFlowPolicy<br>17: cast.getStatus<br>18: cast.setAudioDelay<br>19: cast.setVideoStreamParams<br>20: cast.getControlCapabilities<br>21: cast.stopPresentation<br>22: cast.setSessionAudioEnabled<br>23: cast.getControlOperation<br>24: cast.setPresentationSettings<br>25: cast.getWebCastBackendState<br>26: cast.setPresentationFocus |
 | device | 0: device.getInfo<br>1: device.getPairingCode<br>2: device.getEnrollmentState<br>3: device.setEnrollmentState |
 | firmware | 0: firmware.getUpdateCapabilities<br>1: firmware.beginUpdate<br>3: firmware.getUpdateState<br>2: firmware.finishUpdate |
 | network | 2: network.getIpConfig<br>3: network.setIpConfig<br>5: network.getWifiConfig<br>6: network.setWifiConfig<br>7: network.scanWifi<br>8: network.connectWifi<br>9: network.disconnectWifi<br>10: network.getWifiState<br>12: network.getApConfig<br>13: network.setApConfig<br>15: network.startAp<br>16: network.stopAp<br>14: network.getApState<br>0: network.getInterfaces<br>1: network.getInterfaceInfo<br>4: network.getWifiCapabilities<br>11: network.getApCapabilities<br>17: network.getApClients |
@@ -662,6 +663,7 @@ Type: `AudioStreamSourceState`
 - [cast.getControlOperation](#castgetcontroloperation)
 - [cast.setPresentationSettings](#castsetpresentationsettings)
 - [cast.getWebCastBackendState](#castgetwebcastbackendstate)
+- [cast.setPresentationFocus](#castsetpresentationfocus)
 
 ---
 
@@ -1567,6 +1569,7 @@ Type: `CastControlCapabilities`
 | ?profileHints | Array<String> | 0x09 | Non-secret host profile hints; not media profiles or implicit defaults. | array.itemType=string | Omit if not used. |
 | ?presentationSettings | CastPresentationSettingsCapability | 0x0A | Required iff P1 is supported together with its method/event/status section; absence does not imply support. | None | Omit if not used. |
 | ?webcastBackend | CastWebCastBackendCapability | 0x0B | Required iff this independent backend method/event/status section is supported. | None | Omit if not used. |
+| ?meetingPresentation | CastMeetingPresentationCapability | 0x0C | Explicit optional meeting focus and policy support. | None | Omit if not used. |
 
 ---
 
@@ -1607,7 +1610,7 @@ Type: `CastControlOperation`
 | runtimeInstanceId | String | 0x02 | Canonical lower-case runtime epoch UUID. | maxLength=36 | N/A |
 | clientInstanceId | String | 0x03 | Canonical lower-case UUID of the submitting client. | maxLength=36 | N/A |
 | commandId | String | 0x04 | Canonical lower-case original intent UUID. | maxLength=36 | N/A |
-| kind | Enum | 0x05 | Intent kind; settings is a global P1 operation with settingsResult and no presentation target. | enum=stopPresentation/setSessionAudioEnabled/setPresentationSettings | N/A |
+| kind | Enum | 0x05 | Intent kind; settings is a global P1 operation with settingsResult and no presentation target. | enum=stopPresentation/setSessionAudioEnabled/setPresentationSettings/setPresentationFocus | N/A |
 | state | Enum | 0x06 | Admission or truthful terminal result; queued is not media success. | enum=queued/applied/rejected/failed | N/A |
 | submittedAt | String | 0x07 | UTC RFC3339 submission display time; expiry uses host monotonic time. | maxLength=64 | N/A |
 | ?target | CastControlTarget | 0x08 | Required for both P0 per-session kinds and retains the original exact target; omitted for P1 settings. | None | Omit if not used. |
@@ -1657,7 +1660,7 @@ Type: `CastControlOperation`
 | runtimeInstanceId | String | 0x02 | Canonical lower-case runtime epoch UUID. | maxLength=36 | N/A |
 | clientInstanceId | String | 0x03 | Canonical lower-case UUID of the submitting client. | maxLength=36 | N/A |
 | commandId | String | 0x04 | Canonical lower-case original intent UUID. | maxLength=36 | N/A |
-| kind | Enum | 0x05 | Intent kind; settings is a global P1 operation with settingsResult and no presentation target. | enum=stopPresentation/setSessionAudioEnabled/setPresentationSettings | N/A |
+| kind | Enum | 0x05 | Intent kind; settings is a global P1 operation with settingsResult and no presentation target. | enum=stopPresentation/setSessionAudioEnabled/setPresentationSettings/setPresentationFocus | N/A |
 | state | Enum | 0x06 | Admission or truthful terminal result; queued is not media success. | enum=queued/applied/rejected/failed | N/A |
 | submittedAt | String | 0x07 | UTC RFC3339 submission display time; expiry uses host monotonic time. | maxLength=64 | N/A |
 | ?target | CastControlTarget | 0x08 | Required for both P0 per-session kinds and retains the original exact target; omitted for P1 settings. | None | Omit if not used. |
@@ -1705,7 +1708,7 @@ Type: `CastControlOperation`
 | runtimeInstanceId | String | 0x02 | Canonical lower-case runtime epoch UUID. | maxLength=36 | N/A |
 | clientInstanceId | String | 0x03 | Canonical lower-case UUID of the submitting client. | maxLength=36 | N/A |
 | commandId | String | 0x04 | Canonical lower-case original intent UUID. | maxLength=36 | N/A |
-| kind | Enum | 0x05 | Intent kind; settings is a global P1 operation with settingsResult and no presentation target. | enum=stopPresentation/setSessionAudioEnabled/setPresentationSettings | N/A |
+| kind | Enum | 0x05 | Intent kind; settings is a global P1 operation with settingsResult and no presentation target. | enum=stopPresentation/setSessionAudioEnabled/setPresentationSettings/setPresentationFocus | N/A |
 | state | Enum | 0x06 | Admission or truthful terminal result; queued is not media success. | enum=queued/applied/rejected/failed | N/A |
 | submittedAt | String | 0x07 | UTC RFC3339 submission display time; expiry uses host monotonic time. | maxLength=64 | N/A |
 | ?target | CastControlTarget | 0x08 | Required for both P0 per-session kinds and retains the original exact target; omitted for P1 settings. | None | Omit if not used. |
@@ -1756,7 +1759,7 @@ Type: `CastControlOperation`
 | runtimeInstanceId | String | 0x02 | Canonical lower-case runtime epoch UUID. | maxLength=36 | N/A |
 | clientInstanceId | String | 0x03 | Canonical lower-case UUID of the submitting client. | maxLength=36 | N/A |
 | commandId | String | 0x04 | Canonical lower-case original intent UUID. | maxLength=36 | N/A |
-| kind | Enum | 0x05 | Intent kind; settings is a global P1 operation with settingsResult and no presentation target. | enum=stopPresentation/setSessionAudioEnabled/setPresentationSettings | N/A |
+| kind | Enum | 0x05 | Intent kind; settings is a global P1 operation with settingsResult and no presentation target. | enum=stopPresentation/setSessionAudioEnabled/setPresentationSettings/setPresentationFocus | N/A |
 | state | Enum | 0x06 | Admission or truthful terminal result; queued is not media success. | enum=queued/applied/rejected/failed | N/A |
 | submittedAt | String | 0x07 | UTC RFC3339 submission display time; expiry uses host monotonic time. | maxLength=64 | N/A |
 | ?target | CastControlTarget | 0x08 | Required for both P0 per-session kinds and retains the original exact target; omitted for P1 settings. | None | Omit if not used. |
@@ -1799,6 +1802,58 @@ Type: `CastWebCastBackendSnapshot`
 | ---- | :---: | :---: | ---- | :---: | ---- |
 | backendContext | CastWebCastBackendContext | 0x01 | Epoch and independent revision/event barrier committed with this state. | None | N/A |
 | state | CastWebCastBackendState | 0x02 | Complete safe backend state rather than a delta. | None | N/A |
+
+---
+
+### cast.setPresentationFocus
+
+Explicit exact-target primary or split intent with optimistic meeting revision and bounded dedup; never toggles or re-admits a source.
+
+- Method ID: `0x161B`
+- Domain: `cast`
+- bitOffset: `26`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`
+- Required Capabilities: `cast.meetingPresentation`, `cast.controlOperations`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `INVALID_ARGUMENT`, `INVALID_STATE`, `BUSY`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `CastSetPresentationFocusParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| controlVersion | UInt32 | 0x01 | Explicit version uses 1. | None | N/A |
+| runtimeInstanceId | String | 0x02 | Canonical lower-case runtime UUID. | maxLength=36 | N/A |
+| clientInstanceId | String | 0x03 | Canonical lower-case client UUID. | maxLength=36 | N/A |
+| commandId | String | 0x04 | Canonical lower-case intent UUID. | maxLength=36 | N/A |
+| target | CastControlTarget | 0x05 | Exact admitted identity; split requires current primary. | None | N/A |
+| expectedMeetingRevision | String | 0x06 | Canonical decimal uint64 optimistic meeting revision checked on owner after dedup. | maxLength=20 | N/A |
+| display | Enum | 0x07 | Explicit desired display role; no toggle. | enum=primary/split | N/A |
+| ?sidebarPage | UInt32 | 0x08 | Explicit page optional only with primary; validated against current membership before mutation. | None | Omit if not used. |
+
+#### Response Fields
+
+Type: `CastControlOperation`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| operationId | String | 0x01 | Nonempty opaque operation record ID; not media session identity. | maxLength=128 | N/A |
+| runtimeInstanceId | String | 0x02 | Canonical lower-case runtime epoch UUID. | maxLength=36 | N/A |
+| clientInstanceId | String | 0x03 | Canonical lower-case UUID of the submitting client. | maxLength=36 | N/A |
+| commandId | String | 0x04 | Canonical lower-case original intent UUID. | maxLength=36 | N/A |
+| kind | Enum | 0x05 | Intent kind; settings is a global P1 operation with settingsResult and no presentation target. | enum=stopPresentation/setSessionAudioEnabled/setPresentationSettings/setPresentationFocus | N/A |
+| state | Enum | 0x06 | Admission or truthful terminal result; queued is not media success. | enum=queued/applied/rejected/failed | N/A |
+| submittedAt | String | 0x07 | UTC RFC3339 submission display time; expiry uses host monotonic time. | maxLength=64 | N/A |
+| ?target | CastControlTarget | 0x08 | Required for both P0 per-session kinds and retains the original exact target; omitted for P1 settings. | None | Omit if not used. |
+| ?completedAt | String | 0x09 | UTC RFC3339 time required for applied/rejected/failed. | maxLength=64 | Omit if not used. |
+| ?appliedRevision | String | 0x0A | Canonical decimal uint64 string required iff a P0 logical control commit occurred; settings-only metadata uses settingsResult.settingsRevision instead. | maxLength=20 | Omit if not used. |
+| ?statusCode | UInt32 | 0x0B | Required terminal standard AXTP status code; applied uses SUCCESS and failures use non-success. | None | Omit if not used. |
+| ?outcomeReason | String | 0x0C | Required terminal bounded business reason; not a new numeric error space and never secret data. | maxLength=64 | Omit if not used. |
+| ?ownerCleanup | Enum | 0x0D | Cleanup observation at terminalization for the target owner only; not entire receiver exit. | enum=notApplicable/pending/complete/failed | Omit if not used. |
+| ?settingsResult | CastPresentationSettingsOperationResult | 0x0E | Required for kind=setPresentationSettings including queued/rejected/failed; reports configuration/application/persistence separately. | None | Omit if not used. |
 
 ---
 
@@ -5641,6 +5696,7 @@ Selected intent and effective audio participation captured with the same session
 | mixMode | Enum | 0x02 | Current mixing policy. | enum=exclusive/mix | N/A |
 | enabledSessions | Array<CastSessionRef> | 0x03 | Unique current session references with enabled intent. | array.itemType=CastSessionRef | N/A |
 | effectiveAudioSessions | Array<CastSessionRef> | 0x04 | Unique current effective participants; neither set proves human-audible sound. | array.itemType=CastSessionRef | N/A |
+| ?appliedGains | Array<CastMeetingAudioGain> | 0x05 | Successfully applied weights aligned with effective participants; optional meeting extension. | array.itemType=CastMeetingAudioGain | Omit if not used. |
 
 ---
 
@@ -5732,6 +5788,37 @@ Low-frequency media summary for a cast session.
 
 ---
 
+## CastMeetingAudioGain
+
+Observed applied audio branch weight separate from enabled intent and physical listening quality.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| session | CastSessionRef | 0x01 | Exact audible participant. | None | N/A |
+| gainPpm | UInt32 | 0x02 | Rounded linear gain parts per million in 0..1000000; not perceived loudness percent. | None | N/A |
+
+---
+
+## CastMeetingPresentationState
+
+Meeting policy and transient emphasis captured at the existing P0 commit boundary; no media-quality claims.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| enabled | Boolean | 0x01 | Armed preference independent of active view. | None | N/A |
+| mode | Enum | 0x02 | Visual entry policy independent of global audio modes. | enum=manual/automatic | N/A |
+| sidebar | Enum | 0x03 | Preview rail position. | enum=left/right | N/A |
+| audioFollow | Boolean | 0x04 | Follow preference preserved while inactive. | None | N/A |
+| revision | String | 0x05 | Canonical decimal uint64 meeting identity revision for optimistic commands. | maxLength=20 | N/A |
+| suspended | Boolean | 0x06 | Automatic entry paused until a new committed presentation admission or explicit focus. | None | N/A |
+| ?primary | CastSessionRef | 0x07 | Current exact primary identity; omitted in base split. | None | Omit if not used. |
+| sidebarPage | UInt32 | 0x08 | Zero-based preview page. | None | N/A |
+| sidebarPageCount | UInt32 | 0x09 | Current bounded page count including an empty page. | min=1 | N/A |
+| mainSharePermille | UInt32 | 0x0A | Fixed logical width share; this profile uses 840. | None | N/A |
+| audioFollowActive | Boolean | 0x0B | Whether follow policy currently has an eligible primary; not audible output. | None | N/A |
+
+---
+
 ## CastMultiSessionState
 
 Current shared runtime session with independent connection, eligibility and media facts.
@@ -5805,6 +5892,10 @@ All fields optional structurally but exactly one key required semantically; unkn
 | ?capacity | UInt32 | 0x04 | One declared capacity choice; no global product maximum or default. | min=1 | Omit if not used. |
 | ?enabledProtocols | Array<String> | 0x05 | Duplicate-free set from declared hid/airplay/webcast protocols; empty only when minEnabledProtocols is explicitly zero. | array.itemType=string | Omit if not used. |
 | ?profileHint | String | 0x06 | Nonempty declared opaque product profile identifier; not a wire profile. | maxLength=64 | Omit if not used. |
+| ?presentationEnabled | Boolean | 0x07 | Independent meeting interaction enable preference; default belongs to host. | None | Omit if not used. |
+| ?presentationMode | Enum | 0x08 | Meeting visual entry policy; not global audio policy. | enum=manual/automatic | Omit if not used. |
+| ?presentationSidebar | Enum | 0x09 | Meeting rail position independent of base layoutMode. | enum=left/right | Omit if not used. |
+| ?presentationAudioFollow | Boolean | 0x0A | Remembered follow preference independent of activity and global audio control mode. | None | Omit if not used. |
 
 ---
 
@@ -5845,6 +5936,10 @@ Supported setting values only; configured/known persisted projections are comple
 | ?capacity | UInt32 | 0x04 | Desired capacity or actually adopted capacity according to containing projection; applied may be limited. | min=1 | Omit if not used. |
 | ?enabledProtocols | Array<String> | 0x05 | Adopted or desired enable policy; not receiver readiness. | array.itemType=string | Omit if not used. |
 | ?profileHint | String | 0x06 | Declared product combination profile identifier. | maxLength=64 | Omit if not used. |
+| ?presentationEnabled | Boolean | 0x07 | Independent meeting interaction enable preference; default belongs to host. | None | Omit if not used. |
+| ?presentationMode | Enum | 0x08 | Meeting visual entry policy; not global audio policy. | enum=manual/automatic | Omit if not used. |
+| ?presentationSidebar | Enum | 0x09 | Meeting rail position independent of base layoutMode. | enum=left/right | Omit if not used. |
+| ?presentationAudioFollow | Boolean | 0x0A | Remembered follow preference independent of activity and global audio control mode. | None | Omit if not used. |
 
 ---
 
@@ -5873,6 +5968,10 @@ Exactly the capability-declared restart-only intent accepted at this host startu
 | ?capacity | UInt32 | 0x04 | Startup accepted capacity intent before runtime validation limitations. | min=1 | Omit if not used. |
 | ?enabledProtocols | Array<String> | 0x05 | Startup accepted receiver enable policy; does not claim Ready. | array.itemType=string | Omit if not used. |
 | ?profileHint | String | 0x06 | Startup accepted product profile when declared restart-only. | maxLength=64 | Omit if not used. |
+| ?presentationEnabled | Boolean | 0x07 | Independent meeting interaction enable preference; default belongs to host. | None | Omit if not used. |
+| ?presentationMode | Enum | 0x08 | Meeting visual entry policy; not global audio policy. | enum=manual/automatic | Omit if not used. |
+| ?presentationSidebar | Enum | 0x09 | Meeting rail position independent of base layoutMode. | enum=left/right | Omit if not used. |
+| ?presentationAudioFollow | Boolean | 0x0A | Remembered follow preference independent of activity and global audio control mode. | None | Omit if not used. |
 
 ---
 
@@ -5892,6 +5991,7 @@ Atomically captured presentation lifecycle, capacity and slots; zero effective/a
 | layoutMode | String | 0x08 | One of the layout identifiers advertised by this instance. | maxLength=64 | N/A |
 | layoutSettling | Boolean | 0x09 | Whether the host reports layout settling. | None | N/A |
 | slots | Array<CastPresentationSlotState> | 0x0A | Full bounded current slot set with no removed-session ghost binding. | array.itemType=CastPresentationSlotState | N/A |
+| ?meeting | CastMeetingPresentationState | 0x0B | Present only when meeting capability is advertised; part of the existing P0 presentation commit. | None | Omit if not used. |
 
 ---
 

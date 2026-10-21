@@ -61,6 +61,24 @@ int main() {
             require(!axtp::SchemaObjectCodec::validate("CastWebCastBackendContext",future),"backend invalid decimal counter rejected");
         }
         require(axtp::MethodRegistry::fromGeneratedDefaults().findMethodId("cast.getWebCastBackendState")==0x161A,"new generated backend method");
+        const nlohmann::json focus={{"controlVersion",1},{"runtimeInstanceId","11111111-1111-4111-8111-111111111111"},
+            {"clientInstanceId","22222222-2222-4222-8222-222222222222"},{"commandId","33333333-3333-4333-8333-333333333333"},
+            {"target",{{"session",{{"id","source"},{"generation","18446744073709551615"}}},{"slotId",0},{"bindingGeneration","9007199254740993"},{"lifecycleGeneration","1"}}},
+            {"expectedMeetingRevision","9007199254740995"},{"display","primary"},{"sidebarPage",1}};
+        require(axtp::SchemaObjectCodec::decodeJson("CastSetPresentationFocusParams",focus.dump())==focus,"meeting full JSON preserves nested identity and uint64");
+        require(!axtp::SchemaObjectCodec::encodeTlv8("CastSetPresentationFocusParams",focus),"unbound enum TLV must fail closed instead of guessing a wire mapping");
+        const auto focusWire=axtp::SchemaObjectCodec::encodeTlv8("CastControlTarget",focus.at("target"));
+        require(focusWire&&axtp::SchemaObjectCodec::decodeTlv8("CastControlTarget",*focusWire)==focus.at("target"),"nested target uint64 TLV roundtrip");
+        auto futureFocus=focus;futureFocus["unknownOptional"]=true;
+        require(axtp::SchemaObjectCodec::decodeJson("CastSetPresentationFocusParams",futureFocus.dump()).has_value(),"meeting future optional JSON compatible");
+        for(const auto& bad:nlohmann::json::array({1,"01","-1","18446744073709551616"})){
+            futureFocus=focus;futureFocus["expectedMeetingRevision"]=bad;
+            require(!axtp::SchemaObjectCodec::validate("CastSetPresentationFocusParams",futureFocus),"meeting invalid decimal revision rejected");
+        }
+        const nlohmann::json patch={{"presentationAudioFollow",false}};
+        const auto patchWire=axtp::SchemaObjectCodec::encodeTlv8("CastPresentationSettingsPatch",patch);
+        require(patchWire&&axtp::SchemaObjectCodec::decodeTlv8("CastPresentationSettingsPatch",*patchWire)==patch,"false follow preference survives TLV encoding");
+        require(axtp::MethodRegistry::fromGeneratedDefaults().findMethodId("cast.setPresentationFocus")==0x161B,"meeting ID comes from generated registry");
         std::cout << "cast object codec vectors passed: " << count << '\n';
     } catch(const std::exception& error) {std::cerr<<error.what()<<'\n';return 1;}
 }

@@ -42,12 +42,13 @@ inline constexpr CapabilityDescriptor kCapabilityRegistry[] = {
     { 0x160A, "cast.controlOperations", "cast", "object", "CastControlOperationsCapability" },
     { 0x160B, "cast.presentationSettings", "cast", "object", "CastPresentationSettingsCapability" },
     { 0x160C, "cast.webcastBackend", "cast", "object", "CastWebCastBackendCapability" },
+    { 0x160D, "cast.meetingPresentation", "cast", "object", "CastMeetingPresentationCapability" },
     { 0x1701, "software.config", "software", "object", "SoftwareConfigCapability" },
     { 0x1702, "software.updatePolicy", "software", "object", "SoftwareUpdatePolicyCapability" },
     { 0x1801, "sport.eventDetection", "sport", "object", "SportEventDetectionCapabilities" },
     { 0x1802, "sport.basketball", "sport", "object", "SportBasketballCapability" },
 };
 
-inline constexpr std::size_t kCapabilityRegistryCount = 32;
+inline constexpr std::size_t kCapabilityRegistryCount = 33;
 
 } // namespace axtp

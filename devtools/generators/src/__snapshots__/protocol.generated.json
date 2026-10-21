@@ -6150,6 +6150,13 @@
           "type": "CastWebCastBackendCapability",
           "required": false,
           "description": "Required iff this independent backend method/event/status section is supported."
+        },
+        {
+          "fieldId": 12,
+          "name": "meetingPresentation",
+          "type": "CastMeetingPresentationCapability",
+          "required": false,
+          "description": "Explicit optional meeting focus and policy support."
         }
       ]
     },
@@ -6637,6 +6644,13 @@
             "itemType": "CastPresentationSlotState"
           },
           "description": "Full bounded current slot set with no removed-session ghost binding."
+        },
+        {
+          "fieldId": 11,
+          "name": "meeting",
+          "type": "CastMeetingPresentationState",
+          "required": false,
+          "description": "Present only when meeting capability is advertised; part of the existing P0 presentation commit."
         }
       ]
     },
@@ -6686,6 +6700,16 @@
             "itemType": "CastSessionRef"
           },
           "description": "Unique current effective participants; neither set proves human-audible sound."
+        },
+        {
+          "fieldId": 5,
+          "name": "appliedGains",
+          "type": "array",
+          "required": false,
+          "array": {
+            "itemType": "CastMeetingAudioGain"
+          },
+          "description": "Successfully applied weights aligned with effective participants; optional meeting extension."
         }
       ]
     },
@@ -6877,7 +6901,8 @@
           "enumValues": [
             "stopPresentation",
             "setSessionAudioEnabled",
-            "setPresentationSettings"
+            "setPresentationSettings",
+            "setPresentationFocus"
           ],
           "description": "Intent kind; settings is a global P1 operation with settingsResult and no presentation target."
         },
@@ -7082,6 +7107,42 @@
           "required": false,
           "maxLength": 64,
           "description": "Nonempty declared opaque product profile identifier; not a wire profile."
+        },
+        {
+          "fieldId": 7,
+          "name": "presentationEnabled",
+          "type": "bool",
+          "required": false,
+          "description": "Independent meeting interaction enable preference; default belongs to host."
+        },
+        {
+          "fieldId": 8,
+          "name": "presentationMode",
+          "type": "enum",
+          "required": false,
+          "enumValues": [
+            "manual",
+            "automatic"
+          ],
+          "description": "Meeting visual entry policy; not global audio policy."
+        },
+        {
+          "fieldId": 9,
+          "name": "presentationSidebar",
+          "type": "enum",
+          "required": false,
+          "enumValues": [
+            "left",
+            "right"
+          ],
+          "description": "Meeting rail position independent of base layoutMode."
+        },
+        {
+          "fieldId": 10,
+          "name": "presentationAudioFollow",
+          "type": "bool",
+          "required": false,
+          "description": "Remembered follow preference independent of activity and global audio control mode."
         }
       ]
     },
@@ -7145,6 +7206,42 @@
           "required": false,
           "maxLength": 64,
           "description": "Declared product combination profile identifier."
+        },
+        {
+          "fieldId": 7,
+          "name": "presentationEnabled",
+          "type": "bool",
+          "required": false,
+          "description": "Independent meeting interaction enable preference; default belongs to host."
+        },
+        {
+          "fieldId": 8,
+          "name": "presentationMode",
+          "type": "enum",
+          "required": false,
+          "enumValues": [
+            "manual",
+            "automatic"
+          ],
+          "description": "Meeting visual entry policy; not global audio policy."
+        },
+        {
+          "fieldId": 9,
+          "name": "presentationSidebar",
+          "type": "enum",
+          "required": false,
+          "enumValues": [
+            "left",
+            "right"
+          ],
+          "description": "Meeting rail position independent of base layoutMode."
+        },
+        {
+          "fieldId": 10,
+          "name": "presentationAudioFollow",
+          "type": "bool",
+          "required": false,
+          "description": "Remembered follow preference independent of activity and global audio control mode."
         }
       ]
     },
@@ -7208,6 +7305,42 @@
           "required": false,
           "maxLength": 64,
           "description": "Startup accepted product profile when declared restart-only."
+        },
+        {
+          "fieldId": 7,
+          "name": "presentationEnabled",
+          "type": "bool",
+          "required": false,
+          "description": "Independent meeting interaction enable preference; default belongs to host."
+        },
+        {
+          "fieldId": 8,
+          "name": "presentationMode",
+          "type": "enum",
+          "required": false,
+          "enumValues": [
+            "manual",
+            "automatic"
+          ],
+          "description": "Meeting visual entry policy; not global audio policy."
+        },
+        {
+          "fieldId": 9,
+          "name": "presentationSidebar",
+          "type": "enum",
+          "required": false,
+          "enumValues": [
+            "left",
+            "right"
+          ],
+          "description": "Meeting rail position independent of base layoutMode."
+        },
+        {
+          "fieldId": 10,
+          "name": "presentationAudioFollow",
+          "type": "bool",
+          "required": false,
+          "description": "Remembered follow preference independent of activity and global audio control mode."
         }
       ]
     },
@@ -7415,7 +7548,7 @@
           "array": {
             "itemType": "string"
           },
-          "description": "Unique supported subset of the six settings keys."
+          "description": "Unique supported settings keys; meeting extension adds four separately advertised keys."
         },
         {
           "fieldId": 2,
@@ -7999,6 +8132,240 @@
             "independent-full-state"
           ],
           "description": "Backend events do not change P0 batch membership or P1 sequence."
+        }
+      ]
+    },
+    {
+      "name": "CastMeetingPresentationState",
+      "kind": "object",
+      "description": "Meeting policy and transient emphasis captured at the existing P0 commit boundary; no media-quality claims.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "enabled",
+          "type": "bool",
+          "required": true,
+          "description": "Armed preference independent of active view."
+        },
+        {
+          "fieldId": 2,
+          "name": "mode",
+          "type": "enum",
+          "required": true,
+          "enumValues": [
+            "manual",
+            "automatic"
+          ],
+          "description": "Visual entry policy independent of global audio modes."
+        },
+        {
+          "fieldId": 3,
+          "name": "sidebar",
+          "type": "enum",
+          "required": true,
+          "enumValues": [
+            "left",
+            "right"
+          ],
+          "description": "Preview rail position."
+        },
+        {
+          "fieldId": 4,
+          "name": "audioFollow",
+          "type": "bool",
+          "required": true,
+          "description": "Follow preference preserved while inactive."
+        },
+        {
+          "fieldId": 5,
+          "name": "revision",
+          "type": "string",
+          "required": true,
+          "maxLength": 20,
+          "description": "Canonical decimal uint64 meeting identity revision for optimistic commands."
+        },
+        {
+          "fieldId": 6,
+          "name": "suspended",
+          "type": "bool",
+          "required": true,
+          "description": "Automatic entry paused until a new committed presentation admission or explicit focus."
+        },
+        {
+          "fieldId": 7,
+          "name": "primary",
+          "type": "CastSessionRef",
+          "required": false,
+          "description": "Current exact primary identity; omitted in base split."
+        },
+        {
+          "fieldId": 8,
+          "name": "sidebarPage",
+          "type": "uint32",
+          "required": true,
+          "description": "Zero-based preview page."
+        },
+        {
+          "fieldId": 9,
+          "name": "sidebarPageCount",
+          "type": "uint32",
+          "required": true,
+          "min": 1,
+          "description": "Current bounded page count including an empty page."
+        },
+        {
+          "fieldId": 10,
+          "name": "mainSharePermille",
+          "type": "uint32",
+          "required": true,
+          "description": "Fixed logical width share; this profile uses 840."
+        },
+        {
+          "fieldId": 11,
+          "name": "audioFollowActive",
+          "type": "bool",
+          "required": true,
+          "description": "Whether follow policy currently has an eligible primary; not audible output."
+        }
+      ]
+    },
+    {
+      "name": "CastSetPresentationFocusParams",
+      "kind": "object",
+      "description": "P0-style bounded async operation; dedup before optimistic revision check and exact owner fencing before mutation.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "controlVersion",
+          "type": "uint32",
+          "required": true,
+          "description": "Explicit version uses 1."
+        },
+        {
+          "fieldId": 2,
+          "name": "runtimeInstanceId",
+          "type": "string",
+          "required": true,
+          "maxLength": 36,
+          "description": "Canonical lower-case runtime UUID."
+        },
+        {
+          "fieldId": 3,
+          "name": "clientInstanceId",
+          "type": "string",
+          "required": true,
+          "maxLength": 36,
+          "description": "Canonical lower-case client UUID."
+        },
+        {
+          "fieldId": 4,
+          "name": "commandId",
+          "type": "string",
+          "required": true,
+          "maxLength": 36,
+          "description": "Canonical lower-case intent UUID."
+        },
+        {
+          "fieldId": 5,
+          "name": "target",
+          "type": "CastControlTarget",
+          "required": true,
+          "description": "Exact admitted identity; split requires current primary."
+        },
+        {
+          "fieldId": 6,
+          "name": "expectedMeetingRevision",
+          "type": "string",
+          "required": true,
+          "maxLength": 20,
+          "description": "Canonical decimal uint64 optimistic meeting revision checked on owner after dedup."
+        },
+        {
+          "fieldId": 7,
+          "name": "display",
+          "type": "enum",
+          "required": true,
+          "enumValues": [
+            "primary",
+            "split"
+          ],
+          "description": "Explicit desired display role; no toggle."
+        },
+        {
+          "fieldId": 8,
+          "name": "sidebarPage",
+          "type": "uint32",
+          "required": false,
+          "description": "Explicit page optional only with primary; validated against current membership before mutation."
+        }
+      ]
+    },
+    {
+      "name": "CastMeetingAudioGain",
+      "kind": "object",
+      "description": "Observed applied audio branch weight separate from enabled intent and physical listening quality.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "session",
+          "type": "CastSessionRef",
+          "required": true,
+          "description": "Exact audible participant."
+        },
+        {
+          "fieldId": 2,
+          "name": "gainPpm",
+          "type": "uint32",
+          "required": true,
+          "description": "Rounded linear gain parts per million in 0..1000000; not perceived loudness percent."
+        }
+      ]
+    },
+    {
+      "name": "CastMeetingPresentationCapability",
+      "kind": "object",
+      "description": "Optional meeting focus and fixed rail policy; settings keys require explicit P1 declaration.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "modes",
+          "type": "array",
+          "required": true,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Supported visual identifiers manual and automatic."
+        },
+        {
+          "fieldId": 2,
+          "name": "sidebars",
+          "type": "array",
+          "required": true,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Supported left and right rail positions."
+        },
+        {
+          "fieldId": 3,
+          "name": "mainSharePermille",
+          "type": "uint32",
+          "required": true,
+          "description": "Fixed logical main width share 840."
+        },
+        {
+          "fieldId": 4,
+          "name": "supportsAudioFollow",
+          "type": "bool",
+          "required": true,
+          "description": "Explicit optional follow switch independent of global automatic/manual."
+        },
+        {
+          "fieldId": 5,
+          "name": "supportsPaging",
+          "type": "bool",
+          "required": true,
+          "description": "Bounded preview paging without admission or media lifecycle changes."
         }
       ]
     },
@@ -15322,6 +15689,37 @@
       ]
     },
     {
+      "name": "cast.setPresentationFocus",
+      "description": "Explicit exact-target primary or split intent with optimistic meeting revision and bounded dedup; never toggles or re-admits a source.",
+      "methodId": 5659,
+      "bitOffset": 26,
+      "domain": "cast",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "CastSetPresentationFocusParams"
+      },
+      "response": {
+        "type": "CastControlOperation"
+      },
+      "encodings": [
+        "json"
+      ],
+      "capabilities": [
+        "cast.meetingPresentation",
+        "cast.controlOperations"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "INVALID_ARGUMENT",
+        "INVALID_STATE",
+        "BUSY",
+        "UNAVAILABLE"
+      ]
+    },
+    {
       "name": "device.getInfo",
       "description": "Return the current endpoint main device identity, product, hardware, OS, software, AXTP runtime, and optional capability summary.",
       "methodId": 257,
@@ -19878,6 +20276,16 @@
       "status": "draft",
       "type": "object",
       "schema": "CastWebCastBackendCapability"
+    },
+    {
+      "name": "cast.meetingPresentation",
+      "description": "Optional fixed main-plus-preview view with exact focus control and independently remembered audio-follow preference.",
+      "capabilityId": 5645,
+      "domain": "cast",
+      "since": "1.0.0",
+      "status": "draft",
+      "type": "object",
+      "schema": "CastMeetingPresentationCapability"
     },
     {
       "name": "device.info",

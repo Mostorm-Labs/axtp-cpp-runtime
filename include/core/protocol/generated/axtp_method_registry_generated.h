@@ -95,6 +95,7 @@ inline constexpr MethodDescriptor kMethodRegistry[] = {
     { 0x1618, "cast.getControlOperation", "cast", "CastGetControlOperationParams", "CastControlOperation" },
     { 0x1619, "cast.setPresentationSettings", "cast", "CastSetPresentationSettingsParams", "CastControlOperation" },
     { 0x161A, "cast.getWebCastBackendState", "cast", "CastGetWebCastBackendStateParams", "CastWebCastBackendSnapshot" },
+    { 0x161B, "cast.setPresentationFocus", "cast", "CastSetPresentationFocusParams", "CastControlOperation" },
     { 0x1701, "software.getConfig", "software", "SoftwareGetConfigParams", "SoftwareConfig" },
     { 0x1702, "software.setConfig", "software", "SoftwareSetConfigParams", "SoftwareSetConfigResult" },
     { 0x1703, "software.resetConfig", "software", "SoftwareResetConfigParams", "SoftwareConfig" },
@@ -110,6 +111,6 @@ inline constexpr MethodDescriptor kMethodRegistry[] = {
     { 0x1807, "sport.setEventClipConfig", "sport", "SportSetEventClipConfigParams", "Empty" },
 };
 
-inline constexpr std::size_t kMethodRegistryCount = 94;
+inline constexpr std::size_t kMethodRegistryCount = 95;
 
 } // namespace axtp
