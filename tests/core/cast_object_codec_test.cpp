@@ -75,9 +75,18 @@ int main() {
             futureFocus=focus;futureFocus["expectedMeetingRevision"]=bad;
             require(!axtp::SchemaObjectCodec::validate("CastSetPresentationFocusParams",futureFocus),"meeting invalid decimal revision rejected");
         }
+        auto expanded=focus;expanded.erase("sidebarPage");expanded["display"]="focus";
+        require(axtp::SchemaObjectCodec::decodeJson("CastSetPresentationFocusParams",expanded.dump())==expanded,"adopted Focus display roundtrips exact identity through generated facts");
+        expanded["display"]="not-adopted";require(!axtp::SchemaObjectCodec::validate("CastSetPresentationFocusParams",expanded),"unknown view cannot acquire semantics");
         const nlohmann::json patch={{"presentationAudioFollow",false}};
         const auto patchWire=axtp::SchemaObjectCodec::encodeTlv8("CastPresentationSettingsPatch",patch);
         require(patchWire&&axtp::SchemaObjectCodec::decodeTlv8("CastPresentationSettingsPatch",*patchWire)==patch,"false follow preference survives TLV encoding");
+        for(const char* field:{"presentationFocusOnDoubleClick","presentationSplitOnDoubleClick"})for(bool enabled:{false,true}){
+            const nlohmann::json preference={{field,enabled}};
+            const auto wire=axtp::SchemaObjectCodec::encodeTlv8("CastPresentationSettingsPatch",preference);
+            require(wire&&axtp::SchemaObjectCodec::decodeTlv8("CastPresentationSettingsPatch",*wire)==preference,"Focus preference true/false survives generated TLV encoding");
+            require(axtp::SchemaObjectCodec::decodeJson("CastPresentationSettingsPatch",preference.dump())==preference,"Focus preference survives JSON encoding");
+        }
         require(axtp::MethodRegistry::fromGeneratedDefaults().findMethodId("cast.setPresentationFocus")==0x161B,"meeting ID comes from generated registry");
         std::cout << "cast object codec vectors passed: " << count << '\n';
     } catch(const std::exception& error) {std::cerr<<error.what()<<'\n';return 1;}

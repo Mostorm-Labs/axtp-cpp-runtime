@@ -1831,7 +1831,7 @@ Type: `CastSetPresentationFocusParams`
 | commandId | String | 0x04 | Canonical lower-case intent UUID. | maxLength=36 | N/A |
 | target | CastControlTarget | 0x05 | Exact admitted identity; split requires current primary. | None | N/A |
 | expectedMeetingRevision | String | 0x06 | Canonical decimal uint64 optimistic meeting revision checked on owner after dedup. | maxLength=20 | N/A |
-| display | Enum | 0x07 | Explicit desired display role; no toggle. | enum=primary/split | N/A |
+| display | Enum | 0x07 | Explicit desired view. Focus requires current primary and supportsFocusView capability; primary restores sidebar. No toggle. | enum=primary/split/focus | N/A |
 | ?sidebarPage | UInt32 | 0x08 | Explicit page optional only with primary; validated against current membership before mutation. | None | Omit if not used. |
 
 #### Response Fields
@@ -5816,6 +5816,9 @@ Meeting policy and transient emphasis captured at the existing P0 commit boundar
 | sidebarPageCount | UInt32 | 0x09 | Current bounded page count including an empty page. | min=1 | N/A |
 | mainSharePermille | UInt32 | 0x0A | Fixed logical width share; this profile uses 840. | None | N/A |
 | audioFollowActive | Boolean | 0x0B | Whether follow policy currently has an eligible primary; not audible output. | None | N/A |
+| ?view | Enum | 0x0C | Current transient view; primary remains set in focus. Absence uses legacy primary versus split projection. | enum=split/sidebar/focus | Omit if not used. |
+| ?focusOnDoubleClick | Boolean | 0x0D | Main-body double-click Focus entry preference; absent means true. Explicit focus API remains independent. | None | Omit if not used. |
+| ?splitOnDoubleClick | Boolean | 0x0E | Include Split in main-body double-click cycle; absent means false. With Focus enabled the cycle is Split to Sidebar to Focus to Split. | None | Omit if not used. |
 
 ---
 
@@ -5896,6 +5899,8 @@ All fields optional structurally but exactly one key required semantically; unkn
 | ?presentationMode | Enum | 0x08 | Meeting visual entry policy; not global audio policy. | enum=manual/automatic | Omit if not used. |
 | ?presentationSidebar | Enum | 0x09 | Meeting rail position independent of base layoutMode. | enum=left/right | Omit if not used. |
 | ?presentationAudioFollow | Boolean | 0x0A | Remembered follow preference independent of activity and global audio control mode. | None | Omit if not used. |
+| ?presentationFocusOnDoubleClick | Boolean | 0x0B | Remembered main-body double-click Focus entry preference; default true. Disabling restores Sidebar from Focus. | None | Omit if not used. |
+| ?presentationSplitOnDoubleClick | Boolean | 0x0C | Remembered inclusion of Split in main-body double-click cycle; default false. Independent of Focus entry. | None | Omit if not used. |
 
 ---
 
@@ -5940,6 +5945,8 @@ Supported setting values only; configured/known persisted projections are comple
 | ?presentationMode | Enum | 0x08 | Meeting visual entry policy; not global audio policy. | enum=manual/automatic | Omit if not used. |
 | ?presentationSidebar | Enum | 0x09 | Meeting rail position independent of base layoutMode. | enum=left/right | Omit if not used. |
 | ?presentationAudioFollow | Boolean | 0x0A | Remembered follow preference independent of activity and global audio control mode. | None | Omit if not used. |
+| ?presentationFocusOnDoubleClick | Boolean | 0x0B | Remembered main-body double-click Focus entry preference; default true. Disabling restores Sidebar from Focus. | None | Omit if not used. |
+| ?presentationSplitOnDoubleClick | Boolean | 0x0C | Remembered inclusion of Split in main-body double-click cycle; default false. Independent of Focus entry. | None | Omit if not used. |
 
 ---
 
@@ -5972,6 +5979,8 @@ Exactly the capability-declared restart-only intent accepted at this host startu
 | ?presentationMode | Enum | 0x08 | Meeting visual entry policy; not global audio policy. | enum=manual/automatic | Omit if not used. |
 | ?presentationSidebar | Enum | 0x09 | Meeting rail position independent of base layoutMode. | enum=left/right | Omit if not used. |
 | ?presentationAudioFollow | Boolean | 0x0A | Remembered follow preference independent of activity and global audio control mode. | None | Omit if not used. |
+| ?presentationFocusOnDoubleClick | Boolean | 0x0B | Remembered main-body double-click Focus entry preference; default true. Disabling restores Sidebar from Focus. | None | Omit if not used. |
+| ?presentationSplitOnDoubleClick | Boolean | 0x0C | Remembered inclusion of Split in main-body double-click cycle; default false. Independent of Focus entry. | None | Omit if not used. |
 
 ---
 

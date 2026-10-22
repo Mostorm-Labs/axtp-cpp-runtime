@@ -1078,6 +1078,8 @@ constexpr std::uint8_t PRESENTATION_ENABLED = 0x07;
 constexpr std::uint8_t PRESENTATION_MODE = 0x08;
 constexpr std::uint8_t PRESENTATION_SIDEBAR = 0x09;
 constexpr std::uint8_t PRESENTATION_AUDIO_FOLLOW = 0x0A;
+constexpr std::uint8_t PRESENTATION_FOCUS_ON_DOUBLE_CLICK = 0x0B;
+constexpr std::uint8_t PRESENTATION_SPLIT_ON_DOUBLE_CLICK = 0x0C;
 }
 
 namespace fields::cast_presentation_settings_values {
@@ -1091,6 +1093,8 @@ constexpr std::uint8_t PRESENTATION_ENABLED = 0x07;
 constexpr std::uint8_t PRESENTATION_MODE = 0x08;
 constexpr std::uint8_t PRESENTATION_SIDEBAR = 0x09;
 constexpr std::uint8_t PRESENTATION_AUDIO_FOLLOW = 0x0A;
+constexpr std::uint8_t PRESENTATION_FOCUS_ON_DOUBLE_CLICK = 0x0B;
+constexpr std::uint8_t PRESENTATION_SPLIT_ON_DOUBLE_CLICK = 0x0C;
 }
 
 namespace fields::cast_presentation_startup_settings {
@@ -1104,6 +1108,8 @@ constexpr std::uint8_t PRESENTATION_ENABLED = 0x07;
 constexpr std::uint8_t PRESENTATION_MODE = 0x08;
 constexpr std::uint8_t PRESENTATION_SIDEBAR = 0x09;
 constexpr std::uint8_t PRESENTATION_AUDIO_FOLLOW = 0x0A;
+constexpr std::uint8_t PRESENTATION_FOCUS_ON_DOUBLE_CLICK = 0x0B;
+constexpr std::uint8_t PRESENTATION_SPLIT_ON_DOUBLE_CLICK = 0x0C;
 }
 
 namespace fields::cast_presentation_settings_state {
@@ -1249,6 +1255,9 @@ constexpr std::uint8_t SIDEBAR_PAGE = 0x08;
 constexpr std::uint8_t SIDEBAR_PAGE_COUNT = 0x09;
 constexpr std::uint8_t MAIN_SHARE_PERMILLE = 0x0A;
 constexpr std::uint8_t AUDIO_FOLLOW_ACTIVE = 0x0B;
+constexpr std::uint8_t VIEW = 0x0C;
+constexpr std::uint8_t FOCUS_ON_DOUBLE_CLICK = 0x0D;
+constexpr std::uint8_t SPLIT_ON_DOUBLE_CLICK = 0x0E;
 }
 
 namespace fields::cast_set_presentation_focus_params {
@@ -1273,6 +1282,7 @@ constexpr std::uint8_t SIDEBARS = 0x02;
 constexpr std::uint8_t MAIN_SHARE_PERMILLE = 0x03;
 constexpr std::uint8_t SUPPORTS_AUDIO_FOLLOW = 0x04;
 constexpr std::uint8_t SUPPORTS_PAGING = 0x05;
+constexpr std::uint8_t SUPPORTS_FOCUS_VIEW = 0x06;
 }
 
 namespace fields::get_device_info_params {
@@ -3962,6 +3972,10 @@ struct CastPresentationSettingsPatch {
     bool has_presentationSidebar = false;
     bool presentationAudioFollow = false;
     bool has_presentationAudioFollow = false;
+    bool presentationFocusOnDoubleClick = false;
+    bool has_presentationFocusOnDoubleClick = false;
+    bool presentationSplitOnDoubleClick = false;
+    bool has_presentationSplitOnDoubleClick = false;
 };
 
 struct CastPresentationSettingsValues {
@@ -3985,6 +3999,10 @@ struct CastPresentationSettingsValues {
     bool has_presentationSidebar = false;
     bool presentationAudioFollow = false;
     bool has_presentationAudioFollow = false;
+    bool presentationFocusOnDoubleClick = false;
+    bool has_presentationFocusOnDoubleClick = false;
+    bool presentationSplitOnDoubleClick = false;
+    bool has_presentationSplitOnDoubleClick = false;
 };
 
 struct CastPresentationStartupSettings {
@@ -4008,6 +4026,10 @@ struct CastPresentationStartupSettings {
     bool has_presentationSidebar = false;
     bool presentationAudioFollow = false;
     bool has_presentationAudioFollow = false;
+    bool presentationFocusOnDoubleClick = false;
+    bool has_presentationFocusOnDoubleClick = false;
+    bool presentationSplitOnDoubleClick = false;
+    bool has_presentationSplitOnDoubleClick = false;
 };
 
 struct CastPresentationSettingsState {
@@ -4168,6 +4190,12 @@ struct CastMeetingPresentationState {
     std::uint32_t sidebarPageCount = 0;
     std::uint32_t mainSharePermille = 0;
     bool audioFollowActive = false;
+    std::uint32_t view = 0;
+    bool has_view = false;
+    bool focusOnDoubleClick = false;
+    bool has_focusOnDoubleClick = false;
+    bool splitOnDoubleClick = false;
+    bool has_splitOnDoubleClick = false;
 };
 
 struct CastSetPresentationFocusParams {
@@ -4193,6 +4221,8 @@ struct CastMeetingPresentationCapability {
     std::uint32_t mainSharePermille = 0;
     bool supportsAudioFollow = false;
     bool supportsPaging = false;
+    bool supportsFocusView = false;
+    bool has_supportsFocusView = false;
 };
 
 struct GetDeviceInfoParams {

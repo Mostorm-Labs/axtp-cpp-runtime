@@ -1108,6 +1108,8 @@ inline constexpr FieldDescriptor kCastPresentationSettingsPatchFields[] = {
     { 0x08, "presentationMode", FieldType::Enum, false, 0, 0 },
     { 0x09, "presentationSidebar", FieldType::Enum, false, 0, 0 },
     { 0x0A, "presentationAudioFollow", FieldType::Bool, false, 0, 0 },
+    { 0x0B, "presentationFocusOnDoubleClick", FieldType::Bool, false, 0, 0 },
+    { 0x0C, "presentationSplitOnDoubleClick", FieldType::Bool, false, 0, 0 },
 };
 
 inline constexpr FieldDescriptor kCastPresentationSettingsValuesFields[] = {
@@ -1121,6 +1123,8 @@ inline constexpr FieldDescriptor kCastPresentationSettingsValuesFields[] = {
     { 0x08, "presentationMode", FieldType::Enum, false, 0, 0 },
     { 0x09, "presentationSidebar", FieldType::Enum, false, 0, 0 },
     { 0x0A, "presentationAudioFollow", FieldType::Bool, false, 0, 0 },
+    { 0x0B, "presentationFocusOnDoubleClick", FieldType::Bool, false, 0, 0 },
+    { 0x0C, "presentationSplitOnDoubleClick", FieldType::Bool, false, 0, 0 },
 };
 
 inline constexpr FieldDescriptor kCastPresentationStartupSettingsFields[] = {
@@ -1134,6 +1138,8 @@ inline constexpr FieldDescriptor kCastPresentationStartupSettingsFields[] = {
     { 0x08, "presentationMode", FieldType::Enum, false, 0, 0 },
     { 0x09, "presentationSidebar", FieldType::Enum, false, 0, 0 },
     { 0x0A, "presentationAudioFollow", FieldType::Bool, false, 0, 0 },
+    { 0x0B, "presentationFocusOnDoubleClick", FieldType::Bool, false, 0, 0 },
+    { 0x0C, "presentationSplitOnDoubleClick", FieldType::Bool, false, 0, 0 },
 };
 
 inline constexpr FieldDescriptor kCastPresentationSettingsStateFields[] = {
@@ -1279,6 +1285,9 @@ inline constexpr FieldDescriptor kCastMeetingPresentationStateFields[] = {
     { 0x09, "sidebarPageCount", FieldType::Uint32, true, 1, 0 },
     { 0x0A, "mainSharePermille", FieldType::Uint32, true, 0, 0 },
     { 0x0B, "audioFollowActive", FieldType::Bool, true, 0, 0 },
+    { 0x0C, "view", FieldType::Enum, false, 0, 0 },
+    { 0x0D, "focusOnDoubleClick", FieldType::Bool, false, 0, 0 },
+    { 0x0E, "splitOnDoubleClick", FieldType::Bool, false, 0, 0 },
 };
 
 inline constexpr FieldDescriptor kCastSetPresentationFocusParamsFields[] = {
@@ -1303,6 +1312,7 @@ inline constexpr FieldDescriptor kCastMeetingPresentationCapabilityFields[] = {
     { 0x03, "mainSharePermille", FieldType::Uint32, true, 0, 0 },
     { 0x04, "supportsAudioFollow", FieldType::Bool, true, 0, 0 },
     { 0x05, "supportsPaging", FieldType::Bool, true, 0, 0 },
+    { 0x06, "supportsFocusView", FieldType::Bool, false, 0, 0 },
 };
 
 inline constexpr FieldDescriptor kGetDeviceInfoParamsFields[] = {
@@ -2591,9 +2601,9 @@ inline constexpr SchemaDescriptor kCastSetSessionAudioEnabledParamsSchema = { "C
 inline constexpr SchemaDescriptor kCastGetControlOperationParamsSchema = { "CastGetControlOperationParams", kCastGetControlOperationParamsFields, 4 };
 inline constexpr SchemaDescriptor kCastControlOperationSchema = { "CastControlOperation", kCastControlOperationFields, 14 };
 inline constexpr SchemaDescriptor kCastSetPresentationSettingsParamsSchema = { "CastSetPresentationSettingsParams", kCastSetPresentationSettingsParamsFields, 7 };
-inline constexpr SchemaDescriptor kCastPresentationSettingsPatchSchema = { "CastPresentationSettingsPatch", kCastPresentationSettingsPatchFields, 10 };
-inline constexpr SchemaDescriptor kCastPresentationSettingsValuesSchema = { "CastPresentationSettingsValues", kCastPresentationSettingsValuesFields, 10 };
-inline constexpr SchemaDescriptor kCastPresentationStartupSettingsSchema = { "CastPresentationStartupSettings", kCastPresentationStartupSettingsFields, 10 };
+inline constexpr SchemaDescriptor kCastPresentationSettingsPatchSchema = { "CastPresentationSettingsPatch", kCastPresentationSettingsPatchFields, 12 };
+inline constexpr SchemaDescriptor kCastPresentationSettingsValuesSchema = { "CastPresentationSettingsValues", kCastPresentationSettingsValuesFields, 12 };
+inline constexpr SchemaDescriptor kCastPresentationStartupSettingsSchema = { "CastPresentationStartupSettings", kCastPresentationStartupSettingsFields, 12 };
 inline constexpr SchemaDescriptor kCastPresentationSettingsStateSchema = { "CastPresentationSettingsState", kCastPresentationSettingsStateFields, 16 };
 inline constexpr SchemaDescriptor kCastPresentationSettingIssueSchema = { "CastPresentationSettingIssue", kCastPresentationSettingIssueFields, 4 };
 inline constexpr SchemaDescriptor kCastPresentationSettingsCapabilitySchema = { "CastPresentationSettingsCapability", kCastPresentationSettingsCapabilityFields, 8 };
@@ -2612,10 +2622,10 @@ inline constexpr SchemaDescriptor kCastWebCastLocalBackendStateSchema = { "CastW
 inline constexpr SchemaDescriptor kCastWebCastBackendStateSchema = { "CastWebCastBackendState", kCastWebCastBackendStateFields, 5 };
 inline constexpr SchemaDescriptor kCastWebCastBackendSnapshotSchema = { "CastWebCastBackendSnapshot", kCastWebCastBackendSnapshotFields, 2 };
 inline constexpr SchemaDescriptor kCastWebCastBackendCapabilitySchema = { "CastWebCastBackendCapability", kCastWebCastBackendCapabilityFields, 4 };
-inline constexpr SchemaDescriptor kCastMeetingPresentationStateSchema = { "CastMeetingPresentationState", kCastMeetingPresentationStateFields, 11 };
+inline constexpr SchemaDescriptor kCastMeetingPresentationStateSchema = { "CastMeetingPresentationState", kCastMeetingPresentationStateFields, 14 };
 inline constexpr SchemaDescriptor kCastSetPresentationFocusParamsSchema = { "CastSetPresentationFocusParams", kCastSetPresentationFocusParamsFields, 8 };
 inline constexpr SchemaDescriptor kCastMeetingAudioGainSchema = { "CastMeetingAudioGain", kCastMeetingAudioGainFields, 2 };
-inline constexpr SchemaDescriptor kCastMeetingPresentationCapabilitySchema = { "CastMeetingPresentationCapability", kCastMeetingPresentationCapabilityFields, 5 };
+inline constexpr SchemaDescriptor kCastMeetingPresentationCapabilitySchema = { "CastMeetingPresentationCapability", kCastMeetingPresentationCapabilityFields, 6 };
 inline constexpr SchemaDescriptor kGetDeviceInfoParamsSchema = { "GetDeviceInfoParams", kGetDeviceInfoParamsFields, 1 };
 inline constexpr SchemaDescriptor kDeviceInfoSchema = { "DeviceInfo", kDeviceInfoFields, 7 };
 inline constexpr SchemaDescriptor kDeviceIdentitySchema = { "DeviceIdentity", kDeviceIdentityFields, 4 };

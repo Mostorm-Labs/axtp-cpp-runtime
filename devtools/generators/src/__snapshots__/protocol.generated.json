@@ -7143,6 +7143,20 @@
           "type": "bool",
           "required": false,
           "description": "Remembered follow preference independent of activity and global audio control mode."
+        },
+        {
+          "fieldId": 11,
+          "name": "presentationFocusOnDoubleClick",
+          "type": "bool",
+          "required": false,
+          "description": "Remembered main-body double-click Focus entry preference; default true. Disabling restores Sidebar from Focus."
+        },
+        {
+          "fieldId": 12,
+          "name": "presentationSplitOnDoubleClick",
+          "type": "bool",
+          "required": false,
+          "description": "Remembered inclusion of Split in main-body double-click cycle; default false. Independent of Focus entry."
         }
       ]
     },
@@ -7242,6 +7256,20 @@
           "type": "bool",
           "required": false,
           "description": "Remembered follow preference independent of activity and global audio control mode."
+        },
+        {
+          "fieldId": 11,
+          "name": "presentationFocusOnDoubleClick",
+          "type": "bool",
+          "required": false,
+          "description": "Remembered main-body double-click Focus entry preference; default true. Disabling restores Sidebar from Focus."
+        },
+        {
+          "fieldId": 12,
+          "name": "presentationSplitOnDoubleClick",
+          "type": "bool",
+          "required": false,
+          "description": "Remembered inclusion of Split in main-body double-click cycle; default false. Independent of Focus entry."
         }
       ]
     },
@@ -7341,6 +7369,20 @@
           "type": "bool",
           "required": false,
           "description": "Remembered follow preference independent of activity and global audio control mode."
+        },
+        {
+          "fieldId": 11,
+          "name": "presentationFocusOnDoubleClick",
+          "type": "bool",
+          "required": false,
+          "description": "Remembered main-body double-click Focus entry preference; default true. Disabling restores Sidebar from Focus."
+        },
+        {
+          "fieldId": 12,
+          "name": "presentationSplitOnDoubleClick",
+          "type": "bool",
+          "required": false,
+          "description": "Remembered inclusion of Split in main-body double-click cycle; default false. Independent of Focus entry."
         }
       ]
     },
@@ -8226,6 +8268,32 @@
           "type": "bool",
           "required": true,
           "description": "Whether follow policy currently has an eligible primary; not audible output."
+        },
+        {
+          "fieldId": 12,
+          "name": "view",
+          "type": "enum",
+          "required": false,
+          "enumValues": [
+            "split",
+            "sidebar",
+            "focus"
+          ],
+          "description": "Current transient view; primary remains set in focus. Absence uses legacy primary versus split projection."
+        },
+        {
+          "fieldId": 13,
+          "name": "focusOnDoubleClick",
+          "type": "bool",
+          "required": false,
+          "description": "Main-body double-click Focus entry preference; absent means true. Explicit focus API remains independent."
+        },
+        {
+          "fieldId": 14,
+          "name": "splitOnDoubleClick",
+          "type": "bool",
+          "required": false,
+          "description": "Include Split in main-body double-click cycle; absent means false. With Focus enabled the cycle is Split to Sidebar to Focus to Split."
         }
       ]
     },
@@ -8287,9 +8355,10 @@
           "required": true,
           "enumValues": [
             "primary",
-            "split"
+            "split",
+            "focus"
           ],
-          "description": "Explicit desired display role; no toggle."
+          "description": "Explicit desired view. Focus requires current primary and supportsFocusView capability; primary restores sidebar. No toggle."
         },
         {
           "fieldId": 8,
@@ -8366,6 +8435,13 @@
           "type": "bool",
           "required": true,
           "description": "Bounded preview paging without admission or media lifecycle changes."
+        },
+        {
+          "fieldId": 6,
+          "name": "supportsFocusView",
+          "type": "bool",
+          "required": false,
+          "description": "Explicit support for focus display requests and meeting view observation; absence means unsupported."
         }
       ]
     },
