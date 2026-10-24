@@ -41,7 +41,7 @@
 | Domain | Methods | Events |
 | ---- | ---- | ---- |
 | audio | 9 | 4 |
-| cast | 27 | 19 |
+| cast | 27 | 20 |
 | device | 4 | 1 |
 | firmware | 4 | 2 |
 | network | 18 | 8 |
@@ -219,6 +219,7 @@ Generated capabilities are the feature-level switches that runtimes and devices 
 | 0x160B | cast.presentationSettings | cast | draft | object | CastPresentationSettingsCapability | Optional one-field host settings with declared live/restart behavior, independent synchronization and truthful field-only persistence/application results. |
 | 0x160C | cast.webcastBackend | cast | draft | object | CastWebCastBackendCapability | Optional secret-free WebCast cloud/local backend state query and independent full-state changes. |
 | 0x160D | cast.meetingPresentation | cast | draft | object | CastMeetingPresentationCapability | Optional fixed main-plus-preview view with exact focus control and independently remembered audio-follow preference. |
+| 0x160E | cast.airplayControl | cast | draft | object | CastAirPlayControlCapability | Secret-free AirPlay authentication and discovery observation with live rename. |
 | 0x1701 | software.config | software | draft | object | SoftwareConfigCapability | Device supports reading, setting, and resetting the runtime configuration of software objects (such as the Launcher) and emitting configuration change notifications. |
 | 0x1702 | software.updatePolicy | software | draft | object | SoftwareUpdatePolicyCapability | Device supports reading, setting, and resetting the automatic update policy of software objects (such as the Launcher) and emitting update policy change notifications. |
 | 0x1801 | sport.eventDetection | sport | draft | object | SportEventDetectionCapabilities | Device supports cross-sport event detection capability discovery, per-sport toggle control, runtime state events, and unified sport event delivery. |
@@ -731,7 +732,7 @@ Type: `CastStopSessionParams`
 
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
-| ?sessionId | String | 0x01 | Optional receiver-local session id; omitted means current active session. | maxLength=128 | Omit if not used. |
+| ?sessionId | String | 0x01 | Optional receiver-local session id; omitted stops all connections and authentication requests existing at the host execution boundary, without stopping listeners. | maxLength=128 | Omit if not used. |
 | ?reason | Enum | 0x02 | Caller-visible reason for stopping the session. | enum=externalRequest/localUi/backendRestart/shutdown/unknown | Omit if not used. |
 | ?force | Boolean | 0x03 | Whether the receiver may force backend/session cleanup. | None | Default: false |
 
@@ -1445,6 +1446,7 @@ Type: `CastStatus`
 | ?audioPolicy | CastAudioPolicyState | 0x0E | Required in v1 unifiedControl; selected intent and effective participation are separate from legacy audio. | None | Omit if not used. |
 | ?presentationSettings | CastPresentationSettingsState | 0x0F | Required only when P1 is supported and explicitly requested; combined P0/P1 capture shares one host commit boundary and keeps independent event barriers. | None | Omit if not used. |
 | ?webcastBackend | CastWebCastBackendSnapshot | 0x10 | Explicit optional backend snapshot with its own barrier; not implied by unifiedControl or settings. | None | Omit if not used. |
+| ?airplay | CastAirPlayControlState | 0x11 | Secret-free discovery and authentication state at the P0 snapshot boundary. | None | Omit if not used. |
 
 ---
 
@@ -1570,6 +1572,7 @@ Type: `CastControlCapabilities`
 | ?presentationSettings | CastPresentationSettingsCapability | 0x0A | Required iff P1 is supported together with its method/event/status section; absence does not imply support. | None | Omit if not used. |
 | ?webcastBackend | CastWebCastBackendCapability | 0x0B | Required iff this independent backend method/event/status section is supported. | None | Omit if not used. |
 | ?meetingPresentation | CastMeetingPresentationCapability | 0x0C | Explicit optional meeting focus and policy support. | None | Omit if not used. |
+| ?airplayControl | CastAirPlayControlCapability | 0x0D | Secret-free authentication and discovery observation. | None | Omit if not used. |
 
 ---
 
@@ -1831,7 +1834,7 @@ Type: `CastSetPresentationFocusParams`
 | commandId | String | 0x04 | Canonical lower-case intent UUID. | maxLength=36 | N/A |
 | target | CastControlTarget | 0x05 | Exact admitted identity; split requires current primary. | None | N/A |
 | expectedMeetingRevision | String | 0x06 | Canonical decimal uint64 optimistic meeting revision checked on owner after dedup. | maxLength=20 | N/A |
-| display | Enum | 0x07 | Explicit desired view. Focus requires current primary and supportsFocusView capability; primary restores sidebar. No toggle. | enum=primary/split/focus | N/A |
+| display | Enum | 0x07 | Explicit desired view. Focus requires current primary and supportsFocusView capability; primary restores sidebar. No toggle. | enum=sidebar/grid/focus | N/A |
 | ?sidebarPage | UInt32 | 0x08 | Explicit page optional only with primary; validated against current membership before mutation. | None | Omit if not used. |
 
 #### Response Fields
@@ -4224,6 +4227,7 @@ Type: `AudioStreamStatsReportedEvent`
 - [cast.controlOperationChanged](#castcontroloperationchanged)
 - [cast.presentationSettingsChanged](#castpresentationsettingschanged)
 - [cast.webcastBackendChanged](#castwebcastbackendchanged)
+- [cast.airplayChanged](#castairplaychanged)
 
 ---
 
@@ -4732,6 +4736,30 @@ Type: `CastWebCastBackendSnapshot`
 | ---- | :---: | :---: | ---- | :---: | ---- |
 | backendContext | CastWebCastBackendContext | 0x01 | Epoch and independent revision/event barrier committed with this state. | None | N/A |
 | state | CastWebCastBackendState | 0x02 | Complete safe backend state rather than a delta. | None | N/A |
+
+---
+
+### cast.airplayChanged
+
+Replace secret-free AirPlay discovery and authentication state as a P0 commit part.
+
+- Event ID: `0x1614`
+- Domain: `cast`
+- bitOffset: `19`
+- Status: `draft`
+- Severity: `info`
+- Added in v1.0.0
+- Trigger: `discovery changed`, `authentication attempt changed`
+- Required Capabilities: `cast.airplayControl`
+
+#### Payload Fields
+
+Type: `CastAirPlayChangedEvent`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| context | CastControlEventContext | 0x01 | Required atomic commit context. | None | N/A |
+| airplay | CastAirPlayControlState | 0x02 | Complete secret-free state. | None | N/A |
 
 ---
 
@@ -5686,6 +5714,35 @@ Voice activity detection configuration object.
 
 ---
 
+## CastAirPlayAuthenticationAttempt
+
+Authentication identity is not a media session; never contains a password or client address.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| attemptId | String | 0x01 | Service-minted decimal uint64 attempt identity. | maxLength=20 | N/A |
+| challengeId | String | 0x02 | Canonical decimal uint64 challenge generation; zero before a challenge. | maxLength=20 | N/A |
+| displayRequestId | String | 0x03 | Canonical decimal uint64 prompt occurrence; retrying the same challenge may change it. | maxLength=20 | N/A |
+| state | Enum | 0x04 | Observed phase; transport closure alone never claims user cancellation. | enum=incoming/waitingForPassword/authenticated/ended/failed/timedOut | N/A |
+| ?reason | String | 0x05 | Bounded non-sensitive reason. | maxLength=64 | Omit if not used. |
+
+---
+
+## CastAirPlayControlState
+
+Current discovery and bounded authentication observations without credentials.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| enabled | Boolean | 0x01 | Startup protocol enablement. | None | N/A |
+| displayName | String | 0x02 | Actual configured discovery name. | maxLength=128 | N/A |
+| publishState | Enum | 0x03 | Observed discovery publication state. | enum=published/republishing/pending/failed/unpublished | N/A |
+| randomPasswordEnabled | Boolean | 0x04 | Startup random-password policy. | None | N/A |
+| attempts | Array<CastAirPlayAuthenticationAttempt> | 0x05 | Bounded active and recently ended authentication attempts. | array.itemType=CastAirPlayAuthenticationAttempt | N/A |
+| ?observationDrops | String | 0x06 | Decimal uint64 count of bounded authentication observations dropped before host commit; resynchronize state when it changes. | maxLength=20 | Omit if not used. |
+
+---
+
 ## CastAudioPolicyState
 
 Selected intent and effective audio participation captured with the same session/slot projection.
@@ -5697,6 +5754,7 @@ Selected intent and effective audio participation captured with the same session
 | enabledSessions | Array<CastSessionRef> | 0x03 | Unique current session references with enabled intent. | array.itemType=CastSessionRef | N/A |
 | effectiveAudioSessions | Array<CastSessionRef> | 0x04 | Unique current effective participants; neither set proves human-audible sound. | array.itemType=CastSessionRef | N/A |
 | ?appliedGains | Array<CastMeetingAudioGain> | 0x05 | Successfully applied weights aligned with effective participants; optional meeting extension. | array.itemType=CastMeetingAudioGain | Omit if not used. |
+| masterMuted | Boolean | 0x06 | Global output gate including future admissions; does not erase per-session intent. | None | N/A |
 
 ---
 
@@ -5805,20 +5863,18 @@ Meeting policy and transient emphasis captured at the existing P0 commit boundar
 
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
-| enabled | Boolean | 0x01 | Armed preference independent of active view. | None | N/A |
-| mode | Enum | 0x02 | Visual entry policy independent of global audio modes. | enum=manual/automatic | N/A |
+| mode | Enum | 0x02 | Primary selection policy inside Presentation only; never automatically enters it from Grid. | enum=manual/automatic | N/A |
 | sidebar | Enum | 0x03 | Preview rail position. | enum=left/right | N/A |
 | audioFollow | Boolean | 0x04 | Follow preference preserved while inactive. | None | N/A |
 | revision | String | 0x05 | Canonical decimal uint64 meeting identity revision for optimistic commands. | maxLength=20 | N/A |
-| suspended | Boolean | 0x06 | Automatic entry paused until a new committed presentation admission or explicit focus. | None | N/A |
 | ?primary | CastSessionRef | 0x07 | Current exact primary identity; omitted in base split. | None | Omit if not used. |
 | sidebarPage | UInt32 | 0x08 | Zero-based preview page. | None | N/A |
 | sidebarPageCount | UInt32 | 0x09 | Current bounded page count including an empty page. | min=1 | N/A |
 | mainSharePermille | UInt32 | 0x0A | Fixed logical width share; this profile uses 840. | None | N/A |
 | audioFollowActive | Boolean | 0x0B | Whether follow policy currently has an eligible primary; not audible output. | None | N/A |
-| ?view | Enum | 0x0C | Current transient view; primary remains set in focus. Absence uses legacy primary versus split projection. | enum=split/sidebar/focus | Omit if not used. |
+| ?view | Enum | 0x0C | Present only in Presentation layout; omitted in Grid. | enum=sidebar/focus | Omit if not used. |
 | ?focusOnDoubleClick | Boolean | 0x0D | Main-body double-click Focus entry preference; absent means true. Explicit focus API remains independent. | None | Omit if not used. |
-| ?splitOnDoubleClick | Boolean | 0x0E | Include Split in main-body double-click cycle; absent means false. With Focus enabled the cycle is Split to Sidebar to Focus to Split. | None | Omit if not used. |
+| ?gridOnDoubleClick | Boolean | 0x0E | Include Grid in main-body double-click cycle; absent means false. With Focus enabled the cycle is Grid to Sidebar to Focus to Grid. | None | Omit if not used. |
 
 ---
 
@@ -5889,18 +5945,18 @@ All fields optional structurally but exactly one key required semantically; unkn
 
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
-| ?layoutMode | String | 0x01 | Nonempty declared layout identifier. | maxLength=64 | Omit if not used. |
+| ?layoutMode | Enum | 0x01 | Selected product layout; complete source withdrawal returns to grid. | enum=grid/presentation | Omit if not used. |
 | ?audioControlMode | Enum | 0x02 | Declared audio control mode; same confirmed value does not reset selection. | enum=automatic/manual | Omit if not used. |
 | ?audioMixMode | Enum | 0x03 | Declared audio mix mode; no implicit inverse-mode rollback. | enum=exclusive/mix | Omit if not used. |
 | ?capacity | UInt32 | 0x04 | One declared capacity choice; no global product maximum or default. | min=1 | Omit if not used. |
 | ?enabledProtocols | Array<String> | 0x05 | Duplicate-free set from declared hid/airplay/webcast protocols; empty only when minEnabledProtocols is explicitly zero. | array.itemType=string | Omit if not used. |
 | ?profileHint | String | 0x06 | Nonempty declared opaque product profile identifier; not a wire profile. | maxLength=64 | Omit if not used. |
-| ?presentationEnabled | Boolean | 0x07 | Independent meeting interaction enable preference; default belongs to host. | None | Omit if not used. |
+| ?contentAdaptation | Enum | 0x07 | Content aspect adaptation independent of Layout. | enum=fixed/auto-fit | Omit if not used. |
 | ?presentationMode | Enum | 0x08 | Meeting visual entry policy; not global audio policy. | enum=manual/automatic | Omit if not used. |
 | ?presentationSidebar | Enum | 0x09 | Meeting rail position independent of base layoutMode. | enum=left/right | Omit if not used. |
 | ?presentationAudioFollow | Boolean | 0x0A | Remembered follow preference independent of activity and global audio control mode. | None | Omit if not used. |
 | ?presentationFocusOnDoubleClick | Boolean | 0x0B | Remembered main-body double-click Focus entry preference; default true. Disabling restores Sidebar from Focus. | None | Omit if not used. |
-| ?presentationSplitOnDoubleClick | Boolean | 0x0C | Remembered inclusion of Split in main-body double-click cycle; default false. Independent of Focus entry. | None | Omit if not used. |
+| ?presentationGridOnDoubleClick | Boolean | 0x0C | Remembered inclusion of Grid in main-body double-click cycle; default false. Independent of Focus entry. | None | Omit if not used. |
 
 ---
 
@@ -5935,18 +5991,18 @@ Supported setting values only; configured/known persisted projections are comple
 
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
-| ?layoutMode | String | 0x01 | Declared layout policy identifier. | maxLength=64 | Omit if not used. |
+| ?layoutMode | Enum | 0x01 | Selected product layout; complete source withdrawal returns to grid. | enum=grid/presentation | Omit if not used. |
 | ?audioControlMode | Enum | 0x02 | Adopted or desired control policy; not proof of sound. | enum=automatic/manual | Omit if not used. |
 | ?audioMixMode | Enum | 0x03 | Adopted or desired audio mixing policy. | enum=exclusive/mix | Omit if not used. |
 | ?capacity | UInt32 | 0x04 | Desired capacity or actually adopted capacity according to containing projection; applied may be limited. | min=1 | Omit if not used. |
 | ?enabledProtocols | Array<String> | 0x05 | Adopted or desired enable policy; not receiver readiness. | array.itemType=string | Omit if not used. |
 | ?profileHint | String | 0x06 | Declared product combination profile identifier. | maxLength=64 | Omit if not used. |
-| ?presentationEnabled | Boolean | 0x07 | Independent meeting interaction enable preference; default belongs to host. | None | Omit if not used. |
+| ?contentAdaptation | Enum | 0x07 | Content aspect adaptation independent of Layout. | enum=fixed/auto-fit | Omit if not used. |
 | ?presentationMode | Enum | 0x08 | Meeting visual entry policy; not global audio policy. | enum=manual/automatic | Omit if not used. |
 | ?presentationSidebar | Enum | 0x09 | Meeting rail position independent of base layoutMode. | enum=left/right | Omit if not used. |
 | ?presentationAudioFollow | Boolean | 0x0A | Remembered follow preference independent of activity and global audio control mode. | None | Omit if not used. |
 | ?presentationFocusOnDoubleClick | Boolean | 0x0B | Remembered main-body double-click Focus entry preference; default true. Disabling restores Sidebar from Focus. | None | Omit if not used. |
-| ?presentationSplitOnDoubleClick | Boolean | 0x0C | Remembered inclusion of Split in main-body double-click cycle; default false. Independent of Focus entry. | None | Omit if not used. |
+| ?presentationGridOnDoubleClick | Boolean | 0x0C | Remembered inclusion of Grid in main-body double-click cycle; default false. Independent of Focus entry. | None | Omit if not used. |
 
 ---
 
@@ -5969,18 +6025,18 @@ Exactly the capability-declared restart-only intent accepted at this host startu
 
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
-| ?layoutMode | String | 0x01 | Present only if this implementation declares layoutMode restart-only. | maxLength=64 | Omit if not used. |
+| ?layoutMode | Enum | 0x01 | Selected product layout; complete source withdrawal returns to grid. | enum=grid/presentation | Omit if not used. |
 | ?audioControlMode | Enum | 0x02 | Present only if audioControlMode is restart-only. | enum=automatic/manual | Omit if not used. |
 | ?audioMixMode | Enum | 0x03 | Present only if audioMixMode is restart-only. | enum=exclusive/mix | Omit if not used. |
 | ?capacity | UInt32 | 0x04 | Startup accepted capacity intent before runtime validation limitations. | min=1 | Omit if not used. |
 | ?enabledProtocols | Array<String> | 0x05 | Startup accepted receiver enable policy; does not claim Ready. | array.itemType=string | Omit if not used. |
 | ?profileHint | String | 0x06 | Startup accepted product profile when declared restart-only. | maxLength=64 | Omit if not used. |
-| ?presentationEnabled | Boolean | 0x07 | Independent meeting interaction enable preference; default belongs to host. | None | Omit if not used. |
+| ?contentAdaptation | Enum | 0x07 | Content aspect adaptation independent of Layout. | enum=fixed/auto-fit | Omit if not used. |
 | ?presentationMode | Enum | 0x08 | Meeting visual entry policy; not global audio policy. | enum=manual/automatic | Omit if not used. |
 | ?presentationSidebar | Enum | 0x09 | Meeting rail position independent of base layoutMode. | enum=left/right | Omit if not used. |
 | ?presentationAudioFollow | Boolean | 0x0A | Remembered follow preference independent of activity and global audio control mode. | None | Omit if not used. |
 | ?presentationFocusOnDoubleClick | Boolean | 0x0B | Remembered main-body double-click Focus entry preference; default true. Disabling restores Sidebar from Focus. | None | Omit if not used. |
-| ?presentationSplitOnDoubleClick | Boolean | 0x0C | Remembered inclusion of Split in main-body double-click cycle; default false. Independent of Focus entry. | None | Omit if not used. |
+| ?presentationGridOnDoubleClick | Boolean | 0x0C | Remembered inclusion of Grid in main-body double-click cycle; default false. Independent of Focus entry. | None | Omit if not used. |
 
 ---
 
@@ -5997,10 +6053,11 @@ Atomically captured presentation lifecycle, capacity and slots; zero effective/a
 | ?validatedCapacity | UInt32 | 0x05 | Required iff validationAvailable; omitted when unknown. | min=1 | Omit if not used. |
 | effectiveCapacity | UInt32 | 0x06 | Current host capacity-policy result; may be zero. | None | N/A |
 | appliedCapacity | UInt32 | 0x07 | Capacity currently applied to presentation; may be zero. | None | N/A |
-| layoutMode | String | 0x08 | One of the layout identifiers advertised by this instance. | maxLength=64 | N/A |
+| layoutMode | Enum | 0x08 | Selected product layout; complete source withdrawal returns to grid. | enum=grid/presentation | N/A |
 | layoutSettling | Boolean | 0x09 | Whether the host reports layout settling. | None | N/A |
 | slots | Array<CastPresentationSlotState> | 0x0A | Full bounded current slot set with no removed-session ghost binding. | array.itemType=CastPresentationSlotState | N/A |
 | ?meeting | CastMeetingPresentationState | 0x0B | Present only when meeting capability is advertised; part of the existing P0 presentation commit. | None | Omit if not used. |
+| contentAdaptation | Enum | 0x0C | Independent content adaptation; never changes the selected layout. | enum=fixed/auto-fit | N/A |
 
 ---
 

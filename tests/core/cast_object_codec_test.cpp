@@ -64,7 +64,7 @@ int main() {
         const nlohmann::json focus={{"controlVersion",1},{"runtimeInstanceId","11111111-1111-4111-8111-111111111111"},
             {"clientInstanceId","22222222-2222-4222-8222-222222222222"},{"commandId","33333333-3333-4333-8333-333333333333"},
             {"target",{{"session",{{"id","source"},{"generation","18446744073709551615"}}},{"slotId",0},{"bindingGeneration","9007199254740993"},{"lifecycleGeneration","1"}}},
-            {"expectedMeetingRevision","9007199254740995"},{"display","primary"},{"sidebarPage",1}};
+            {"expectedMeetingRevision","9007199254740995"},{"display","sidebar"},{"sidebarPage",1}};
         require(axtp::SchemaObjectCodec::decodeJson("CastSetPresentationFocusParams",focus.dump())==focus,"meeting full JSON preserves nested identity and uint64");
         require(!axtp::SchemaObjectCodec::encodeTlv8("CastSetPresentationFocusParams",focus),"unbound enum TLV must fail closed instead of guessing a wire mapping");
         const auto focusWire=axtp::SchemaObjectCodec::encodeTlv8("CastControlTarget",focus.at("target"));
@@ -81,13 +81,21 @@ int main() {
         const nlohmann::json patch={{"presentationAudioFollow",false}};
         const auto patchWire=axtp::SchemaObjectCodec::encodeTlv8("CastPresentationSettingsPatch",patch);
         require(patchWire&&axtp::SchemaObjectCodec::decodeTlv8("CastPresentationSettingsPatch",*patchWire)==patch,"false follow preference survives TLV encoding");
-        for(const char* field:{"presentationFocusOnDoubleClick","presentationSplitOnDoubleClick"})for(bool enabled:{false,true}){
+        for(const char* field:{"presentationFocusOnDoubleClick","presentationGridOnDoubleClick"})for(bool enabled:{false,true}){
             const nlohmann::json preference={{field,enabled}};
             const auto wire=axtp::SchemaObjectCodec::encodeTlv8("CastPresentationSettingsPatch",preference);
             require(wire&&axtp::SchemaObjectCodec::decodeTlv8("CastPresentationSettingsPatch",*wire)==preference,"Focus preference true/false survives generated TLV encoding");
             require(axtp::SchemaObjectCodec::decodeJson("CastPresentationSettingsPatch",preference.dump())==preference,"Focus preference survives JSON encoding");
         }
         require(axtp::MethodRegistry::fromGeneratedDefaults().findMethodId("cast.setPresentationFocus")==0x161B,"meeting ID comes from generated registry");
+        const nlohmann::json attempt={{"attemptId","18446744073709551615"},{"challengeId","9007199254740993"},{"displayRequestId","0"},{"state","waitingForPassword"}};
+        require(axtp::SchemaObjectCodec::decodeJson("CastAirPlayAuthenticationAttempt",attempt.dump())==attempt,"authentication identities preserve uint64 strings");
+        for(const auto* field:{"attemptId","challengeId","displayRequestId"})for(const auto& invalid:nlohmann::json::array({1,"01","-1","18446744073709551616"})){
+            auto bad=attempt;bad[field]=invalid;require(!axtp::SchemaObjectCodec::validate("CastAirPlayAuthenticationAttempt",bad),"authentication identity rejects malformed decimal");
+        }
+        require(axtp::SchemaObjectCodec::validate("CastPresentationSettingsPatch",{{"layoutMode","grid"}})&&axtp::SchemaObjectCodec::validate("CastPresentationSettingsPatch",{{"contentAdaptation","fixed"}}),"layout and adaptation have independent generated facts");
+        require(!axtp::SchemaObjectCodec::validate("CastPresentationSettingsPatch",{{"layoutMode","fixed-ratio"}}),"unpublished old Layout values intentionally replaced");
+        require(axtp::MethodRegistry::fromGeneratedDefaults().findMethodId("cast.stopSession")==0x1602&&axtp::MethodRegistry::fromGeneratedDefaults().findMethodId("cast.setMuted")==0x1607,"legacy routes preserve their method IDs");
         std::cout << "cast object codec vectors passed: " << count << '\n';
     } catch(const std::exception& error) {std::cerr<<error.what()<<'\n';return 1;}
 }

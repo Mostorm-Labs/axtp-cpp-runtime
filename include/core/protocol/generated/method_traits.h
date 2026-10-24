@@ -1068,6 +1068,13 @@ struct EventTraits<EventId::CastWebcastBackendChanged> {
 };
 
 template <>
+struct EventTraits<EventId::CastAirplayChanged> {
+    using Event = CastAirPlayChangedEvent;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(EventId::CastAirplayChanged);
+    static constexpr const char* name = "cast.airplayChanged";
+};
+
+template <>
 struct EventTraits<EventId::SoftwareConfigChanged> {
     using Event = SoftwareConfigChangedEvent;
     static constexpr std::uint16_t id = static_cast<std::uint16_t>(EventId::SoftwareConfigChanged);

@@ -827,6 +827,7 @@ constexpr std::uint8_t PRESENTATION = 0x0D;
 constexpr std::uint8_t AUDIO_POLICY = 0x0E;
 constexpr std::uint8_t PRESENTATION_SETTINGS = 0x0F;
 constexpr std::uint8_t WEBCAST_BACKEND = 0x10;
+constexpr std::uint8_t AIRPLAY = 0x11;
 }
 
 namespace fields::cast_session_capability {
@@ -930,6 +931,7 @@ constexpr std::uint8_t PROFILE_HINTS = 0x09;
 constexpr std::uint8_t PRESENTATION_SETTINGS = 0x0A;
 constexpr std::uint8_t WEBCAST_BACKEND = 0x0B;
 constexpr std::uint8_t MEETING_PRESENTATION = 0x0C;
+constexpr std::uint8_t AIRPLAY_CONTROL = 0x0D;
 }
 
 namespace fields::cast_presentation_capability {
@@ -939,6 +941,7 @@ constexpr std::uint8_t SUPPORTS_STRICT_TARGETS = 0x03;
 constexpr std::uint8_t MAX_PRESENTATION_CAPACITY = 0x04;
 constexpr std::uint8_t CAPACITY_CHOICES = 0x05;
 constexpr std::uint8_t LAYOUT_MODES = 0x06;
+constexpr std::uint8_t CONTENT_ADAPTATIONS = 0x07;
 }
 
 namespace fields::cast_audio_policy_capability {
@@ -946,6 +949,7 @@ constexpr std::uint8_t CONTROL_MODES = 0x01;
 constexpr std::uint8_t MIX_MODES = 0x02;
 constexpr std::uint8_t SUPPORTS_PER_SESSION_ENABLE = 0x03;
 constexpr std::uint8_t REPORTS_EFFECTIVE_SET = 0x04;
+constexpr std::uint8_t SUPPORTS_MASTER_MUTE = 0x05;
 }
 
 namespace fields::cast_control_operations_capability {
@@ -1005,6 +1009,7 @@ constexpr std::uint8_t LAYOUT_MODE = 0x08;
 constexpr std::uint8_t LAYOUT_SETTLING = 0x09;
 constexpr std::uint8_t SLOTS = 0x0A;
 constexpr std::uint8_t MEETING = 0x0B;
+constexpr std::uint8_t CONTENT_ADAPTATION = 0x0C;
 }
 
 namespace fields::cast_audio_policy_state {
@@ -1013,6 +1018,7 @@ constexpr std::uint8_t MIX_MODE = 0x02;
 constexpr std::uint8_t ENABLED_SESSIONS = 0x03;
 constexpr std::uint8_t EFFECTIVE_AUDIO_SESSIONS = 0x04;
 constexpr std::uint8_t APPLIED_GAINS = 0x05;
+constexpr std::uint8_t MASTER_MUTED = 0x06;
 }
 
 namespace fields::cast_stop_presentation_params {
@@ -1074,12 +1080,12 @@ constexpr std::uint8_t AUDIO_MIX_MODE = 0x03;
 constexpr std::uint8_t CAPACITY = 0x04;
 constexpr std::uint8_t ENABLED_PROTOCOLS = 0x05;
 constexpr std::uint8_t PROFILE_HINT = 0x06;
-constexpr std::uint8_t PRESENTATION_ENABLED = 0x07;
+constexpr std::uint8_t CONTENT_ADAPTATION = 0x07;
 constexpr std::uint8_t PRESENTATION_MODE = 0x08;
 constexpr std::uint8_t PRESENTATION_SIDEBAR = 0x09;
 constexpr std::uint8_t PRESENTATION_AUDIO_FOLLOW = 0x0A;
 constexpr std::uint8_t PRESENTATION_FOCUS_ON_DOUBLE_CLICK = 0x0B;
-constexpr std::uint8_t PRESENTATION_SPLIT_ON_DOUBLE_CLICK = 0x0C;
+constexpr std::uint8_t PRESENTATION_GRID_ON_DOUBLE_CLICK = 0x0C;
 }
 
 namespace fields::cast_presentation_settings_values {
@@ -1089,12 +1095,12 @@ constexpr std::uint8_t AUDIO_MIX_MODE = 0x03;
 constexpr std::uint8_t CAPACITY = 0x04;
 constexpr std::uint8_t ENABLED_PROTOCOLS = 0x05;
 constexpr std::uint8_t PROFILE_HINT = 0x06;
-constexpr std::uint8_t PRESENTATION_ENABLED = 0x07;
+constexpr std::uint8_t CONTENT_ADAPTATION = 0x07;
 constexpr std::uint8_t PRESENTATION_MODE = 0x08;
 constexpr std::uint8_t PRESENTATION_SIDEBAR = 0x09;
 constexpr std::uint8_t PRESENTATION_AUDIO_FOLLOW = 0x0A;
 constexpr std::uint8_t PRESENTATION_FOCUS_ON_DOUBLE_CLICK = 0x0B;
-constexpr std::uint8_t PRESENTATION_SPLIT_ON_DOUBLE_CLICK = 0x0C;
+constexpr std::uint8_t PRESENTATION_GRID_ON_DOUBLE_CLICK = 0x0C;
 }
 
 namespace fields::cast_presentation_startup_settings {
@@ -1104,12 +1110,12 @@ constexpr std::uint8_t AUDIO_MIX_MODE = 0x03;
 constexpr std::uint8_t CAPACITY = 0x04;
 constexpr std::uint8_t ENABLED_PROTOCOLS = 0x05;
 constexpr std::uint8_t PROFILE_HINT = 0x06;
-constexpr std::uint8_t PRESENTATION_ENABLED = 0x07;
+constexpr std::uint8_t CONTENT_ADAPTATION = 0x07;
 constexpr std::uint8_t PRESENTATION_MODE = 0x08;
 constexpr std::uint8_t PRESENTATION_SIDEBAR = 0x09;
 constexpr std::uint8_t PRESENTATION_AUDIO_FOLLOW = 0x0A;
 constexpr std::uint8_t PRESENTATION_FOCUS_ON_DOUBLE_CLICK = 0x0B;
-constexpr std::uint8_t PRESENTATION_SPLIT_ON_DOUBLE_CLICK = 0x0C;
+constexpr std::uint8_t PRESENTATION_GRID_ON_DOUBLE_CLICK = 0x0C;
 }
 
 namespace fields::cast_presentation_settings_state {
@@ -1145,6 +1151,7 @@ constexpr std::uint8_t RESTART_ONLY_FIELDS = 0x03;
 constexpr std::uint8_t SUPPORTS_PERSISTENCE = 0x04;
 constexpr std::uint8_t CAPACITY_CHOICES = 0x05;
 constexpr std::uint8_t LAYOUT_MODES = 0x06;
+constexpr std::uint8_t CONTENT_ADAPTATIONS = 0x0A;
 constexpr std::uint8_t PROFILE_HINTS = 0x07;
 constexpr std::uint8_t MIN_ENABLED_PROTOCOLS = 0x08;
 }
@@ -1244,12 +1251,10 @@ constexpr std::uint8_t SEQUENCE_MODEL = 0x04;
 }
 
 namespace fields::cast_meeting_presentation_state {
-constexpr std::uint8_t ENABLED = 0x01;
 constexpr std::uint8_t MODE = 0x02;
 constexpr std::uint8_t SIDEBAR = 0x03;
 constexpr std::uint8_t AUDIO_FOLLOW = 0x04;
 constexpr std::uint8_t REVISION = 0x05;
-constexpr std::uint8_t SUSPENDED = 0x06;
 constexpr std::uint8_t PRIMARY = 0x07;
 constexpr std::uint8_t SIDEBAR_PAGE = 0x08;
 constexpr std::uint8_t SIDEBAR_PAGE_COUNT = 0x09;
@@ -1257,7 +1262,7 @@ constexpr std::uint8_t MAIN_SHARE_PERMILLE = 0x0A;
 constexpr std::uint8_t AUDIO_FOLLOW_ACTIVE = 0x0B;
 constexpr std::uint8_t VIEW = 0x0C;
 constexpr std::uint8_t FOCUS_ON_DOUBLE_CLICK = 0x0D;
-constexpr std::uint8_t SPLIT_ON_DOUBLE_CLICK = 0x0E;
+constexpr std::uint8_t GRID_ON_DOUBLE_CLICK = 0x0E;
 }
 
 namespace fields::cast_set_presentation_focus_params {
@@ -1283,6 +1288,34 @@ constexpr std::uint8_t MAIN_SHARE_PERMILLE = 0x03;
 constexpr std::uint8_t SUPPORTS_AUDIO_FOLLOW = 0x04;
 constexpr std::uint8_t SUPPORTS_PAGING = 0x05;
 constexpr std::uint8_t SUPPORTS_FOCUS_VIEW = 0x06;
+}
+
+namespace fields::cast_air_play_control_capability {
+constexpr std::uint8_t SUPPORTS_EVENTS = 0x01;
+constexpr std::uint8_t SUPPORTS_LIVE_RENAME = 0x02;
+constexpr std::uint8_t PASSWORD_POLICY = 0x03;
+}
+
+namespace fields::cast_air_play_authentication_attempt {
+constexpr std::uint8_t ATTEMPT_ID = 0x01;
+constexpr std::uint8_t CHALLENGE_ID = 0x02;
+constexpr std::uint8_t DISPLAY_REQUEST_ID = 0x03;
+constexpr std::uint8_t STATE = 0x04;
+constexpr std::uint8_t REASON = 0x05;
+}
+
+namespace fields::cast_air_play_control_state {
+constexpr std::uint8_t ENABLED = 0x01;
+constexpr std::uint8_t DISPLAY_NAME = 0x02;
+constexpr std::uint8_t PUBLISH_STATE = 0x03;
+constexpr std::uint8_t RANDOM_PASSWORD_ENABLED = 0x04;
+constexpr std::uint8_t ATTEMPTS = 0x05;
+constexpr std::uint8_t OBSERVATION_DROPS = 0x06;
+}
+
+namespace fields::cast_air_play_changed_event {
+constexpr std::uint8_t CONTEXT = 0x01;
+constexpr std::uint8_t AIRPLAY = 0x02;
 }
 
 namespace fields::get_device_info_params {
@@ -3653,6 +3686,8 @@ struct CastStatus {
     bool has_presentationSettings = false;
     std::uint32_t webcastBackend = 0;
     bool has_webcastBackend = false;
+    std::uint32_t airplay = 0;
+    bool has_airplay = false;
 };
 
 struct CastSessionCapability {
@@ -3797,6 +3832,8 @@ struct CastControlCapabilities {
     bool has_webcastBackend = false;
     std::uint32_t meetingPresentation = 0;
     bool has_meetingPresentation = false;
+    std::uint32_t airplayControl = 0;
+    bool has_airplayControl = false;
 };
 
 struct CastPresentationCapability {
@@ -3807,6 +3844,7 @@ struct CastPresentationCapability {
     std::uint32_t capacityChoices = 0;
     bool has_capacityChoices = false;
     std::uint32_t layoutModes = 0;
+    std::uint32_t contentAdaptations = 0;
 };
 
 struct CastAudioPolicyCapability {
@@ -3814,6 +3852,8 @@ struct CastAudioPolicyCapability {
     std::uint32_t mixModes = 0;
     bool supportsPerSessionEnable = false;
     bool reportsEffectiveSet = false;
+    bool supportsMasterMute = false;
+    bool has_supportsMasterMute = false;
 };
 
 struct CastControlOperationsCapability {
@@ -3875,11 +3915,12 @@ struct CastPresentationState {
     bool has_validatedCapacity = false;
     std::uint32_t effectiveCapacity = 0;
     std::uint32_t appliedCapacity = 0;
-    const char* layoutMode = nullptr;
+    std::uint32_t layoutMode = 0;
     bool layoutSettling = false;
     std::uint32_t slots = 0;
     std::uint32_t meeting = 0;
     bool has_meeting = false;
+    std::uint32_t contentAdaptation = 0;
 };
 
 struct CastAudioPolicyState {
@@ -3889,6 +3930,7 @@ struct CastAudioPolicyState {
     std::uint32_t effectiveAudioSessions = 0;
     std::uint32_t appliedGains = 0;
     bool has_appliedGains = false;
+    bool masterMuted = false;
 };
 
 struct CastStopPresentationParams {
@@ -3952,7 +3994,7 @@ struct CastSetPresentationSettingsParams {
 };
 
 struct CastPresentationSettingsPatch {
-    const char* layoutMode = nullptr;
+    std::uint32_t layoutMode = 0;
     bool has_layoutMode = false;
     std::uint32_t audioControlMode = 0;
     bool has_audioControlMode = false;
@@ -3964,8 +4006,8 @@ struct CastPresentationSettingsPatch {
     bool has_enabledProtocols = false;
     const char* profileHint = nullptr;
     bool has_profileHint = false;
-    bool presentationEnabled = false;
-    bool has_presentationEnabled = false;
+    std::uint32_t contentAdaptation = 0;
+    bool has_contentAdaptation = false;
     std::uint32_t presentationMode = 0;
     bool has_presentationMode = false;
     std::uint32_t presentationSidebar = 0;
@@ -3974,12 +4016,12 @@ struct CastPresentationSettingsPatch {
     bool has_presentationAudioFollow = false;
     bool presentationFocusOnDoubleClick = false;
     bool has_presentationFocusOnDoubleClick = false;
-    bool presentationSplitOnDoubleClick = false;
-    bool has_presentationSplitOnDoubleClick = false;
+    bool presentationGridOnDoubleClick = false;
+    bool has_presentationGridOnDoubleClick = false;
 };
 
 struct CastPresentationSettingsValues {
-    const char* layoutMode = nullptr;
+    std::uint32_t layoutMode = 0;
     bool has_layoutMode = false;
     std::uint32_t audioControlMode = 0;
     bool has_audioControlMode = false;
@@ -3991,8 +4033,8 @@ struct CastPresentationSettingsValues {
     bool has_enabledProtocols = false;
     const char* profileHint = nullptr;
     bool has_profileHint = false;
-    bool presentationEnabled = false;
-    bool has_presentationEnabled = false;
+    std::uint32_t contentAdaptation = 0;
+    bool has_contentAdaptation = false;
     std::uint32_t presentationMode = 0;
     bool has_presentationMode = false;
     std::uint32_t presentationSidebar = 0;
@@ -4001,12 +4043,12 @@ struct CastPresentationSettingsValues {
     bool has_presentationAudioFollow = false;
     bool presentationFocusOnDoubleClick = false;
     bool has_presentationFocusOnDoubleClick = false;
-    bool presentationSplitOnDoubleClick = false;
-    bool has_presentationSplitOnDoubleClick = false;
+    bool presentationGridOnDoubleClick = false;
+    bool has_presentationGridOnDoubleClick = false;
 };
 
 struct CastPresentationStartupSettings {
-    const char* layoutMode = nullptr;
+    std::uint32_t layoutMode = 0;
     bool has_layoutMode = false;
     std::uint32_t audioControlMode = 0;
     bool has_audioControlMode = false;
@@ -4018,8 +4060,8 @@ struct CastPresentationStartupSettings {
     bool has_enabledProtocols = false;
     const char* profileHint = nullptr;
     bool has_profileHint = false;
-    bool presentationEnabled = false;
-    bool has_presentationEnabled = false;
+    std::uint32_t contentAdaptation = 0;
+    bool has_contentAdaptation = false;
     std::uint32_t presentationMode = 0;
     bool has_presentationMode = false;
     std::uint32_t presentationSidebar = 0;
@@ -4028,8 +4070,8 @@ struct CastPresentationStartupSettings {
     bool has_presentationAudioFollow = false;
     bool presentationFocusOnDoubleClick = false;
     bool has_presentationFocusOnDoubleClick = false;
-    bool presentationSplitOnDoubleClick = false;
-    bool has_presentationSplitOnDoubleClick = false;
+    bool presentationGridOnDoubleClick = false;
+    bool has_presentationGridOnDoubleClick = false;
 };
 
 struct CastPresentationSettingsState {
@@ -4073,6 +4115,8 @@ struct CastPresentationSettingsCapability {
     bool has_capacityChoices = false;
     std::uint32_t layoutModes = 0;
     bool has_layoutModes = false;
+    std::uint32_t contentAdaptations = 0;
+    bool has_contentAdaptations = false;
     std::uint32_t profileHints = 0;
     bool has_profileHints = false;
     std::uint32_t minEnabledProtocols = 0;
@@ -4178,12 +4222,10 @@ struct CastWebCastBackendCapability {
 };
 
 struct CastMeetingPresentationState {
-    bool enabled = false;
     std::uint32_t mode = 0;
     std::uint32_t sidebar = 0;
     bool audioFollow = false;
     const char* revision = nullptr;
-    bool suspended = false;
     std::uint32_t primary = 0;
     bool has_primary = false;
     std::uint32_t sidebarPage = 0;
@@ -4194,8 +4236,8 @@ struct CastMeetingPresentationState {
     bool has_view = false;
     bool focusOnDoubleClick = false;
     bool has_focusOnDoubleClick = false;
-    bool splitOnDoubleClick = false;
-    bool has_splitOnDoubleClick = false;
+    bool gridOnDoubleClick = false;
+    bool has_gridOnDoubleClick = false;
 };
 
 struct CastSetPresentationFocusParams {
@@ -4223,6 +4265,36 @@ struct CastMeetingPresentationCapability {
     bool supportsPaging = false;
     bool supportsFocusView = false;
     bool has_supportsFocusView = false;
+};
+
+struct CastAirPlayControlCapability {
+    bool supportsEvents = false;
+    bool supportsLiveRename = false;
+    std::uint32_t passwordPolicy = 0;
+};
+
+struct CastAirPlayAuthenticationAttempt {
+    const char* attemptId = nullptr;
+    const char* challengeId = nullptr;
+    const char* displayRequestId = nullptr;
+    std::uint32_t state = 0;
+    const char* reason = nullptr;
+    bool has_reason = false;
+};
+
+struct CastAirPlayControlState {
+    bool enabled = false;
+    const char* displayName = nullptr;
+    std::uint32_t publishState = 0;
+    bool randomPasswordEnabled = false;
+    std::uint32_t attempts = 0;
+    const char* observationDrops = nullptr;
+    bool has_observationDrops = false;
+};
+
+struct CastAirPlayChangedEvent {
+    std::uint32_t context = 0;
+    std::uint32_t airplay = 0;
 };
 
 struct GetDeviceInfoParams {
@@ -6184,6 +6256,18 @@ bool DecodeCastMeetingAudioGain(TlvReader& reader, CastMeetingAudioGain* output,
 
 bool EncodeCastMeetingPresentationCapability(const CastMeetingPresentationCapability& input, TlvWriter& writer, ErrorCode* error);
 bool DecodeCastMeetingPresentationCapability(TlvReader& reader, CastMeetingPresentationCapability* output, ErrorCode* error);
+
+bool EncodeCastAirPlayControlCapability(const CastAirPlayControlCapability& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastAirPlayControlCapability(TlvReader& reader, CastAirPlayControlCapability* output, ErrorCode* error);
+
+bool EncodeCastAirPlayAuthenticationAttempt(const CastAirPlayAuthenticationAttempt& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastAirPlayAuthenticationAttempt(TlvReader& reader, CastAirPlayAuthenticationAttempt* output, ErrorCode* error);
+
+bool EncodeCastAirPlayControlState(const CastAirPlayControlState& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastAirPlayControlState(TlvReader& reader, CastAirPlayControlState* output, ErrorCode* error);
+
+bool EncodeCastAirPlayChangedEvent(const CastAirPlayChangedEvent& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastAirPlayChangedEvent(TlvReader& reader, CastAirPlayChangedEvent* output, ErrorCode* error);
 
 bool EncodeGetDeviceInfoParams(const GetDeviceInfoParams& input, TlvWriter& writer, ErrorCode* error);
 bool DecodeGetDeviceInfoParams(TlvReader& reader, GetDeviceInfoParams* output, ErrorCode* error);
