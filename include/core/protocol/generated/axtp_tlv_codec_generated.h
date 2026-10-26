@@ -565,6 +565,9 @@ constexpr std::uint8_t UPDATED_AT = 0x04;
 
 namespace fields::cast_get_pin_code_config_params {
 constexpr std::uint8_t INCLUDE_SECRET = 0x01;
+constexpr std::uint8_t PROTOCOL = 0x02;
+constexpr std::uint8_t INCLUDE_SENSITIVE = 0x03;
+constexpr std::uint8_t ATTEMPT_ID = 0x04;
 }
 
 namespace fields::cast_set_pin_code_config_params {
@@ -580,6 +583,13 @@ constexpr std::uint8_t EXPIRE_PREVIOUS = 0x02;
 constexpr std::uint8_t VISIBILITY = 0x03;
 }
 
+namespace fields::cast_pin_code_challenge {
+constexpr std::uint8_t ATTEMPT_ID = 0x01;
+constexpr std::uint8_t CHALLENGE_ID = 0x02;
+constexpr std::uint8_t DISPLAY_REQUEST_ID = 0x03;
+constexpr std::uint8_t PIN_CODE = 0x04;
+}
+
 namespace fields::cast_pin_code_config {
 constexpr std::uint8_t ENABLED = 0x01;
 constexpr std::uint8_t HAS_PIN_CODE = 0x02;
@@ -592,6 +602,9 @@ constexpr std::uint8_t REDACTION_REQUIRED = 0x08;
 constexpr std::uint8_t CHANGED_FIELDS = 0x09;
 constexpr std::uint8_t UPDATED_AT = 0x0A;
 constexpr std::uint8_t REDACTED = 0x0B;
+constexpr std::uint8_t PROTOCOL = 0x0C;
+constexpr std::uint8_t BACKEND = 0x0D;
+constexpr std::uint8_t CHALLENGES = 0x0E;
 }
 
 namespace fields::cast_pin_code_changed_event {
@@ -599,6 +612,7 @@ constexpr std::uint8_t CHANGED_FIELDS = 0x01;
 constexpr std::uint8_t CONFIG = 0x02;
 constexpr std::uint8_t REASON = 0x03;
 constexpr std::uint8_t UPDATED_AT = 0x04;
+constexpr std::uint8_t CHALLENGE = 0x05;
 }
 
 namespace fields::cast_pin_code_required_event {
@@ -608,6 +622,7 @@ constexpr std::uint8_t PIN_CODE = 0x03;
 constexpr std::uint8_t VISIBILITY = 0x04;
 constexpr std::uint8_t REDACTION_REQUIRED = 0x05;
 constexpr std::uint8_t REQUESTED_AT = 0x06;
+constexpr std::uint8_t CONFIG = 0x07;
 }
 
 namespace fields::cast_pin_code_auth_failed_event {
@@ -3291,6 +3306,12 @@ struct CastAudioChangedEvent {
 struct CastGetPinCodeConfigParams {
     bool includeSecret = false;
     bool has_includeSecret = false;
+    std::uint32_t protocol = 0;
+    bool has_protocol = false;
+    bool includeSensitive = false;
+    bool has_includeSensitive = false;
+    const char* attemptId = nullptr;
+    bool has_attemptId = false;
 };
 
 struct CastSetPinCodeConfigParams {
@@ -3310,6 +3331,14 @@ struct CastSetPinCodeParams {
     bool has_expirePrevious = false;
     std::uint32_t visibility = 0;
     bool has_visibility = false;
+};
+
+struct CastPinCodeChallenge {
+    const char* attemptId = nullptr;
+    const char* challengeId = nullptr;
+    const char* displayRequestId = nullptr;
+    const char* pinCode = nullptr;
+    bool has_pinCode = false;
 };
 
 struct CastPinCodeConfig {
@@ -3333,6 +3362,12 @@ struct CastPinCodeConfig {
     bool has_updatedAt = false;
     bool redacted = false;
     bool has_redacted = false;
+    std::uint32_t protocol = 0;
+    bool has_protocol = false;
+    std::uint32_t backend = 0;
+    bool has_backend = false;
+    std::uint32_t challenges = 0;
+    bool has_challenges = false;
 };
 
 struct CastPinCodeChangedEvent {
@@ -3342,6 +3377,8 @@ struct CastPinCodeChangedEvent {
     bool has_reason = false;
     const char* updatedAt = nullptr;
     bool has_updatedAt = false;
+    std::uint32_t challenge = 0;
+    bool has_challenge = false;
 };
 
 struct CastPinCodeRequiredEvent {
@@ -3357,6 +3394,8 @@ struct CastPinCodeRequiredEvent {
     bool has_redactionRequired = false;
     const char* requestedAt = nullptr;
     bool has_requestedAt = false;
+    std::uint32_t config = 0;
+    bool has_config = false;
 };
 
 struct CastPinCodeAuthFailedEvent {
@@ -6025,6 +6064,9 @@ bool DecodeCastSetPinCodeConfigParams(TlvReader& reader, CastSetPinCodeConfigPar
 
 bool EncodeCastSetPinCodeParams(const CastSetPinCodeParams& input, TlvWriter& writer, ErrorCode* error);
 bool DecodeCastSetPinCodeParams(TlvReader& reader, CastSetPinCodeParams* output, ErrorCode* error);
+
+bool EncodeCastPinCodeChallenge(const CastPinCodeChallenge& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastPinCodeChallenge(TlvReader& reader, CastPinCodeChallenge* output, ErrorCode* error);
 
 bool EncodeCastPinCodeConfig(const CastPinCodeConfig& input, TlvWriter& writer, ErrorCode* error);
 bool DecodeCastPinCodeConfig(TlvReader& reader, CastPinCodeConfig* output, ErrorCode* error);

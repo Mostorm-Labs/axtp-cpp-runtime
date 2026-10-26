@@ -595,6 +595,9 @@ inline constexpr FieldDescriptor kCastAudioChangedEventFields[] = {
 
 inline constexpr FieldDescriptor kCastGetPinCodeConfigParamsFields[] = {
     { 0x01, "includeSecret", FieldType::Bool, false, 0, 0 },
+    { 0x02, "protocol", FieldType::Enum, false, 0, 0 },
+    { 0x03, "includeSensitive", FieldType::Bool, false, 0, 0 },
+    { 0x04, "attemptId", FieldType::String, false, 0, 0 },
 };
 
 inline constexpr FieldDescriptor kCastSetPinCodeConfigParamsFields[] = {
@@ -610,6 +613,13 @@ inline constexpr FieldDescriptor kCastSetPinCodeParamsFields[] = {
     { 0x03, "visibility", FieldType::Enum, false, 0, 0 },
 };
 
+inline constexpr FieldDescriptor kCastPinCodeChallengeFields[] = {
+    { 0x01, "attemptId", FieldType::String, true, 0, 0 },
+    { 0x02, "challengeId", FieldType::String, true, 0, 0 },
+    { 0x03, "displayRequestId", FieldType::String, true, 0, 0 },
+    { 0x04, "pinCode", FieldType::String, false, 0, 0 },
+};
+
 inline constexpr FieldDescriptor kCastPinCodeConfigFields[] = {
     { 0x01, "enabled", FieldType::Bool, true, 0, 0 },
     { 0x02, "hasPinCode", FieldType::Bool, true, 0, 0 },
@@ -622,6 +632,9 @@ inline constexpr FieldDescriptor kCastPinCodeConfigFields[] = {
     { 0x09, "changedFields", FieldType::Array, false, 0, 0 },
     { 0x0A, "updatedAt", FieldType::String, false, 0, 0 },
     { 0x0B, "redacted", FieldType::Bool, false, 0, 0 },
+    { 0x0C, "protocol", FieldType::Enum, false, 0, 0 },
+    { 0x0D, "backend", FieldType::Enum, false, 0, 0 },
+    { 0x0E, "challenges", FieldType::Array, false, 0, 0 },
 };
 
 inline constexpr FieldDescriptor kCastPinCodeChangedEventFields[] = {
@@ -629,6 +642,7 @@ inline constexpr FieldDescriptor kCastPinCodeChangedEventFields[] = {
     { 0x02, "config", FieldType::Object, true, 0, 0 },
     { 0x03, "reason", FieldType::Enum, false, 0, 0 },
     { 0x04, "updatedAt", FieldType::String, false, 0, 0 },
+    { 0x05, "challenge", FieldType::Object, false, 0, 0 },
 };
 
 inline constexpr FieldDescriptor kCastPinCodeRequiredEventFields[] = {
@@ -638,6 +652,7 @@ inline constexpr FieldDescriptor kCastPinCodeRequiredEventFields[] = {
     { 0x04, "visibility", FieldType::Enum, false, 0, 0 },
     { 0x05, "redactionRequired", FieldType::Bool, false, 0, 0 },
     { 0x06, "requestedAt", FieldType::String, false, 0, 0 },
+    { 0x07, "config", FieldType::Object, false, 0, 0 },
 };
 
 inline constexpr FieldDescriptor kCastPinCodeAuthFailedEventFields[] = {
@@ -2579,12 +2594,13 @@ inline constexpr SchemaDescriptor kCastSetMutedParamsSchema = { "CastSetMutedPar
 inline constexpr SchemaDescriptor kCastSetAudioDelayParamsSchema = { "CastSetAudioDelayParams", kCastSetAudioDelayParamsFields, 3 };
 inline constexpr SchemaDescriptor kCastAudioStateSchema = { "CastAudioState", kCastAudioStateFields, 10 };
 inline constexpr SchemaDescriptor kCastAudioChangedEventSchema = { "CastAudioChangedEvent", kCastAudioChangedEventFields, 4 };
-inline constexpr SchemaDescriptor kCastGetPinCodeConfigParamsSchema = { "CastGetPinCodeConfigParams", kCastGetPinCodeConfigParamsFields, 1 };
+inline constexpr SchemaDescriptor kCastGetPinCodeConfigParamsSchema = { "CastGetPinCodeConfigParams", kCastGetPinCodeConfigParamsFields, 4 };
 inline constexpr SchemaDescriptor kCastSetPinCodeConfigParamsSchema = { "CastSetPinCodeConfigParams", kCastSetPinCodeConfigParamsFields, 4 };
 inline constexpr SchemaDescriptor kCastSetPinCodeParamsSchema = { "CastSetPinCodeParams", kCastSetPinCodeParamsFields, 3 };
-inline constexpr SchemaDescriptor kCastPinCodeConfigSchema = { "CastPinCodeConfig", kCastPinCodeConfigFields, 11 };
-inline constexpr SchemaDescriptor kCastPinCodeChangedEventSchema = { "CastPinCodeChangedEvent", kCastPinCodeChangedEventFields, 4 };
-inline constexpr SchemaDescriptor kCastPinCodeRequiredEventSchema = { "CastPinCodeRequiredEvent", kCastPinCodeRequiredEventFields, 6 };
+inline constexpr SchemaDescriptor kCastPinCodeChallengeSchema = { "CastPinCodeChallenge", kCastPinCodeChallengeFields, 4 };
+inline constexpr SchemaDescriptor kCastPinCodeConfigSchema = { "CastPinCodeConfig", kCastPinCodeConfigFields, 14 };
+inline constexpr SchemaDescriptor kCastPinCodeChangedEventSchema = { "CastPinCodeChangedEvent", kCastPinCodeChangedEventFields, 5 };
+inline constexpr SchemaDescriptor kCastPinCodeRequiredEventSchema = { "CastPinCodeRequiredEvent", kCastPinCodeRequiredEventFields, 7 };
 inline constexpr SchemaDescriptor kCastPinCodeAuthFailedEventSchema = { "CastPinCodeAuthFailedEvent", kCastPinCodeAuthFailedEventFields, 5 };
 inline constexpr SchemaDescriptor kCastRectSchema = { "CastRect", kCastRectFields, 4 };
 inline constexpr SchemaDescriptor kCastSetWindowStateParamsSchema = { "CastSetWindowStateParams", kCastSetWindowStateParamsFields, 4 };

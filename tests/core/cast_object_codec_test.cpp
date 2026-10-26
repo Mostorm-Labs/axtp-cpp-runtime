@@ -47,6 +47,20 @@ int main() {
         }
         require(axtp::MethodRegistry::fromGeneratedDefaults().findMethodId("cast.setPresentationSettings")==0x1619,"generated P1 method");
         require(axtp::MethodRegistry::fromGeneratedDefaults().findMethodId("cast.getSession")==0x1601,"legacy method unchanged");
+        require(axtp::SchemaObjectCodec::validate("CastGetPinCodeConfigParams",nlohmann::json::object()),"empty legacy PIN selector remains valid");
+        const nlohmann::json codeQuery={{"protocol","airplay"},{"includeSecret",true},{"includeSensitive",true},{"attemptId","18446744073709551615"}};
+        require(axtp::SchemaObjectCodec::validate("CastGetPinCodeConfigParams",codeQuery),"explicit PIN protocol, sensitivity alias and exact attempt validate");
+        const nlohmann::json challenge={{"attemptId","18446744073709551615"},{"challengeId","9007199254740993"},{"displayRequestId","2"},{"pinCode","1234"}};
+        const auto challengeWire=axtp::SchemaObjectCodec::encodeTlv8("CastPinCodeChallenge",challenge);
+        require(challengeWire&&axtp::SchemaObjectCodec::decodeTlv8("CastPinCodeChallenge",*challengeWire)==challenge,"credential challenge preserves exact uint64 strings through TLV");
+        auto futureChallenge=challenge;futureChallenge["futureOptional"]=true;
+        require(axtp::SchemaObjectCodec::decodeJson("CastPinCodeChallenge",futureChallenge.dump()).has_value(),"credential future optional JSON compatible");
+        auto challengeExtra=*challengeWire;challengeExtra.insert(challengeExtra.end(),{0xFE,1,0x01});
+        require(axtp::SchemaObjectCodec::decodeTlv8("CastPinCodeChallenge",challengeExtra)==challenge,"credential future optional TLV compatible");
+        for(const auto& bad:nlohmann::json::array({1,"01","-1","18446744073709551616"})) {
+            auto invalid=codeQuery;invalid["attemptId"]=bad;
+            require(!axtp::SchemaObjectCodec::validate("CastGetPinCodeConfigParams",invalid),"credential selector rejects lossy or noncanonical identity");
+        }
         const nlohmann::json context={{"controlVersion",1},{"runtimeInstanceId","11111111-1111-4111-8111-111111111111"},
             {"backendRevision","9007199254740993"},{"backendEventSequence","18446744073709551615"}};
         const auto wire=axtp::SchemaObjectCodec::encodeTlv8("CastWebCastBackendContext",context);

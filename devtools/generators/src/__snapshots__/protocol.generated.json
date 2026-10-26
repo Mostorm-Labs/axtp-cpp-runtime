@@ -3745,6 +3745,32 @@
           "required": false,
           "default": false,
           "description": "Whether authorized clients request plaintext PIN material."
+        },
+        {
+          "fieldId": 2,
+          "name": "protocol",
+          "type": "enum",
+          "required": false,
+          "enumValues": [
+            "airplay",
+            "webcast"
+          ],
+          "description": "Code owner to query; omitted means AirPlay for legacy compatibility."
+        },
+        {
+          "fieldId": 3,
+          "name": "includeSensitive",
+          "type": "bool",
+          "required": false,
+          "description": "Legacy alias of includeSecret; either true requests secret material."
+        },
+        {
+          "fieldId": 4,
+          "name": "attemptId",
+          "type": "string",
+          "required": false,
+          "maxLength": 20,
+          "description": "Exact AirPlay authentication attempt; canonical decimal uint64 string."
         }
       ]
     },
@@ -3828,6 +3854,44 @@
             "both"
           ],
           "description": "Visibility policy for the new PIN."
+        }
+      ]
+    },
+    {
+      "name": "CastPinCodeChallenge",
+      "kind": "object",
+      "description": "One live AirPlay authentication challenge, never a media session.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "attemptId",
+          "type": "string",
+          "required": true,
+          "maxLength": 20,
+          "description": "Authentication attempt identity; canonical decimal uint64 string."
+        },
+        {
+          "fieldId": 2,
+          "name": "challengeId",
+          "type": "string",
+          "required": true,
+          "maxLength": 20,
+          "description": "Exact credential generation; canonical decimal uint64 string."
+        },
+        {
+          "fieldId": 3,
+          "name": "displayRequestId",
+          "type": "string",
+          "required": true,
+          "maxLength": 20,
+          "description": "Display occurrence, independent of credential lifetime; canonical decimal uint64 string."
+        },
+        {
+          "fieldId": 4,
+          "name": "pinCode",
+          "type": "string",
+          "required": false,
+          "description": "Live secret, omitted unless explicitly requested or in a dedicated PIN event."
         }
       ]
     },
@@ -3937,6 +4001,39 @@
           "type": "bool",
           "required": false,
           "description": "Whether sensitive fields were withheld in this snapshot."
+        },
+        {
+          "fieldId": 12,
+          "name": "protocol",
+          "type": "enum",
+          "required": false,
+          "enumValues": [
+            "airplay",
+            "webcast"
+          ],
+          "description": "Credential owner, independent of the currently playing protocol."
+        },
+        {
+          "fieldId": 13,
+          "name": "backend",
+          "type": "enum",
+          "required": false,
+          "enumValues": [
+            "cloud",
+            "local",
+            "none"
+          ],
+          "description": "Selected WebCast backend for new joins; none means no usable backend."
+        },
+        {
+          "fieldId": 14,
+          "name": "challenges",
+          "type": "array",
+          "required": false,
+          "array": {
+            "itemType": "CastPinCodeChallenge"
+          },
+          "description": "Active AirPlay challenges; plaintext only when requested or in dedicated PIN events."
         }
       ]
     },
@@ -3983,6 +4080,13 @@
           "required": false,
           "maxLength": 64,
           "description": "Timestamp for this event."
+        },
+        {
+          "fieldId": 5,
+          "name": "challenge",
+          "type": "CastPinCodeChallenge",
+          "required": false,
+          "description": "Affected AirPlay identity; secret omitted after consumption or expiry."
         }
       ]
     },
@@ -4041,6 +4145,13 @@
           "required": false,
           "maxLength": 64,
           "description": "Timestamp when PIN input was requested."
+        },
+        {
+          "fieldId": 7,
+          "name": "config",
+          "type": "CastPinCodeConfig",
+          "required": false,
+          "description": "Exact AirPlay code state for this occurrence, including challenge identity."
         }
       ]
     },

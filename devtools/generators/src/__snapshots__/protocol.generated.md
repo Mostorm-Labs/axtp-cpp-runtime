@@ -978,6 +978,9 @@ Type: `CastGetPinCodeConfigParams`
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
 | ?includeSecret | Boolean | 0x01 | Whether authorized clients request plaintext PIN material. | None | Default: false |
+| ?protocol | Enum | 0x02 | Code owner to query; omitted means AirPlay for legacy compatibility. | enum=airplay/webcast | Omit if not used. |
+| ?includeSensitive | Boolean | 0x03 | Legacy alias of includeSecret; either true requests secret material. | None | Omit if not used. |
+| ?attemptId | String | 0x04 | Exact AirPlay authentication attempt; canonical decimal uint64 string. | maxLength=20 | Omit if not used. |
 
 #### Response Fields
 
@@ -996,6 +999,9 @@ Type: `CastPinCodeConfig`
 | ?changedFields | Array<String> | 0x09 | Field names changed by the latest operation or event. | array.itemType=string | Omit if not used. |
 | ?updatedAt | String | 0x0A | Timestamp for this PIN state. | maxLength=64 | Omit if not used. |
 | ?redacted | Boolean | 0x0B | Whether sensitive fields were withheld in this snapshot. | None | Omit if not used. |
+| ?protocol | Enum | 0x0C | Credential owner, independent of the currently playing protocol. | enum=airplay/webcast | Omit if not used. |
+| ?backend | Enum | 0x0D | Selected WebCast backend for new joins; none means no usable backend. | enum=cloud/local/none | Omit if not used. |
+| ?challenges | Array<CastPinCodeChallenge> | 0x0E | Active AirPlay challenges; plaintext only when requested or in dedicated PIN events. | array.itemType=CastPinCodeChallenge | Omit if not used. |
 
 ---
 
@@ -1041,6 +1047,9 @@ Type: `CastPinCodeConfig`
 | ?changedFields | Array<String> | 0x09 | Field names changed by the latest operation or event. | array.itemType=string | Omit if not used. |
 | ?updatedAt | String | 0x0A | Timestamp for this PIN state. | maxLength=64 | Omit if not used. |
 | ?redacted | Boolean | 0x0B | Whether sensitive fields were withheld in this snapshot. | None | Omit if not used. |
+| ?protocol | Enum | 0x0C | Credential owner, independent of the currently playing protocol. | enum=airplay/webcast | Omit if not used. |
+| ?backend | Enum | 0x0D | Selected WebCast backend for new joins; none means no usable backend. | enum=cloud/local/none | Omit if not used. |
+| ?challenges | Array<CastPinCodeChallenge> | 0x0E | Active AirPlay challenges; plaintext only when requested or in dedicated PIN events. | array.itemType=CastPinCodeChallenge | Omit if not used. |
 
 ---
 
@@ -1085,6 +1094,9 @@ Type: `CastPinCodeConfig`
 | ?changedFields | Array<String> | 0x09 | Field names changed by the latest operation or event. | array.itemType=string | Omit if not used. |
 | ?updatedAt | String | 0x0A | Timestamp for this PIN state. | maxLength=64 | Omit if not used. |
 | ?redacted | Boolean | 0x0B | Whether sensitive fields were withheld in this snapshot. | None | Omit if not used. |
+| ?protocol | Enum | 0x0C | Credential owner, independent of the currently playing protocol. | enum=airplay/webcast | Omit if not used. |
+| ?backend | Enum | 0x0D | Selected WebCast backend for new joins; none means no usable backend. | enum=cloud/local/none | Omit if not used. |
+| ?challenges | Array<CastPinCodeChallenge> | 0x0E | Active AirPlay challenges; plaintext only when requested or in dedicated PIN events. | array.itemType=CastPinCodeChallenge | Omit if not used. |
 
 ---
 
@@ -4429,6 +4441,7 @@ Type: `CastPinCodeChangedEvent`
 | config | CastPinCodeConfig | 0x02 | PIN state after the change. | None | N/A |
 | ?reason | Enum | 0x03 | Change reason. | enum=externalSet/localUi/generated/backendChanged/unknown | Omit if not used. |
 | ?updatedAt | String | 0x04 | Timestamp for this event. | maxLength=64 | Omit if not used. |
+| ?challenge | CastPinCodeChallenge | 0x05 | Affected AirPlay identity; secret omitted after consumption or expiry. | None | Omit if not used. |
 
 ---
 
@@ -4457,6 +4470,7 @@ Type: `CastPinCodeRequiredEvent`
 | ?visibility | Enum | 0x04 | Visibility policy for this event payload. | enum=hidden/authorizedOnly/localUi/both | Omit if not used. |
 | ?redactionRequired | Boolean | 0x05 | Whether logs and diagnostics must redact this PIN value. | None | Default: true |
 | ?requestedAt | String | 0x06 | Timestamp when PIN input was requested. | maxLength=64 | Omit if not used. |
+| ?config | CastPinCodeConfig | 0x07 | Exact AirPlay code state for this occurrence, including challenge identity. | None | Omit if not used. |
 
 ---
 
@@ -5893,6 +5907,19 @@ Current shared runtime session with independent connection, eligibility and medi
 | audioTrackOpen | Boolean | 0x07 | Whether the audio track is open; not proof of audible output. | None | N/A |
 | ?audioReadiness | Enum | 0x08 | Audio readiness when observed. | enum=unknown/absent/priming/ready/recovering | Omit if not used. |
 | ?displayName | String | 0x09 | Safe user-visible name; not a target identity. | maxLength=128 | Omit if not used. |
+
+---
+
+## CastPinCodeChallenge
+
+One live AirPlay authentication challenge, never a media session.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| attemptId | String | 0x01 | Authentication attempt identity; canonical decimal uint64 string. | maxLength=20 | N/A |
+| challengeId | String | 0x02 | Exact credential generation; canonical decimal uint64 string. | maxLength=20 | N/A |
+| displayRequestId | String | 0x03 | Display occurrence, independent of credential lifetime; canonical decimal uint64 string. | maxLength=20 | N/A |
+| ?pinCode | String | 0x04 | Live secret, omitted unless explicitly requested or in a dedicated PIN event. | None | Omit if not used. |
 
 ---
 
