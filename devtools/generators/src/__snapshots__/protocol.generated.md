@@ -1002,6 +1002,8 @@ Type: `CastPinCodeConfig`
 | ?protocol | Enum | 0x0C | Credential owner, independent of the currently playing protocol. | enum=airplay/webcast | Omit if not used. |
 | ?backend | Enum | 0x0D | Selected WebCast backend for new joins; none means no usable backend. | enum=cloud/local/none | Omit if not used. |
 | ?challenges | Array<CastPinCodeChallenge> | 0x0E | Active AirPlay challenges; plaintext only when requested or in dedicated PIN events. | array.itemType=CastPinCodeChallenge | Omit if not used. |
+| ?scope | Enum | 0x0F | Access is the prepared code for future joins; challenge is an exact in-flight authentication request. | enum=access/challenge | Omit if not used. |
+| ?codeGeneration | String | 0x10 | Canonical decimal uint64 credential generation, independent of repeated digit values. | maxLength=20 | Omit if not used. |
 
 ---
 
@@ -1050,6 +1052,8 @@ Type: `CastPinCodeConfig`
 | ?protocol | Enum | 0x0C | Credential owner, independent of the currently playing protocol. | enum=airplay/webcast | Omit if not used. |
 | ?backend | Enum | 0x0D | Selected WebCast backend for new joins; none means no usable backend. | enum=cloud/local/none | Omit if not used. |
 | ?challenges | Array<CastPinCodeChallenge> | 0x0E | Active AirPlay challenges; plaintext only when requested or in dedicated PIN events. | array.itemType=CastPinCodeChallenge | Omit if not used. |
+| ?scope | Enum | 0x0F | Access is the prepared code for future joins; challenge is an exact in-flight authentication request. | enum=access/challenge | Omit if not used. |
+| ?codeGeneration | String | 0x10 | Canonical decimal uint64 credential generation, independent of repeated digit values. | maxLength=20 | Omit if not used. |
 
 ---
 
@@ -1097,6 +1101,8 @@ Type: `CastPinCodeConfig`
 | ?protocol | Enum | 0x0C | Credential owner, independent of the currently playing protocol. | enum=airplay/webcast | Omit if not used. |
 | ?backend | Enum | 0x0D | Selected WebCast backend for new joins; none means no usable backend. | enum=cloud/local/none | Omit if not used. |
 | ?challenges | Array<CastPinCodeChallenge> | 0x0E | Active AirPlay challenges; plaintext only when requested or in dedicated PIN events. | array.itemType=CastPinCodeChallenge | Omit if not used. |
+| ?scope | Enum | 0x0F | Access is the prepared code for future joins; challenge is an exact in-flight authentication request. | enum=access/challenge | Omit if not used. |
+| ?codeGeneration | String | 0x10 | Canonical decimal uint64 credential generation, independent of repeated digit values. | maxLength=20 | Omit if not used. |
 
 ---
 
@@ -5920,6 +5926,7 @@ One live AirPlay authentication challenge, never a media session.
 | challengeId | String | 0x02 | Exact credential generation; canonical decimal uint64 string. | maxLength=20 | N/A |
 | displayRequestId | String | 0x03 | Display occurrence, independent of credential lifetime; canonical decimal uint64 string. | maxLength=20 | N/A |
 | ?pinCode | String | 0x04 | Live secret, omitted unless explicitly requested or in a dedicated PIN event. | None | Omit if not used. |
+| ?codeGeneration | String | 0x05 | Canonical decimal uint64 prepared or replacement credential generation frozen for this request. | maxLength=20 | Omit if not used. |
 
 ---
 

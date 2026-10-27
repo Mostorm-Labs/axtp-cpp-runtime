@@ -588,6 +588,7 @@ constexpr std::uint8_t ATTEMPT_ID = 0x01;
 constexpr std::uint8_t CHALLENGE_ID = 0x02;
 constexpr std::uint8_t DISPLAY_REQUEST_ID = 0x03;
 constexpr std::uint8_t PIN_CODE = 0x04;
+constexpr std::uint8_t CODE_GENERATION = 0x05;
 }
 
 namespace fields::cast_pin_code_config {
@@ -605,6 +606,8 @@ constexpr std::uint8_t REDACTED = 0x0B;
 constexpr std::uint8_t PROTOCOL = 0x0C;
 constexpr std::uint8_t BACKEND = 0x0D;
 constexpr std::uint8_t CHALLENGES = 0x0E;
+constexpr std::uint8_t SCOPE = 0x0F;
+constexpr std::uint8_t CODE_GENERATION = 0x10;
 }
 
 namespace fields::cast_pin_code_changed_event {
@@ -3339,6 +3342,8 @@ struct CastPinCodeChallenge {
     const char* displayRequestId = nullptr;
     const char* pinCode = nullptr;
     bool has_pinCode = false;
+    const char* codeGeneration = nullptr;
+    bool has_codeGeneration = false;
 };
 
 struct CastPinCodeConfig {
@@ -3368,6 +3373,10 @@ struct CastPinCodeConfig {
     bool has_backend = false;
     std::uint32_t challenges = 0;
     bool has_challenges = false;
+    std::uint32_t scope = 0;
+    bool has_scope = false;
+    const char* codeGeneration = nullptr;
+    bool has_codeGeneration = false;
 };
 
 struct CastPinCodeChangedEvent {

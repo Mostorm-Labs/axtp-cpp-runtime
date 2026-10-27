@@ -3892,6 +3892,14 @@
           "type": "string",
           "required": false,
           "description": "Live secret, omitted unless explicitly requested or in a dedicated PIN event."
+        },
+        {
+          "fieldId": 5,
+          "name": "codeGeneration",
+          "type": "string",
+          "required": false,
+          "maxLength": 20,
+          "description": "Canonical decimal uint64 prepared or replacement credential generation frozen for this request."
         }
       ]
     },
@@ -4034,6 +4042,25 @@
             "itemType": "CastPinCodeChallenge"
           },
           "description": "Active AirPlay challenges; plaintext only when requested or in dedicated PIN events."
+        },
+        {
+          "fieldId": 15,
+          "name": "scope",
+          "type": "enum",
+          "required": false,
+          "enumValues": [
+            "access",
+            "challenge"
+          ],
+          "description": "Access is the prepared code for future joins; challenge is an exact in-flight authentication request."
+        },
+        {
+          "fieldId": 16,
+          "name": "codeGeneration",
+          "type": "string",
+          "required": false,
+          "maxLength": 20,
+          "description": "Canonical decimal uint64 credential generation, independent of repeated digit values."
         }
       ]
     },
