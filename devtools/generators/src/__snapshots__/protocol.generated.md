@@ -5895,6 +5895,8 @@ Meeting policy and transient emphasis captured at the existing P0 commit boundar
 | ?view | Enum | 0x0C | Present only in Presentation layout; omitted in Grid. | enum=sidebar/focus | Omit if not used. |
 | ?focusOnDoubleClick | Boolean | 0x0D | Main-body double-click Focus entry preference; absent means true. Explicit focus API remains independent. | None | Omit if not used. |
 | ?gridOnDoubleClick | Boolean | 0x0E | Include Grid in main-body double-click cycle; absent means false. With Focus enabled the cycle is Grid to Sidebar to Focus to Grid. | None | Omit if not used. |
+| ?autoEnter | Boolean | 0x0F | Automatic layout entry preference; absent means unsupported. Independent of primary selection. | None | Omit if not used. |
+| ?autoEnterSuppressed | Boolean | 0x10 | Explicit Grid suspends auto-entry for this source round; resets on complete withdrawal or explicit re-enabling. Transient and never persisted. | None | Omit if not used. |
 
 ---
 
@@ -5991,6 +5993,7 @@ All fields optional structurally but exactly one key required semantically; unkn
 | ?presentationAudioFollow | Boolean | 0x0A | Remembered follow preference independent of activity and global audio control mode. | None | Omit if not used. |
 | ?presentationFocusOnDoubleClick | Boolean | 0x0B | Remembered main-body double-click Focus entry preference; default true. Disabling restores Sidebar from Focus. | None | Omit if not used. |
 | ?presentationGridOnDoubleClick | Boolean | 0x0C | Remembered inclusion of Grid in main-body double-click cycle; default false. Independent of Focus entry. | None | Omit if not used. |
+| ?presentationAutoEnter | Boolean | 0x0D | Automatic Grid to Sidebar entry at two presented sources; independent of primary selection. Explicit Grid suppresses entry until full withdrawal. | None | Omit if not used. |
 
 ---
 
@@ -6037,6 +6040,7 @@ Supported setting values only; configured/known persisted projections are comple
 | ?presentationAudioFollow | Boolean | 0x0A | Remembered follow preference independent of activity and global audio control mode. | None | Omit if not used. |
 | ?presentationFocusOnDoubleClick | Boolean | 0x0B | Remembered main-body double-click Focus entry preference; default true. Disabling restores Sidebar from Focus. | None | Omit if not used. |
 | ?presentationGridOnDoubleClick | Boolean | 0x0C | Remembered inclusion of Grid in main-body double-click cycle; default false. Independent of Focus entry. | None | Omit if not used. |
+| ?presentationAutoEnter | Boolean | 0x0D | Automatic Grid to Sidebar entry at two presented sources; independent of primary selection. Explicit Grid suppresses entry until full withdrawal. | None | Omit if not used. |
 
 ---
 
@@ -6071,6 +6075,7 @@ Exactly the capability-declared restart-only intent accepted at this host startu
 | ?presentationAudioFollow | Boolean | 0x0A | Remembered follow preference independent of activity and global audio control mode. | None | Omit if not used. |
 | ?presentationFocusOnDoubleClick | Boolean | 0x0B | Remembered main-body double-click Focus entry preference; default true. Disabling restores Sidebar from Focus. | None | Omit if not used. |
 | ?presentationGridOnDoubleClick | Boolean | 0x0C | Remembered inclusion of Grid in main-body double-click cycle; default false. Independent of Focus entry. | None | Omit if not used. |
+| ?presentationAutoEnter | Boolean | 0x0D | Automatic Grid to Sidebar entry at two presented sources; independent of primary selection. Explicit Grid suppresses entry until full withdrawal. | None | Omit if not used. |
 
 ---
 

@@ -1104,6 +1104,7 @@ constexpr std::uint8_t PRESENTATION_SIDEBAR = 0x09;
 constexpr std::uint8_t PRESENTATION_AUDIO_FOLLOW = 0x0A;
 constexpr std::uint8_t PRESENTATION_FOCUS_ON_DOUBLE_CLICK = 0x0B;
 constexpr std::uint8_t PRESENTATION_GRID_ON_DOUBLE_CLICK = 0x0C;
+constexpr std::uint8_t PRESENTATION_AUTO_ENTER = 0x0D;
 }
 
 namespace fields::cast_presentation_settings_values {
@@ -1119,6 +1120,7 @@ constexpr std::uint8_t PRESENTATION_SIDEBAR = 0x09;
 constexpr std::uint8_t PRESENTATION_AUDIO_FOLLOW = 0x0A;
 constexpr std::uint8_t PRESENTATION_FOCUS_ON_DOUBLE_CLICK = 0x0B;
 constexpr std::uint8_t PRESENTATION_GRID_ON_DOUBLE_CLICK = 0x0C;
+constexpr std::uint8_t PRESENTATION_AUTO_ENTER = 0x0D;
 }
 
 namespace fields::cast_presentation_startup_settings {
@@ -1134,6 +1136,7 @@ constexpr std::uint8_t PRESENTATION_SIDEBAR = 0x09;
 constexpr std::uint8_t PRESENTATION_AUDIO_FOLLOW = 0x0A;
 constexpr std::uint8_t PRESENTATION_FOCUS_ON_DOUBLE_CLICK = 0x0B;
 constexpr std::uint8_t PRESENTATION_GRID_ON_DOUBLE_CLICK = 0x0C;
+constexpr std::uint8_t PRESENTATION_AUTO_ENTER = 0x0D;
 }
 
 namespace fields::cast_presentation_settings_state {
@@ -1281,6 +1284,8 @@ constexpr std::uint8_t AUDIO_FOLLOW_ACTIVE = 0x0B;
 constexpr std::uint8_t VIEW = 0x0C;
 constexpr std::uint8_t FOCUS_ON_DOUBLE_CLICK = 0x0D;
 constexpr std::uint8_t GRID_ON_DOUBLE_CLICK = 0x0E;
+constexpr std::uint8_t AUTO_ENTER = 0x0F;
+constexpr std::uint8_t AUTO_ENTER_SUPPRESSED = 0x10;
 }
 
 namespace fields::cast_set_presentation_focus_params {
@@ -4066,6 +4071,8 @@ struct CastPresentationSettingsPatch {
     bool has_presentationFocusOnDoubleClick = false;
     bool presentationGridOnDoubleClick = false;
     bool has_presentationGridOnDoubleClick = false;
+    bool presentationAutoEnter = false;
+    bool has_presentationAutoEnter = false;
 };
 
 struct CastPresentationSettingsValues {
@@ -4093,6 +4100,8 @@ struct CastPresentationSettingsValues {
     bool has_presentationFocusOnDoubleClick = false;
     bool presentationGridOnDoubleClick = false;
     bool has_presentationGridOnDoubleClick = false;
+    bool presentationAutoEnter = false;
+    bool has_presentationAutoEnter = false;
 };
 
 struct CastPresentationStartupSettings {
@@ -4120,6 +4129,8 @@ struct CastPresentationStartupSettings {
     bool has_presentationFocusOnDoubleClick = false;
     bool presentationGridOnDoubleClick = false;
     bool has_presentationGridOnDoubleClick = false;
+    bool presentationAutoEnter = false;
+    bool has_presentationAutoEnter = false;
 };
 
 struct CastPresentationSettingsState {
@@ -4286,6 +4297,10 @@ struct CastMeetingPresentationState {
     bool has_focusOnDoubleClick = false;
     bool gridOnDoubleClick = false;
     bool has_gridOnDoubleClick = false;
+    bool autoEnter = false;
+    bool has_autoEnter = false;
+    bool autoEnterSuppressed = false;
+    bool has_autoEnterSuppressed = false;
 };
 
 struct CastSetPresentationFocusParams {

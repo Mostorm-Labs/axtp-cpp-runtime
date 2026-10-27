@@ -1134,6 +1134,7 @@ inline constexpr FieldDescriptor kCastPresentationSettingsPatchFields[] = {
     { 0x0A, "presentationAudioFollow", FieldType::Bool, false, 0, 0 },
     { 0x0B, "presentationFocusOnDoubleClick", FieldType::Bool, false, 0, 0 },
     { 0x0C, "presentationGridOnDoubleClick", FieldType::Bool, false, 0, 0 },
+    { 0x0D, "presentationAutoEnter", FieldType::Bool, false, 0, 0 },
 };
 
 inline constexpr FieldDescriptor kCastPresentationSettingsValuesFields[] = {
@@ -1149,6 +1150,7 @@ inline constexpr FieldDescriptor kCastPresentationSettingsValuesFields[] = {
     { 0x0A, "presentationAudioFollow", FieldType::Bool, false, 0, 0 },
     { 0x0B, "presentationFocusOnDoubleClick", FieldType::Bool, false, 0, 0 },
     { 0x0C, "presentationGridOnDoubleClick", FieldType::Bool, false, 0, 0 },
+    { 0x0D, "presentationAutoEnter", FieldType::Bool, false, 0, 0 },
 };
 
 inline constexpr FieldDescriptor kCastPresentationStartupSettingsFields[] = {
@@ -1164,6 +1166,7 @@ inline constexpr FieldDescriptor kCastPresentationStartupSettingsFields[] = {
     { 0x0A, "presentationAudioFollow", FieldType::Bool, false, 0, 0 },
     { 0x0B, "presentationFocusOnDoubleClick", FieldType::Bool, false, 0, 0 },
     { 0x0C, "presentationGridOnDoubleClick", FieldType::Bool, false, 0, 0 },
+    { 0x0D, "presentationAutoEnter", FieldType::Bool, false, 0, 0 },
 };
 
 inline constexpr FieldDescriptor kCastPresentationSettingsStateFields[] = {
@@ -1311,6 +1314,8 @@ inline constexpr FieldDescriptor kCastMeetingPresentationStateFields[] = {
     { 0x0C, "view", FieldType::Enum, false, 0, 0 },
     { 0x0D, "focusOnDoubleClick", FieldType::Bool, false, 0, 0 },
     { 0x0E, "gridOnDoubleClick", FieldType::Bool, false, 0, 0 },
+    { 0x0F, "autoEnter", FieldType::Bool, false, 0, 0 },
+    { 0x10, "autoEnterSuppressed", FieldType::Bool, false, 0, 0 },
 };
 
 inline constexpr FieldDescriptor kCastSetPresentationFocusParamsFields[] = {
@@ -2653,9 +2658,9 @@ inline constexpr SchemaDescriptor kCastSetSessionAudioEnabledParamsSchema = { "C
 inline constexpr SchemaDescriptor kCastGetControlOperationParamsSchema = { "CastGetControlOperationParams", kCastGetControlOperationParamsFields, 4 };
 inline constexpr SchemaDescriptor kCastControlOperationSchema = { "CastControlOperation", kCastControlOperationFields, 14 };
 inline constexpr SchemaDescriptor kCastSetPresentationSettingsParamsSchema = { "CastSetPresentationSettingsParams", kCastSetPresentationSettingsParamsFields, 7 };
-inline constexpr SchemaDescriptor kCastPresentationSettingsPatchSchema = { "CastPresentationSettingsPatch", kCastPresentationSettingsPatchFields, 12 };
-inline constexpr SchemaDescriptor kCastPresentationSettingsValuesSchema = { "CastPresentationSettingsValues", kCastPresentationSettingsValuesFields, 12 };
-inline constexpr SchemaDescriptor kCastPresentationStartupSettingsSchema = { "CastPresentationStartupSettings", kCastPresentationStartupSettingsFields, 12 };
+inline constexpr SchemaDescriptor kCastPresentationSettingsPatchSchema = { "CastPresentationSettingsPatch", kCastPresentationSettingsPatchFields, 13 };
+inline constexpr SchemaDescriptor kCastPresentationSettingsValuesSchema = { "CastPresentationSettingsValues", kCastPresentationSettingsValuesFields, 13 };
+inline constexpr SchemaDescriptor kCastPresentationStartupSettingsSchema = { "CastPresentationStartupSettings", kCastPresentationStartupSettingsFields, 13 };
 inline constexpr SchemaDescriptor kCastPresentationSettingsStateSchema = { "CastPresentationSettingsState", kCastPresentationSettingsStateFields, 16 };
 inline constexpr SchemaDescriptor kCastPresentationSettingIssueSchema = { "CastPresentationSettingIssue", kCastPresentationSettingIssueFields, 4 };
 inline constexpr SchemaDescriptor kCastPresentationSettingsCapabilitySchema = { "CastPresentationSettingsCapability", kCastPresentationSettingsCapabilityFields, 9 };
@@ -2674,7 +2679,7 @@ inline constexpr SchemaDescriptor kCastWebCastLocalBackendStateSchema = { "CastW
 inline constexpr SchemaDescriptor kCastWebCastBackendStateSchema = { "CastWebCastBackendState", kCastWebCastBackendStateFields, 5 };
 inline constexpr SchemaDescriptor kCastWebCastBackendSnapshotSchema = { "CastWebCastBackendSnapshot", kCastWebCastBackendSnapshotFields, 2 };
 inline constexpr SchemaDescriptor kCastWebCastBackendCapabilitySchema = { "CastWebCastBackendCapability", kCastWebCastBackendCapabilityFields, 4 };
-inline constexpr SchemaDescriptor kCastMeetingPresentationStateSchema = { "CastMeetingPresentationState", kCastMeetingPresentationStateFields, 12 };
+inline constexpr SchemaDescriptor kCastMeetingPresentationStateSchema = { "CastMeetingPresentationState", kCastMeetingPresentationStateFields, 14 };
 inline constexpr SchemaDescriptor kCastSetPresentationFocusParamsSchema = { "CastSetPresentationFocusParams", kCastSetPresentationFocusParamsFields, 8 };
 inline constexpr SchemaDescriptor kCastMeetingAudioGainSchema = { "CastMeetingAudioGain", kCastMeetingAudioGainFields, 2 };
 inline constexpr SchemaDescriptor kCastMeetingPresentationCapabilitySchema = { "CastMeetingPresentationCapability", kCastMeetingPresentationCapabilityFields, 6 };
