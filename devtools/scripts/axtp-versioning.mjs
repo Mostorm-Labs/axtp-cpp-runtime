@@ -5,6 +5,7 @@ import { existsSync } from "node:fs";
 import { mkdir, readFile, readdir, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { resolveSpecInput } from "./axtp-spec-input.mjs";
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(scriptDir, "../..");
@@ -293,7 +294,7 @@ AXTP_GENERATED_VERSION = {
 }
 
 async function writeVersionMetadata(runtimeName) {
-  const lock = await readSpecLock();
+  const lock = await resolveSpecInput(root);
   const generator = await readGeneratorMetadata();
   const specRoot = resolveSpecRoot();
   const contractRoot = firstExistingDirectory(path.join(specRoot, "contract"), specRoot);
@@ -304,7 +305,10 @@ async function writeVersionMetadata(runtimeName) {
       repository: lock.repository,
       tag: lock.tag,
       version: lock.version,
-      commit: lock.commit
+      commit: lock.commit,
+      sourceMode: lock.sourceMode,
+      published: lock.published,
+      ...(lock.snapshotSha256 ? {snapshotSha256:lock.snapshotSha256} : {})
     },
     runtime: {
       name: runtimeName,
@@ -346,7 +350,7 @@ function assertEqual(label, actual, expected) {
 }
 
 async function checkVersionMetadata(runtimeName, { release = false, tagVersion = null } = {}) {
-  const lock = await readSpecLock();
+  const lock = await resolveSpecInput(root, {releaseOnly:release});
   const manifest = await readManifest();
   const runtimeVersion = await readRuntimeVersion(runtimeName);
   const generator = await readGeneratorMetadata();
@@ -368,6 +372,13 @@ async function checkVersionMetadata(runtimeName, { release = false, tagVersion =
   assertEqual("axtpSpec.tag", manifest.axtpSpec.tag, lock.tag);
   assertEqual("axtpSpec.version", manifest.axtpSpec.version, lock.version);
   assertEqual("axtpSpec.commit", manifest.axtpSpec.commit, lock.commit);
+  if (lock.sourceMode !== "release") {
+    assertEqual("axtpSpec.sourceMode", manifest.axtpSpec.sourceMode, lock.sourceMode);
+    assertEqual("axtpSpec.snapshotSha256", manifest.axtpSpec.snapshotSha256, lock.snapshotSha256);
+    assertEqual("axtpSpec.published", manifest.axtpSpec.published, false);
+  } else if (manifest.axtpSpec.sourceMode && manifest.axtpSpec.sourceMode !== "release") {
+    throw new Error("Release metadata cannot contain local development artifacts");
+  }
 
   const fields = versionFields(manifest);
   for (const target of constantTargets(runtimeName)) {

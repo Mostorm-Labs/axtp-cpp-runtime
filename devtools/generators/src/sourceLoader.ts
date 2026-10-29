@@ -127,6 +127,10 @@ function mapField(item: any, file: string, schemaName: string): Field {
     itemType: item.array.item_type ?? item.array.itemType,
     itemSchema: item.array.item_schema ?? item.array.itemSchema
   };
+  const variants = item.variants === undefined ? undefined : {
+    discriminator: String(item.variants.discriminator),
+    mapping: Object.fromEntries(Object.entries(item.variants.mapping ?? {}).map(([key, value]) => [String(key), String(value)]))
+  };
   return {
     id: normalizeId(item.id ?? item.field_id ?? item.fieldId, `${file}:${schemaName}.${item.name}`),
     name: String(item.name),
@@ -139,6 +143,7 @@ function mapField(item: any, file: string, schemaName: string): Field {
     default: item.default,
     schema: item.schema,
     enum: item.enum,
+    variants,
     repeated: item.repeated,
     array,
     derivedFrom: item.derived_from ?? item.derivedFrom,

@@ -62,8 +62,35 @@ export async function emitCppFiles(spec: SpecModel, cppDir: string): Promise<voi
     writeTextFile(path.join(cppDir, "axtp_capability_generated.h"), emitCapabilityRegistry(spec)),
     writeTextFile(path.join(cppDir, "axtp_tlv_codec_generated.h"), emitTlvSkeleton(spec)),
     writeTextFile(path.join(cppDir, "method_traits.h"), emitMethodTraits(spec)),
-    writeTextFile(path.join(cppDir, "schema_codec.h"), emitSchemaCodec())
+    writeTextFile(path.join(cppDir, "schema_codec.h"), emitSchemaCodec()),
+    writeTextFile(path.join(cppDir, "schema_json_facts.hpp"), emitJsonFacts(spec))
   ]);
+}
+
+function emitJsonFacts(spec: SpecModel): string {
+  const facts = Object.fromEntries(spec.schemas.map(schema => [schema.name, {
+    fields: schema.fields.map(field => ({...field,
+      canonicalUint64Decimal: field.type === "string" && field.maxLength === 20 &&
+        /canonical.*uint64|decimal uint64/i.test(field.description ?? "")
+    }))
+  }]));
+  const text = JSON.stringify(facts).replace(/[\u007f-\uffff]/g, ch => `\\u${ch.charCodeAt(0).toString(16).padStart(4, "0")}`);
+  const chunks: string[] = [];
+  for (let start = 0; start < text.length; start += 8000) chunks.push(JSON.stringify(text.slice(start, start + 8000)));
+  return `${banner}#pragma once
+#include <string>
+#include <nlohmann/json.hpp>
+namespace axtp::generated {
+inline const nlohmann::json& schemaJsonFacts() {
+    static const auto facts = [] {
+        std::string text;
+${chunks.map(chunk => `        text += ${chunk};`).join("\n")}
+        return nlohmann::json::parse(text);
+    }();
+    return facts;
+}
+} // namespace axtp::generated
+`;
 }
 
 function emitIds(spec: SpecModel): string {

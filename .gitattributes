@@ -1,0 +1,6 @@
+include/core/protocol/generated/** text eol=lf
+generated/axtp_generated_manifest.json text eol=lf
+AXTP_SPEC.local.json text eol=lf
+devtools/scripts/*.mjs text eol=lf
+devtools/generators/src/** text eol=lf
+devtools/conformance/*.mjs text eol=lf

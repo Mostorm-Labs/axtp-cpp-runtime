@@ -61,6 +61,11 @@ export interface LegacyMapping {
   statusMapping: Record<string, string>;
 }
 
+export interface FieldVariants {
+  discriminator: string;
+  mapping: Record<string, string>;
+}
+
 export interface Field {
   id: number;
   name: string;
@@ -73,6 +78,7 @@ export interface Field {
   default?: unknown;
   schema?: string;
   enum?: string | string[];
+  variants?: FieldVariants;
   repeated?: boolean;
   array?: {
     itemType?: string;
