@@ -73,8 +73,13 @@ if(AXTP_CPP_RUNTIME_BUILD_CONFORMANCE)
     target_include_directories(axtp_conformance_runner PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/devtools/conformance)
     target_link_libraries(axtp_conformance_runner PRIVATE axtp_core axtp_json_rpc)
+    find_program(AXTP_CONFORMANCE_NODE NAMES node)
+    if(NOT AXTP_CONFORMANCE_NODE)
+        message(FATAL_ERROR "Runtime conformance requires Node and the runtime generator's yaml dependency")
+    endif()
     target_compile_definitions(axtp_conformance_runner PRIVATE
-        AXTP_CONFORMANCE_YAML_READER="${CMAKE_CURRENT_SOURCE_DIR}/devtools/conformance/yaml_to_json.rb")
+        AXTP_CONFORMANCE_YAML_EXECUTABLE="${AXTP_CONFORMANCE_NODE}"
+        AXTP_CONFORMANCE_YAML_READER="${CMAKE_CURRENT_SOURCE_DIR}/devtools/conformance/yaml_to_json.mjs")
 endif()
 
 if(AXTP_CPP_RUNTIME_BUILD_TESTS)

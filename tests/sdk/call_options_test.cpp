@@ -511,7 +511,7 @@ int main() {
     std::uint32_t delayedRpcSeq = 1;
     bool delayedRpcResponded = false;
     const auto delayedRpcStarted = std::chrono::steady_clock::now();
-    auto delayedRpcLastFrame = delayedRpcStarted;
+    auto delayedRpcNextFrame = delayedRpcStarted + std::chrono::milliseconds{33};
     axtp::sdk::CallOptions delayedRpcOptions;
     delayedRpcOptions.timeout = std::chrono::milliseconds{2500};
     delayedRpcOptions.progress = [&] {
@@ -520,17 +520,20 @@ int main() {
             delayedRpcRequest = takeOutgoingRequest(*delayedRpcTransportPtr);
         }
         const auto now = std::chrono::steady_clock::now();
-        if (now - delayedRpcLastFrame >= std::chrono::milliseconds{33}) {
+        // An absolute cadence does not lose source frames when Windows rounds
+        // the SDK's 1 ms sleep to a scheduler tick. Keep the original count and
+        // deadline assertions; no process/system timer policy is changed.
+        while (now >= delayedRpcNextFrame) {
             axtp::StreamPayload media;
             media.streamId = 0x2001;
             media.seqId = delayedRpcSeq++;
             media.cursor = static_cast<std::uint64_t>(
                 std::chrono::duration_cast<std::chrono::microseconds>(
-                    now - delayedRpcStarted)
+                    delayedRpcNextFrame - delayedRpcStarted)
                     .count());
             media.data = {0x00, 0x01, 0x02};
             delayedRpcTransportPtr->injectIncoming(encodeStream(std::move(media)));
-            delayedRpcLastFrame = now;
+            delayedRpcNextFrame += std::chrono::milliseconds{33};
         }
         if (!delayedRpcResponded && now - delayedRpcStarted >= std::chrono::seconds{2}) {
             delayedRpcTransportPtr->injectIncoming(
@@ -542,6 +545,8 @@ int main() {
         delayedRpcClient.callRaw(makeRequest(0x90010016), delayedRpcOptions);
     const auto delayedRpcElapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::steady_clock::now() - delayedRpcStarted);
+    std::fprintf(stderr, "delayed RPC: streams=%zu progress=%zu elapsedMs=%lld\n",
+        delayedRpcStreams, delayedRpcProgressCalls, static_cast<long long>(delayedRpcElapsed.count()));
     REQUIRE(delayedRpcResponse.statusCode == axtp::ErrorCode::Success);
     REQUIRE(delayedRpcRequest.has_value());
     REQUIRE(delayedRpcResponded);
