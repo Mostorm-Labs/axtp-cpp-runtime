@@ -259,6 +259,22 @@ struct MethodTraits<MethodId::AudioGetStreamSourceState> {
 };
 
 template <>
+struct MethodTraits<MethodId::InputOpenStream> {
+    using Request = InputOpenStreamParams;
+    using Response = InputOpenStreamResult;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::InputOpenStream);
+    static constexpr const char* name = "input.openStream";
+};
+
+template <>
+struct MethodTraits<MethodId::InputCloseStream> {
+    using Request = InputCloseStreamParams;
+    using Response = InputCloseStreamResult;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::InputCloseStream);
+    static constexpr const char* name = "input.closeStream";
+};
+
+template <>
 struct MethodTraits<MethodId::SignageGetPlaylistCapabilities> {
     using Request = SignageGetPlaylistCapabilitiesParams;
     using Response = SignagePlaylistCapabilitiesResult;
@@ -667,6 +683,38 @@ struct MethodTraits<MethodId::CastSetPresentationFocus> {
 };
 
 template <>
+struct MethodTraits<MethodId::CastGetTouchbackState> {
+    using Request = CastTouchbackTargetRequest;
+    using Response = CastTouchbackState;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::CastGetTouchbackState);
+    static constexpr const char* name = "cast.getTouchbackState";
+};
+
+template <>
+struct MethodTraits<MethodId::CastSetTouchbackEnabled> {
+    using Request = CastTouchbackEnabledRequest;
+    using Response = CastTouchbackState;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::CastSetTouchbackEnabled);
+    static constexpr const char* name = "cast.setTouchbackEnabled";
+};
+
+template <>
+struct MethodTraits<MethodId::CastSetTouchbackMode> {
+    using Request = CastTouchbackModeRequest;
+    using Response = CastTouchbackState;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::CastSetTouchbackMode);
+    static constexpr const char* name = "cast.setTouchbackMode";
+};
+
+template <>
+struct MethodTraits<MethodId::CastSetTouchbackResolutionPreference> {
+    using Request = CastTouchbackResolutionRequest;
+    using Response = CastTouchbackState;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::CastSetTouchbackResolutionPreference);
+    static constexpr const char* name = "cast.setTouchbackResolutionPreference";
+};
+
+template <>
 struct MethodTraits<MethodId::SoftwareGetConfig> {
     using Request = SoftwareGetConfigParams;
     using Response = SoftwareConfig;
@@ -1072,6 +1120,13 @@ struct EventTraits<EventId::CastAirplayChanged> {
     using Event = CastAirPlayChangedEvent;
     static constexpr std::uint16_t id = static_cast<std::uint16_t>(EventId::CastAirplayChanged);
     static constexpr const char* name = "cast.airplayChanged";
+};
+
+template <>
+struct EventTraits<EventId::CastTouchbackChanged> {
+    using Event = CastTouchbackChangedEvent;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(EventId::CastTouchbackChanged);
+    static constexpr const char* name = "cast.touchbackChanged";
 };
 
 template <>

@@ -846,6 +846,7 @@ constexpr std::uint8_t AUDIO_POLICY = 0x0E;
 constexpr std::uint8_t PRESENTATION_SETTINGS = 0x0F;
 constexpr std::uint8_t WEBCAST_BACKEND = 0x10;
 constexpr std::uint8_t AIRPLAY = 0x11;
+constexpr std::uint8_t TOUCHBACK = 0x12;
 }
 
 namespace fields::cast_session_capability {
@@ -950,6 +951,7 @@ constexpr std::uint8_t PRESENTATION_SETTINGS = 0x0A;
 constexpr std::uint8_t WEBCAST_BACKEND = 0x0B;
 constexpr std::uint8_t MEETING_PRESENTATION = 0x0C;
 constexpr std::uint8_t AIRPLAY_CONTROL = 0x0D;
+constexpr std::uint8_t TOUCHBACK = 0x0E;
 }
 
 namespace fields::cast_presentation_capability {
@@ -1105,6 +1107,11 @@ constexpr std::uint8_t PRESENTATION_AUDIO_FOLLOW = 0x0A;
 constexpr std::uint8_t PRESENTATION_FOCUS_ON_DOUBLE_CLICK = 0x0B;
 constexpr std::uint8_t PRESENTATION_GRID_ON_DOUBLE_CLICK = 0x0C;
 constexpr std::uint8_t PRESENTATION_AUTO_ENTER = 0x0D;
+constexpr std::uint8_t CANVAS_MODE = 0x0E;
+constexpr std::uint8_t BASE_WIDTH = 0x0F;
+constexpr std::uint8_t BASE_HEIGHT = 0x10;
+constexpr std::uint8_t MAX_WIDTH = 0x11;
+constexpr std::uint8_t MAX_HEIGHT = 0x12;
 }
 
 namespace fields::cast_presentation_settings_values {
@@ -1121,6 +1128,11 @@ constexpr std::uint8_t PRESENTATION_AUDIO_FOLLOW = 0x0A;
 constexpr std::uint8_t PRESENTATION_FOCUS_ON_DOUBLE_CLICK = 0x0B;
 constexpr std::uint8_t PRESENTATION_GRID_ON_DOUBLE_CLICK = 0x0C;
 constexpr std::uint8_t PRESENTATION_AUTO_ENTER = 0x0D;
+constexpr std::uint8_t CANVAS_MODE = 0x0E;
+constexpr std::uint8_t BASE_WIDTH = 0x0F;
+constexpr std::uint8_t BASE_HEIGHT = 0x10;
+constexpr std::uint8_t MAX_WIDTH = 0x11;
+constexpr std::uint8_t MAX_HEIGHT = 0x12;
 }
 
 namespace fields::cast_presentation_startup_settings {
@@ -1137,6 +1149,11 @@ constexpr std::uint8_t PRESENTATION_AUDIO_FOLLOW = 0x0A;
 constexpr std::uint8_t PRESENTATION_FOCUS_ON_DOUBLE_CLICK = 0x0B;
 constexpr std::uint8_t PRESENTATION_GRID_ON_DOUBLE_CLICK = 0x0C;
 constexpr std::uint8_t PRESENTATION_AUTO_ENTER = 0x0D;
+constexpr std::uint8_t CANVAS_MODE = 0x0E;
+constexpr std::uint8_t BASE_WIDTH = 0x0F;
+constexpr std::uint8_t BASE_HEIGHT = 0x10;
+constexpr std::uint8_t MAX_WIDTH = 0x11;
+constexpr std::uint8_t MAX_HEIGHT = 0x12;
 }
 
 namespace fields::cast_presentation_settings_state {
@@ -1175,6 +1192,9 @@ constexpr std::uint8_t LAYOUT_MODES = 0x06;
 constexpr std::uint8_t CONTENT_ADAPTATIONS = 0x0A;
 constexpr std::uint8_t PROFILE_HINTS = 0x07;
 constexpr std::uint8_t MIN_ENABLED_PROTOCOLS = 0x08;
+constexpr std::uint8_t CANVAS_MODES = 0x0B;
+constexpr std::uint8_t CANVAS_MAX_WIDTH = 0x0C;
+constexpr std::uint8_t CANVAS_MAX_HEIGHT = 0x0D;
 }
 
 namespace fields::cast_presentation_settings_operation_result {
@@ -1339,6 +1359,69 @@ constexpr std::uint8_t OBSERVATION_DROPS = 0x06;
 namespace fields::cast_air_play_changed_event {
 constexpr std::uint8_t CONTEXT = 0x01;
 constexpr std::uint8_t AIRPLAY = 0x02;
+}
+
+namespace fields::cast_touchback_target {
+constexpr std::uint8_t SESSION_ID = 0x01;
+constexpr std::uint8_t SESSION_GENERATION = 0x02;
+constexpr std::uint8_t SLOT_ID = 0x03;
+constexpr std::uint8_t BINDING_GENERATION = 0x04;
+constexpr std::uint8_t LIFECYCLE_GENERATION = 0x05;
+}
+
+namespace fields::cast_touchback_target_request {
+constexpr std::uint8_t TARGET = 0x01;
+}
+
+namespace fields::cast_touchback_state {
+constexpr std::uint8_t TARGET = 0x01;
+constexpr std::uint8_t RECEIVER_OPT_IN = 0x02;
+constexpr std::uint8_t CONTROLLER_REQUESTED = 0x03;
+constexpr std::uint8_t EFFECTIVE_ENABLED = 0x04;
+constexpr std::uint8_t REQUESTED_MODE = 0x05;
+constexpr std::uint8_t NEGOTIATED_MODE = 0x06;
+constexpr std::uint8_t RESOLUTION_PREFERENCE = 0x07;
+constexpr std::uint8_t STREAM_ID = 0x08;
+constexpr std::uint8_t EPOCH = 0x09;
+constexpr std::uint8_t CANVAS_REVISION = 0x0A;
+constexpr std::uint8_t GEOMETRY_REVISION = 0x0B;
+constexpr std::uint8_t CANVAS_TOKEN = 0x0C;
+constexpr std::uint8_t GEOMETRY_TOKEN = 0x0D;
+constexpr std::uint8_t REVISION = 0x0E;
+constexpr std::uint8_t DIAGNOSTIC_REASON = 0x0F;
+}
+
+namespace fields::cast_touchback_enabled_request {
+constexpr std::uint8_t TARGET = 0x01;
+constexpr std::uint8_t ENABLED = 0x02;
+constexpr std::uint8_t COMMAND_ID = 0x03;
+}
+
+namespace fields::cast_touchback_mode_request {
+constexpr std::uint8_t TARGET = 0x01;
+constexpr std::uint8_t MODE = 0x02;
+constexpr std::uint8_t REQUIREMENT = 0x03;
+constexpr std::uint8_t COMMAND_ID = 0x04;
+}
+
+namespace fields::cast_touchback_resolution_request {
+constexpr std::uint8_t TARGET = 0x01;
+constexpr std::uint8_t RESOLUTION_PREFERENCE = 0x02;
+constexpr std::uint8_t COMMAND_ID = 0x03;
+}
+
+namespace fields::cast_touchback_changed_event {
+constexpr std::uint8_t STATE = 0x01;
+constexpr std::uint8_t CHANGED_FIELDS = 0x02;
+constexpr std::uint8_t ACCEPTED = 0x03;
+}
+
+namespace fields::cast_touchback_capability {
+constexpr std::uint8_t CAPABILITY = 0x01;
+constexpr std::uint8_t PROTOCOLS = 0x02;
+constexpr std::uint8_t SUPPORTED_MODES = 0x03;
+constexpr std::uint8_t SUPPORTS_PER_TARGET = 0x04;
+constexpr std::uint8_t SUPPORTS_CONTROL_PLANE = 0x05;
 }
 
 namespace fields::get_device_info_params {
@@ -1554,6 +1637,80 @@ namespace fields::firmware_update_state_changed_event {
 constexpr std::uint8_t UPDATE_SESSION_ID = 0x01;
 constexpr std::uint8_t STATE = 0x02;
 constexpr std::uint8_t ERROR = 0x03;
+}
+
+namespace fields::input_stream_target {
+constexpr std::uint8_t SESSION_ID = 0x01;
+constexpr std::uint8_t SESSION_GENERATION = 0x02;
+constexpr std::uint8_t SLOT_ID = 0x03;
+constexpr std::uint8_t BINDING_GENERATION = 0x04;
+constexpr std::uint8_t LIFECYCLE_GENERATION = 0x05;
+}
+
+namespace fields::input_open_stream_params {
+constexpr std::uint8_t CONTROL_VERSION = 0x01;
+constexpr std::uint8_t RUNTIME_INSTANCE_ID = 0x02;
+constexpr std::uint8_t TARGET = 0x03;
+constexpr std::uint8_t STREAM_KIND = 0x04;
+constexpr std::uint8_t FORMAT = 0x05;
+constexpr std::uint8_t PREFERRED_MODE = 0x06;
+constexpr std::uint8_t SUPPORTED_MODES = 0x07;
+constexpr std::uint8_t CANVAS_REVISION = 0x08;
+constexpr std::uint8_t GEOMETRY_REVISION = 0x09;
+constexpr std::uint8_t CANVAS_TOKEN = 0x0A;
+constexpr std::uint8_t GEOMETRY_TOKEN = 0x0B;
+constexpr std::uint8_t MAX_BATCH_EVENTS = 0x0C;
+constexpr std::uint8_t MAX_FRAME_BYTES = 0x0D;
+constexpr std::uint8_t MAX_CONTACTS = 0x0E;
+constexpr std::uint8_t MODE_REQUIREMENT = 0x0F;
+constexpr std::uint8_t COMMAND_ID = 0x10;
+}
+
+namespace fields::input_open_stream_result {
+constexpr std::uint8_t STREAM_ID = 0x01;
+constexpr std::uint8_t EPOCH = 0x02;
+constexpr std::uint8_t ACCEPTED_MODE = 0x03;
+constexpr std::uint8_t FORMAT = 0x04;
+constexpr std::uint8_t CANVAS_TOKEN = 0x05;
+constexpr std::uint8_t GEOMETRY_TOKEN = 0x06;
+constexpr std::uint8_t MAX_BATCH_EVENTS = 0x07;
+constexpr std::uint8_t MAX_FRAME_BYTES = 0x08;
+constexpr std::uint8_t MAX_CONTACTS = 0x09;
+constexpr std::uint8_t REVISION = 0x0A;
+constexpr std::uint8_t ACCEPTED = 0x0B;
+}
+
+namespace fields::input_close_stream_params {
+constexpr std::uint8_t CONTROL_VERSION = 0x01;
+constexpr std::uint8_t RUNTIME_INSTANCE_ID = 0x02;
+constexpr std::uint8_t TARGET = 0x03;
+constexpr std::uint8_t STREAM_KIND = 0x04;
+constexpr std::uint8_t STREAM_ID = 0x05;
+constexpr std::uint8_t EPOCH = 0x06;
+constexpr std::uint8_t REASON = 0x07;
+constexpr std::uint8_t FINAL_SEQ_ID = 0x08;
+constexpr std::uint8_t COMMAND_ID = 0x09;
+}
+
+namespace fields::input_close_stream_result {
+constexpr std::uint8_t STREAM_ID = 0x01;
+constexpr std::uint8_t EPOCH = 0x02;
+constexpr std::uint8_t CLOSED = 0x03;
+constexpr std::uint8_t ALREADY_CLOSED = 0x04;
+constexpr std::uint8_t REVISION = 0x05;
+}
+
+namespace fields::input_stream_capability {
+constexpr std::uint8_t CAPABILITY = 0x01;
+constexpr std::uint8_t DIRECTION = 0x02;
+constexpr std::uint8_t FORMATS = 0x03;
+constexpr std::uint8_t INPUT_MODES = 0x04;
+constexpr std::uint8_t RELIABILITY = 0x05;
+constexpr std::uint8_t SUPPORTS_RESET = 0x06;
+constexpr std::uint8_t SUPPORTS_MOVE_COALESCING = 0x07;
+constexpr std::uint8_t MAX_BATCH_EVENTS = 0x08;
+constexpr std::uint8_t MAX_FRAME_BYTES = 0x09;
+constexpr std::uint8_t MAX_CONTACTS = 0x0A;
 }
 
 namespace fields::network_get_interfaces_params {
@@ -3741,6 +3898,8 @@ struct CastStatus {
     bool has_webcastBackend = false;
     std::uint32_t airplay = 0;
     bool has_airplay = false;
+    std::uint32_t touchback = 0;
+    bool has_touchback = false;
 };
 
 struct CastSessionCapability {
@@ -3887,6 +4046,8 @@ struct CastControlCapabilities {
     bool has_meetingPresentation = false;
     std::uint32_t airplayControl = 0;
     bool has_airplayControl = false;
+    std::uint32_t touchback = 0;
+    bool has_touchback = false;
 };
 
 struct CastPresentationCapability {
@@ -4073,6 +4234,16 @@ struct CastPresentationSettingsPatch {
     bool has_presentationGridOnDoubleClick = false;
     bool presentationAutoEnter = false;
     bool has_presentationAutoEnter = false;
+    std::uint32_t canvasMode = 0;
+    bool has_canvasMode = false;
+    std::uint32_t baseWidth = 0;
+    bool has_baseWidth = false;
+    std::uint32_t baseHeight = 0;
+    bool has_baseHeight = false;
+    std::uint32_t maxWidth = 0;
+    bool has_maxWidth = false;
+    std::uint32_t maxHeight = 0;
+    bool has_maxHeight = false;
 };
 
 struct CastPresentationSettingsValues {
@@ -4102,6 +4273,16 @@ struct CastPresentationSettingsValues {
     bool has_presentationGridOnDoubleClick = false;
     bool presentationAutoEnter = false;
     bool has_presentationAutoEnter = false;
+    std::uint32_t canvasMode = 0;
+    bool has_canvasMode = false;
+    std::uint32_t baseWidth = 0;
+    bool has_baseWidth = false;
+    std::uint32_t baseHeight = 0;
+    bool has_baseHeight = false;
+    std::uint32_t maxWidth = 0;
+    bool has_maxWidth = false;
+    std::uint32_t maxHeight = 0;
+    bool has_maxHeight = false;
 };
 
 struct CastPresentationStartupSettings {
@@ -4131,6 +4312,16 @@ struct CastPresentationStartupSettings {
     bool has_presentationGridOnDoubleClick = false;
     bool presentationAutoEnter = false;
     bool has_presentationAutoEnter = false;
+    std::uint32_t canvasMode = 0;
+    bool has_canvasMode = false;
+    std::uint32_t baseWidth = 0;
+    bool has_baseWidth = false;
+    std::uint32_t baseHeight = 0;
+    bool has_baseHeight = false;
+    std::uint32_t maxWidth = 0;
+    bool has_maxWidth = false;
+    std::uint32_t maxHeight = 0;
+    bool has_maxHeight = false;
 };
 
 struct CastPresentationSettingsState {
@@ -4180,6 +4371,12 @@ struct CastPresentationSettingsCapability {
     bool has_profileHints = false;
     std::uint32_t minEnabledProtocols = 0;
     bool has_minEnabledProtocols = false;
+    std::uint32_t canvasModes = 0;
+    bool has_canvasModes = false;
+    std::uint32_t canvasMaxWidth = 0;
+    bool has_canvasMaxWidth = false;
+    std::uint32_t canvasMaxHeight = 0;
+    bool has_canvasMaxHeight = false;
 };
 
 struct CastPresentationSettingsOperationResult {
@@ -4358,6 +4555,73 @@ struct CastAirPlayControlState {
 struct CastAirPlayChangedEvent {
     std::uint32_t context = 0;
     std::uint32_t airplay = 0;
+};
+
+struct CastTouchbackTarget {
+    const char* sessionId = nullptr;
+    const char* sessionGeneration = nullptr;
+    const char* slotId = nullptr;
+    const char* bindingGeneration = nullptr;
+    const char* lifecycleGeneration = nullptr;
+};
+
+struct CastTouchbackTargetRequest {
+    std::uint32_t target = 0;
+};
+
+struct CastTouchbackState {
+    std::uint32_t target = 0;
+    bool receiverOptIn = false;
+    bool controllerRequested = false;
+    bool effectiveEnabled = false;
+    std::uint32_t requestedMode = 0;
+    std::uint32_t negotiatedMode = 0;
+    std::uint32_t resolutionPreference = 0;
+    std::uint32_t streamId = 0;
+    bool has_streamId = false;
+    std::uint32_t epoch = 0;
+    bool has_epoch = false;
+    const char* canvasRevision = nullptr;
+    const char* geometryRevision = nullptr;
+    std::uint32_t canvasToken = 0;
+    std::uint32_t geometryToken = 0;
+    const char* revision = nullptr;
+    const char* diagnosticReason = nullptr;
+    bool has_diagnosticReason = false;
+};
+
+struct CastTouchbackEnabledRequest {
+    std::uint32_t target = 0;
+    bool enabled = false;
+    const char* commandId = nullptr;
+};
+
+struct CastTouchbackModeRequest {
+    std::uint32_t target = 0;
+    std::uint32_t mode = 0;
+    std::uint32_t requirement = 0;
+    bool has_requirement = false;
+    const char* commandId = nullptr;
+};
+
+struct CastTouchbackResolutionRequest {
+    std::uint32_t target = 0;
+    std::uint32_t resolutionPreference = 0;
+    const char* commandId = nullptr;
+};
+
+struct CastTouchbackChangedEvent {
+    std::uint32_t state = 0;
+    std::uint32_t changedFields = 0;
+    bool accepted = false;
+};
+
+struct CastTouchbackCapability {
+    const char* capability = nullptr;
+    std::uint32_t protocols = 0;
+    std::uint32_t supportedModes = 0;
+    bool supportsPerTarget = false;
+    bool supportsControlPlane = false;
 };
 
 struct GetDeviceInfoParams {
@@ -4647,6 +4911,94 @@ struct FirmwareUpdateStateChangedEvent {
     std::uint32_t state = 0;
     std::uint32_t error = 0;
     bool has_error = false;
+};
+
+struct InputStreamTarget {
+    const char* sessionId = nullptr;
+    const char* sessionGeneration = nullptr;
+    const char* slotId = nullptr;
+    const char* bindingGeneration = nullptr;
+    const char* lifecycleGeneration = nullptr;
+};
+
+struct InputOpenStreamParams {
+    std::uint32_t controlVersion = 0;
+    const char* runtimeInstanceId = nullptr;
+    std::uint32_t target = 0;
+    std::uint32_t streamKind = 0;
+    std::uint32_t format = 0;
+    std::uint32_t preferredMode = 0;
+    bool has_preferredMode = false;
+    std::uint32_t supportedModes = 0;
+    const char* canvasRevision = nullptr;
+    const char* geometryRevision = nullptr;
+    std::uint32_t canvasToken = 0;
+    std::uint32_t geometryToken = 0;
+    std::uint16_t maxBatchEvents = 0;
+    bool has_maxBatchEvents = false;
+    std::uint32_t maxFrameBytes = 0;
+    bool has_maxFrameBytes = false;
+    std::uint16_t maxContacts = 0;
+    bool has_maxContacts = false;
+    std::uint32_t modeRequirement = 0;
+    bool has_modeRequirement = false;
+    const char* commandId = nullptr;
+};
+
+struct InputOpenStreamResult {
+    std::uint32_t streamId = 0;
+    std::uint32_t epoch = 0;
+    std::uint32_t acceptedMode = 0;
+    std::uint32_t format = 0;
+    std::uint32_t canvasToken = 0;
+    std::uint32_t geometryToken = 0;
+    std::uint16_t maxBatchEvents = 0;
+    bool has_maxBatchEvents = false;
+    std::uint32_t maxFrameBytes = 0;
+    bool has_maxFrameBytes = false;
+    std::uint16_t maxContacts = 0;
+    bool has_maxContacts = false;
+    const char* revision = nullptr;
+    bool accepted = false;
+};
+
+struct InputCloseStreamParams {
+    std::uint32_t controlVersion = 0;
+    const char* runtimeInstanceId = nullptr;
+    std::uint32_t target = 0;
+    std::uint32_t streamKind = 0;
+    std::uint32_t streamId = 0;
+    std::uint32_t epoch = 0;
+    std::uint32_t reason = 0;
+    bool has_reason = false;
+    std::uint32_t finalSeqId = 0;
+    bool has_finalSeqId = false;
+    const char* commandId = nullptr;
+};
+
+struct InputCloseStreamResult {
+    std::uint32_t streamId = 0;
+    std::uint32_t epoch = 0;
+    bool closed = false;
+    bool alreadyClosed = false;
+    bool has_alreadyClosed = false;
+    const char* revision = nullptr;
+};
+
+struct InputStreamCapability {
+    const char* capability = nullptr;
+    std::uint32_t direction = 0;
+    std::uint32_t formats = 0;
+    std::uint32_t inputModes = 0;
+    std::uint32_t reliability = 0;
+    bool supportsReset = false;
+    bool supportsMoveCoalescing = false;
+    std::uint16_t maxBatchEvents = 0;
+    bool has_maxBatchEvents = false;
+    std::uint32_t maxFrameBytes = 0;
+    bool has_maxFrameBytes = false;
+    std::uint16_t maxContacts = 0;
+    bool has_maxContacts = false;
 };
 
 struct NetworkGetInterfacesParams {
@@ -6335,6 +6687,30 @@ bool DecodeCastAirPlayControlState(TlvReader& reader, CastAirPlayControlState* o
 bool EncodeCastAirPlayChangedEvent(const CastAirPlayChangedEvent& input, TlvWriter& writer, ErrorCode* error);
 bool DecodeCastAirPlayChangedEvent(TlvReader& reader, CastAirPlayChangedEvent* output, ErrorCode* error);
 
+bool EncodeCastTouchbackTarget(const CastTouchbackTarget& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastTouchbackTarget(TlvReader& reader, CastTouchbackTarget* output, ErrorCode* error);
+
+bool EncodeCastTouchbackTargetRequest(const CastTouchbackTargetRequest& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastTouchbackTargetRequest(TlvReader& reader, CastTouchbackTargetRequest* output, ErrorCode* error);
+
+bool EncodeCastTouchbackState(const CastTouchbackState& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastTouchbackState(TlvReader& reader, CastTouchbackState* output, ErrorCode* error);
+
+bool EncodeCastTouchbackEnabledRequest(const CastTouchbackEnabledRequest& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastTouchbackEnabledRequest(TlvReader& reader, CastTouchbackEnabledRequest* output, ErrorCode* error);
+
+bool EncodeCastTouchbackModeRequest(const CastTouchbackModeRequest& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastTouchbackModeRequest(TlvReader& reader, CastTouchbackModeRequest* output, ErrorCode* error);
+
+bool EncodeCastTouchbackResolutionRequest(const CastTouchbackResolutionRequest& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastTouchbackResolutionRequest(TlvReader& reader, CastTouchbackResolutionRequest* output, ErrorCode* error);
+
+bool EncodeCastTouchbackChangedEvent(const CastTouchbackChangedEvent& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastTouchbackChangedEvent(TlvReader& reader, CastTouchbackChangedEvent* output, ErrorCode* error);
+
+bool EncodeCastTouchbackCapability(const CastTouchbackCapability& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastTouchbackCapability(TlvReader& reader, CastTouchbackCapability* output, ErrorCode* error);
+
 bool EncodeGetDeviceInfoParams(const GetDeviceInfoParams& input, TlvWriter& writer, ErrorCode* error);
 bool DecodeGetDeviceInfoParams(TlvReader& reader, GetDeviceInfoParams* output, ErrorCode* error);
 
@@ -6433,6 +6809,24 @@ bool DecodeFirmwareUpdateProgressEvent(TlvReader& reader, FirmwareUpdateProgress
 
 bool EncodeFirmwareUpdateStateChangedEvent(const FirmwareUpdateStateChangedEvent& input, TlvWriter& writer, ErrorCode* error);
 bool DecodeFirmwareUpdateStateChangedEvent(TlvReader& reader, FirmwareUpdateStateChangedEvent* output, ErrorCode* error);
+
+bool EncodeInputStreamTarget(const InputStreamTarget& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeInputStreamTarget(TlvReader& reader, InputStreamTarget* output, ErrorCode* error);
+
+bool EncodeInputOpenStreamParams(const InputOpenStreamParams& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeInputOpenStreamParams(TlvReader& reader, InputOpenStreamParams* output, ErrorCode* error);
+
+bool EncodeInputOpenStreamResult(const InputOpenStreamResult& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeInputOpenStreamResult(TlvReader& reader, InputOpenStreamResult* output, ErrorCode* error);
+
+bool EncodeInputCloseStreamParams(const InputCloseStreamParams& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeInputCloseStreamParams(TlvReader& reader, InputCloseStreamParams* output, ErrorCode* error);
+
+bool EncodeInputCloseStreamResult(const InputCloseStreamResult& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeInputCloseStreamResult(TlvReader& reader, InputCloseStreamResult* output, ErrorCode* error);
+
+bool EncodeInputStreamCapability(const InputStreamCapability& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeInputStreamCapability(TlvReader& reader, InputStreamCapability* output, ErrorCode* error);
 
 bool EncodeNetworkGetInterfacesParams(const NetworkGetInterfacesParams& input, TlvWriter& writer, ErrorCode* error);
 bool DecodeNetworkGetInterfacesParams(TlvReader& reader, NetworkGetInterfacesParams* output, ErrorCode* error);
