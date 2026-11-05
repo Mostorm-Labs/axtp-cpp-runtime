@@ -142,6 +142,7 @@ export interface SchemaField {
 }
 
 export interface SchemaDefinition {
+  retiredFieldIds?: number[];
   name: string;
   kind: string;
   description?: string;
@@ -238,6 +239,8 @@ export interface WireExample {
 }
 
 export interface ProtocolModel {
+  inputStream?: import("./inputStream.js").InputStreamWire;
+  retiredAllocations?: import("./inputStream.js").RetiredAllocation[];
   specRoot: string;
   sourcePath: string;
   protocol: ProtocolMetadata;

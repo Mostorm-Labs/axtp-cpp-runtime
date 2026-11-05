@@ -11,6 +11,11 @@ add_executable(phase1_model_io_test
 target_link_libraries(phase1_model_io_test PRIVATE axtp_core)
 add_test(NAME phase1_model_io_test COMMAND phase1_model_io_test)
 
+add_executable(input_sample_codec_test ${AXTP_CPP_RUNTIME_ROOT}/tests/core/input_sample_codec_test.cpp)
+target_link_libraries(input_sample_codec_test PRIVATE axtp_core)
+add_test(NAME input_sample_codec_test COMMAND input_sample_codec_test
+    ${AXTP_CPP_RUNTIME_ROOT}/tests/fixtures/input_stream.json)
+
 add_executable(cast_object_codec_test ${AXTP_CPP_RUNTIME_ROOT}/tests/core/cast_object_codec_test.cpp)
 target_link_libraries(cast_object_codec_test PRIVATE axtp_runtime)
 add_test(NAME cast_object_codec_test COMMAND cast_object_codec_test)

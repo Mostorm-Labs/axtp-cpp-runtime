@@ -1408,30 +1408,22 @@ inline constexpr FieldDescriptor kCastTouchbackStateFields[] = {
     { 0x02, "receiverOptIn", FieldType::Bool, true, 0, 0 },
     { 0x03, "controllerRequested", FieldType::Bool, true, 0, 0 },
     { 0x04, "effectiveEnabled", FieldType::Bool, true, 0, 0 },
-    { 0x05, "requestedMode", FieldType::Enum, true, 0, 0 },
-    { 0x06, "negotiatedMode", FieldType::Enum, true, 0, 0 },
     { 0x07, "resolutionPreference", FieldType::Enum, true, 0, 0 },
     { 0x08, "streamId", FieldType::Uint32, false, 0, 0 },
-    { 0x09, "epoch", FieldType::Uint32, false, 0, 0 },
     { 0x0A, "canvasRevision", FieldType::String, true, 0, 0 },
     { 0x0B, "geometryRevision", FieldType::String, true, 0, 0 },
-    { 0x0C, "canvasToken", FieldType::Uint32, true, 0, 0 },
-    { 0x0D, "geometryToken", FieldType::Uint32, true, 0, 0 },
     { 0x0E, "revision", FieldType::String, true, 0, 0 },
     { 0x0F, "diagnosticReason", FieldType::String, false, 0, 0 },
+    { 0x10, "acceptedInputTypes", FieldType::Array, true, 0, 0 },
+    { 0x11, "lifecycleState", FieldType::Enum, true, 0, 0 },
+    { 0x12, "format", FieldType::String, false, 0, 0 },
+    { 0x13, "resolutionState", FieldType::Enum, false, 0, 0 },
 };
 
 inline constexpr FieldDescriptor kCastTouchbackEnabledRequestFields[] = {
     { 0x01, "target", FieldType::Object, true, 0, 0 },
     { 0x02, "enabled", FieldType::Bool, true, 0, 0 },
     { 0x03, "commandId", FieldType::String, true, 0, 0 },
-};
-
-inline constexpr FieldDescriptor kCastTouchbackModeRequestFields[] = {
-    { 0x01, "target", FieldType::Object, true, 0, 0 },
-    { 0x02, "mode", FieldType::Enum, true, 0, 0 },
-    { 0x03, "requirement", FieldType::Enum, false, 0, 0 },
-    { 0x04, "commandId", FieldType::String, true, 0, 0 },
 };
 
 inline constexpr FieldDescriptor kCastTouchbackResolutionRequestFields[] = {
@@ -1449,9 +1441,10 @@ inline constexpr FieldDescriptor kCastTouchbackChangedEventFields[] = {
 inline constexpr FieldDescriptor kCastTouchbackCapabilityFields[] = {
     { 0x01, "capability", FieldType::String, true, 0, 0 },
     { 0x02, "protocols", FieldType::Array, true, 0, 0 },
-    { 0x03, "supportedModes", FieldType::Array, true, 0, 0 },
     { 0x04, "supportsPerTarget", FieldType::Bool, true, 0, 0 },
     { 0x05, "supportsControlPlane", FieldType::Bool, true, 0, 0 },
+    { 0x06, "inputTypes", FieldType::Array, true, 0, 0 },
+    { 0x07, "formats", FieldType::Array, true, 0, 0 },
 };
 
 inline constexpr FieldDescriptor kGetDeviceInfoParamsFields[] = {
@@ -1678,45 +1671,36 @@ inline constexpr FieldDescriptor kInputStreamTargetFields[] = {
 };
 
 inline constexpr FieldDescriptor kInputOpenStreamParamsFields[] = {
-    { 0x01, "controlVersion", FieldType::Uint32, true, 0, 0 },
+    { 0x01, "controlVersion", FieldType::Uint32, true, 1, 1 },
     { 0x02, "runtimeInstanceId", FieldType::String, true, 0, 0 },
     { 0x03, "target", FieldType::Object, true, 0, 0 },
     { 0x04, "streamKind", FieldType::Enum, true, 0, 0 },
     { 0x05, "format", FieldType::Enum, true, 0, 0 },
-    { 0x06, "preferredMode", FieldType::Enum, false, 0, 0 },
-    { 0x07, "supportedModes", FieldType::Array, true, 0, 0 },
-    { 0x08, "canvasRevision", FieldType::String, true, 0, 0 },
-    { 0x09, "geometryRevision", FieldType::String, true, 0, 0 },
-    { 0x0A, "canvasToken", FieldType::Uint32, true, 0, 0 },
-    { 0x0B, "geometryToken", FieldType::Uint32, true, 0, 0 },
-    { 0x0C, "maxBatchEvents", FieldType::Uint16, false, 0, 0 },
-    { 0x0D, "maxFrameBytes", FieldType::Uint32, false, 0, 0 },
-    { 0x0E, "maxContacts", FieldType::Uint16, false, 0, 0 },
-    { 0x0F, "modeRequirement", FieldType::Enum, false, 0, 0 },
     { 0x10, "commandId", FieldType::String, true, 0, 0 },
+    { 0x11, "sourceBindingId", FieldType::String, true, 0, 0 },
+    { 0x12, "inputTypes", FieldType::Array, true, 0, 0 },
+    { 0x13, "maxDataBytes", FieldType::Uint32, true, 8, 4096 },
+    { 0x14, "touch", FieldType::Object, false, 0, 0 },
+    { 0x15, "mouse", FieldType::Object, false, 0, 0 },
 };
 
 inline constexpr FieldDescriptor kInputOpenStreamResultFields[] = {
-    { 0x01, "streamId", FieldType::Uint32, true, 0, 0 },
-    { 0x02, "epoch", FieldType::Uint32, true, 0, 0 },
-    { 0x03, "acceptedMode", FieldType::Enum, true, 0, 0 },
+    { 0x01, "streamId", FieldType::Uint32, true, 1, 0 },
     { 0x04, "format", FieldType::Enum, true, 0, 0 },
-    { 0x05, "canvasToken", FieldType::Uint32, true, 0, 0 },
-    { 0x06, "geometryToken", FieldType::Uint32, true, 0, 0 },
-    { 0x07, "maxBatchEvents", FieldType::Uint16, false, 0, 0 },
-    { 0x08, "maxFrameBytes", FieldType::Uint32, false, 0, 0 },
-    { 0x09, "maxContacts", FieldType::Uint16, false, 0, 0 },
     { 0x0A, "revision", FieldType::String, true, 0, 0 },
     { 0x0B, "accepted", FieldType::Bool, true, 0, 0 },
+    { 0x0C, "acceptedInputTypes", FieldType::Array, true, 0, 0 },
+    { 0x0D, "maxDataBytes", FieldType::Uint32, true, 8, 4096 },
+    { 0x0E, "touch", FieldType::Object, false, 0, 0 },
+    { 0x0F, "mouse", FieldType::Object, false, 0, 0 },
 };
 
 inline constexpr FieldDescriptor kInputCloseStreamParamsFields[] = {
-    { 0x01, "controlVersion", FieldType::Uint32, true, 0, 0 },
+    { 0x01, "controlVersion", FieldType::Uint32, true, 1, 1 },
     { 0x02, "runtimeInstanceId", FieldType::String, true, 0, 0 },
     { 0x03, "target", FieldType::Object, true, 0, 0 },
     { 0x04, "streamKind", FieldType::Enum, true, 0, 0 },
-    { 0x05, "streamId", FieldType::Uint32, true, 0, 0 },
-    { 0x06, "epoch", FieldType::Uint32, true, 0, 0 },
+    { 0x05, "streamId", FieldType::Uint32, true, 1, 0 },
     { 0x07, "reason", FieldType::Enum, false, 0, 0 },
     { 0x08, "finalSeqId", FieldType::Uint32, false, 0, 0 },
     { 0x09, "commandId", FieldType::String, true, 0, 0 },
@@ -1724,7 +1708,6 @@ inline constexpr FieldDescriptor kInputCloseStreamParamsFields[] = {
 
 inline constexpr FieldDescriptor kInputCloseStreamResultFields[] = {
     { 0x01, "streamId", FieldType::Uint32, true, 0, 0 },
-    { 0x02, "epoch", FieldType::Uint32, true, 0, 0 },
     { 0x03, "closed", FieldType::Bool, true, 0, 0 },
     { 0x04, "alreadyClosed", FieldType::Bool, false, 0, 0 },
     { 0x05, "revision", FieldType::String, true, 0, 0 },
@@ -1734,13 +1717,24 @@ inline constexpr FieldDescriptor kInputStreamCapabilityFields[] = {
     { 0x01, "capability", FieldType::String, true, 0, 0 },
     { 0x02, "direction", FieldType::Enum, true, 0, 0 },
     { 0x03, "formats", FieldType::Array, true, 0, 0 },
-    { 0x04, "inputModes", FieldType::Array, true, 0, 0 },
     { 0x05, "reliability", FieldType::Enum, true, 0, 0 },
-    { 0x06, "supportsReset", FieldType::Bool, true, 0, 0 },
-    { 0x07, "supportsMoveCoalescing", FieldType::Bool, true, 0, 0 },
-    { 0x08, "maxBatchEvents", FieldType::Uint16, false, 0, 0 },
-    { 0x09, "maxFrameBytes", FieldType::Uint32, false, 0, 0 },
-    { 0x0A, "maxContacts", FieldType::Uint16, false, 0, 0 },
+    { 0x0B, "inputTypes", FieldType::Array, true, 0, 0 },
+    { 0x0C, "maxDataBytes", FieldType::Uint32, true, 8, 4096 },
+    { 0x0D, "touch", FieldType::Object, false, 0, 0 },
+    { 0x0E, "mouse", FieldType::Object, false, 0, 0 },
+    { 0x0F, "profiles", FieldType::Array, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kInputTouchConstraintsFields[] = {
+    { 0x01, "maxContacts", FieldType::Uint16, true, 1, 256 },
+};
+
+inline constexpr FieldDescriptor kInputMouseConstraintsFields[] = {
+    { 0x01, "buttonsMask", FieldType::Uint32, true, 0, 31 },
+    { 0x02, "modifierMask", FieldType::Uint16, true, 0, 15 },
+    { 0x03, "allowChords", FieldType::Bool, true, 0, 0 },
+    { 0x04, "wheelUnits", FieldType::Array, true, 0, 0 },
+    { 0x05, "continuousScroll", FieldType::Bool, true, 0, 0 },
 };
 
 inline constexpr FieldDescriptor kNetworkGetInterfacesParamsFields[] = {
@@ -2846,12 +2840,11 @@ inline constexpr SchemaDescriptor kCastAirPlayControlStateSchema = { "CastAirPla
 inline constexpr SchemaDescriptor kCastAirPlayChangedEventSchema = { "CastAirPlayChangedEvent", kCastAirPlayChangedEventFields, 2 };
 inline constexpr SchemaDescriptor kCastTouchbackTargetSchema = { "CastTouchbackTarget", kCastTouchbackTargetFields, 5 };
 inline constexpr SchemaDescriptor kCastTouchbackTargetRequestSchema = { "CastTouchbackTargetRequest", kCastTouchbackTargetRequestFields, 1 };
-inline constexpr SchemaDescriptor kCastTouchbackStateSchema = { "CastTouchbackState", kCastTouchbackStateFields, 15 };
+inline constexpr SchemaDescriptor kCastTouchbackStateSchema = { "CastTouchbackState", kCastTouchbackStateFields, 14 };
 inline constexpr SchemaDescriptor kCastTouchbackEnabledRequestSchema = { "CastTouchbackEnabledRequest", kCastTouchbackEnabledRequestFields, 3 };
-inline constexpr SchemaDescriptor kCastTouchbackModeRequestSchema = { "CastTouchbackModeRequest", kCastTouchbackModeRequestFields, 4 };
 inline constexpr SchemaDescriptor kCastTouchbackResolutionRequestSchema = { "CastTouchbackResolutionRequest", kCastTouchbackResolutionRequestFields, 3 };
 inline constexpr SchemaDescriptor kCastTouchbackChangedEventSchema = { "CastTouchbackChangedEvent", kCastTouchbackChangedEventFields, 3 };
-inline constexpr SchemaDescriptor kCastTouchbackCapabilitySchema = { "CastTouchbackCapability", kCastTouchbackCapabilityFields, 5 };
+inline constexpr SchemaDescriptor kCastTouchbackCapabilitySchema = { "CastTouchbackCapability", kCastTouchbackCapabilityFields, 6 };
 inline constexpr SchemaDescriptor kGetDeviceInfoParamsSchema = { "GetDeviceInfoParams", kGetDeviceInfoParamsFields, 1 };
 inline constexpr SchemaDescriptor kDeviceInfoSchema = { "DeviceInfo", kDeviceInfoFields, 7 };
 inline constexpr SchemaDescriptor kDeviceIdentitySchema = { "DeviceIdentity", kDeviceIdentityFields, 4 };
@@ -2886,11 +2879,13 @@ inline constexpr SchemaDescriptor kFirmwareUpdateErrorInfoSchema = { "FirmwareUp
 inline constexpr SchemaDescriptor kFirmwareUpdateProgressEventSchema = { "FirmwareUpdateProgressEvent", kFirmwareUpdateProgressEventFields, 4 };
 inline constexpr SchemaDescriptor kFirmwareUpdateStateChangedEventSchema = { "FirmwareUpdateStateChangedEvent", kFirmwareUpdateStateChangedEventFields, 3 };
 inline constexpr SchemaDescriptor kInputStreamTargetSchema = { "InputStreamTarget", kInputStreamTargetFields, 5 };
-inline constexpr SchemaDescriptor kInputOpenStreamParamsSchema = { "InputOpenStreamParams", kInputOpenStreamParamsFields, 16 };
-inline constexpr SchemaDescriptor kInputOpenStreamResultSchema = { "InputOpenStreamResult", kInputOpenStreamResultFields, 11 };
-inline constexpr SchemaDescriptor kInputCloseStreamParamsSchema = { "InputCloseStreamParams", kInputCloseStreamParamsFields, 9 };
-inline constexpr SchemaDescriptor kInputCloseStreamResultSchema = { "InputCloseStreamResult", kInputCloseStreamResultFields, 5 };
-inline constexpr SchemaDescriptor kInputStreamCapabilitySchema = { "InputStreamCapability", kInputStreamCapabilityFields, 10 };
+inline constexpr SchemaDescriptor kInputOpenStreamParamsSchema = { "InputOpenStreamParams", kInputOpenStreamParamsFields, 11 };
+inline constexpr SchemaDescriptor kInputOpenStreamResultSchema = { "InputOpenStreamResult", kInputOpenStreamResultFields, 8 };
+inline constexpr SchemaDescriptor kInputCloseStreamParamsSchema = { "InputCloseStreamParams", kInputCloseStreamParamsFields, 8 };
+inline constexpr SchemaDescriptor kInputCloseStreamResultSchema = { "InputCloseStreamResult", kInputCloseStreamResultFields, 4 };
+inline constexpr SchemaDescriptor kInputStreamCapabilitySchema = { "InputStreamCapability", kInputStreamCapabilityFields, 9 };
+inline constexpr SchemaDescriptor kInputTouchConstraintsSchema = { "InputTouchConstraints", kInputTouchConstraintsFields, 1 };
+inline constexpr SchemaDescriptor kInputMouseConstraintsSchema = { "InputMouseConstraints", kInputMouseConstraintsFields, 5 };
 inline constexpr SchemaDescriptor kNetworkGetInterfacesParamsSchema = { "NetworkGetInterfacesParams", kNetworkGetInterfacesParamsFields, 1 };
 inline constexpr SchemaDescriptor kNetworkGetInterfaceInfoParamsSchema = { "NetworkGetInterfaceInfoParams", kNetworkGetInterfaceInfoParamsFields, 1 };
 inline constexpr SchemaDescriptor kNetworkInterfacesSchema = { "NetworkInterfaces", kNetworkInterfacesFields, 2 };

@@ -15,6 +15,8 @@ export function toProtocolJson(model: ProtocolModel): Record<string, unknown> {
     payloadTypes: model.payloadTypes,
     control: model.control,
     stream: model.stream,
+    ...(model.inputStream ? {inputStream:model.inputStream} : {}),
+    ...(model.retiredAllocations?.length ? {retiredAllocations:model.retiredAllocations} : {}),
     compatibility: model.compatibility,
     schemas: model.schemas,
     wireExamples: model.wireExamples,

@@ -145,7 +145,6 @@ enum class MethodId : std::uint16_t {
     CastSetPresentationFocus = 0x161B,
     CastGetTouchbackState = 0x161C,
     CastSetTouchbackEnabled = 0x161D,
-    CastSetTouchbackMode = 0x161E,
     CastSetTouchbackResolutionPreference = 0x161F,
     SoftwareGetConfig = 0x1701,
     SoftwareSetConfig = 0x1702,

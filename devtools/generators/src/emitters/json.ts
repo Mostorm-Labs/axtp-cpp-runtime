@@ -12,7 +12,7 @@ export async function emitJsonFiles(spec: SpecModel, jsonDir: string): Promise<v
     writeTextFile(path.join(jsonDir, "event_registry.generated.json"), toJsonStable({ events: sortById(spec.events).map(withIdHex) })),
     writeTextFile(path.join(jsonDir, "error_code.generated.json"), toJsonStable({ errors: sortById(spec.errors).map(withIdHex) })),
     writeTextFile(path.join(jsonDir, "capability_registry.generated.json"), toJsonStable({ capabilities: sortById(spec.capabilities).map(withIdHex) })),
-    writeTextFile(path.join(jsonDir, "schema.generated.json"), toJsonStable({ schemas: spec.schemas })),
+    writeTextFile(path.join(jsonDir, "schema.generated.json"), toJsonStable({ schemas: spec.schemas, ...(spec.inputStream ? {inputStream:spec.inputStream} : {}), ...(spec.retiredAllocations?.length ? {retiredAllocations:spec.retiredAllocations} : {}) })),
     writeTextFile(path.join(jsonDir, "legacy_mapping.generated.json"), toJsonStable({ legacyMappings: spec.legacyMappings }))
   ]);
 }

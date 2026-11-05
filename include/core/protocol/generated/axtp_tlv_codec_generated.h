@@ -1378,30 +1378,22 @@ constexpr std::uint8_t TARGET = 0x01;
 constexpr std::uint8_t RECEIVER_OPT_IN = 0x02;
 constexpr std::uint8_t CONTROLLER_REQUESTED = 0x03;
 constexpr std::uint8_t EFFECTIVE_ENABLED = 0x04;
-constexpr std::uint8_t REQUESTED_MODE = 0x05;
-constexpr std::uint8_t NEGOTIATED_MODE = 0x06;
 constexpr std::uint8_t RESOLUTION_PREFERENCE = 0x07;
 constexpr std::uint8_t STREAM_ID = 0x08;
-constexpr std::uint8_t EPOCH = 0x09;
 constexpr std::uint8_t CANVAS_REVISION = 0x0A;
 constexpr std::uint8_t GEOMETRY_REVISION = 0x0B;
-constexpr std::uint8_t CANVAS_TOKEN = 0x0C;
-constexpr std::uint8_t GEOMETRY_TOKEN = 0x0D;
 constexpr std::uint8_t REVISION = 0x0E;
 constexpr std::uint8_t DIAGNOSTIC_REASON = 0x0F;
+constexpr std::uint8_t ACCEPTED_INPUT_TYPES = 0x10;
+constexpr std::uint8_t LIFECYCLE_STATE = 0x11;
+constexpr std::uint8_t FORMAT = 0x12;
+constexpr std::uint8_t RESOLUTION_STATE = 0x13;
 }
 
 namespace fields::cast_touchback_enabled_request {
 constexpr std::uint8_t TARGET = 0x01;
 constexpr std::uint8_t ENABLED = 0x02;
 constexpr std::uint8_t COMMAND_ID = 0x03;
-}
-
-namespace fields::cast_touchback_mode_request {
-constexpr std::uint8_t TARGET = 0x01;
-constexpr std::uint8_t MODE = 0x02;
-constexpr std::uint8_t REQUIREMENT = 0x03;
-constexpr std::uint8_t COMMAND_ID = 0x04;
 }
 
 namespace fields::cast_touchback_resolution_request {
@@ -1419,9 +1411,10 @@ constexpr std::uint8_t ACCEPTED = 0x03;
 namespace fields::cast_touchback_capability {
 constexpr std::uint8_t CAPABILITY = 0x01;
 constexpr std::uint8_t PROTOCOLS = 0x02;
-constexpr std::uint8_t SUPPORTED_MODES = 0x03;
 constexpr std::uint8_t SUPPORTS_PER_TARGET = 0x04;
 constexpr std::uint8_t SUPPORTS_CONTROL_PLANE = 0x05;
+constexpr std::uint8_t INPUT_TYPES = 0x06;
+constexpr std::uint8_t FORMATS = 0x07;
 }
 
 namespace fields::get_device_info_params {
@@ -1653,31 +1646,23 @@ constexpr std::uint8_t RUNTIME_INSTANCE_ID = 0x02;
 constexpr std::uint8_t TARGET = 0x03;
 constexpr std::uint8_t STREAM_KIND = 0x04;
 constexpr std::uint8_t FORMAT = 0x05;
-constexpr std::uint8_t PREFERRED_MODE = 0x06;
-constexpr std::uint8_t SUPPORTED_MODES = 0x07;
-constexpr std::uint8_t CANVAS_REVISION = 0x08;
-constexpr std::uint8_t GEOMETRY_REVISION = 0x09;
-constexpr std::uint8_t CANVAS_TOKEN = 0x0A;
-constexpr std::uint8_t GEOMETRY_TOKEN = 0x0B;
-constexpr std::uint8_t MAX_BATCH_EVENTS = 0x0C;
-constexpr std::uint8_t MAX_FRAME_BYTES = 0x0D;
-constexpr std::uint8_t MAX_CONTACTS = 0x0E;
-constexpr std::uint8_t MODE_REQUIREMENT = 0x0F;
 constexpr std::uint8_t COMMAND_ID = 0x10;
+constexpr std::uint8_t SOURCE_BINDING_ID = 0x11;
+constexpr std::uint8_t INPUT_TYPES = 0x12;
+constexpr std::uint8_t MAX_DATA_BYTES = 0x13;
+constexpr std::uint8_t TOUCH = 0x14;
+constexpr std::uint8_t MOUSE = 0x15;
 }
 
 namespace fields::input_open_stream_result {
 constexpr std::uint8_t STREAM_ID = 0x01;
-constexpr std::uint8_t EPOCH = 0x02;
-constexpr std::uint8_t ACCEPTED_MODE = 0x03;
 constexpr std::uint8_t FORMAT = 0x04;
-constexpr std::uint8_t CANVAS_TOKEN = 0x05;
-constexpr std::uint8_t GEOMETRY_TOKEN = 0x06;
-constexpr std::uint8_t MAX_BATCH_EVENTS = 0x07;
-constexpr std::uint8_t MAX_FRAME_BYTES = 0x08;
-constexpr std::uint8_t MAX_CONTACTS = 0x09;
 constexpr std::uint8_t REVISION = 0x0A;
 constexpr std::uint8_t ACCEPTED = 0x0B;
+constexpr std::uint8_t ACCEPTED_INPUT_TYPES = 0x0C;
+constexpr std::uint8_t MAX_DATA_BYTES = 0x0D;
+constexpr std::uint8_t TOUCH = 0x0E;
+constexpr std::uint8_t MOUSE = 0x0F;
 }
 
 namespace fields::input_close_stream_params {
@@ -1686,7 +1671,6 @@ constexpr std::uint8_t RUNTIME_INSTANCE_ID = 0x02;
 constexpr std::uint8_t TARGET = 0x03;
 constexpr std::uint8_t STREAM_KIND = 0x04;
 constexpr std::uint8_t STREAM_ID = 0x05;
-constexpr std::uint8_t EPOCH = 0x06;
 constexpr std::uint8_t REASON = 0x07;
 constexpr std::uint8_t FINAL_SEQ_ID = 0x08;
 constexpr std::uint8_t COMMAND_ID = 0x09;
@@ -1694,7 +1678,6 @@ constexpr std::uint8_t COMMAND_ID = 0x09;
 
 namespace fields::input_close_stream_result {
 constexpr std::uint8_t STREAM_ID = 0x01;
-constexpr std::uint8_t EPOCH = 0x02;
 constexpr std::uint8_t CLOSED = 0x03;
 constexpr std::uint8_t ALREADY_CLOSED = 0x04;
 constexpr std::uint8_t REVISION = 0x05;
@@ -1704,13 +1687,24 @@ namespace fields::input_stream_capability {
 constexpr std::uint8_t CAPABILITY = 0x01;
 constexpr std::uint8_t DIRECTION = 0x02;
 constexpr std::uint8_t FORMATS = 0x03;
-constexpr std::uint8_t INPUT_MODES = 0x04;
 constexpr std::uint8_t RELIABILITY = 0x05;
-constexpr std::uint8_t SUPPORTS_RESET = 0x06;
-constexpr std::uint8_t SUPPORTS_MOVE_COALESCING = 0x07;
-constexpr std::uint8_t MAX_BATCH_EVENTS = 0x08;
-constexpr std::uint8_t MAX_FRAME_BYTES = 0x09;
-constexpr std::uint8_t MAX_CONTACTS = 0x0A;
+constexpr std::uint8_t INPUT_TYPES = 0x0B;
+constexpr std::uint8_t MAX_DATA_BYTES = 0x0C;
+constexpr std::uint8_t TOUCH = 0x0D;
+constexpr std::uint8_t MOUSE = 0x0E;
+constexpr std::uint8_t PROFILES = 0x0F;
+}
+
+namespace fields::input_touch_constraints {
+constexpr std::uint8_t MAX_CONTACTS = 0x01;
+}
+
+namespace fields::input_mouse_constraints {
+constexpr std::uint8_t BUTTONS_MASK = 0x01;
+constexpr std::uint8_t MODIFIER_MASK = 0x02;
+constexpr std::uint8_t ALLOW_CHORDS = 0x03;
+constexpr std::uint8_t WHEEL_UNITS = 0x04;
+constexpr std::uint8_t CONTINUOUS_SCROLL = 0x05;
 }
 
 namespace fields::network_get_interfaces_params {
@@ -4574,33 +4568,25 @@ struct CastTouchbackState {
     bool receiverOptIn = false;
     bool controllerRequested = false;
     bool effectiveEnabled = false;
-    std::uint32_t requestedMode = 0;
-    std::uint32_t negotiatedMode = 0;
     std::uint32_t resolutionPreference = 0;
     std::uint32_t streamId = 0;
     bool has_streamId = false;
-    std::uint32_t epoch = 0;
-    bool has_epoch = false;
     const char* canvasRevision = nullptr;
     const char* geometryRevision = nullptr;
-    std::uint32_t canvasToken = 0;
-    std::uint32_t geometryToken = 0;
     const char* revision = nullptr;
     const char* diagnosticReason = nullptr;
     bool has_diagnosticReason = false;
+    std::uint32_t acceptedInputTypes = 0;
+    std::uint32_t lifecycleState = 0;
+    const char* format = nullptr;
+    bool has_format = false;
+    std::uint32_t resolutionState = 0;
+    bool has_resolutionState = false;
 };
 
 struct CastTouchbackEnabledRequest {
     std::uint32_t target = 0;
     bool enabled = false;
-    const char* commandId = nullptr;
-};
-
-struct CastTouchbackModeRequest {
-    std::uint32_t target = 0;
-    std::uint32_t mode = 0;
-    std::uint32_t requirement = 0;
-    bool has_requirement = false;
     const char* commandId = nullptr;
 };
 
@@ -4619,9 +4605,10 @@ struct CastTouchbackChangedEvent {
 struct CastTouchbackCapability {
     const char* capability = nullptr;
     std::uint32_t protocols = 0;
-    std::uint32_t supportedModes = 0;
     bool supportsPerTarget = false;
     bool supportsControlPlane = false;
+    std::uint32_t inputTypes = 0;
+    std::uint32_t formats = 0;
 };
 
 struct GetDeviceInfoParams {
@@ -4927,39 +4914,27 @@ struct InputOpenStreamParams {
     std::uint32_t target = 0;
     std::uint32_t streamKind = 0;
     std::uint32_t format = 0;
-    std::uint32_t preferredMode = 0;
-    bool has_preferredMode = false;
-    std::uint32_t supportedModes = 0;
-    const char* canvasRevision = nullptr;
-    const char* geometryRevision = nullptr;
-    std::uint32_t canvasToken = 0;
-    std::uint32_t geometryToken = 0;
-    std::uint16_t maxBatchEvents = 0;
-    bool has_maxBatchEvents = false;
-    std::uint32_t maxFrameBytes = 0;
-    bool has_maxFrameBytes = false;
-    std::uint16_t maxContacts = 0;
-    bool has_maxContacts = false;
-    std::uint32_t modeRequirement = 0;
-    bool has_modeRequirement = false;
     const char* commandId = nullptr;
+    const char* sourceBindingId = nullptr;
+    std::uint32_t inputTypes = 0;
+    std::uint32_t maxDataBytes = 0;
+    std::uint32_t touch = 0;
+    bool has_touch = false;
+    std::uint32_t mouse = 0;
+    bool has_mouse = false;
 };
 
 struct InputOpenStreamResult {
     std::uint32_t streamId = 0;
-    std::uint32_t epoch = 0;
-    std::uint32_t acceptedMode = 0;
     std::uint32_t format = 0;
-    std::uint32_t canvasToken = 0;
-    std::uint32_t geometryToken = 0;
-    std::uint16_t maxBatchEvents = 0;
-    bool has_maxBatchEvents = false;
-    std::uint32_t maxFrameBytes = 0;
-    bool has_maxFrameBytes = false;
-    std::uint16_t maxContacts = 0;
-    bool has_maxContacts = false;
     const char* revision = nullptr;
     bool accepted = false;
+    std::uint32_t acceptedInputTypes = 0;
+    std::uint32_t maxDataBytes = 0;
+    std::uint32_t touch = 0;
+    bool has_touch = false;
+    std::uint32_t mouse = 0;
+    bool has_mouse = false;
 };
 
 struct InputCloseStreamParams {
@@ -4968,7 +4943,6 @@ struct InputCloseStreamParams {
     std::uint32_t target = 0;
     std::uint32_t streamKind = 0;
     std::uint32_t streamId = 0;
-    std::uint32_t epoch = 0;
     std::uint32_t reason = 0;
     bool has_reason = false;
     std::uint32_t finalSeqId = 0;
@@ -4978,7 +4952,6 @@ struct InputCloseStreamParams {
 
 struct InputCloseStreamResult {
     std::uint32_t streamId = 0;
-    std::uint32_t epoch = 0;
     bool closed = false;
     bool alreadyClosed = false;
     bool has_alreadyClosed = false;
@@ -4989,16 +4962,26 @@ struct InputStreamCapability {
     const char* capability = nullptr;
     std::uint32_t direction = 0;
     std::uint32_t formats = 0;
-    std::uint32_t inputModes = 0;
     std::uint32_t reliability = 0;
-    bool supportsReset = false;
-    bool supportsMoveCoalescing = false;
-    std::uint16_t maxBatchEvents = 0;
-    bool has_maxBatchEvents = false;
-    std::uint32_t maxFrameBytes = 0;
-    bool has_maxFrameBytes = false;
+    std::uint32_t inputTypes = 0;
+    std::uint32_t maxDataBytes = 0;
+    std::uint32_t touch = 0;
+    bool has_touch = false;
+    std::uint32_t mouse = 0;
+    bool has_mouse = false;
+    std::uint32_t profiles = 0;
+};
+
+struct InputTouchConstraints {
     std::uint16_t maxContacts = 0;
-    bool has_maxContacts = false;
+};
+
+struct InputMouseConstraints {
+    std::uint32_t buttonsMask = 0;
+    std::uint16_t modifierMask = 0;
+    bool allowChords = false;
+    std::uint32_t wheelUnits = 0;
+    bool continuousScroll = false;
 };
 
 struct NetworkGetInterfacesParams {
@@ -6699,9 +6682,6 @@ bool DecodeCastTouchbackState(TlvReader& reader, CastTouchbackState* output, Err
 bool EncodeCastTouchbackEnabledRequest(const CastTouchbackEnabledRequest& input, TlvWriter& writer, ErrorCode* error);
 bool DecodeCastTouchbackEnabledRequest(TlvReader& reader, CastTouchbackEnabledRequest* output, ErrorCode* error);
 
-bool EncodeCastTouchbackModeRequest(const CastTouchbackModeRequest& input, TlvWriter& writer, ErrorCode* error);
-bool DecodeCastTouchbackModeRequest(TlvReader& reader, CastTouchbackModeRequest* output, ErrorCode* error);
-
 bool EncodeCastTouchbackResolutionRequest(const CastTouchbackResolutionRequest& input, TlvWriter& writer, ErrorCode* error);
 bool DecodeCastTouchbackResolutionRequest(TlvReader& reader, CastTouchbackResolutionRequest* output, ErrorCode* error);
 
@@ -6827,6 +6807,12 @@ bool DecodeInputCloseStreamResult(TlvReader& reader, InputCloseStreamResult* out
 
 bool EncodeInputStreamCapability(const InputStreamCapability& input, TlvWriter& writer, ErrorCode* error);
 bool DecodeInputStreamCapability(TlvReader& reader, InputStreamCapability* output, ErrorCode* error);
+
+bool EncodeInputTouchConstraints(const InputTouchConstraints& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeInputTouchConstraints(TlvReader& reader, InputTouchConstraints* output, ErrorCode* error);
+
+bool EncodeInputMouseConstraints(const InputMouseConstraints& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeInputMouseConstraints(TlvReader& reader, InputMouseConstraints* output, ErrorCode* error);
 
 bool EncodeNetworkGetInterfacesParams(const NetworkGetInterfacesParams& input, TlvWriter& writer, ErrorCode* error);
 bool DecodeNetworkGetInterfacesParams(TlvReader& reader, NetworkGetInterfacesParams* output, ErrorCode* error);

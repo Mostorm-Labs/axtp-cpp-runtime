@@ -15,3 +15,6 @@ unsupported_levels:
   - framed-binary
   # STREAM data framing exists, but open/close lifecycle RPC cases are incomplete.
   - stream
+  # R2 data codecs and cross-language vectors are tested separately. This generic
+  # runtime does not implement product gates, source selection or native owners.
+  - typed-input

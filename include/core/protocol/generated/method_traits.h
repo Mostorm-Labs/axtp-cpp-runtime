@@ -699,14 +699,6 @@ struct MethodTraits<MethodId::CastSetTouchbackEnabled> {
 };
 
 template <>
-struct MethodTraits<MethodId::CastSetTouchbackMode> {
-    using Request = CastTouchbackModeRequest;
-    using Response = CastTouchbackState;
-    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::CastSetTouchbackMode);
-    static constexpr const char* name = "cast.setTouchbackMode";
-};
-
-template <>
 struct MethodTraits<MethodId::CastSetTouchbackResolutionPreference> {
     using Request = CastTouchbackResolutionRequest;
     using Response = CastTouchbackState;

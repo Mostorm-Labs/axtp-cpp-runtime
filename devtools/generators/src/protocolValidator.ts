@@ -1,3 +1,4 @@
+import { validateInputStream, validateRetired, retiredBits } from "./inputStream.js";
 import { GeneratorError } from "./errors.js";
 import { buildProtocolDomainByHighByte, type DomainByHighByte } from "./domainRegistry.js";
 import type { ErrorDefinition, EventDefinition, MethodDefinition, ProtocolModel, SchemaDefinition } from "./protocolModel.js";
@@ -339,6 +340,8 @@ function assertCurrentTransportPolicy(model: ProtocolModel): void {
 }
 
 export function validateProtocolDefinition(model: ProtocolModel): string[] {
+  validateInputStream(model.inputStream);
+  validateRetired(model.retiredAllocations, model.methods, model.events, model.schemas);
   const domainByHighByte = buildProtocolDomainByHighByte(model);
 
   assertNoForbiddenKeys(model.raw);
@@ -359,8 +362,8 @@ export function validateProtocolDefinition(model: ProtocolModel): string[] {
   assertUnique(model.transports, (item) => item.name, "transport name", "name");
   assertUnique(model.profiles, (item) => item.name, "profile name", "name");
 
-  assertDomainBits(model.methods, "method");
-  assertDomainBits(model.events, "event");
+  assertDomainBits([...model.methods, ...retiredBits(model.retiredAllocations, "method")], "method");
+  assertDomainBits([...model.events, ...retiredBits(model.retiredAllocations, "event")], "event");
   assertDomainIdAlignment(model.methods, model.events);
   assertSchemaDefinitions(model.schemas);
   assertEmptySchemaUsage(model);
