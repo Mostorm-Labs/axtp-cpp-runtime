@@ -101,6 +101,10 @@ inline constexpr MethodDescriptor kMethodRegistry[] = {
     { 0x161C, "cast.getTouchbackState", "cast", "CastTouchbackTargetRequest", "CastTouchbackState" },
     { 0x161D, "cast.setTouchbackEnabled", "cast", "CastTouchbackEnabledRequest", "CastTouchbackState" },
     { 0x161F, "cast.setTouchbackResolutionPreference", "cast", "CastTouchbackResolutionRequest", "CastTouchbackState" },
+    { 0x1620, "cast.getInputMode", "cast", "CastTouchbackTargetRequest", "CastInputModeState" },
+    { 0x1621, "cast.setInputMode", "cast", "CastSetInputModeRequest", "CastInputModeState" },
+    { 0x1622, "cast.getTouchbackMaster", "cast", "CastTouchbackMasterQuery", "CastTouchbackMasterState" },
+    { 0x1623, "cast.setTouchbackMaster", "cast", "CastSetTouchbackMasterRequest", "CastTouchbackMasterState" },
     { 0x1701, "software.getConfig", "software", "SoftwareGetConfigParams", "SoftwareConfig" },
     { 0x1702, "software.setConfig", "software", "SoftwareSetConfigParams", "SoftwareSetConfigResult" },
     { 0x1703, "software.resetConfig", "software", "SoftwareResetConfigParams", "SoftwareConfig" },
@@ -116,6 +120,6 @@ inline constexpr MethodDescriptor kMethodRegistry[] = {
     { 0x1807, "sport.setEventClipConfig", "sport", "SportSetEventClipConfigParams", "Empty" },
 };
 
-inline constexpr std::size_t kMethodRegistryCount = 100;
+inline constexpr std::size_t kMethodRegistryCount = 104;
 
 } // namespace axtp

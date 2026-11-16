@@ -42,7 +42,7 @@
 | Domain | Methods | Events |
 | ---- | ---- | ---- |
 | audio | 9 | 4 |
-| cast | 30 | 21 |
+| cast | 34 | 22 |
 | device | 4 | 1 |
 | firmware | 4 | 2 |
 | input | 2 | 0 |
@@ -238,7 +238,7 @@ The generated registry groups methods by domain. Each method keeps a stable `bit
 | Domain | Methods |
 | ---- | ---- |
 | audio | 1: audio.getAlgorithmConfig<br>2: audio.setAlgorithmConfig<br>0: audio.getAlgorithmCapabilities<br>3: audio.resetAlgorithmConfig<br>4: audio.getStreamCapabilities<br>5: audio.openStream<br>6: audio.closeStream<br>7: audio.getStreamState<br>8: audio.getStreamSourceState |
-| cast | 0: cast.getSession<br>1: cast.stopSession<br>2: cast.getAirPlayName<br>3: cast.setAirPlayName<br>4: cast.getAudio<br>5: cast.setAudio<br>6: cast.setMuted<br>7: cast.getPinCodeConfig<br>8: cast.setPinCodeConfig<br>9: cast.setPinCode<br>10: cast.getWindowState<br>11: cast.setWindowState<br>12: cast.getBackendStatus<br>13: cast.restartBackend<br>14: cast.getFlowControlState<br>15: cast.setRenderFps<br>16: cast.setFlowPolicy<br>17: cast.getStatus<br>18: cast.setAudioDelay<br>19: cast.setVideoStreamParams<br>20: cast.getControlCapabilities<br>21: cast.stopPresentation<br>22: cast.setSessionAudioEnabled<br>23: cast.getControlOperation<br>24: cast.setPresentationSettings<br>25: cast.getWebCastBackendState<br>26: cast.setPresentationFocus<br>27: cast.getTouchbackState<br>28: cast.setTouchbackEnabled<br>30: cast.setTouchbackResolutionPreference |
+| cast | 0: cast.getSession<br>1: cast.stopSession<br>2: cast.getAirPlayName<br>3: cast.setAirPlayName<br>4: cast.getAudio<br>5: cast.setAudio<br>6: cast.setMuted<br>7: cast.getPinCodeConfig<br>8: cast.setPinCodeConfig<br>9: cast.setPinCode<br>10: cast.getWindowState<br>11: cast.setWindowState<br>12: cast.getBackendStatus<br>13: cast.restartBackend<br>14: cast.getFlowControlState<br>15: cast.setRenderFps<br>16: cast.setFlowPolicy<br>17: cast.getStatus<br>18: cast.setAudioDelay<br>19: cast.setVideoStreamParams<br>20: cast.getControlCapabilities<br>21: cast.stopPresentation<br>22: cast.setSessionAudioEnabled<br>23: cast.getControlOperation<br>24: cast.setPresentationSettings<br>25: cast.getWebCastBackendState<br>26: cast.setPresentationFocus<br>27: cast.getTouchbackState<br>28: cast.setTouchbackEnabled<br>30: cast.setTouchbackResolutionPreference<br>31: cast.getInputMode<br>32: cast.setInputMode<br>33: cast.getTouchbackMaster<br>34: cast.setTouchbackMaster |
 | device | 0: device.getInfo<br>1: device.getPairingCode<br>2: device.getEnrollmentState<br>3: device.setEnrollmentState |
 | firmware | 0: firmware.getUpdateCapabilities<br>1: firmware.beginUpdate<br>3: firmware.getUpdateState<br>2: firmware.finishUpdate |
 | input | 0: input.openStream<br>1: input.closeStream |
@@ -675,6 +675,10 @@ Type: `AudioStreamSourceState`
 - [cast.getTouchbackState](#castgettouchbackstate)
 - [cast.setTouchbackEnabled](#castsettouchbackenabled)
 - [cast.setTouchbackResolutionPreference](#castsettouchbackresolutionpreference)
+- [cast.getInputMode](#castgetinputmode)
+- [cast.setInputMode](#castsetinputmode)
+- [cast.getTouchbackMaster](#castgettouchbackmaster)
+- [cast.setTouchbackMaster](#castsettouchbackmaster)
 
 ---
 
@@ -2026,6 +2030,158 @@ Type: `CastTouchbackState`
 | lifecycleState | Enum | 0x11 | Truthful per-target input owner lifecycle. | enum=inactive/opening/active/closing/faulted/cleanup_blocked | N/A |
 | ?format | String | 0x12 | Actual opened format when a context exists. | maxLength=64 | Omit if not used. |
 | ?resolutionState | Enum | 0x13 | Actual source-quality request state, separate from input readiness and geometry. | enum=inherit/pending/applied/degraded/unsupported/failed | Omit if not used. |
+
+---
+
+### cast.getInputMode
+
+Query receiver input interpretation, gesture settings and authenticated source metadata.
+
+- Method ID: `0x1620`
+- Domain: `cast`
+- bitOffset: `31`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`
+- Required Capabilities: `cast.touchback`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `INVALID_STATE`, `BUSY`, `NOT_SUPPORTED`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `CastTouchbackTargetRequest`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| target | CastTouchbackTarget | 0x01 | Complete target identity and generation fence. | None | N/A |
+
+#### Response Fields
+
+Type: `CastInputModeState`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| target | CastTouchbackTarget | 0x01 | Exact generation-fenced target. | None | N/A |
+| inputMode | Enum | 0x02 | Receiver input interpretation policy. | enum=native/touch-to-mouse | N/A |
+| gestureSettings | CastGestureSettings | 0x03 | Effective receiver gesture settings. | None | N/A |
+| switching | Boolean | 0x04 | Owner switch is pending; acceptance is not activation proof. | None | N/A |
+| supported | Boolean | 0x05 | Source can offer the receiver input path. | None | N/A |
+| source | CastInputSourceInfo | 0x06 | Authenticated source metadata. | None | N/A |
+| gestureControlSupported | Boolean | 0x07 | Source supports receiver touch-to-mouse interpretation. | None | N/A |
+| state | CastTouchbackState | 0x08 | Current per-target gates and input lifecycle. | None | N/A |
+
+---
+
+### cast.setInputMode
+
+Set receiver input interpretation or gesture settings; never changes the typed input wire format.
+
+- Method ID: `0x1621`
+- Domain: `cast`
+- bitOffset: `32`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`
+- Required Capabilities: `cast.touchback`
+- Possible Events: `cast.touchbackChanged`
+- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `INVALID_STATE`, `BUSY`, `NOT_SUPPORTED`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `CastSetInputModeRequest`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| target | CastTouchbackTarget | 0x01 | Exact generation-fenced target. | None | N/A |
+| commandId | String | 0x02 | Nonempty idempotency key; reuse with different method or content conflicts. | maxLength=128 | N/A |
+| ?inputMode | Enum | 0x03 | Receiver interpretation policy. | enum=native/touch-to-mouse | Omit if not used. |
+| ?gestureSettings | CastGestureSettings | 0x04 | Full receiver gesture settings. | None | Omit if not used. |
+| controlVersion | UInt32 | 0x05 | Must be 1. | None | N/A |
+| runtimeInstanceId | String | 0x06 | Current receiver runtime UUID from capabilities. | maxLength=36 | N/A |
+
+#### Response Fields
+
+Type: `CastInputModeState`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| target | CastTouchbackTarget | 0x01 | Exact generation-fenced target. | None | N/A |
+| inputMode | Enum | 0x02 | Receiver input interpretation policy. | enum=native/touch-to-mouse | N/A |
+| gestureSettings | CastGestureSettings | 0x03 | Effective receiver gesture settings. | None | N/A |
+| switching | Boolean | 0x04 | Owner switch is pending; acceptance is not activation proof. | None | N/A |
+| supported | Boolean | 0x05 | Source can offer the receiver input path. | None | N/A |
+| source | CastInputSourceInfo | 0x06 | Authenticated source metadata. | None | N/A |
+| gestureControlSupported | Boolean | 0x07 | Source supports receiver touch-to-mouse interpretation. | None | N/A |
+| state | CastTouchbackState | 0x08 | Current per-target gates and input lifecycle. | None | N/A |
+
+---
+
+### cast.getTouchbackMaster
+
+Query the receiver-wide input gate; enabled does not grant per-target consent.
+
+- Method ID: `0x1622`
+- Domain: `cast`
+- bitOffset: `33`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`
+- Required Capabilities: `cast.touchback`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `INVALID_STATE`, `BUSY`, `NOT_SUPPORTED`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `Empty`
+
+No fields.
+
+#### Response Fields
+
+Type: `CastTouchbackMasterState`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| enabled | Boolean | 0x01 | Receiver-wide input gate intent. | None | N/A |
+| revision | String | 0x02 | Canonical uint64 decimal gate revision. | maxLength=20 | N/A |
+| runtimeInstanceId | String | 0x03 | Receiver runtime UUID; revisions only compare within this instance. | maxLength=36 | N/A |
+
+---
+
+### cast.setTouchbackMaster
+
+Set the receiver-wide input gate; disabling releases all input owners and enabling never replays input.
+
+- Method ID: `0x1623`
+- Domain: `cast`
+- bitOffset: `34`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`
+- Required Capabilities: `cast.touchback`
+- Possible Events: `cast.touchbackMasterChanged`
+- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `INVALID_STATE`, `BUSY`, `NOT_SUPPORTED`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `CastSetTouchbackMasterRequest`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| enabled | Boolean | 0x01 | Requested receiver input gate. | None | N/A |
+| commandId | String | 0x02 | Nonempty idempotency key; reuse with different method or content conflicts. | maxLength=128 | N/A |
+| controlVersion | UInt32 | 0x03 | Must be 1. | None | N/A |
+| runtimeInstanceId | String | 0x04 | Current receiver runtime UUID from capabilities. | maxLength=36 | N/A |
+
+#### Response Fields
+
+Type: `CastTouchbackMasterState`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| enabled | Boolean | 0x01 | Receiver-wide input gate intent. | None | N/A |
+| revision | String | 0x02 | Canonical uint64 decimal gate revision. | maxLength=20 | N/A |
+| runtimeInstanceId | String | 0x03 | Receiver runtime UUID; revisions only compare within this instance. | maxLength=36 | N/A |
 
 ---
 
@@ -4498,6 +4654,7 @@ Type: `AudioStreamStatsReportedEvent`
 - [cast.webcastBackendChanged](#castwebcastbackendchanged)
 - [cast.airplayChanged](#castairplaychanged)
 - [cast.touchbackChanged](#casttouchbackchanged)
+- [cast.touchbackMasterChanged](#casttouchbackmasterchanged)
 
 ---
 
@@ -5045,7 +5202,7 @@ Per-target gate, input lifecycle, accepted types, source quality or geometry cha
 - Status: `draft`
 - Severity: `info`
 - Added in v1.0.0
-- Trigger: `cast.setTouchbackEnabled`, `cast.setTouchbackResolutionPreference`, `stream open`, `stream close`, `disconnect`
+- Trigger: `cast.setTouchbackEnabled`, `cast.setTouchbackResolutionPreference`, `cast.setInputMode`, `stream open`, `stream close`, `disconnect`
 - Required Capabilities: `cast.touchback`
 
 #### Payload Fields
@@ -5057,6 +5214,29 @@ Type: `CastTouchbackChangedEvent`
 | state | CastTouchbackState | 0x01 | Current target state. | None | N/A |
 | changedFields | Array<String> | 0x02 | Changed state fields. | array.itemType=string | N/A |
 | accepted | Boolean | 0x03 | Whether the owner lane accepted the triggering request. | None | N/A |
+
+---
+
+### cast.touchbackMasterChanged
+
+Receiver-wide input gate changed; clients replace the full state and resnapshot target gates.
+
+- Event ID: `0x1616`
+- Domain: `cast`
+- bitOffset: `21`
+- Status: `draft`
+- Severity: `info`
+- Added in v1.0.0
+- Trigger: `cast.setTouchbackMaster`, `receiver local gate changed`
+- Required Capabilities: `cast.touchback`
+
+#### Payload Fields
+
+Type: `CastTouchbackMasterChangedEvent`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| state | CastTouchbackMasterState | 0x01 | Current complete receiver-wide gate state. | None | N/A |
 
 ---
 
@@ -6111,6 +6291,34 @@ Exact presentation fences; params.runtimeInstanceId completes the target and all
 | slotId | UInt32 | 0x02 | Opaque slot identifier; never an array index. | None | N/A |
 | bindingGeneration | String | 0x03 | Canonical decimal uint64 string fencing slot reuse. | maxLength=20 | N/A |
 | lifecycleGeneration | String | 0x04 | Canonical decimal uint64 string fencing presentation lifecycle replacement. | maxLength=20 | N/A |
+
+---
+
+## CastGestureSettings
+
+Receiver touch-to-mouse interpretation; physical wheel input never uses scrollSpeed. Omitted scrollSpeed means 1x.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| rightClick | Enum | 0x01 | Enabled right-click gesture. | enum=two-finger-tap/long-press/both | N/A |
+| rightHoldMs | UInt32 | 0x02 | Stationary hold threshold in milliseconds. | min=600, max=2000 | N/A |
+| scrollDirection | Enum | 0x03 | Receiver gesture direction mapping. | enum=follow-finger/reverse | N/A |
+| feedback | Boolean | 0x04 | Show local gesture feedback. | None | N/A |
+| ?scrollSpeed | Number | 0x05 | Finite gesture scroll multiplier; defaults to 1. | min=0.5, max=4 | Omit if not used. |
+
+---
+
+## CastInputSourceInfo
+
+Authenticated integration metadata; never substitutes for consent or openStream acceptance.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| platform | String | 0x01 | Actual source platform or unknown. | maxLength=64 | N/A |
+| clientKind | String | 0x02 | Actual integration kind or unknown. | maxLength=64 | N/A |
+| product | String | 0x03 | Actual integration product or unknown. | maxLength=128 | N/A |
+| displaySurface | String | 0x04 | Actual selected display surface or unknown. | maxLength=64 | N/A |
+| ?displayRole | String | 0x05 | Observed display role when available. | maxLength=64 | Omit if not used. |
 
 ---
 

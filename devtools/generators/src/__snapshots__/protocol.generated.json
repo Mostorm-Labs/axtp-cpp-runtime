@@ -9607,6 +9607,311 @@
       ]
     },
     {
+      "name": "CastGestureSettings",
+      "kind": "object",
+      "description": "Receiver touch-to-mouse interpretation; physical wheel input never uses scrollSpeed. Omitted scrollSpeed means 1x.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "rightClick",
+          "type": "enum",
+          "required": true,
+          "enumValues": [
+            "two-finger-tap",
+            "long-press",
+            "both"
+          ],
+          "description": "Enabled right-click gesture."
+        },
+        {
+          "fieldId": 2,
+          "name": "rightHoldMs",
+          "type": "uint32",
+          "required": true,
+          "min": 600,
+          "max": 2000,
+          "description": "Stationary hold threshold in milliseconds."
+        },
+        {
+          "fieldId": 3,
+          "name": "scrollDirection",
+          "type": "enum",
+          "required": true,
+          "enumValues": [
+            "follow-finger",
+            "reverse"
+          ],
+          "description": "Receiver gesture direction mapping."
+        },
+        {
+          "fieldId": 4,
+          "name": "feedback",
+          "type": "bool",
+          "required": true,
+          "description": "Show local gesture feedback."
+        },
+        {
+          "fieldId": 5,
+          "name": "scrollSpeed",
+          "type": "number",
+          "required": false,
+          "min": 0.5,
+          "max": 4,
+          "description": "Finite gesture scroll multiplier; defaults to 1."
+        }
+      ]
+    },
+    {
+      "name": "CastInputSourceInfo",
+      "kind": "object",
+      "description": "Authenticated integration metadata; never substitutes for consent or openStream acceptance.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "platform",
+          "type": "string",
+          "required": true,
+          "maxLength": 64,
+          "description": "Actual source platform or unknown."
+        },
+        {
+          "fieldId": 2,
+          "name": "clientKind",
+          "type": "string",
+          "required": true,
+          "maxLength": 64,
+          "description": "Actual integration kind or unknown."
+        },
+        {
+          "fieldId": 3,
+          "name": "product",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Actual integration product or unknown."
+        },
+        {
+          "fieldId": 4,
+          "name": "displaySurface",
+          "type": "string",
+          "required": true,
+          "maxLength": 64,
+          "description": "Actual selected display surface or unknown."
+        },
+        {
+          "fieldId": 5,
+          "name": "displayRole",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "Observed display role when available."
+        }
+      ]
+    },
+    {
+      "name": "CastInputModeState",
+      "kind": "object",
+      "description": "Receiver interpretation policy and observed lifecycle for an exact target; native never means a different wire packet mode.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "target",
+          "type": "CastTouchbackTarget",
+          "required": true,
+          "description": "Exact generation-fenced target."
+        },
+        {
+          "fieldId": 2,
+          "name": "inputMode",
+          "type": "enum",
+          "required": true,
+          "enumValues": [
+            "native",
+            "touch-to-mouse"
+          ],
+          "description": "Receiver input interpretation policy."
+        },
+        {
+          "fieldId": 3,
+          "name": "gestureSettings",
+          "type": "CastGestureSettings",
+          "required": true,
+          "description": "Effective receiver gesture settings."
+        },
+        {
+          "fieldId": 4,
+          "name": "switching",
+          "type": "bool",
+          "required": true,
+          "description": "Owner switch is pending; acceptance is not activation proof."
+        },
+        {
+          "fieldId": 5,
+          "name": "supported",
+          "type": "bool",
+          "required": true,
+          "description": "Source can offer the receiver input path."
+        },
+        {
+          "fieldId": 6,
+          "name": "source",
+          "type": "CastInputSourceInfo",
+          "required": true,
+          "description": "Authenticated source metadata."
+        },
+        {
+          "fieldId": 7,
+          "name": "gestureControlSupported",
+          "type": "bool",
+          "required": true,
+          "description": "Source supports receiver touch-to-mouse interpretation."
+        },
+        {
+          "fieldId": 8,
+          "name": "state",
+          "type": "CastTouchbackState",
+          "required": true,
+          "description": "Current per-target gates and input lifecycle."
+        }
+      ]
+    },
+    {
+      "name": "CastSetInputModeRequest",
+      "kind": "object",
+      "description": "Set at least one of inputMode and gestureSettings atomically for the exact target. Unknown optional fields are ignored. Command identity is scoped to the current runtime with bounded dedup.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "target",
+          "type": "CastTouchbackTarget",
+          "required": true,
+          "description": "Exact generation-fenced target."
+        },
+        {
+          "fieldId": 2,
+          "name": "commandId",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Nonempty idempotency key; reuse with different method or content conflicts."
+        },
+        {
+          "fieldId": 3,
+          "name": "inputMode",
+          "type": "enum",
+          "required": false,
+          "enumValues": [
+            "native",
+            "touch-to-mouse"
+          ],
+          "description": "Receiver interpretation policy."
+        },
+        {
+          "fieldId": 4,
+          "name": "gestureSettings",
+          "type": "CastGestureSettings",
+          "required": false,
+          "description": "Full receiver gesture settings."
+        },
+        {
+          "fieldId": 5,
+          "name": "controlVersion",
+          "type": "uint32",
+          "required": true,
+          "description": "Must be 1."
+        },
+        {
+          "fieldId": 6,
+          "name": "runtimeInstanceId",
+          "type": "string",
+          "required": true,
+          "maxLength": 36,
+          "description": "Current receiver runtime UUID from capabilities."
+        }
+      ]
+    },
+    {
+      "name": "CastTouchbackMasterState",
+      "kind": "object",
+      "description": "Runtime-scoped receiver gate and monotonic canonical decimal revision. Turning on grants no target consent; turning off begins owner cleanup.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "enabled",
+          "type": "bool",
+          "required": true,
+          "description": "Receiver-wide input gate intent."
+        },
+        {
+          "fieldId": 2,
+          "name": "revision",
+          "type": "string",
+          "required": true,
+          "maxLength": 20,
+          "description": "Canonical uint64 decimal gate revision."
+        },
+        {
+          "fieldId": 3,
+          "name": "runtimeInstanceId",
+          "type": "string",
+          "required": true,
+          "maxLength": 36,
+          "description": "Receiver runtime UUID; revisions only compare within this instance."
+        }
+      ]
+    },
+    {
+      "name": "CastSetTouchbackMasterRequest",
+      "kind": "object",
+      "description": "Runtime-fenced receiver-wide gate request with bounded dedup. Cleanup is observed through each target lifecycle, not implied by success.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "enabled",
+          "type": "bool",
+          "required": true,
+          "description": "Requested receiver input gate."
+        },
+        {
+          "fieldId": 2,
+          "name": "commandId",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Nonempty idempotency key; reuse with different method or content conflicts."
+        },
+        {
+          "fieldId": 3,
+          "name": "controlVersion",
+          "type": "uint32",
+          "required": true,
+          "description": "Must be 1."
+        },
+        {
+          "fieldId": 4,
+          "name": "runtimeInstanceId",
+          "type": "string",
+          "required": true,
+          "maxLength": 36,
+          "description": "Current receiver runtime UUID from capabilities."
+        }
+      ]
+    },
+    {
+      "name": "CastTouchbackMasterChangedEvent",
+      "kind": "object",
+      "description": "Replace receiver-wide gate state; gaps or reconnect require a fresh query.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "state",
+          "type": "CastTouchbackMasterState",
+          "required": true,
+          "description": "Current complete receiver-wide gate state."
+        }
+      ]
+    },
+    {
       "name": "CastTouchbackCapability",
       "kind": "object",
       "description": "Capability descriptor for cast.touchback; AirPlay receivers do not advertise this capability.",
@@ -17637,6 +17942,130 @@
       ]
     },
     {
+      "name": "cast.getInputMode",
+      "description": "Query receiver input interpretation, gesture settings and authenticated source metadata.",
+      "methodId": 5664,
+      "bitOffset": 31,
+      "domain": "cast",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "CastTouchbackTargetRequest"
+      },
+      "response": {
+        "type": "CastInputModeState"
+      },
+      "encodings": [
+        "json"
+      ],
+      "capabilities": [
+        "cast.touchback"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "INVALID_ARGUMENT",
+        "INVALID_STATE",
+        "BUSY",
+        "NOT_SUPPORTED",
+        "UNAVAILABLE"
+      ]
+    },
+    {
+      "name": "cast.setInputMode",
+      "description": "Set receiver input interpretation or gesture settings; never changes the typed input wire format.",
+      "methodId": 5665,
+      "bitOffset": 32,
+      "domain": "cast",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "CastSetInputModeRequest"
+      },
+      "response": {
+        "type": "CastInputModeState"
+      },
+      "encodings": [
+        "json"
+      ],
+      "capabilities": [
+        "cast.touchback"
+      ],
+      "events": [
+        "cast.touchbackChanged"
+      ],
+      "errors": [
+        "SUCCESS",
+        "INVALID_ARGUMENT",
+        "INVALID_STATE",
+        "BUSY",
+        "NOT_SUPPORTED",
+        "UNAVAILABLE"
+      ]
+    },
+    {
+      "name": "cast.getTouchbackMaster",
+      "description": "Query the receiver-wide input gate; enabled does not grant per-target consent.",
+      "methodId": 5666,
+      "bitOffset": 33,
+      "domain": "cast",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "Empty"
+      },
+      "response": {
+        "type": "CastTouchbackMasterState"
+      },
+      "encodings": [
+        "json"
+      ],
+      "capabilities": [
+        "cast.touchback"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "INVALID_ARGUMENT",
+        "INVALID_STATE",
+        "BUSY",
+        "NOT_SUPPORTED",
+        "UNAVAILABLE"
+      ]
+    },
+    {
+      "name": "cast.setTouchbackMaster",
+      "description": "Set the receiver-wide input gate; disabling releases all input owners and enabling never replays input.",
+      "methodId": 5667,
+      "bitOffset": 34,
+      "domain": "cast",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "CastSetTouchbackMasterRequest"
+      },
+      "response": {
+        "type": "CastTouchbackMasterState"
+      },
+      "encodings": [
+        "json"
+      ],
+      "capabilities": [
+        "cast.touchback"
+      ],
+      "events": [
+        "cast.touchbackMasterChanged"
+      ],
+      "errors": [
+        "SUCCESS",
+        "INVALID_ARGUMENT",
+        "INVALID_STATE",
+        "BUSY",
+        "NOT_SUPPORTED",
+        "UNAVAILABLE"
+      ]
+    },
+    {
       "name": "device.getInfo",
       "description": "Return the current endpoint main device identity, product, hardware, OS, software, AXTP runtime, and optional capability summary.",
       "methodId": 257,
@@ -20073,9 +20502,30 @@
       "trigger": [
         "cast.setTouchbackEnabled",
         "cast.setTouchbackResolutionPreference",
+        "cast.setInputMode",
         "stream open",
         "stream close",
         "disconnect"
+      ],
+      "capabilities": [
+        "cast.touchback"
+      ]
+    },
+    {
+      "name": "cast.touchbackMasterChanged",
+      "description": "Receiver-wide input gate changed; clients replace the full state and resnapshot target gates.",
+      "eventId": 5654,
+      "bitOffset": 21,
+      "domain": "cast",
+      "since": "1.0.0",
+      "status": "draft",
+      "payload": {
+        "type": "CastTouchbackMasterChangedEvent"
+      },
+      "severity": "info",
+      "trigger": [
+        "cast.setTouchbackMaster",
+        "receiver local gate changed"
       ],
       "capabilities": [
         "cast.touchback"

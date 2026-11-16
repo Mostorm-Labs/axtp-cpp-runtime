@@ -1438,6 +1438,63 @@ inline constexpr FieldDescriptor kCastTouchbackChangedEventFields[] = {
     { 0x03, "accepted", FieldType::Bool, true, 0, 0 },
 };
 
+inline constexpr FieldDescriptor kCastGestureSettingsFields[] = {
+    { 0x01, "rightClick", FieldType::Enum, true, 0, 0 },
+    { 0x02, "rightHoldMs", FieldType::Uint32, true, 600, 2000 },
+    { 0x03, "scrollDirection", FieldType::Enum, true, 0, 0 },
+    { 0x04, "feedback", FieldType::Bool, true, 0, 0 },
+    { 0x05, "scrollSpeed", FieldType::Object, false, 0.5, 4 },
+};
+
+inline constexpr FieldDescriptor kCastInputSourceInfoFields[] = {
+    { 0x01, "platform", FieldType::String, true, 0, 0 },
+    { 0x02, "clientKind", FieldType::String, true, 0, 0 },
+    { 0x03, "product", FieldType::String, true, 0, 0 },
+    { 0x04, "displaySurface", FieldType::String, true, 0, 0 },
+    { 0x05, "displayRole", FieldType::String, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastInputModeStateFields[] = {
+    { 0x01, "target", FieldType::Object, true, 0, 0 },
+    { 0x02, "inputMode", FieldType::Enum, true, 0, 0 },
+    { 0x03, "gestureSettings", FieldType::Object, true, 0, 0 },
+    { 0x04, "switching", FieldType::Bool, true, 0, 0 },
+    { 0x05, "supported", FieldType::Bool, true, 0, 0 },
+    { 0x06, "source", FieldType::Object, true, 0, 0 },
+    { 0x07, "gestureControlSupported", FieldType::Bool, true, 0, 0 },
+    { 0x08, "state", FieldType::Object, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastSetInputModeRequestFields[] = {
+    { 0x01, "target", FieldType::Object, true, 0, 0 },
+    { 0x02, "commandId", FieldType::String, true, 0, 0 },
+    { 0x03, "inputMode", FieldType::Enum, false, 0, 0 },
+    { 0x04, "gestureSettings", FieldType::Object, false, 0, 0 },
+    { 0x05, "controlVersion", FieldType::Uint32, true, 0, 0 },
+    { 0x06, "runtimeInstanceId", FieldType::String, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastTouchbackMasterQueryFields[] = {
+
+};
+
+inline constexpr FieldDescriptor kCastTouchbackMasterStateFields[] = {
+    { 0x01, "enabled", FieldType::Bool, true, 0, 0 },
+    { 0x02, "revision", FieldType::String, true, 0, 0 },
+    { 0x03, "runtimeInstanceId", FieldType::String, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastSetTouchbackMasterRequestFields[] = {
+    { 0x01, "enabled", FieldType::Bool, true, 0, 0 },
+    { 0x02, "commandId", FieldType::String, true, 0, 0 },
+    { 0x03, "controlVersion", FieldType::Uint32, true, 0, 0 },
+    { 0x04, "runtimeInstanceId", FieldType::String, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastTouchbackMasterChangedEventFields[] = {
+    { 0x01, "state", FieldType::Object, true, 0, 0 },
+};
+
 inline constexpr FieldDescriptor kCastTouchbackCapabilityFields[] = {
     { 0x01, "capability", FieldType::String, true, 0, 0 },
     { 0x02, "protocols", FieldType::Array, true, 0, 0 },
@@ -2844,6 +2901,14 @@ inline constexpr SchemaDescriptor kCastTouchbackStateSchema = { "CastTouchbackSt
 inline constexpr SchemaDescriptor kCastTouchbackEnabledRequestSchema = { "CastTouchbackEnabledRequest", kCastTouchbackEnabledRequestFields, 3 };
 inline constexpr SchemaDescriptor kCastTouchbackResolutionRequestSchema = { "CastTouchbackResolutionRequest", kCastTouchbackResolutionRequestFields, 3 };
 inline constexpr SchemaDescriptor kCastTouchbackChangedEventSchema = { "CastTouchbackChangedEvent", kCastTouchbackChangedEventFields, 3 };
+inline constexpr SchemaDescriptor kCastGestureSettingsSchema = { "CastGestureSettings", kCastGestureSettingsFields, 5 };
+inline constexpr SchemaDescriptor kCastInputSourceInfoSchema = { "CastInputSourceInfo", kCastInputSourceInfoFields, 5 };
+inline constexpr SchemaDescriptor kCastInputModeStateSchema = { "CastInputModeState", kCastInputModeStateFields, 8 };
+inline constexpr SchemaDescriptor kCastSetInputModeRequestSchema = { "CastSetInputModeRequest", kCastSetInputModeRequestFields, 6 };
+inline constexpr SchemaDescriptor kCastTouchbackMasterQuerySchema = { "CastTouchbackMasterQuery", kCastTouchbackMasterQueryFields, 0 };
+inline constexpr SchemaDescriptor kCastTouchbackMasterStateSchema = { "CastTouchbackMasterState", kCastTouchbackMasterStateFields, 3 };
+inline constexpr SchemaDescriptor kCastSetTouchbackMasterRequestSchema = { "CastSetTouchbackMasterRequest", kCastSetTouchbackMasterRequestFields, 4 };
+inline constexpr SchemaDescriptor kCastTouchbackMasterChangedEventSchema = { "CastTouchbackMasterChangedEvent", kCastTouchbackMasterChangedEventFields, 1 };
 inline constexpr SchemaDescriptor kCastTouchbackCapabilitySchema = { "CastTouchbackCapability", kCastTouchbackCapabilityFields, 6 };
 inline constexpr SchemaDescriptor kGetDeviceInfoParamsSchema = { "GetDeviceInfoParams", kGetDeviceInfoParamsFields, 1 };
 inline constexpr SchemaDescriptor kDeviceInfoSchema = { "DeviceInfo", kDeviceInfoFields, 7 };

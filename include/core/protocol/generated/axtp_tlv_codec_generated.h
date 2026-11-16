@@ -1408,6 +1408,63 @@ constexpr std::uint8_t CHANGED_FIELDS = 0x02;
 constexpr std::uint8_t ACCEPTED = 0x03;
 }
 
+namespace fields::cast_gesture_settings {
+constexpr std::uint8_t RIGHT_CLICK = 0x01;
+constexpr std::uint8_t RIGHT_HOLD_MS = 0x02;
+constexpr std::uint8_t SCROLL_DIRECTION = 0x03;
+constexpr std::uint8_t FEEDBACK = 0x04;
+constexpr std::uint8_t SCROLL_SPEED = 0x05;
+}
+
+namespace fields::cast_input_source_info {
+constexpr std::uint8_t PLATFORM = 0x01;
+constexpr std::uint8_t CLIENT_KIND = 0x02;
+constexpr std::uint8_t PRODUCT = 0x03;
+constexpr std::uint8_t DISPLAY_SURFACE = 0x04;
+constexpr std::uint8_t DISPLAY_ROLE = 0x05;
+}
+
+namespace fields::cast_input_mode_state {
+constexpr std::uint8_t TARGET = 0x01;
+constexpr std::uint8_t INPUT_MODE = 0x02;
+constexpr std::uint8_t GESTURE_SETTINGS = 0x03;
+constexpr std::uint8_t SWITCHING = 0x04;
+constexpr std::uint8_t SUPPORTED = 0x05;
+constexpr std::uint8_t SOURCE = 0x06;
+constexpr std::uint8_t GESTURE_CONTROL_SUPPORTED = 0x07;
+constexpr std::uint8_t STATE = 0x08;
+}
+
+namespace fields::cast_set_input_mode_request {
+constexpr std::uint8_t TARGET = 0x01;
+constexpr std::uint8_t COMMAND_ID = 0x02;
+constexpr std::uint8_t INPUT_MODE = 0x03;
+constexpr std::uint8_t GESTURE_SETTINGS = 0x04;
+constexpr std::uint8_t CONTROL_VERSION = 0x05;
+constexpr std::uint8_t RUNTIME_INSTANCE_ID = 0x06;
+}
+
+namespace fields::cast_touchback_master_query {
+
+}
+
+namespace fields::cast_touchback_master_state {
+constexpr std::uint8_t ENABLED = 0x01;
+constexpr std::uint8_t REVISION = 0x02;
+constexpr std::uint8_t RUNTIME_INSTANCE_ID = 0x03;
+}
+
+namespace fields::cast_set_touchback_master_request {
+constexpr std::uint8_t ENABLED = 0x01;
+constexpr std::uint8_t COMMAND_ID = 0x02;
+constexpr std::uint8_t CONTROL_VERSION = 0x03;
+constexpr std::uint8_t RUNTIME_INSTANCE_ID = 0x04;
+}
+
+namespace fields::cast_touchback_master_changed_event {
+constexpr std::uint8_t STATE = 0x01;
+}
+
 namespace fields::cast_touchback_capability {
 constexpr std::uint8_t CAPABILITY = 0x01;
 constexpr std::uint8_t PROTOCOLS = 0x02;
@@ -4602,6 +4659,67 @@ struct CastTouchbackChangedEvent {
     bool accepted = false;
 };
 
+struct CastGestureSettings {
+    std::uint32_t rightClick = 0;
+    std::uint32_t rightHoldMs = 0;
+    std::uint32_t scrollDirection = 0;
+    bool feedback = false;
+    std::uint32_t scrollSpeed = 0;
+    bool has_scrollSpeed = false;
+};
+
+struct CastInputSourceInfo {
+    const char* platform = nullptr;
+    const char* clientKind = nullptr;
+    const char* product = nullptr;
+    const char* displaySurface = nullptr;
+    const char* displayRole = nullptr;
+    bool has_displayRole = false;
+};
+
+struct CastInputModeState {
+    std::uint32_t target = 0;
+    std::uint32_t inputMode = 0;
+    std::uint32_t gestureSettings = 0;
+    bool switching = false;
+    bool supported = false;
+    std::uint32_t source = 0;
+    bool gestureControlSupported = false;
+    std::uint32_t state = 0;
+};
+
+struct CastSetInputModeRequest {
+    std::uint32_t target = 0;
+    const char* commandId = nullptr;
+    std::uint32_t inputMode = 0;
+    bool has_inputMode = false;
+    std::uint32_t gestureSettings = 0;
+    bool has_gestureSettings = false;
+    std::uint32_t controlVersion = 0;
+    const char* runtimeInstanceId = nullptr;
+};
+
+struct CastTouchbackMasterQuery {
+
+};
+
+struct CastTouchbackMasterState {
+    bool enabled = false;
+    const char* revision = nullptr;
+    const char* runtimeInstanceId = nullptr;
+};
+
+struct CastSetTouchbackMasterRequest {
+    bool enabled = false;
+    const char* commandId = nullptr;
+    std::uint32_t controlVersion = 0;
+    const char* runtimeInstanceId = nullptr;
+};
+
+struct CastTouchbackMasterChangedEvent {
+    std::uint32_t state = 0;
+};
+
 struct CastTouchbackCapability {
     const char* capability = nullptr;
     std::uint32_t protocols = 0;
@@ -6687,6 +6805,30 @@ bool DecodeCastTouchbackResolutionRequest(TlvReader& reader, CastTouchbackResolu
 
 bool EncodeCastTouchbackChangedEvent(const CastTouchbackChangedEvent& input, TlvWriter& writer, ErrorCode* error);
 bool DecodeCastTouchbackChangedEvent(TlvReader& reader, CastTouchbackChangedEvent* output, ErrorCode* error);
+
+bool EncodeCastGestureSettings(const CastGestureSettings& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastGestureSettings(TlvReader& reader, CastGestureSettings* output, ErrorCode* error);
+
+bool EncodeCastInputSourceInfo(const CastInputSourceInfo& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastInputSourceInfo(TlvReader& reader, CastInputSourceInfo* output, ErrorCode* error);
+
+bool EncodeCastInputModeState(const CastInputModeState& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastInputModeState(TlvReader& reader, CastInputModeState* output, ErrorCode* error);
+
+bool EncodeCastSetInputModeRequest(const CastSetInputModeRequest& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastSetInputModeRequest(TlvReader& reader, CastSetInputModeRequest* output, ErrorCode* error);
+
+bool EncodeCastTouchbackMasterQuery(const CastTouchbackMasterQuery& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastTouchbackMasterQuery(TlvReader& reader, CastTouchbackMasterQuery* output, ErrorCode* error);
+
+bool EncodeCastTouchbackMasterState(const CastTouchbackMasterState& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastTouchbackMasterState(TlvReader& reader, CastTouchbackMasterState* output, ErrorCode* error);
+
+bool EncodeCastSetTouchbackMasterRequest(const CastSetTouchbackMasterRequest& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastSetTouchbackMasterRequest(TlvReader& reader, CastSetTouchbackMasterRequest* output, ErrorCode* error);
+
+bool EncodeCastTouchbackMasterChangedEvent(const CastTouchbackMasterChangedEvent& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastTouchbackMasterChangedEvent(TlvReader& reader, CastTouchbackMasterChangedEvent* output, ErrorCode* error);
 
 bool EncodeCastTouchbackCapability(const CastTouchbackCapability& input, TlvWriter& writer, ErrorCode* error);
 bool DecodeCastTouchbackCapability(TlvReader& reader, CastTouchbackCapability* output, ErrorCode* error);

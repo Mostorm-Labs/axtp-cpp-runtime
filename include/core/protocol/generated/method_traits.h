@@ -707,6 +707,38 @@ struct MethodTraits<MethodId::CastSetTouchbackResolutionPreference> {
 };
 
 template <>
+struct MethodTraits<MethodId::CastGetInputMode> {
+    using Request = CastTouchbackTargetRequest;
+    using Response = CastInputModeState;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::CastGetInputMode);
+    static constexpr const char* name = "cast.getInputMode";
+};
+
+template <>
+struct MethodTraits<MethodId::CastSetInputMode> {
+    using Request = CastSetInputModeRequest;
+    using Response = CastInputModeState;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::CastSetInputMode);
+    static constexpr const char* name = "cast.setInputMode";
+};
+
+template <>
+struct MethodTraits<MethodId::CastGetTouchbackMaster> {
+    using Request = CastTouchbackMasterQuery;
+    using Response = CastTouchbackMasterState;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::CastGetTouchbackMaster);
+    static constexpr const char* name = "cast.getTouchbackMaster";
+};
+
+template <>
+struct MethodTraits<MethodId::CastSetTouchbackMaster> {
+    using Request = CastSetTouchbackMasterRequest;
+    using Response = CastTouchbackMasterState;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::CastSetTouchbackMaster);
+    static constexpr const char* name = "cast.setTouchbackMaster";
+};
+
+template <>
 struct MethodTraits<MethodId::SoftwareGetConfig> {
     using Request = SoftwareGetConfigParams;
     using Response = SoftwareConfig;
@@ -1119,6 +1151,13 @@ struct EventTraits<EventId::CastTouchbackChanged> {
     using Event = CastTouchbackChangedEvent;
     static constexpr std::uint16_t id = static_cast<std::uint16_t>(EventId::CastTouchbackChanged);
     static constexpr const char* name = "cast.touchbackChanged";
+};
+
+template <>
+struct EventTraits<EventId::CastTouchbackMasterChanged> {
+    using Event = CastTouchbackMasterChangedEvent;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(EventId::CastTouchbackMasterChanged);
+    static constexpr const char* name = "cast.touchbackMasterChanged";
 };
 
 template <>
