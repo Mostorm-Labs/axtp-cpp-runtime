@@ -15,6 +15,7 @@
   - [cast Methods](#cast-methods)
   - [device Methods](#device-methods)
   - [firmware Methods](#firmware-methods)
+  - [license Methods](#license-methods)
   - [network Methods](#network-methods)
   - [signage Methods](#signage-methods)
   - [software Methods](#software-methods)
@@ -44,6 +45,7 @@
 | cast | 27 | 20 |
 | device | 4 | 1 |
 | firmware | 4 | 2 |
+| license | 5 | 0 |
 | network | 18 | 8 |
 | signage | 6 | 1 |
 | software | 6 | 2 |
@@ -224,6 +226,9 @@ Generated capabilities are the feature-level switches that runtimes and devices 
 | 0x1702 | software.updatePolicy | software | draft | object | SoftwareUpdatePolicyCapability | Device supports reading, setting, and resetting the automatic update policy of software objects (such as the Launcher) and emitting update policy change notifications. |
 | 0x1801 | sport.eventDetection | sport | draft | object | SportEventDetectionCapabilities | Device supports cross-sport event detection capability discovery, per-sport toggle control, runtime state events, and unified sport event delivery. |
 | 0x1802 | sport.basketball | sport | draft | object | SportBasketballCapability | Device supports basketball shot and goal event semantics through sport.eventDetection. |
+| 0x1901 | license.registration | license | draft | object | LicenseRegistrationCapabilities | Device registers its identity after successful connection identification and accepts asynchronous automatic issuance. |
+| 0x1902 | license.credentialDelivery | license | draft | object | LicenseCredentialDeliveryCapabilities | Device receives signed credentials, verifies and installs them atomically, and reports delivery receipts. |
+| 0x1903 | license.reconciliation | license | draft | object | LicenseReconciliationCapabilities | Device persists credential and policy-rowset versions and reports them for reconciliation and pre-delivery probes. |
 
 ## Generated Method Index
 
@@ -235,6 +240,7 @@ The generated registry groups methods by domain. Each method keeps a stable `bit
 | cast | 0: cast.getSession<br>1: cast.stopSession<br>2: cast.getAirPlayName<br>3: cast.setAirPlayName<br>4: cast.getAudio<br>5: cast.setAudio<br>6: cast.setMuted<br>7: cast.getPinCodeConfig<br>8: cast.setPinCodeConfig<br>9: cast.setPinCode<br>10: cast.getWindowState<br>11: cast.setWindowState<br>12: cast.getBackendStatus<br>13: cast.restartBackend<br>14: cast.getFlowControlState<br>15: cast.setRenderFps<br>16: cast.setFlowPolicy<br>17: cast.getStatus<br>18: cast.setAudioDelay<br>19: cast.setVideoStreamParams<br>20: cast.getControlCapabilities<br>21: cast.stopPresentation<br>22: cast.setSessionAudioEnabled<br>23: cast.getControlOperation<br>24: cast.setPresentationSettings<br>25: cast.getWebCastBackendState<br>26: cast.setPresentationFocus |
 | device | 0: device.getInfo<br>1: device.getPairingCode<br>2: device.getEnrollmentState<br>3: device.setEnrollmentState |
 | firmware | 0: firmware.getUpdateCapabilities<br>1: firmware.beginUpdate<br>3: firmware.getUpdateState<br>2: firmware.finishUpdate |
+| license | 0: license.registerIdentity<br>1: license.reportReceipt<br>2: license.reconcile<br>3: license.deliverCredential<br>4: license.resolveCredential |
 | network | 2: network.getIpConfig<br>3: network.setIpConfig<br>5: network.getWifiConfig<br>6: network.setWifiConfig<br>7: network.scanWifi<br>8: network.connectWifi<br>9: network.disconnectWifi<br>10: network.getWifiState<br>12: network.getApConfig<br>13: network.setApConfig<br>15: network.startAp<br>16: network.stopAp<br>14: network.getApState<br>0: network.getInterfaces<br>1: network.getInterfaceInfo<br>4: network.getWifiCapabilities<br>11: network.getApCapabilities<br>17: network.getApClients |
 | signage | 0: signage.getPlaylistCapabilities<br>1: signage.getPlaylistConfig<br>2: signage.setPlaylistConfig<br>3: signage.resetPlaylistConfig<br>4: signage.getPlaylistItemUrl<br>5: signage.getPlaylistItem |
 | software | 0: software.getConfig<br>1: software.setConfig<br>2: software.resetConfig<br>3: software.getUpdatePolicy<br>4: software.setUpdatePolicy<br>5: software.resetUpdatePolicy |
@@ -2186,6 +2192,190 @@ Type: `FinishUpdateResult`
 | updateSessionId | String | 0x01 | Firmware update session identifier. | maxLength=128 | N/A |
 | accepted | Boolean | 0x02 | Whether the device accepted the finish handoff. | None | N/A |
 | state | Enum | 0x03 | State after finish, normally verifying or failed. | None | N/A |
+
+---
+
+## license Methods
+
+### Methods in this domain
+
+- [license.registerIdentity](#licenseregisteridentity)
+- [license.reportReceipt](#licensereportreceipt)
+- [license.reconcile](#licensereconcile)
+- [license.deliverCredential](#licensedelivercredential)
+- [license.resolveCredential](#licenseresolvecredential)
+
+---
+
+### license.registerIdentity
+
+Register the device subject from the connection identity (idempotent) and accept automatic entitlement issuance.
+
+- Method ID: `0x1901`
+- Domain: `license`
+- bitOffset: `0`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`
+- Required Capabilities: `license.registration`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `UNAVAILABLE`, `LICENSE_IDENTITY_INVALID`
+
+#### Request Fields
+
+Type: `Empty`
+
+No fields.
+
+#### Response Fields
+
+Type: `RegisterIdentityResult`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| deviceId | String | 0x01 | Adopted device subject identifier (dev_ followed by 32 lowercase hex), equal to the connection identity. | maxLength=36 | N/A |
+| status | Enum | 0x02 | New registration or idempotent hit on an existing subject. | enum=REGISTERED/EXISTING | N/A |
+| credentialPending | Boolean | 0x03 | True when the ledger still has unconverged credential state; the credential arrives via push or a later reconcile. | None | N/A |
+
+---
+
+### license.reportReceipt
+
+Report an install/export/reject receipt for a delivery attempt; accepted only when it correlates to a real platform delivery.
+
+- Method ID: `0x1902`
+- Domain: `license`
+- bitOffset: `1`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`
+- Required Capabilities: `license.credentialDelivery`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`
+
+#### Request Fields
+
+Type: `ReportReceiptParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| deviceId | String | 0x01 | Reporting device subject identifier. | maxLength=36 | N/A |
+| credentialId | String | 0x02 | Credential artifact the receipt refers to. | maxLength=36 | N/A |
+| outcome | Enum | 0x03 | Install confirmation, offline export record, or rejection. | enum=INSTALLED/EXPORTED/REJECTED | N/A |
+| ?errorCode | String | 0x04 | Required when outcome is REJECTED; currently the only rejection cause is LICENSE_CREDENTIAL_STALE. | maxLength=64 | Omit if not used. |
+| ?deliveryRef | String | 0x05 | Echo of the platform deliveryId; may be omitted for offline exports, where acceptance is validated by credentialId lookup. | maxLength=64 | Omit if not used. |
+
+#### Response Fields
+
+Type: `ReportReceiptResult`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| accepted | Boolean | 0x01 | Whether the receipt was accepted for recording; only INSTALLED advances the acknowledged pointer. | None | N/A |
+
+---
+
+### license.reconcile
+
+Pull-channel reconciliation on device online/reconnect; compares credential and policy-rowset versions and answers in one of three forms.
+
+- Method ID: `0x1903`
+- Domain: `license`
+- bitOffset: `2`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`
+- Required Capabilities: `license.reconciliation`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `NOT_FOUND`, `LICENSE_DEVICE_NOT_FOUND`
+
+#### Request Fields
+
+Type: `ReconcileParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| deviceId | String | 0x01 | Device subject identifier (validation field). | maxLength=36 | N/A |
+| ?version | LicenseVersionTriple | 0x02 | Device-held version triple; omitted entirely when the device holds no credential. | None | Omit if not used. |
+
+#### Response Fields
+
+Type: `ReconcileResult`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| upToDate | Boolean | 0x01 | True only when the device pointer is self-consistent and the aggregate matches the ledger. | None | N/A |
+| ?policyVersion | UInt32 | 0x02 | Current policy rowset revision; returned alongside the credential for device-side persistence. | None | Omit if not used. |
+| ?credential | LicenseCredentialInfo | 0x03 | Latest ledger credential; present only in the credential form. | None | Omit if not used. |
+| ?reissueAccepted | Boolean | 0x04 | Reissue acceptance form; present only when issuance must rerun asynchronously and no credential bytes are returned. | None | Omit if not used. |
+
+---
+
+### license.deliverCredential
+
+Push one signed credential artifact to the device with channel-side metadata; the device verifies, matches, and atomically installs it.
+
+- Method ID: `0x1904`
+- Domain: `license`
+- bitOffset: `3`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`
+- Required Capabilities: `license.credentialDelivery`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`
+
+#### Request Fields
+
+Type: `DeliverCredentialParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| deliveryId | String | 0x01 | Platform delivery attempt identifier, echoed by reportReceipt.deliveryRef. | maxLength=64 | N/A |
+| policyVersion | UInt32 | 0x02 | Policy rowset revision of the credential source; channel-side metadata persisted by the device. | None | N/A |
+| credential | LicenseCredentialInfo | 0x03 | Signed credential object shared with the reconcile answer. | None | N/A |
+
+#### Response Fields
+
+Type: `DeliverCredentialResult`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| accepted | Boolean | 0x01 | True after signature verification, identity matching, and atomic install succeed. | None | N/A |
+| ?errorCode | String | 0x02 | Required when accepted is false; currently the only rejection cause is LICENSE_CREDENTIAL_STALE (anti-rollback). | maxLength=64 | Omit if not used. |
+
+---
+
+### license.resolveCredential
+
+Pure pre-delivery version probe; returns the device-held version triple and never carries credential bytes.
+
+- Method ID: `0x1905`
+- Domain: `license`
+- bitOffset: `4`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`
+- Required Capabilities: `license.reconciliation`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `NOT_FOUND`, `LICENSE_DEVICE_NOT_FOUND`
+
+#### Request Fields
+
+Type: `ResolveCredentialParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| deviceId | String | 0x01 | Device subject identifier; the same string as the connection addressing key. | maxLength=36 | N/A |
+
+#### Response Fields
+
+Type: `ResolveCredentialResult`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| hasCredential | Boolean | 0x01 | Whether the device currently holds a credential. | None | N/A |
+| ?version | LicenseVersionTriple | 0x02 | Held version triple; required when hasCredential is true. | None | Omit if not used. |
 
 ---
 
@@ -6469,6 +6659,32 @@ Update policy fragment for target launcher. Referenced by SoftwareUpdatePolicy.p
 
 ---
 
+## LicenseCredentialInfo
+
+Shared credential object reused by deliverCredential params and the reconcile answer.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| credentialId | String | 0x01 | Credential artifact identifier. | maxLength=36 | N/A |
+| authorityRevision | UInt32 | 0x02 | Credential authority revision (first axis of the monotonic version pair). | None | N/A |
+| credentialGeneration | UInt32 | 0x03 | Credential generation (second axis, strictly increasing on the same revision axis). | None | N/A |
+| reason | Enum | 0x04 | Issuance semantics; REVOKE carries an empty entitlement set. | enum=ISSUE/REVISE/REVOKE | N/A |
+| cborBase64 | String | 0x05 | Opaque signed credential bytes (frozen CBOR V1 artifact, at most 64 KiB before Base64 encoding with padding). | maxLength=87384 | N/A |
+
+---
+
+## LicenseVersionTriple
+
+Shared version triple reused by reconcile params and the resolveCredential answer.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| authorityRevision | UInt32 | 0x01 | Credential authority revision. | None | N/A |
+| credentialGeneration | UInt32 | 0x02 | Credential generation. | None | N/A |
+| policyVersion | UInt32 | 0x03 | Installed policy rowset revision persisted by the device. | None | N/A |
+
+---
+
 ## NetworkCredential
 
 Credential descriptor or secret reference.
@@ -6827,6 +7043,9 @@ Bounded runtime statistics for a video stream.
 | 0x1406 | SEC_SIGNATURE_INVALID | auth | error | No | draft | Signature is invalid. |
 | 0x1407 | SEC_CERT_INVALID | auth | error | No | draft | Certificate is invalid. |
 | 0x1408 | SEC_TOKEN_EXPIRED | auth | error | No | draft | Security token expired. |
+| 0x7001 | LICENSE_IDENTITY_INVALID | vendor | error | No | draft | License registration identity adoption failed (malformed deviceId or already occupied by another subject); terminal error, the device must rebuild its local identity before retrying. Used by the license business domain. |
+| 0x7002 | LICENSE_DEVICE_NOT_FOUND | vendor | error | No | draft | License subject not found for the given deviceId. Used by the license business domain. |
+| 0x7003 | LICENSE_CREDENTIAL_STALE | vendor | error | No | draft | Credential version is below the device high-water mark (anti-rollback) or signature verification failed. Used by the license business domain. |
 | 0x7F01 | LEGACY_CMD_UNMAPPED | legacy | error | No | stable | Legacy CmdValue is not mapped to an AXTP method. |
 | 0x7F02 | LEGACY_STATUS_UNMAPPED | legacy | error | No | stable | Legacy status is not mapped to an AXTP ErrorCode. |
 | 0x7F03 | LEGACY_PAYLOAD_INVALID | legacy | error | No | stable | Legacy payload is invalid. |

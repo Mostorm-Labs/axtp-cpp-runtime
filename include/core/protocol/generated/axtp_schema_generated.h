@@ -1586,6 +1586,84 @@ inline constexpr FieldDescriptor kFirmwareUpdateStateChangedEventFields[] = {
     { 0x03, "error", FieldType::Object, false, 0, 0 },
 };
 
+inline constexpr FieldDescriptor kRegisterIdentityResultFields[] = {
+    { 0x01, "deviceId", FieldType::String, true, 0, 0 },
+    { 0x02, "status", FieldType::Enum, true, 0, 0 },
+    { 0x03, "credentialPending", FieldType::Bool, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kReportReceiptParamsFields[] = {
+    { 0x01, "deviceId", FieldType::String, true, 0, 0 },
+    { 0x02, "credentialId", FieldType::String, true, 0, 0 },
+    { 0x03, "outcome", FieldType::Enum, true, 0, 0 },
+    { 0x04, "errorCode", FieldType::String, false, 0, 0 },
+    { 0x05, "deliveryRef", FieldType::String, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kReportReceiptResultFields[] = {
+    { 0x01, "accepted", FieldType::Bool, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kReconcileParamsFields[] = {
+    { 0x01, "deviceId", FieldType::String, true, 0, 0 },
+    { 0x02, "version", FieldType::Object, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kReconcileResultFields[] = {
+    { 0x01, "upToDate", FieldType::Bool, true, 0, 0 },
+    { 0x02, "policyVersion", FieldType::Uint32, false, 0, 0 },
+    { 0x03, "credential", FieldType::Object, false, 0, 0 },
+    { 0x04, "reissueAccepted", FieldType::Bool, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kResolveCredentialParamsFields[] = {
+    { 0x01, "deviceId", FieldType::String, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kResolveCredentialResultFields[] = {
+    { 0x01, "hasCredential", FieldType::Bool, true, 0, 0 },
+    { 0x02, "version", FieldType::Object, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kDeliverCredentialParamsFields[] = {
+    { 0x01, "deliveryId", FieldType::String, true, 0, 0 },
+    { 0x02, "policyVersion", FieldType::Uint32, true, 0, 0 },
+    { 0x03, "credential", FieldType::Object, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kDeliverCredentialResultFields[] = {
+    { 0x01, "accepted", FieldType::Bool, true, 0, 0 },
+    { 0x02, "errorCode", FieldType::String, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kLicenseCredentialInfoFields[] = {
+    { 0x01, "credentialId", FieldType::String, true, 0, 0 },
+    { 0x02, "authorityRevision", FieldType::Uint32, true, 0, 0 },
+    { 0x03, "credentialGeneration", FieldType::Uint32, true, 0, 0 },
+    { 0x04, "reason", FieldType::Enum, true, 0, 0 },
+    { 0x05, "cborBase64", FieldType::String, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kLicenseVersionTripleFields[] = {
+    { 0x01, "authorityRevision", FieldType::Uint32, true, 0, 0 },
+    { 0x02, "credentialGeneration", FieldType::Uint32, true, 0, 0 },
+    { 0x03, "policyVersion", FieldType::Uint32, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kLicenseRegistrationCapabilitiesFields[] = {
+    { 0x01, "deviceIdFormat", FieldType::String, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kLicenseCredentialDeliveryCapabilitiesFields[] = {
+    { 0x01, "maxArtifactBytes", FieldType::Uint32, true, 0, 65536 },
+    { 0x02, "maxEntitlements", FieldType::Uint32, true, 0, 256 },
+    { 0x03, "supportedReasons", FieldType::Array, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kLicenseReconciliationCapabilitiesFields[] = {
+    { 0x01, "persistentPolicyVersion", FieldType::Bool, true, 0, 0 },
+};
+
 inline constexpr FieldDescriptor kNetworkGetInterfacesParamsFields[] = {
     { 0x01, "includeDisabled", FieldType::Bool, false, 0, 0 },
 };
@@ -2720,6 +2798,20 @@ inline constexpr SchemaDescriptor kFirmwareUpdateStateSchema = { "FirmwareUpdate
 inline constexpr SchemaDescriptor kFirmwareUpdateErrorInfoSchema = { "FirmwareUpdateErrorInfo", kFirmwareUpdateErrorInfoFields, 3 };
 inline constexpr SchemaDescriptor kFirmwareUpdateProgressEventSchema = { "FirmwareUpdateProgressEvent", kFirmwareUpdateProgressEventFields, 4 };
 inline constexpr SchemaDescriptor kFirmwareUpdateStateChangedEventSchema = { "FirmwareUpdateStateChangedEvent", kFirmwareUpdateStateChangedEventFields, 3 };
+inline constexpr SchemaDescriptor kRegisterIdentityResultSchema = { "RegisterIdentityResult", kRegisterIdentityResultFields, 3 };
+inline constexpr SchemaDescriptor kReportReceiptParamsSchema = { "ReportReceiptParams", kReportReceiptParamsFields, 5 };
+inline constexpr SchemaDescriptor kReportReceiptResultSchema = { "ReportReceiptResult", kReportReceiptResultFields, 1 };
+inline constexpr SchemaDescriptor kReconcileParamsSchema = { "ReconcileParams", kReconcileParamsFields, 2 };
+inline constexpr SchemaDescriptor kReconcileResultSchema = { "ReconcileResult", kReconcileResultFields, 4 };
+inline constexpr SchemaDescriptor kResolveCredentialParamsSchema = { "ResolveCredentialParams", kResolveCredentialParamsFields, 1 };
+inline constexpr SchemaDescriptor kResolveCredentialResultSchema = { "ResolveCredentialResult", kResolveCredentialResultFields, 2 };
+inline constexpr SchemaDescriptor kDeliverCredentialParamsSchema = { "DeliverCredentialParams", kDeliverCredentialParamsFields, 3 };
+inline constexpr SchemaDescriptor kDeliverCredentialResultSchema = { "DeliverCredentialResult", kDeliverCredentialResultFields, 2 };
+inline constexpr SchemaDescriptor kLicenseCredentialInfoSchema = { "LicenseCredentialInfo", kLicenseCredentialInfoFields, 5 };
+inline constexpr SchemaDescriptor kLicenseVersionTripleSchema = { "LicenseVersionTriple", kLicenseVersionTripleFields, 3 };
+inline constexpr SchemaDescriptor kLicenseRegistrationCapabilitiesSchema = { "LicenseRegistrationCapabilities", kLicenseRegistrationCapabilitiesFields, 1 };
+inline constexpr SchemaDescriptor kLicenseCredentialDeliveryCapabilitiesSchema = { "LicenseCredentialDeliveryCapabilities", kLicenseCredentialDeliveryCapabilitiesFields, 3 };
+inline constexpr SchemaDescriptor kLicenseReconciliationCapabilitiesSchema = { "LicenseReconciliationCapabilities", kLicenseReconciliationCapabilitiesFields, 1 };
 inline constexpr SchemaDescriptor kNetworkGetInterfacesParamsSchema = { "NetworkGetInterfacesParams", kNetworkGetInterfacesParamsFields, 1 };
 inline constexpr SchemaDescriptor kNetworkGetInterfaceInfoParamsSchema = { "NetworkGetInterfaceInfoParams", kNetworkGetInterfaceInfoParamsFields, 1 };
 inline constexpr SchemaDescriptor kNetworkInterfacesSchema = { "NetworkInterfaces", kNetworkInterfacesFields, 2 };

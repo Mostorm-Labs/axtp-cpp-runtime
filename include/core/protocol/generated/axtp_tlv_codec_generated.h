@@ -1556,6 +1556,84 @@ constexpr std::uint8_t STATE = 0x02;
 constexpr std::uint8_t ERROR = 0x03;
 }
 
+namespace fields::register_identity_result {
+constexpr std::uint8_t DEVICE_ID = 0x01;
+constexpr std::uint8_t STATUS = 0x02;
+constexpr std::uint8_t CREDENTIAL_PENDING = 0x03;
+}
+
+namespace fields::report_receipt_params {
+constexpr std::uint8_t DEVICE_ID = 0x01;
+constexpr std::uint8_t CREDENTIAL_ID = 0x02;
+constexpr std::uint8_t OUTCOME = 0x03;
+constexpr std::uint8_t ERROR_CODE = 0x04;
+constexpr std::uint8_t DELIVERY_REF = 0x05;
+}
+
+namespace fields::report_receipt_result {
+constexpr std::uint8_t ACCEPTED = 0x01;
+}
+
+namespace fields::reconcile_params {
+constexpr std::uint8_t DEVICE_ID = 0x01;
+constexpr std::uint8_t VERSION = 0x02;
+}
+
+namespace fields::reconcile_result {
+constexpr std::uint8_t UP_TO_DATE = 0x01;
+constexpr std::uint8_t POLICY_VERSION = 0x02;
+constexpr std::uint8_t CREDENTIAL = 0x03;
+constexpr std::uint8_t REISSUE_ACCEPTED = 0x04;
+}
+
+namespace fields::resolve_credential_params {
+constexpr std::uint8_t DEVICE_ID = 0x01;
+}
+
+namespace fields::resolve_credential_result {
+constexpr std::uint8_t HAS_CREDENTIAL = 0x01;
+constexpr std::uint8_t VERSION = 0x02;
+}
+
+namespace fields::deliver_credential_params {
+constexpr std::uint8_t DELIVERY_ID = 0x01;
+constexpr std::uint8_t POLICY_VERSION = 0x02;
+constexpr std::uint8_t CREDENTIAL = 0x03;
+}
+
+namespace fields::deliver_credential_result {
+constexpr std::uint8_t ACCEPTED = 0x01;
+constexpr std::uint8_t ERROR_CODE = 0x02;
+}
+
+namespace fields::license_credential_info {
+constexpr std::uint8_t CREDENTIAL_ID = 0x01;
+constexpr std::uint8_t AUTHORITY_REVISION = 0x02;
+constexpr std::uint8_t CREDENTIAL_GENERATION = 0x03;
+constexpr std::uint8_t REASON = 0x04;
+constexpr std::uint8_t CBOR_BASE64 = 0x05;
+}
+
+namespace fields::license_version_triple {
+constexpr std::uint8_t AUTHORITY_REVISION = 0x01;
+constexpr std::uint8_t CREDENTIAL_GENERATION = 0x02;
+constexpr std::uint8_t POLICY_VERSION = 0x03;
+}
+
+namespace fields::license_registration_capabilities {
+constexpr std::uint8_t DEVICE_ID_FORMAT = 0x01;
+}
+
+namespace fields::license_credential_delivery_capabilities {
+constexpr std::uint8_t MAX_ARTIFACT_BYTES = 0x01;
+constexpr std::uint8_t MAX_ENTITLEMENTS = 0x02;
+constexpr std::uint8_t SUPPORTED_REASONS = 0x03;
+}
+
+namespace fields::license_reconciliation_capabilities {
+constexpr std::uint8_t PERSISTENT_POLICY_VERSION = 0x01;
+}
+
 namespace fields::network_get_interfaces_params {
 constexpr std::uint8_t INCLUDE_DISABLED = 0x01;
 }
@@ -4649,6 +4727,92 @@ struct FirmwareUpdateStateChangedEvent {
     bool has_error = false;
 };
 
+struct RegisterIdentityResult {
+    const char* deviceId = nullptr;
+    std::uint32_t status = 0;
+    bool credentialPending = false;
+};
+
+struct ReportReceiptParams {
+    const char* deviceId = nullptr;
+    const char* credentialId = nullptr;
+    std::uint32_t outcome = 0;
+    const char* errorCode = nullptr;
+    bool has_errorCode = false;
+    const char* deliveryRef = nullptr;
+    bool has_deliveryRef = false;
+};
+
+struct ReportReceiptResult {
+    bool accepted = false;
+};
+
+struct ReconcileParams {
+    const char* deviceId = nullptr;
+    std::uint32_t version = 0;
+    bool has_version = false;
+};
+
+struct ReconcileResult {
+    bool upToDate = false;
+    std::uint32_t policyVersion = 0;
+    bool has_policyVersion = false;
+    std::uint32_t credential = 0;
+    bool has_credential = false;
+    bool reissueAccepted = false;
+    bool has_reissueAccepted = false;
+};
+
+struct ResolveCredentialParams {
+    const char* deviceId = nullptr;
+};
+
+struct ResolveCredentialResult {
+    bool hasCredential = false;
+    std::uint32_t version = 0;
+    bool has_version = false;
+};
+
+struct DeliverCredentialParams {
+    const char* deliveryId = nullptr;
+    std::uint32_t policyVersion = 0;
+    std::uint32_t credential = 0;
+};
+
+struct DeliverCredentialResult {
+    bool accepted = false;
+    const char* errorCode = nullptr;
+    bool has_errorCode = false;
+};
+
+struct LicenseCredentialInfo {
+    const char* credentialId = nullptr;
+    std::uint32_t authorityRevision = 0;
+    std::uint32_t credentialGeneration = 0;
+    std::uint32_t reason = 0;
+    const char* cborBase64 = nullptr;
+};
+
+struct LicenseVersionTriple {
+    std::uint32_t authorityRevision = 0;
+    std::uint32_t credentialGeneration = 0;
+    std::uint32_t policyVersion = 0;
+};
+
+struct LicenseRegistrationCapabilities {
+    const char* deviceIdFormat = nullptr;
+};
+
+struct LicenseCredentialDeliveryCapabilities {
+    std::uint32_t maxArtifactBytes = 0;
+    std::uint32_t maxEntitlements = 0;
+    std::uint32_t supportedReasons = 0;
+};
+
+struct LicenseReconciliationCapabilities {
+    bool persistentPolicyVersion = false;
+};
+
 struct NetworkGetInterfacesParams {
     bool includeDisabled = false;
     bool has_includeDisabled = false;
@@ -6433,6 +6597,48 @@ bool DecodeFirmwareUpdateProgressEvent(TlvReader& reader, FirmwareUpdateProgress
 
 bool EncodeFirmwareUpdateStateChangedEvent(const FirmwareUpdateStateChangedEvent& input, TlvWriter& writer, ErrorCode* error);
 bool DecodeFirmwareUpdateStateChangedEvent(TlvReader& reader, FirmwareUpdateStateChangedEvent* output, ErrorCode* error);
+
+bool EncodeRegisterIdentityResult(const RegisterIdentityResult& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeRegisterIdentityResult(TlvReader& reader, RegisterIdentityResult* output, ErrorCode* error);
+
+bool EncodeReportReceiptParams(const ReportReceiptParams& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeReportReceiptParams(TlvReader& reader, ReportReceiptParams* output, ErrorCode* error);
+
+bool EncodeReportReceiptResult(const ReportReceiptResult& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeReportReceiptResult(TlvReader& reader, ReportReceiptResult* output, ErrorCode* error);
+
+bool EncodeReconcileParams(const ReconcileParams& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeReconcileParams(TlvReader& reader, ReconcileParams* output, ErrorCode* error);
+
+bool EncodeReconcileResult(const ReconcileResult& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeReconcileResult(TlvReader& reader, ReconcileResult* output, ErrorCode* error);
+
+bool EncodeResolveCredentialParams(const ResolveCredentialParams& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeResolveCredentialParams(TlvReader& reader, ResolveCredentialParams* output, ErrorCode* error);
+
+bool EncodeResolveCredentialResult(const ResolveCredentialResult& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeResolveCredentialResult(TlvReader& reader, ResolveCredentialResult* output, ErrorCode* error);
+
+bool EncodeDeliverCredentialParams(const DeliverCredentialParams& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeDeliverCredentialParams(TlvReader& reader, DeliverCredentialParams* output, ErrorCode* error);
+
+bool EncodeDeliverCredentialResult(const DeliverCredentialResult& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeDeliverCredentialResult(TlvReader& reader, DeliverCredentialResult* output, ErrorCode* error);
+
+bool EncodeLicenseCredentialInfo(const LicenseCredentialInfo& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeLicenseCredentialInfo(TlvReader& reader, LicenseCredentialInfo* output, ErrorCode* error);
+
+bool EncodeLicenseVersionTriple(const LicenseVersionTriple& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeLicenseVersionTriple(TlvReader& reader, LicenseVersionTriple* output, ErrorCode* error);
+
+bool EncodeLicenseRegistrationCapabilities(const LicenseRegistrationCapabilities& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeLicenseRegistrationCapabilities(TlvReader& reader, LicenseRegistrationCapabilities* output, ErrorCode* error);
+
+bool EncodeLicenseCredentialDeliveryCapabilities(const LicenseCredentialDeliveryCapabilities& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeLicenseCredentialDeliveryCapabilities(TlvReader& reader, LicenseCredentialDeliveryCapabilities* output, ErrorCode* error);
+
+bool EncodeLicenseReconciliationCapabilities(const LicenseReconciliationCapabilities& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeLicenseReconciliationCapabilities(TlvReader& reader, LicenseReconciliationCapabilities* output, ErrorCode* error);
 
 bool EncodeNetworkGetInterfacesParams(const NetworkGetInterfacesParams& input, TlvWriter& writer, ErrorCode* error);
 bool DecodeNetworkGetInterfacesParams(TlvReader& reader, NetworkGetInterfacesParams* output, ErrorCode* error);
