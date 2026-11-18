@@ -161,6 +161,9 @@ inline constexpr ErrorDescriptor kErrorRegistry[] = {
     { 0x1406, "SEC_SIGNATURE_INVALID", "auth", false },
     { 0x1407, "SEC_CERT_INVALID", "auth", false },
     { 0x1408, "SEC_TOKEN_EXPIRED", "auth", false },
+    { 0x7001, "LICENSE_IDENTITY_INVALID", "vendor", false },
+    { 0x7002, "LICENSE_DEVICE_NOT_FOUND", "vendor", false },
+    { 0x7003, "LICENSE_CREDENTIAL_STALE", "vendor", false },
     { 0x7F01, "LEGACY_CMD_UNMAPPED", "legacy", false },
     { 0x7F02, "LEGACY_STATUS_UNMAPPED", "legacy", false },
     { 0x7F03, "LEGACY_PAYLOAD_INVALID", "legacy", false },
@@ -171,6 +174,6 @@ inline constexpr ErrorDescriptor kErrorRegistry[] = {
     { 0x7F08, "LEGACY_RESPONSE_TIMEOUT", "legacy", true },
 };
 
-inline constexpr std::size_t kErrorRegistryCount = 156;
+inline constexpr std::size_t kErrorRegistryCount = 159;
 
 } // namespace axtp

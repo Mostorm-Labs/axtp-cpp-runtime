@@ -9988,6 +9988,387 @@
       ]
     },
     {
+      "name": "RegisterIdentityResult",
+      "kind": "object",
+      "description": "Registration acceptance result; issuance is asynchronous and converges via delivery or reconciliation.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "deviceId",
+          "type": "string",
+          "required": true,
+          "maxLength": 36,
+          "description": "Adopted device subject identifier (dev_ followed by 32 lowercase hex), equal to the connection identity."
+        },
+        {
+          "fieldId": 2,
+          "name": "status",
+          "type": "enum",
+          "required": true,
+          "enumValues": [
+            "REGISTERED",
+            "EXISTING"
+          ],
+          "description": "New registration or idempotent hit on an existing subject."
+        },
+        {
+          "fieldId": 3,
+          "name": "credentialPending",
+          "type": "bool",
+          "required": true,
+          "description": "True when the ledger still has unconverged credential state; the credential arrives via push or a later reconcile."
+        }
+      ]
+    },
+    {
+      "name": "ReportReceiptParams",
+      "kind": "object",
+      "description": "Device receipt for one delivery or offline-export attempt.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "deviceId",
+          "type": "string",
+          "required": true,
+          "maxLength": 36,
+          "description": "Reporting device subject identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "credentialId",
+          "type": "string",
+          "required": true,
+          "maxLength": 36,
+          "description": "Credential artifact the receipt refers to."
+        },
+        {
+          "fieldId": 3,
+          "name": "outcome",
+          "type": "enum",
+          "required": true,
+          "enumValues": [
+            "INSTALLED",
+            "EXPORTED",
+            "REJECTED"
+          ],
+          "description": "Install confirmation, offline export record, or rejection."
+        },
+        {
+          "fieldId": 4,
+          "name": "errorCode",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "Required when outcome is REJECTED; currently the only rejection cause is LICENSE_CREDENTIAL_STALE."
+        },
+        {
+          "fieldId": 5,
+          "name": "deliveryRef",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "Echo of the platform deliveryId; may be omitted for offline exports, where acceptance is validated by credentialId lookup."
+        }
+      ]
+    },
+    {
+      "name": "ReportReceiptResult",
+      "kind": "object",
+      "description": "Receipt acceptance result; false means the receipt does not correlate to a real delivery attempt and the ledger is unchanged.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "accepted",
+          "type": "bool",
+          "required": true,
+          "description": "Whether the receipt was accepted for recording; only INSTALLED advances the acknowledged pointer."
+        }
+      ]
+    },
+    {
+      "name": "ReconcileParams",
+      "kind": "object",
+      "description": "Device-held version report for online/reconnect reconciliation.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "deviceId",
+          "type": "string",
+          "required": true,
+          "maxLength": 36,
+          "description": "Device subject identifier (validation field)."
+        },
+        {
+          "fieldId": 2,
+          "name": "version",
+          "type": "LicenseVersionTriple",
+          "required": false,
+          "description": "Device-held version triple; omitted entirely when the device holds no credential."
+        }
+      ]
+    },
+    {
+      "name": "ReconcileResult",
+      "kind": "object",
+      "description": "Reconciliation answer in one of three mutually exclusive forms, namely up to date, latest credential attached, or reissue accepted.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "upToDate",
+          "type": "bool",
+          "required": true,
+          "description": "True only when the device pointer is self-consistent and the aggregate matches the ledger."
+        },
+        {
+          "fieldId": 2,
+          "name": "policyVersion",
+          "type": "uint32",
+          "required": false,
+          "description": "Current policy rowset revision; returned alongside the credential for device-side persistence."
+        },
+        {
+          "fieldId": 3,
+          "name": "credential",
+          "type": "LicenseCredentialInfo",
+          "required": false,
+          "description": "Latest ledger credential; present only in the credential form."
+        },
+        {
+          "fieldId": 4,
+          "name": "reissueAccepted",
+          "type": "bool",
+          "required": false,
+          "description": "Reissue acceptance form; present only when issuance must rerun asynchronously and no credential bytes are returned."
+        }
+      ]
+    },
+    {
+      "name": "ResolveCredentialParams",
+      "kind": "object",
+      "description": "Pre-delivery version probe request.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "deviceId",
+          "type": "string",
+          "required": true,
+          "maxLength": 36,
+          "description": "Device subject identifier; the same string as the connection addressing key."
+        }
+      ]
+    },
+    {
+      "name": "ResolveCredentialResult",
+      "kind": "object",
+      "description": "Device-held version report; never carries credential bytes.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "hasCredential",
+          "type": "bool",
+          "required": true,
+          "description": "Whether the device currently holds a credential."
+        },
+        {
+          "fieldId": 2,
+          "name": "version",
+          "type": "LicenseVersionTriple",
+          "required": false,
+          "description": "Held version triple; required when hasCredential is true."
+        }
+      ]
+    },
+    {
+      "name": "DeliverCredentialParams",
+      "kind": "object",
+      "description": "Credential push with channel-side metadata; the CBOR artifact itself is opaque to the protocol.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "deliveryId",
+          "type": "string",
+          "required": true,
+          "maxLength": 64,
+          "description": "Platform delivery attempt identifier, echoed by reportReceipt.deliveryRef."
+        },
+        {
+          "fieldId": 2,
+          "name": "policyVersion",
+          "type": "uint32",
+          "required": true,
+          "description": "Policy rowset revision of the credential source; channel-side metadata persisted by the device."
+        },
+        {
+          "fieldId": 3,
+          "name": "credential",
+          "type": "LicenseCredentialInfo",
+          "required": true,
+          "description": "Signed credential object shared with the reconcile answer."
+        }
+      ]
+    },
+    {
+      "name": "DeliverCredentialResult",
+      "kind": "object",
+      "description": "Device acceptance result; rejection is expressed in the business result, not as a transport error.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "accepted",
+          "type": "bool",
+          "required": true,
+          "description": "True after signature verification, identity matching, and atomic install succeed."
+        },
+        {
+          "fieldId": 2,
+          "name": "errorCode",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "Required when accepted is false; currently the only rejection cause is LICENSE_CREDENTIAL_STALE (anti-rollback)."
+        }
+      ]
+    },
+    {
+      "name": "LicenseCredentialInfo",
+      "kind": "object",
+      "description": "Shared credential object reused by deliverCredential params and the reconcile answer.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "credentialId",
+          "type": "string",
+          "required": true,
+          "maxLength": 36,
+          "description": "Credential artifact identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "authorityRevision",
+          "type": "uint32",
+          "required": true,
+          "description": "Credential authority revision (first axis of the monotonic version pair)."
+        },
+        {
+          "fieldId": 3,
+          "name": "credentialGeneration",
+          "type": "uint32",
+          "required": true,
+          "description": "Credential generation (second axis, strictly increasing on the same revision axis)."
+        },
+        {
+          "fieldId": 4,
+          "name": "reason",
+          "type": "enum",
+          "required": true,
+          "enumValues": [
+            "ISSUE",
+            "REVISE",
+            "REVOKE"
+          ],
+          "description": "Issuance semantics; REVOKE carries an empty entitlement set."
+        },
+        {
+          "fieldId": 5,
+          "name": "cborBase64",
+          "type": "string",
+          "required": true,
+          "maxLength": 87384,
+          "description": "Opaque signed credential bytes (frozen CBOR V1 artifact, at most 64 KiB before Base64 encoding with padding)."
+        }
+      ]
+    },
+    {
+      "name": "LicenseVersionTriple",
+      "kind": "object",
+      "description": "Shared version triple reused by reconcile params and the resolveCredential answer.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "authorityRevision",
+          "type": "uint32",
+          "required": true,
+          "description": "Credential authority revision."
+        },
+        {
+          "fieldId": 2,
+          "name": "credentialGeneration",
+          "type": "uint32",
+          "required": true,
+          "description": "Credential generation."
+        },
+        {
+          "fieldId": 3,
+          "name": "policyVersion",
+          "type": "uint32",
+          "required": true,
+          "description": "Installed policy rowset revision persisted by the device."
+        }
+      ]
+    },
+    {
+      "name": "LicenseRegistrationCapabilities",
+      "kind": "object",
+      "description": "Device-side declaration of the registration flow support.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "deviceIdFormat",
+          "type": "string",
+          "required": true,
+          "maxLength": 32,
+          "description": "Format declaration of the self-reported deviceId accepted by registration adoption."
+        }
+      ]
+    },
+    {
+      "name": "LicenseCredentialDeliveryCapabilities",
+      "kind": "object",
+      "description": "Device-side declaration of credential receive, verify, and install support.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "maxArtifactBytes",
+          "type": "uint32",
+          "required": true,
+          "max": 65536,
+          "description": "Maximum single artifact size in bytes the device accepts."
+        },
+        {
+          "fieldId": 2,
+          "name": "maxEntitlements",
+          "type": "uint32",
+          "required": true,
+          "max": 256,
+          "description": "Maximum entitlement entries per credential."
+        },
+        {
+          "fieldId": 3,
+          "name": "supportedReasons",
+          "type": "array",
+          "required": true,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Subset of ISSUE, REVISE, and REVOKE the device accepts."
+        }
+      ]
+    },
+    {
+      "name": "LicenseReconciliationCapabilities",
+      "kind": "object",
+      "description": "Device-side declaration of reconciliation and version reporting support.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "persistentPolicyVersion",
+          "type": "bool",
+          "required": true,
+          "description": "Whether the device persists policyVersion locally for reconcile and probe reporting."
+        }
+      ]
+    },
+    {
       "name": "NetworkGetInterfacesParams",
       "kind": "object",
       "description": "Selector for network interface enumeration.",
@@ -16447,6 +16828,142 @@
       ]
     },
     {
+      "name": "license.registerIdentity",
+      "description": "Register the device subject from the connection identity (idempotent) and accept automatic entitlement issuance.",
+      "methodId": 6401,
+      "bitOffset": 0,
+      "domain": "license",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "Empty"
+      },
+      "response": {
+        "type": "RegisterIdentityResult"
+      },
+      "encodings": [
+        "json"
+      ],
+      "capabilities": [
+        "license.registration"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "INVALID_ARGUMENT",
+        "UNAVAILABLE",
+        "LICENSE_IDENTITY_INVALID"
+      ]
+    },
+    {
+      "name": "license.reportReceipt",
+      "description": "Report an install/export/reject receipt for a delivery attempt; accepted only when it correlates to a real platform delivery.",
+      "methodId": 6402,
+      "bitOffset": 1,
+      "domain": "license",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "ReportReceiptParams"
+      },
+      "response": {
+        "type": "ReportReceiptResult"
+      },
+      "encodings": [
+        "json"
+      ],
+      "capabilities": [
+        "license.credentialDelivery"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "INVALID_ARGUMENT"
+      ]
+    },
+    {
+      "name": "license.reconcile",
+      "description": "Pull-channel reconciliation on device online/reconnect; compares credential and policy-rowset versions and answers in one of three forms.",
+      "methodId": 6403,
+      "bitOffset": 2,
+      "domain": "license",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "ReconcileParams"
+      },
+      "response": {
+        "type": "ReconcileResult"
+      },
+      "encodings": [
+        "json"
+      ],
+      "capabilities": [
+        "license.reconciliation"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "INVALID_ARGUMENT",
+        "NOT_FOUND",
+        "LICENSE_DEVICE_NOT_FOUND"
+      ]
+    },
+    {
+      "name": "license.deliverCredential",
+      "description": "Push one signed credential artifact to the device with channel-side metadata; the device verifies, matches, and atomically installs it.",
+      "methodId": 6404,
+      "bitOffset": 3,
+      "domain": "license",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "DeliverCredentialParams"
+      },
+      "response": {
+        "type": "DeliverCredentialResult"
+      },
+      "encodings": [
+        "json"
+      ],
+      "capabilities": [
+        "license.credentialDelivery"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "INVALID_ARGUMENT"
+      ]
+    },
+    {
+      "name": "license.resolveCredential",
+      "description": "Pure pre-delivery version probe; returns the device-held version triple and never carries credential bytes.",
+      "methodId": 6405,
+      "bitOffset": 4,
+      "domain": "license",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "ResolveCredentialParams"
+      },
+      "response": {
+        "type": "ResolveCredentialResult"
+      },
+      "encodings": [
+        "json"
+      ],
+      "capabilities": [
+        "license.reconciliation"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "INVALID_ARGUMENT",
+        "NOT_FOUND",
+        "LICENSE_DEVICE_NOT_FOUND"
+      ]
+    },
+    {
       "name": "network.getInterfaces",
       "description": "Return visible network interfaces and default interface identifiers.",
       "methodId": 3600,
@@ -20602,6 +21119,36 @@
       "severity": "warning",
       "retryable": true,
       "message": "Legacy response timed out."
+    },
+    {
+      "name": "LICENSE_IDENTITY_INVALID",
+      "code": 28673,
+      "category": "vendor",
+      "since": "1.0.0",
+      "status": "draft",
+      "severity": "error",
+      "retryable": false,
+      "message": "License registration identity adoption failed (malformed deviceId or already occupied by another subject); terminal error, the device must rebuild its local identity before retrying. Used by the license business domain."
+    },
+    {
+      "name": "LICENSE_DEVICE_NOT_FOUND",
+      "code": 28674,
+      "category": "vendor",
+      "since": "1.0.0",
+      "status": "draft",
+      "severity": "error",
+      "retryable": false,
+      "message": "License subject not found for the given deviceId. Used by the license business domain."
+    },
+    {
+      "name": "LICENSE_CREDENTIAL_STALE",
+      "code": 28675,
+      "category": "vendor",
+      "since": "1.0.0",
+      "status": "draft",
+      "severity": "error",
+      "retryable": false,
+      "message": "Credential version is below the device high-water mark (anti-rollback) or signature verification failed. Used by the license business domain."
     }
   ],
   "capabilities": [
@@ -20830,6 +21377,36 @@
       "status": "draft",
       "type": "object",
       "schema": "FirmwareUpdateCapabilities"
+    },
+    {
+      "name": "license.registration",
+      "description": "Device registers its identity after successful connection identification and accepts asynchronous automatic issuance.",
+      "capabilityId": 6401,
+      "domain": "license",
+      "since": "1.0.0",
+      "status": "draft",
+      "type": "object",
+      "schema": "LicenseRegistrationCapabilities"
+    },
+    {
+      "name": "license.credentialDelivery",
+      "description": "Device receives signed credentials, verifies and installs them atomically, and reports delivery receipts.",
+      "capabilityId": 6402,
+      "domain": "license",
+      "since": "1.0.0",
+      "status": "draft",
+      "type": "object",
+      "schema": "LicenseCredentialDeliveryCapabilities"
+    },
+    {
+      "name": "license.reconciliation",
+      "description": "Device persists credential and policy-rowset versions and reports them for reconciliation and pre-delivery probes.",
+      "capabilityId": 6403,
+      "domain": "license",
+      "since": "1.0.0",
+      "status": "draft",
+      "type": "object",
+      "schema": "LicenseReconciliationCapabilities"
     },
     {
       "name": "network.interface",

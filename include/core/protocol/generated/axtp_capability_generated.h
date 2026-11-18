@@ -48,8 +48,11 @@ inline constexpr CapabilityDescriptor kCapabilityRegistry[] = {
     { 0x1702, "software.updatePolicy", "software", "object", "SoftwareUpdatePolicyCapability" },
     { 0x1801, "sport.eventDetection", "sport", "object", "SportEventDetectionCapabilities" },
     { 0x1802, "sport.basketball", "sport", "object", "SportBasketballCapability" },
+    { 0x1901, "license.registration", "license", "object", "LicenseRegistrationCapabilities" },
+    { 0x1902, "license.credentialDelivery", "license", "object", "LicenseCredentialDeliveryCapabilities" },
+    { 0x1903, "license.reconciliation", "license", "object", "LicenseReconciliationCapabilities" },
 };
 
-inline constexpr std::size_t kCapabilityRegistryCount = 34;
+inline constexpr std::size_t kCapabilityRegistryCount = 37;
 
 } // namespace axtp

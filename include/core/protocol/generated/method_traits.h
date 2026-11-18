@@ -770,6 +770,46 @@ struct MethodTraits<MethodId::SportSetEventClipConfig> {
     static constexpr const char* name = "sport.setEventClipConfig";
 };
 
+template <>
+struct MethodTraits<MethodId::LicenseRegisterIdentity> {
+    using Request = Empty;
+    using Response = RegisterIdentityResult;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::LicenseRegisterIdentity);
+    static constexpr const char* name = "license.registerIdentity";
+};
+
+template <>
+struct MethodTraits<MethodId::LicenseReportReceipt> {
+    using Request = ReportReceiptParams;
+    using Response = ReportReceiptResult;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::LicenseReportReceipt);
+    static constexpr const char* name = "license.reportReceipt";
+};
+
+template <>
+struct MethodTraits<MethodId::LicenseReconcile> {
+    using Request = ReconcileParams;
+    using Response = ReconcileResult;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::LicenseReconcile);
+    static constexpr const char* name = "license.reconcile";
+};
+
+template <>
+struct MethodTraits<MethodId::LicenseDeliverCredential> {
+    using Request = DeliverCredentialParams;
+    using Response = DeliverCredentialResult;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::LicenseDeliverCredential);
+    static constexpr const char* name = "license.deliverCredential";
+};
+
+template <>
+struct MethodTraits<MethodId::LicenseResolveCredential> {
+    using Request = ResolveCredentialParams;
+    using Response = ResolveCredentialResult;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::LicenseResolveCredential);
+    static constexpr const char* name = "license.resolveCredential";
+};
+
 template <EventId Id>
 struct EventTraits;
 

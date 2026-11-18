@@ -109,8 +109,13 @@ inline constexpr MethodDescriptor kMethodRegistry[] = {
     { 0x1805, "sport.setGoalShotWatermarkConfig", "sport", "SportSetGoalShotWatermarkConfigParams", "Empty" },
     { 0x1806, "sport.getEventClipConfig", "sport", "SportConfigTargetParams", "SportEventClipConfig" },
     { 0x1807, "sport.setEventClipConfig", "sport", "SportSetEventClipConfigParams", "Empty" },
+    { 0x1901, "license.registerIdentity", "license", "Empty", "RegisterIdentityResult" },
+    { 0x1902, "license.reportReceipt", "license", "ReportReceiptParams", "ReportReceiptResult" },
+    { 0x1903, "license.reconcile", "license", "ReconcileParams", "ReconcileResult" },
+    { 0x1904, "license.deliverCredential", "license", "DeliverCredentialParams", "DeliverCredentialResult" },
+    { 0x1905, "license.resolveCredential", "license", "ResolveCredentialParams", "ResolveCredentialResult" },
 };
 
-inline constexpr std::size_t kMethodRegistryCount = 95;
+inline constexpr std::size_t kMethodRegistryCount = 100;
 
 } // namespace axtp
