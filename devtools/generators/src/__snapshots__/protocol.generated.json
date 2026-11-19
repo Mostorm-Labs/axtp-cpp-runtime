@@ -9997,8 +9997,8 @@
           "name": "deviceId",
           "type": "string",
           "required": true,
-          "maxLength": 36,
-          "description": "Adopted device subject identifier (dev_ followed by 32 lowercase hex), equal to the connection identity."
+          "maxLength": 40,
+          "description": "Platform-assigned device subject identifier (axldev_ followed by 32 lowercase hex), returned on registration; the device must persist it and self-report it on later connections (non-authoritative reference; the authoritative identity is the identity_value public key)."
         },
         {
           "fieldId": 2,
@@ -10030,8 +10030,8 @@
           "name": "deviceId",
           "type": "string",
           "required": true,
-          "maxLength": 36,
-          "description": "Reporting device subject identifier."
+          "maxLength": 40,
+          "description": "Connection addressing key current self-reported value (registered form, axldev_ prefix); cross-validated against the connection identity."
         },
         {
           "fieldId": 2,
@@ -10095,8 +10095,8 @@
           "name": "deviceId",
           "type": "string",
           "required": true,
-          "maxLength": 36,
-          "description": "Device subject identifier (validation field)."
+          "maxLength": 40,
+          "description": "Connection addressing key current self-reported value (registered form, axldev_ prefix); filled with the current self-reported value also when the platform addresses via the identity fallback."
         },
         {
           "fieldId": 2,
@@ -10152,8 +10152,8 @@
           "name": "deviceId",
           "type": "string",
           "required": true,
-          "maxLength": 36,
-          "description": "Device subject identifier; the same string as the connection addressing key."
+          "maxLength": 40,
+          "description": "Connection addressing key current self-reported value (registered form, axldev_ prefix); the same string as the connection addressing key, also under the platform identity-fallback addressing."
         }
       ]
     },
@@ -10316,8 +10316,8 @@
           "name": "deviceIdFormat",
           "type": "string",
           "required": true,
-          "maxLength": 32,
-          "description": "Format declaration of the self-reported deviceId accepted by registration adoption."
+          "maxLength": 64,
+          "description": "Dual-form format declaration of the self-reported connection identity accepted by registration adoption (unregistered identity_value ^[0-9a-f]{128}$ or platform-assigned deviceId ^axldev_[0-9a-f]{32}$)."
         }
       ]
     },
@@ -16829,7 +16829,7 @@
     },
     {
       "name": "license.registerIdentity",
-      "description": "Register the device subject from the connection identity (idempotent) and accept automatic entitlement issuance.",
+      "description": "Register the device subject from the dual-form connection identity (idempotent); the platform assigns the deviceId on first registration and accepts automatic entitlement issuance.",
       "methodId": 6401,
       "bitOffset": 0,
       "domain": "license",
@@ -16911,7 +16911,7 @@
     },
     {
       "name": "license.deliverCredential",
-      "description": "Push one signed credential artifact to the device with channel-side metadata; the device verifies, matches, and atomically installs it.",
+      "description": "Push one signed credential artifact to the device over dual-key fallback addressing (deviceId first, identity fallback) with channel-side metadata; the device verifies, matches, and atomically installs it.",
       "methodId": 6404,
       "bitOffset": 3,
       "domain": "license",
@@ -21128,7 +21128,7 @@
       "status": "draft",
       "severity": "error",
       "retryable": false,
-      "message": "License registration identity adoption failed (malformed deviceId or already occupied by another subject); terminal error, the device must rebuild its local identity before retrying. Used by the license business domain."
+      "message": "License registration identity adoption failed — the dual-form patterns (unregistered identity_value ^[0-9a-f]{128}$ or platform-assigned deviceId ^axldev_[0-9a-f]{32}$) both fail to match, or the identity_value is already mapped to another subject; terminal error, the device must rebuild its local identity before retrying. Used by the license business domain."
     },
     {
       "name": "LICENSE_DEVICE_NOT_FOUND",
