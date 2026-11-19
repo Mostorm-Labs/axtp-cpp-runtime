@@ -2209,7 +2209,7 @@ Type: `FinishUpdateResult`
 
 ### license.registerIdentity
 
-Register the device subject from the connection identity (idempotent) and accept automatic entitlement issuance.
+Register the device subject from the dual-form connection identity (idempotent); the platform assigns the deviceId on first registration and accepts automatic entitlement issuance.
 
 - Method ID: `0x1901`
 - Domain: `license`
@@ -2233,7 +2233,7 @@ Type: `RegisterIdentityResult`
 
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
-| deviceId | String | 0x01 | Adopted device subject identifier (dev_ followed by 32 lowercase hex), equal to the connection identity. | maxLength=36 | N/A |
+| deviceId | String | 0x01 | Platform-assigned device subject identifier (axldev_ followed by 32 lowercase hex), returned on registration; the device must persist it and self-report it on later connections (non-authoritative reference; the authoritative identity is the identity_value public key). | maxLength=40 | N/A |
 | status | Enum | 0x02 | New registration or idempotent hit on an existing subject. | enum=REGISTERED/EXISTING | N/A |
 | credentialPending | Boolean | 0x03 | True when the ledger still has unconverged credential state; the credential arrives via push or a later reconcile. | None | N/A |
 
@@ -2259,7 +2259,7 @@ Type: `ReportReceiptParams`
 
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
-| deviceId | String | 0x01 | Reporting device subject identifier. | maxLength=36 | N/A |
+| deviceId | String | 0x01 | Connection addressing key current self-reported value (registered form, axldev_ prefix); cross-validated against the connection identity. | maxLength=40 | N/A |
 | credentialId | String | 0x02 | Credential artifact the receipt refers to. | maxLength=36 | N/A |
 | outcome | Enum | 0x03 | Install confirmation, offline export record, or rejection. | enum=INSTALLED/EXPORTED/REJECTED | N/A |
 | ?errorCode | String | 0x04 | Required when outcome is REJECTED; currently the only rejection cause is LICENSE_CREDENTIAL_STALE. | maxLength=64 | Omit if not used. |
@@ -2295,7 +2295,7 @@ Type: `ReconcileParams`
 
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
-| deviceId | String | 0x01 | Device subject identifier (validation field). | maxLength=36 | N/A |
+| deviceId | String | 0x01 | Connection addressing key current self-reported value (registered form, axldev_ prefix); filled with the current self-reported value also when the platform addresses via the identity fallback. | maxLength=40 | N/A |
 | ?version | LicenseVersionTriple | 0x02 | Device-held version triple; omitted entirely when the device holds no credential. | None | Omit if not used. |
 
 #### Response Fields
@@ -2313,7 +2313,7 @@ Type: `ReconcileResult`
 
 ### license.deliverCredential
 
-Push one signed credential artifact to the device with channel-side metadata; the device verifies, matches, and atomically installs it.
+Push one signed credential artifact to the device over dual-key fallback addressing (deviceId first, identity fallback) with channel-side metadata; the device verifies, matches, and atomically installs it.
 
 - Method ID: `0x1904`
 - Domain: `license`
@@ -2366,7 +2366,7 @@ Type: `ResolveCredentialParams`
 
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
-| deviceId | String | 0x01 | Device subject identifier; the same string as the connection addressing key. | maxLength=36 | N/A |
+| deviceId | String | 0x01 | Connection addressing key current self-reported value (registered form, axldev_ prefix); the same string as the connection addressing key, also under the platform identity-fallback addressing. | maxLength=40 | N/A |
 
 #### Response Fields
 
@@ -7043,7 +7043,7 @@ Bounded runtime statistics for a video stream.
 | 0x1406 | SEC_SIGNATURE_INVALID | auth | error | No | draft | Signature is invalid. |
 | 0x1407 | SEC_CERT_INVALID | auth | error | No | draft | Certificate is invalid. |
 | 0x1408 | SEC_TOKEN_EXPIRED | auth | error | No | draft | Security token expired. |
-| 0x7001 | LICENSE_IDENTITY_INVALID | vendor | error | No | draft | License registration identity adoption failed (malformed deviceId or already occupied by another subject); terminal error, the device must rebuild its local identity before retrying. Used by the license business domain. |
+| 0x7001 | LICENSE_IDENTITY_INVALID | vendor | error | No | draft | License registration identity adoption failed — the dual-form patterns (unregistered identity_value ^[0-9a-f]{128}$ or platform-assigned deviceId ^axldev_[0-9a-f]{32}$) both fail to match, or the identity_value is already mapped to another subject; terminal error, the device must rebuild its local identity before retrying. Used by the license business domain. |
 | 0x7002 | LICENSE_DEVICE_NOT_FOUND | vendor | error | No | draft | License subject not found for the given deviceId. Used by the license business domain. |
 | 0x7003 | LICENSE_CREDENTIAL_STALE | vendor | error | No | draft | Credential version is below the device high-water mark (anti-rollback) or signature verification failed. Used by the license business domain. |
 | 0x7F01 | LEGACY_CMD_UNMAPPED | legacy | error | No | stable | Legacy CmdValue is not mapped to an AXTP method. |
