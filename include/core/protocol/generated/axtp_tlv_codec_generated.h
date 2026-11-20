@@ -1112,6 +1112,10 @@ constexpr std::uint8_t BASE_WIDTH = 0x0F;
 constexpr std::uint8_t BASE_HEIGHT = 0x10;
 constexpr std::uint8_t MAX_WIDTH = 0x11;
 constexpr std::uint8_t MAX_HEIGHT = 0x12;
+constexpr std::uint8_t TOP_BAR_TRIGGER = 0x13;
+constexpr std::uint8_t TOP_BAR_SHOW_CAST_CODE = 0x14;
+constexpr std::uint8_t TOP_BAR_SHOW_DEBUG = 0x15;
+constexpr std::uint8_t STARTUP_WINDOW_MODE = 0x16;
 }
 
 namespace fields::cast_presentation_settings_values {
@@ -1133,6 +1137,10 @@ constexpr std::uint8_t BASE_WIDTH = 0x0F;
 constexpr std::uint8_t BASE_HEIGHT = 0x10;
 constexpr std::uint8_t MAX_WIDTH = 0x11;
 constexpr std::uint8_t MAX_HEIGHT = 0x12;
+constexpr std::uint8_t TOP_BAR_TRIGGER = 0x13;
+constexpr std::uint8_t TOP_BAR_SHOW_CAST_CODE = 0x14;
+constexpr std::uint8_t TOP_BAR_SHOW_DEBUG = 0x15;
+constexpr std::uint8_t STARTUP_WINDOW_MODE = 0x16;
 }
 
 namespace fields::cast_presentation_startup_settings {
@@ -1154,6 +1162,10 @@ constexpr std::uint8_t BASE_WIDTH = 0x0F;
 constexpr std::uint8_t BASE_HEIGHT = 0x10;
 constexpr std::uint8_t MAX_WIDTH = 0x11;
 constexpr std::uint8_t MAX_HEIGHT = 0x12;
+constexpr std::uint8_t TOP_BAR_TRIGGER = 0x13;
+constexpr std::uint8_t TOP_BAR_SHOW_CAST_CODE = 0x14;
+constexpr std::uint8_t TOP_BAR_SHOW_DEBUG = 0x15;
+constexpr std::uint8_t STARTUP_WINDOW_MODE = 0x16;
 }
 
 namespace fields::cast_presentation_settings_state {
@@ -4295,6 +4307,14 @@ struct CastPresentationSettingsPatch {
     bool has_maxWidth = false;
     std::uint32_t maxHeight = 0;
     bool has_maxHeight = false;
+    std::uint32_t topBarTrigger = 0;
+    bool has_topBarTrigger = false;
+    bool topBarShowCastCode = false;
+    bool has_topBarShowCastCode = false;
+    bool topBarShowDebug = false;
+    bool has_topBarShowDebug = false;
+    std::uint32_t startupWindowMode = 0;
+    bool has_startupWindowMode = false;
 };
 
 struct CastPresentationSettingsValues {
@@ -4334,6 +4354,14 @@ struct CastPresentationSettingsValues {
     bool has_maxWidth = false;
     std::uint32_t maxHeight = 0;
     bool has_maxHeight = false;
+    std::uint32_t topBarTrigger = 0;
+    bool has_topBarTrigger = false;
+    bool topBarShowCastCode = false;
+    bool has_topBarShowCastCode = false;
+    bool topBarShowDebug = false;
+    bool has_topBarShowDebug = false;
+    std::uint32_t startupWindowMode = 0;
+    bool has_startupWindowMode = false;
 };
 
 struct CastPresentationStartupSettings {
@@ -4373,6 +4401,14 @@ struct CastPresentationStartupSettings {
     bool has_maxWidth = false;
     std::uint32_t maxHeight = 0;
     bool has_maxHeight = false;
+    std::uint32_t topBarTrigger = 0;
+    bool has_topBarTrigger = false;
+    bool topBarShowCastCode = false;
+    bool has_topBarShowCastCode = false;
+    bool topBarShowDebug = false;
+    bool has_topBarShowDebug = false;
+    std::uint32_t startupWindowMode = 0;
+    bool has_startupWindowMode = false;
 };
 
 struct CastPresentationSettingsState {

@@ -1142,6 +1142,10 @@ inline constexpr FieldDescriptor kCastPresentationSettingsPatchFields[] = {
     { 0x10, "baseHeight", FieldType::Uint32, false, 1, 16384 },
     { 0x11, "maxWidth", FieldType::Uint32, false, 1, 16384 },
     { 0x12, "maxHeight", FieldType::Uint32, false, 1, 16384 },
+    { 0x13, "topBarTrigger", FieldType::Enum, false, 0, 0 },
+    { 0x14, "topBarShowCastCode", FieldType::Bool, false, 0, 0 },
+    { 0x15, "topBarShowDebug", FieldType::Bool, false, 0, 0 },
+    { 0x16, "startupWindowMode", FieldType::Enum, false, 0, 0 },
 };
 
 inline constexpr FieldDescriptor kCastPresentationSettingsValuesFields[] = {
@@ -1163,6 +1167,10 @@ inline constexpr FieldDescriptor kCastPresentationSettingsValuesFields[] = {
     { 0x10, "baseHeight", FieldType::Uint32, false, 1, 16384 },
     { 0x11, "maxWidth", FieldType::Uint32, false, 1, 16384 },
     { 0x12, "maxHeight", FieldType::Uint32, false, 1, 16384 },
+    { 0x13, "topBarTrigger", FieldType::Enum, false, 0, 0 },
+    { 0x14, "topBarShowCastCode", FieldType::Bool, false, 0, 0 },
+    { 0x15, "topBarShowDebug", FieldType::Bool, false, 0, 0 },
+    { 0x16, "startupWindowMode", FieldType::Enum, false, 0, 0 },
 };
 
 inline constexpr FieldDescriptor kCastPresentationStartupSettingsFields[] = {
@@ -1184,6 +1192,10 @@ inline constexpr FieldDescriptor kCastPresentationStartupSettingsFields[] = {
     { 0x10, "baseHeight", FieldType::Uint32, false, 1, 16384 },
     { 0x11, "maxWidth", FieldType::Uint32, false, 1, 16384 },
     { 0x12, "maxHeight", FieldType::Uint32, false, 1, 16384 },
+    { 0x13, "topBarTrigger", FieldType::Enum, false, 0, 0 },
+    { 0x14, "topBarShowCastCode", FieldType::Bool, false, 0, 0 },
+    { 0x15, "topBarShowDebug", FieldType::Bool, false, 0, 0 },
+    { 0x16, "startupWindowMode", FieldType::Enum, false, 0, 0 },
 };
 
 inline constexpr FieldDescriptor kCastPresentationSettingsStateFields[] = {
@@ -2866,9 +2878,9 @@ inline constexpr SchemaDescriptor kCastSetSessionAudioEnabledParamsSchema = { "C
 inline constexpr SchemaDescriptor kCastGetControlOperationParamsSchema = { "CastGetControlOperationParams", kCastGetControlOperationParamsFields, 4 };
 inline constexpr SchemaDescriptor kCastControlOperationSchema = { "CastControlOperation", kCastControlOperationFields, 14 };
 inline constexpr SchemaDescriptor kCastSetPresentationSettingsParamsSchema = { "CastSetPresentationSettingsParams", kCastSetPresentationSettingsParamsFields, 7 };
-inline constexpr SchemaDescriptor kCastPresentationSettingsPatchSchema = { "CastPresentationSettingsPatch", kCastPresentationSettingsPatchFields, 18 };
-inline constexpr SchemaDescriptor kCastPresentationSettingsValuesSchema = { "CastPresentationSettingsValues", kCastPresentationSettingsValuesFields, 18 };
-inline constexpr SchemaDescriptor kCastPresentationStartupSettingsSchema = { "CastPresentationStartupSettings", kCastPresentationStartupSettingsFields, 18 };
+inline constexpr SchemaDescriptor kCastPresentationSettingsPatchSchema = { "CastPresentationSettingsPatch", kCastPresentationSettingsPatchFields, 22 };
+inline constexpr SchemaDescriptor kCastPresentationSettingsValuesSchema = { "CastPresentationSettingsValues", kCastPresentationSettingsValuesFields, 22 };
+inline constexpr SchemaDescriptor kCastPresentationStartupSettingsSchema = { "CastPresentationStartupSettings", kCastPresentationStartupSettingsFields, 22 };
 inline constexpr SchemaDescriptor kCastPresentationSettingsStateSchema = { "CastPresentationSettingsState", kCastPresentationSettingsStateFields, 16 };
 inline constexpr SchemaDescriptor kCastPresentationSettingIssueSchema = { "CastPresentationSettingIssue", kCastPresentationSettingIssueFields, 4 };
 inline constexpr SchemaDescriptor kCastPresentationSettingsCapabilitySchema = { "CastPresentationSettingsCapability", kCastPresentationSettingsCapabilityFields, 12 };
