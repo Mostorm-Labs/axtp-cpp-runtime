@@ -1116,6 +1116,10 @@ constexpr std::uint8_t TOP_BAR_TRIGGER = 0x13;
 constexpr std::uint8_t TOP_BAR_SHOW_CAST_CODE = 0x14;
 constexpr std::uint8_t TOP_BAR_SHOW_DEBUG = 0x15;
 constexpr std::uint8_t STARTUP_WINDOW_MODE = 0x16;
+constexpr std::uint8_t TOP_BAR_SHOW_LAYOUT = 0x17;
+constexpr std::uint8_t TOP_BAR_SHOW_MINIMIZE = 0x18;
+constexpr std::uint8_t TOP_BAR_SHOW_MAXIMIZE = 0x19;
+constexpr std::uint8_t TOP_BAR_SHOW_BACKGROUND = 0x1A;
 }
 
 namespace fields::cast_presentation_settings_values {
@@ -1141,6 +1145,10 @@ constexpr std::uint8_t TOP_BAR_TRIGGER = 0x13;
 constexpr std::uint8_t TOP_BAR_SHOW_CAST_CODE = 0x14;
 constexpr std::uint8_t TOP_BAR_SHOW_DEBUG = 0x15;
 constexpr std::uint8_t STARTUP_WINDOW_MODE = 0x16;
+constexpr std::uint8_t TOP_BAR_SHOW_LAYOUT = 0x17;
+constexpr std::uint8_t TOP_BAR_SHOW_MINIMIZE = 0x18;
+constexpr std::uint8_t TOP_BAR_SHOW_MAXIMIZE = 0x19;
+constexpr std::uint8_t TOP_BAR_SHOW_BACKGROUND = 0x1A;
 }
 
 namespace fields::cast_presentation_startup_settings {
@@ -1166,6 +1174,10 @@ constexpr std::uint8_t TOP_BAR_TRIGGER = 0x13;
 constexpr std::uint8_t TOP_BAR_SHOW_CAST_CODE = 0x14;
 constexpr std::uint8_t TOP_BAR_SHOW_DEBUG = 0x15;
 constexpr std::uint8_t STARTUP_WINDOW_MODE = 0x16;
+constexpr std::uint8_t TOP_BAR_SHOW_LAYOUT = 0x17;
+constexpr std::uint8_t TOP_BAR_SHOW_MINIMIZE = 0x18;
+constexpr std::uint8_t TOP_BAR_SHOW_MAXIMIZE = 0x19;
+constexpr std::uint8_t TOP_BAR_SHOW_BACKGROUND = 0x1A;
 }
 
 namespace fields::cast_presentation_settings_state {
@@ -4315,6 +4327,14 @@ struct CastPresentationSettingsPatch {
     bool has_topBarShowDebug = false;
     std::uint32_t startupWindowMode = 0;
     bool has_startupWindowMode = false;
+    bool topBarShowLayout = false;
+    bool has_topBarShowLayout = false;
+    bool topBarShowMinimize = false;
+    bool has_topBarShowMinimize = false;
+    bool topBarShowMaximize = false;
+    bool has_topBarShowMaximize = false;
+    bool topBarShowBackground = false;
+    bool has_topBarShowBackground = false;
 };
 
 struct CastPresentationSettingsValues {
@@ -4362,6 +4382,14 @@ struct CastPresentationSettingsValues {
     bool has_topBarShowDebug = false;
     std::uint32_t startupWindowMode = 0;
     bool has_startupWindowMode = false;
+    bool topBarShowLayout = false;
+    bool has_topBarShowLayout = false;
+    bool topBarShowMinimize = false;
+    bool has_topBarShowMinimize = false;
+    bool topBarShowMaximize = false;
+    bool has_topBarShowMaximize = false;
+    bool topBarShowBackground = false;
+    bool has_topBarShowBackground = false;
 };
 
 struct CastPresentationStartupSettings {
@@ -4409,6 +4437,14 @@ struct CastPresentationStartupSettings {
     bool has_topBarShowDebug = false;
     std::uint32_t startupWindowMode = 0;
     bool has_startupWindowMode = false;
+    bool topBarShowLayout = false;
+    bool has_topBarShowLayout = false;
+    bool topBarShowMinimize = false;
+    bool has_topBarShowMinimize = false;
+    bool topBarShowMaximize = false;
+    bool has_topBarShowMaximize = false;
+    bool topBarShowBackground = false;
+    bool has_topBarShowBackground = false;
 };
 
 struct CastPresentationSettingsState {
