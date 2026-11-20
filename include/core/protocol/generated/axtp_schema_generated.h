@@ -1181,6 +1181,81 @@ inline constexpr FieldDescriptor kCastPresentationSettingsValuesFields[] = {
     { 0x1A, "topBarShowBackground", FieldType::Bool, false, 0, 0 },
 };
 
+inline constexpr FieldDescriptor kCastReceiverPreferenceValuesFields[] = {
+    { 0x01, "airplayName", FieldType::String, false, 0, 0 },
+    { 0x02, "airplayRandomPassword", FieldType::Bool, false, 0, 0 },
+    { 0x03, "controlPort", FieldType::Uint32, false, 1, 65535 },
+    { 0x04, "controlListenOnLan", FieldType::Bool, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastReceiverPersistedOverridesFields[] = {
+    { 0x01, "layoutMode", FieldType::Enum, false, 0, 0 },
+    { 0x02, "audioControlMode", FieldType::Enum, false, 0, 0 },
+    { 0x03, "audioMixMode", FieldType::Enum, false, 0, 0 },
+    { 0x04, "capacity", FieldType::Uint32, false, 1, 0 },
+    { 0x05, "enabledProtocols", FieldType::Array, false, 0, 0 },
+    { 0x06, "profileHint", FieldType::String, false, 0, 0 },
+    { 0x07, "contentAdaptation", FieldType::Enum, false, 0, 0 },
+    { 0x08, "presentationMode", FieldType::Enum, false, 0, 0 },
+    { 0x09, "presentationSidebar", FieldType::Enum, false, 0, 0 },
+    { 0x0A, "presentationAudioFollow", FieldType::Bool, false, 0, 0 },
+    { 0x0B, "presentationFocusOnDoubleClick", FieldType::Bool, false, 0, 0 },
+    { 0x0C, "presentationGridOnDoubleClick", FieldType::Bool, false, 0, 0 },
+    { 0x0D, "presentationAutoEnter", FieldType::Bool, false, 0, 0 },
+    { 0x0E, "canvasMode", FieldType::Enum, false, 0, 0 },
+    { 0x0F, "baseWidth", FieldType::Uint32, false, 1, 16384 },
+    { 0x10, "baseHeight", FieldType::Uint32, false, 1, 16384 },
+    { 0x11, "maxWidth", FieldType::Uint32, false, 1, 16384 },
+    { 0x12, "maxHeight", FieldType::Uint32, false, 1, 16384 },
+    { 0x13, "topBarTrigger", FieldType::Enum, false, 0, 0 },
+    { 0x14, "topBarShowCastCode", FieldType::Bool, false, 0, 0 },
+    { 0x15, "topBarShowDebug", FieldType::Bool, false, 0, 0 },
+    { 0x16, "startupWindowMode", FieldType::Enum, false, 0, 0 },
+    { 0x17, "topBarShowLayout", FieldType::Bool, false, 0, 0 },
+    { 0x18, "topBarShowMinimize", FieldType::Bool, false, 0, 0 },
+    { 0x19, "topBarShowMaximize", FieldType::Bool, false, 0, 0 },
+    { 0x1A, "topBarShowBackground", FieldType::Bool, false, 0, 0 },
+    { 0x1B, "airplayName", FieldType::String, false, 0, 0 },
+    { 0x1C, "airplayRandomPassword", FieldType::Bool, false, 0, 0 },
+    { 0x1D, "controlPort", FieldType::Uint32, false, 1, 65535 },
+    { 0x1E, "controlListenOnLan", FieldType::Bool, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastReceiverSettingsStateFields[] = {
+    { 0x01, "runtimeInstanceId", FieldType::String, true, 0, 0 },
+    { 0x02, "storeRevision", FieldType::String, true, 0, 0 },
+    { 0x03, "storageState", FieldType::Enum, true, 0, 0 },
+    { 0x04, "backupAvailable", FieldType::Bool, true, 0, 0 },
+    { 0x05, "recoveredFromBackup", FieldType::Bool, true, 0, 0 },
+    { 0x06, "supportsPersistence", FieldType::Bool, true, 0, 0 },
+    { 0x07, "restartOnlyFields", FieldType::Array, true, 0, 0 },
+    { 0x08, "configured", FieldType::Object, true, 0, 0 },
+    { 0x09, "applied", FieldType::Object, true, 0, 0 },
+    { 0x0A, "airplayEnabled", FieldType::Bool, true, 0, 0 },
+    { 0x0B, "publishState", FieldType::Enum, true, 0, 0 },
+    { 0x0C, "pendingRestart", FieldType::Array, true, 0, 0 },
+    { 0x0D, "persistedOverrides", FieldType::Object, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastSetReceiverSettingsParamsFields[] = {
+    { 0x01, "runtimeInstanceId", FieldType::String, true, 0, 0 },
+    { 0x02, "expectedStoreRevision", FieldType::String, true, 0, 0 },
+    { 0x03, "persist", FieldType::Bool, true, 0, 0 },
+    { 0x04, "patch", FieldType::Object, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastRestoreReceiverSettingsParamsFields[] = {
+    { 0x01, "runtimeInstanceId", FieldType::String, true, 0, 0 },
+    { 0x02, "expectedStoreRevision", FieldType::String, true, 0, 0 },
+    { 0x03, "source", FieldType::Enum, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastReceiverSettingsWriteResultFields[] = {
+    { 0x01, "persistenceStatus", FieldType::Enum, true, 0, 0 },
+    { 0x02, "applicationStatus", FieldType::Enum, true, 0, 0 },
+    { 0x03, "settings", FieldType::Object, true, 0, 0 },
+};
+
 inline constexpr FieldDescriptor kCastPresentationStartupSettingsFields[] = {
     { 0x01, "layoutMode", FieldType::Enum, false, 0, 0 },
     { 0x02, "audioControlMode", FieldType::Enum, false, 0, 0 },
@@ -2892,6 +2967,12 @@ inline constexpr SchemaDescriptor kCastControlOperationSchema = { "CastControlOp
 inline constexpr SchemaDescriptor kCastSetPresentationSettingsParamsSchema = { "CastSetPresentationSettingsParams", kCastSetPresentationSettingsParamsFields, 7 };
 inline constexpr SchemaDescriptor kCastPresentationSettingsPatchSchema = { "CastPresentationSettingsPatch", kCastPresentationSettingsPatchFields, 26 };
 inline constexpr SchemaDescriptor kCastPresentationSettingsValuesSchema = { "CastPresentationSettingsValues", kCastPresentationSettingsValuesFields, 26 };
+inline constexpr SchemaDescriptor kCastReceiverPreferenceValuesSchema = { "CastReceiverPreferenceValues", kCastReceiverPreferenceValuesFields, 4 };
+inline constexpr SchemaDescriptor kCastReceiverPersistedOverridesSchema = { "CastReceiverPersistedOverrides", kCastReceiverPersistedOverridesFields, 30 };
+inline constexpr SchemaDescriptor kCastReceiverSettingsStateSchema = { "CastReceiverSettingsState", kCastReceiverSettingsStateFields, 13 };
+inline constexpr SchemaDescriptor kCastSetReceiverSettingsParamsSchema = { "CastSetReceiverSettingsParams", kCastSetReceiverSettingsParamsFields, 4 };
+inline constexpr SchemaDescriptor kCastRestoreReceiverSettingsParamsSchema = { "CastRestoreReceiverSettingsParams", kCastRestoreReceiverSettingsParamsFields, 3 };
+inline constexpr SchemaDescriptor kCastReceiverSettingsWriteResultSchema = { "CastReceiverSettingsWriteResult", kCastReceiverSettingsWriteResultFields, 3 };
 inline constexpr SchemaDescriptor kCastPresentationStartupSettingsSchema = { "CastPresentationStartupSettings", kCastPresentationStartupSettingsFields, 26 };
 inline constexpr SchemaDescriptor kCastPresentationSettingsStateSchema = { "CastPresentationSettingsState", kCastPresentationSettingsStateFields, 16 };
 inline constexpr SchemaDescriptor kCastPresentationSettingIssueSchema = { "CastPresentationSettingIssue", kCastPresentationSettingIssueFields, 4 };

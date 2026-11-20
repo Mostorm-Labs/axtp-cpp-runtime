@@ -739,6 +739,30 @@ struct MethodTraits<MethodId::CastSetTouchbackMaster> {
 };
 
 template <>
+struct MethodTraits<MethodId::CastGetReceiverSettings> {
+    using Request = Empty;
+    using Response = CastReceiverSettingsState;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::CastGetReceiverSettings);
+    static constexpr const char* name = "cast.getReceiverSettings";
+};
+
+template <>
+struct MethodTraits<MethodId::CastSetReceiverSettings> {
+    using Request = CastSetReceiverSettingsParams;
+    using Response = CastReceiverSettingsWriteResult;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::CastSetReceiverSettings);
+    static constexpr const char* name = "cast.setReceiverSettings";
+};
+
+template <>
+struct MethodTraits<MethodId::CastRestoreReceiverSettings> {
+    using Request = CastRestoreReceiverSettingsParams;
+    using Response = CastReceiverSettingsWriteResult;
+    static constexpr std::uint16_t id = static_cast<std::uint16_t>(MethodId::CastRestoreReceiverSettings);
+    static constexpr const char* name = "cast.restoreReceiverSettings";
+};
+
+template <>
 struct MethodTraits<MethodId::SoftwareGetConfig> {
     using Request = SoftwareGetConfigParams;
     using Response = SoftwareConfig;

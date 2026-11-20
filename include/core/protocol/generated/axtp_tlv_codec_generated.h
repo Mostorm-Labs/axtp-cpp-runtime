@@ -1151,6 +1151,81 @@ constexpr std::uint8_t TOP_BAR_SHOW_MAXIMIZE = 0x19;
 constexpr std::uint8_t TOP_BAR_SHOW_BACKGROUND = 0x1A;
 }
 
+namespace fields::cast_receiver_preference_values {
+constexpr std::uint8_t AIRPLAY_NAME = 0x01;
+constexpr std::uint8_t AIRPLAY_RANDOM_PASSWORD = 0x02;
+constexpr std::uint8_t CONTROL_PORT = 0x03;
+constexpr std::uint8_t CONTROL_LISTEN_ON_LAN = 0x04;
+}
+
+namespace fields::cast_receiver_persisted_overrides {
+constexpr std::uint8_t LAYOUT_MODE = 0x01;
+constexpr std::uint8_t AUDIO_CONTROL_MODE = 0x02;
+constexpr std::uint8_t AUDIO_MIX_MODE = 0x03;
+constexpr std::uint8_t CAPACITY = 0x04;
+constexpr std::uint8_t ENABLED_PROTOCOLS = 0x05;
+constexpr std::uint8_t PROFILE_HINT = 0x06;
+constexpr std::uint8_t CONTENT_ADAPTATION = 0x07;
+constexpr std::uint8_t PRESENTATION_MODE = 0x08;
+constexpr std::uint8_t PRESENTATION_SIDEBAR = 0x09;
+constexpr std::uint8_t PRESENTATION_AUDIO_FOLLOW = 0x0A;
+constexpr std::uint8_t PRESENTATION_FOCUS_ON_DOUBLE_CLICK = 0x0B;
+constexpr std::uint8_t PRESENTATION_GRID_ON_DOUBLE_CLICK = 0x0C;
+constexpr std::uint8_t PRESENTATION_AUTO_ENTER = 0x0D;
+constexpr std::uint8_t CANVAS_MODE = 0x0E;
+constexpr std::uint8_t BASE_WIDTH = 0x0F;
+constexpr std::uint8_t BASE_HEIGHT = 0x10;
+constexpr std::uint8_t MAX_WIDTH = 0x11;
+constexpr std::uint8_t MAX_HEIGHT = 0x12;
+constexpr std::uint8_t TOP_BAR_TRIGGER = 0x13;
+constexpr std::uint8_t TOP_BAR_SHOW_CAST_CODE = 0x14;
+constexpr std::uint8_t TOP_BAR_SHOW_DEBUG = 0x15;
+constexpr std::uint8_t STARTUP_WINDOW_MODE = 0x16;
+constexpr std::uint8_t TOP_BAR_SHOW_LAYOUT = 0x17;
+constexpr std::uint8_t TOP_BAR_SHOW_MINIMIZE = 0x18;
+constexpr std::uint8_t TOP_BAR_SHOW_MAXIMIZE = 0x19;
+constexpr std::uint8_t TOP_BAR_SHOW_BACKGROUND = 0x1A;
+constexpr std::uint8_t AIRPLAY_NAME = 0x1B;
+constexpr std::uint8_t AIRPLAY_RANDOM_PASSWORD = 0x1C;
+constexpr std::uint8_t CONTROL_PORT = 0x1D;
+constexpr std::uint8_t CONTROL_LISTEN_ON_LAN = 0x1E;
+}
+
+namespace fields::cast_receiver_settings_state {
+constexpr std::uint8_t RUNTIME_INSTANCE_ID = 0x01;
+constexpr std::uint8_t STORE_REVISION = 0x02;
+constexpr std::uint8_t STORAGE_STATE = 0x03;
+constexpr std::uint8_t BACKUP_AVAILABLE = 0x04;
+constexpr std::uint8_t RECOVERED_FROM_BACKUP = 0x05;
+constexpr std::uint8_t SUPPORTS_PERSISTENCE = 0x06;
+constexpr std::uint8_t RESTART_ONLY_FIELDS = 0x07;
+constexpr std::uint8_t CONFIGURED = 0x08;
+constexpr std::uint8_t APPLIED = 0x09;
+constexpr std::uint8_t AIRPLAY_ENABLED = 0x0A;
+constexpr std::uint8_t PUBLISH_STATE = 0x0B;
+constexpr std::uint8_t PENDING_RESTART = 0x0C;
+constexpr std::uint8_t PERSISTED_OVERRIDES = 0x0D;
+}
+
+namespace fields::cast_set_receiver_settings_params {
+constexpr std::uint8_t RUNTIME_INSTANCE_ID = 0x01;
+constexpr std::uint8_t EXPECTED_STORE_REVISION = 0x02;
+constexpr std::uint8_t PERSIST = 0x03;
+constexpr std::uint8_t PATCH = 0x04;
+}
+
+namespace fields::cast_restore_receiver_settings_params {
+constexpr std::uint8_t RUNTIME_INSTANCE_ID = 0x01;
+constexpr std::uint8_t EXPECTED_STORE_REVISION = 0x02;
+constexpr std::uint8_t SOURCE = 0x03;
+}
+
+namespace fields::cast_receiver_settings_write_result {
+constexpr std::uint8_t PERSISTENCE_STATUS = 0x01;
+constexpr std::uint8_t APPLICATION_STATUS = 0x02;
+constexpr std::uint8_t SETTINGS = 0x03;
+}
+
 namespace fields::cast_presentation_startup_settings {
 constexpr std::uint8_t LAYOUT_MODE = 0x01;
 constexpr std::uint8_t AUDIO_CONTROL_MODE = 0x02;
@@ -4392,6 +4467,115 @@ struct CastPresentationSettingsValues {
     bool has_topBarShowBackground = false;
 };
 
+struct CastReceiverPreferenceValues {
+    const char* airplayName = nullptr;
+    bool has_airplayName = false;
+    bool airplayRandomPassword = false;
+    bool has_airplayRandomPassword = false;
+    std::uint32_t controlPort = 0;
+    bool has_controlPort = false;
+    bool controlListenOnLan = false;
+    bool has_controlListenOnLan = false;
+};
+
+struct CastReceiverPersistedOverrides {
+    std::uint32_t layoutMode = 0;
+    bool has_layoutMode = false;
+    std::uint32_t audioControlMode = 0;
+    bool has_audioControlMode = false;
+    std::uint32_t audioMixMode = 0;
+    bool has_audioMixMode = false;
+    std::uint32_t capacity = 0;
+    bool has_capacity = false;
+    std::uint32_t enabledProtocols = 0;
+    bool has_enabledProtocols = false;
+    const char* profileHint = nullptr;
+    bool has_profileHint = false;
+    std::uint32_t contentAdaptation = 0;
+    bool has_contentAdaptation = false;
+    std::uint32_t presentationMode = 0;
+    bool has_presentationMode = false;
+    std::uint32_t presentationSidebar = 0;
+    bool has_presentationSidebar = false;
+    bool presentationAudioFollow = false;
+    bool has_presentationAudioFollow = false;
+    bool presentationFocusOnDoubleClick = false;
+    bool has_presentationFocusOnDoubleClick = false;
+    bool presentationGridOnDoubleClick = false;
+    bool has_presentationGridOnDoubleClick = false;
+    bool presentationAutoEnter = false;
+    bool has_presentationAutoEnter = false;
+    std::uint32_t canvasMode = 0;
+    bool has_canvasMode = false;
+    std::uint32_t baseWidth = 0;
+    bool has_baseWidth = false;
+    std::uint32_t baseHeight = 0;
+    bool has_baseHeight = false;
+    std::uint32_t maxWidth = 0;
+    bool has_maxWidth = false;
+    std::uint32_t maxHeight = 0;
+    bool has_maxHeight = false;
+    std::uint32_t topBarTrigger = 0;
+    bool has_topBarTrigger = false;
+    bool topBarShowCastCode = false;
+    bool has_topBarShowCastCode = false;
+    bool topBarShowDebug = false;
+    bool has_topBarShowDebug = false;
+    std::uint32_t startupWindowMode = 0;
+    bool has_startupWindowMode = false;
+    bool topBarShowLayout = false;
+    bool has_topBarShowLayout = false;
+    bool topBarShowMinimize = false;
+    bool has_topBarShowMinimize = false;
+    bool topBarShowMaximize = false;
+    bool has_topBarShowMaximize = false;
+    bool topBarShowBackground = false;
+    bool has_topBarShowBackground = false;
+    const char* airplayName = nullptr;
+    bool has_airplayName = false;
+    bool airplayRandomPassword = false;
+    bool has_airplayRandomPassword = false;
+    std::uint32_t controlPort = 0;
+    bool has_controlPort = false;
+    bool controlListenOnLan = false;
+    bool has_controlListenOnLan = false;
+};
+
+struct CastReceiverSettingsState {
+    const char* runtimeInstanceId = nullptr;
+    const char* storeRevision = nullptr;
+    std::uint32_t storageState = 0;
+    bool backupAvailable = false;
+    bool recoveredFromBackup = false;
+    bool supportsPersistence = false;
+    std::uint32_t restartOnlyFields = 0;
+    std::uint32_t configured = 0;
+    std::uint32_t applied = 0;
+    bool airplayEnabled = false;
+    std::uint32_t publishState = 0;
+    std::uint32_t pendingRestart = 0;
+    std::uint32_t persistedOverrides = 0;
+};
+
+struct CastSetReceiverSettingsParams {
+    const char* runtimeInstanceId = nullptr;
+    const char* expectedStoreRevision = nullptr;
+    bool persist = false;
+    std::uint32_t patch = 0;
+};
+
+struct CastRestoreReceiverSettingsParams {
+    const char* runtimeInstanceId = nullptr;
+    const char* expectedStoreRevision = nullptr;
+    std::uint32_t source = 0;
+};
+
+struct CastReceiverSettingsWriteResult {
+    std::uint32_t persistenceStatus = 0;
+    std::uint32_t applicationStatus = 0;
+    std::uint32_t settings = 0;
+};
+
 struct CastPresentationStartupSettings {
     std::uint32_t layoutMode = 0;
     bool has_layoutMode = false;
@@ -6778,6 +6962,24 @@ bool DecodeCastPresentationSettingsPatch(TlvReader& reader, CastPresentationSett
 
 bool EncodeCastPresentationSettingsValues(const CastPresentationSettingsValues& input, TlvWriter& writer, ErrorCode* error);
 bool DecodeCastPresentationSettingsValues(TlvReader& reader, CastPresentationSettingsValues* output, ErrorCode* error);
+
+bool EncodeCastReceiverPreferenceValues(const CastReceiverPreferenceValues& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastReceiverPreferenceValues(TlvReader& reader, CastReceiverPreferenceValues* output, ErrorCode* error);
+
+bool EncodeCastReceiverPersistedOverrides(const CastReceiverPersistedOverrides& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastReceiverPersistedOverrides(TlvReader& reader, CastReceiverPersistedOverrides* output, ErrorCode* error);
+
+bool EncodeCastReceiverSettingsState(const CastReceiverSettingsState& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastReceiverSettingsState(TlvReader& reader, CastReceiverSettingsState* output, ErrorCode* error);
+
+bool EncodeCastSetReceiverSettingsParams(const CastSetReceiverSettingsParams& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastSetReceiverSettingsParams(TlvReader& reader, CastSetReceiverSettingsParams* output, ErrorCode* error);
+
+bool EncodeCastRestoreReceiverSettingsParams(const CastRestoreReceiverSettingsParams& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastRestoreReceiverSettingsParams(TlvReader& reader, CastRestoreReceiverSettingsParams* output, ErrorCode* error);
+
+bool EncodeCastReceiverSettingsWriteResult(const CastReceiverSettingsWriteResult& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeCastReceiverSettingsWriteResult(TlvReader& reader, CastReceiverSettingsWriteResult* output, ErrorCode* error);
 
 bool EncodeCastPresentationStartupSettings(const CastPresentationStartupSettings& input, TlvWriter& writer, ErrorCode* error);
 bool DecodeCastPresentationStartupSettings(TlvReader& reader, CastPresentationStartupSettings* output, ErrorCode* error);

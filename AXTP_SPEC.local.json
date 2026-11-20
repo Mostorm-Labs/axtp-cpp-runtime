@@ -1,8 +1,8 @@
 {
   "sourceMode": "local-development-snapshot",
   "repository": "https://github.com/Mostorm-Labs/axtp",
-  "baselineCommit": "f020e03798c9ed9bb47874499aabd2baa7bc92f1",
-  "snapshotSha256": "02723aa67474ae446cd893fd538a4ddbb6a4391449afd3d86090281770704732",
-  "version": "0.18.0-dev.02723aa67474",
+  "baselineCommit": "2bfc928fbaf0e2007d8c94b201d43d29df4fe92c",
+  "snapshotSha256": "85af87891f297ff957e989a979330d15144dc0d2d7a51700dda950ff78e8258b",
+  "version": "0.18.0-dev.85af87891f29",
   "published": false
 }
