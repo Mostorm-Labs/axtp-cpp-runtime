@@ -157,6 +157,7 @@ function mapSchemas(doc: any, file: string): Schema[] {
     name,
     type: raw.type ?? raw.kind ?? "object",
     description: raw.description,
+    retiredFieldIds: raw.retired_field_ids,
     fields: asArray(raw.fields).map((field) => mapField(field, file, name))
   }));
 }
@@ -179,6 +180,8 @@ export async function loadProtocolSources(specRoot: string): Promise<ProtocolSou
   const domainFiles = await listYamlFiles(path.join(registryDir, "domains"));
   const sourceFiles = [protocolMetaPath, ...(existsSync(domainRegistryPath) ? [domainRegistryPath] : []), ...domainFiles];
   const profiles: Array<Record<string, unknown>> = [];
+  const retiredAllocations: import("./inputStream.js").RetiredAllocation[] = [];
+  let inputStream: import("./inputStream.js").InputStreamWire | undefined;
 
   for (const file of domainFiles) {
     const doc = await loadYamlFile(file);
@@ -190,7 +193,12 @@ export async function loadProtocolSources(specRoot: string): Promise<ProtocolSou
     spec.legacyMappings.push(...asArray(doc.legacyMappings ?? doc.legacy_mappings).map((item) => mapLegacy(item, file)));
     spec.schemas.push(...mapSchemas(doc, file));
     profiles.push(...asArray(doc.profiles));
+    retiredAllocations.push(...asArray(doc.retired_allocations));
+    if (doc.input_stream) {
+      if (inputStream || defaultDomain !== "input") throw new Error("duplicate or misplaced input wire layout");
+      inputStream = doc.input_stream;
+    }
   }
 
-  return { ...spec, protocolMeta, sourceFiles, profiles };
+  return { ...spec, protocolMeta, sourceFiles, profiles, inputStream, retiredAllocations };
 }

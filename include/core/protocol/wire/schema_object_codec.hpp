@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <cmath>
 #include <limits>
 #include <optional>
 #include <string>
@@ -62,6 +63,12 @@ class SchemaObjectCodec {
                 if (field.contains("max") && n > field["max"].get<std::int64_t>()) return false;
             }
             return true;
+        }
+        if (type == "number") {
+            if (!value.is_number()) return false;
+            const auto n = value.get<double>();
+            return std::isfinite(n) && (!field.contains("min") || n >= field["min"].get<double>()) &&
+                (!field.contains("max") || n <= field["max"].get<double>());
         }
         if (type == "array") {
             if (!value.is_array() || !field.contains("array")) return false;

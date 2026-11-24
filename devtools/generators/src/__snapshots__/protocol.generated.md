@@ -15,6 +15,7 @@
   - [cast Methods](#cast-methods)
   - [device Methods](#device-methods)
   - [firmware Methods](#firmware-methods)
+  - [input Methods](#input-methods)
   - [license Methods](#license-methods)
   - [network Methods](#network-methods)
   - [signage Methods](#signage-methods)
@@ -42,9 +43,10 @@
 | Domain | Methods | Events |
 | ---- | ---- | ---- |
 | audio | 9 | 4 |
-| cast | 27 | 20 |
+| cast | 37 | 22 |
 | device | 4 | 1 |
 | firmware | 4 | 2 |
+| input | 2 | 0 |
 | license | 5 | 0 |
 | network | 18 | 8 |
 | signage | 6 | 1 |
@@ -77,7 +79,7 @@ AXTP v1 has two formal integration paths:
 
 | Path | Transports | Frame | RPC Encodings | CONTROL | STREAM |
 | ---- | ---- | ---- | ---- | ---- | ---- |
-| Standard Framed | AXTP-USB-HID<br>AXTP-TCP | STANDARD_FRAME | `JSON`, `CBOR`, `MSGPACK`, `JSON_BINARY` | Yes | Yes |
+| Standard Framed | AXTP-USB-HID<br>AXTP-TCP<br>AXTP-WEBRTC-DC | STANDARD_FRAME | `JSON`, `CBOR`, `MSGPACK`, `JSON_BINARY` | Yes | Yes |
 | WebSocket Unframed JSON | AXTP-WS-JSON<br>AXTP-WS-CLOUD-REVERSE | None | `JSON` | No | No |
 
 Compact/HID-64/BLE/UART framing is a low-bandwidth degradation path, not an AXTP v1 Core requirement. See `docs/specs/1-core/08-Low-Bandwidth-Degradation.md` for that path.
@@ -125,6 +127,7 @@ The current protocol definition exposes the connection profiles that are intende
 | AXTP-TCP | tcp | standard-framed | STANDARD_FRAME | `JSON`, `CBOR`, `MSGPACK`, `JSON_BINARY` | Yes | Yes | TCP byte stream transport using Standard Frame magic and length parsing. |
 | AXTP-WS-JSON | websocket | unframed-json | None | `JSON` | No | No | Formal RPC-only WebSocket JSON profile using the sid/op/d envelope. |
 | AXTP-WS-CLOUD-REVERSE | websocket | unframed-json-cloud-reverse | None | `JSON` | No | No | Device initiates the WebSocket connection but remains the Logical Server. |
+| AXTP-WEBRTC-DC | webrtc-datachannel | standard-framed | STANDARD_FRAME | `JSON`, `CBOR`, `MSGPACK`, `JSON_BINARY` | Yes | Yes | Full Standard Frame only. CONTROL then RPC APP_READY; product text demultiplexing is outside AXTP. No per-input ACK. |
 
 ### Role Matrix
 
@@ -134,6 +137,7 @@ The current protocol definition exposes the connection profiles that are intende
 | AXTP-TCP | App / PC | Device | App / PC | Device | Device |
 | AXTP-WS-JSON | App / Cloud | Device / Gateway | App / Cloud | Device | Device |
 | AXTP-WS-CLOUD-REVERSE | Device | Cloud | Cloud | Device | Device |
+| AXTP-WEBRTC-DC | DataChannel initiator | DataChannel peer | Input producer | Input consumer | Input consumer |
 
 **Logical Server sends Hello.** This is true even when the device is the Physical Client in `AXTP-WS-CLOUD-REVERSE`.
 
@@ -203,6 +207,7 @@ Generated capabilities are the feature-level switches that runtimes and devices 
 | 0x0801 | video.stream | video | draft | object | VideoStreamCapabilities | Device supports real-time video STREAM setup, close, state, source state, key frame requests, and stats events. |
 | 0x0901 | audio.algorithm | audio | stable | object | AudioAlgorithmCapability | Device supports runtime audio algorithm capability discovery, configuration, reset, and change notification. |
 | 0x0902 | audio.stream | audio | draft | object | AudioStreamCapabilities | Device supports real-time audio STREAM setup, close, state, source state, and stats events. |
+| 0x0A01 | input.stream | input | draft | object | InputStreamCapability | Supports explicitly typed receiver-to-source input; format and actual native features are negotiated once on open. |
 | 0x0D01 | signage.playlist | signage | draft | object | SignagePlaylistCapability | Device supports digital signage playlist full sync, query, reset, playlist item URL refresh, playlist item refresh, and playlist config change notification. |
 | 0x0E01 | network.interface | network | draft | object | NetworkInterfaceCapability | Device supports network interface enumeration and state observation. |
 | 0x0E02 | network.ip | network | draft | object | NetworkIpCapability | Device supports IP configuration query, update, and change notification. |
@@ -222,6 +227,8 @@ Generated capabilities are the feature-level switches that runtimes and devices 
 | 0x160C | cast.webcastBackend | cast | draft | object | CastWebCastBackendCapability | Optional secret-free WebCast cloud/local backend state query and independent full-state changes. |
 | 0x160D | cast.meetingPresentation | cast | draft | object | CastMeetingPresentationCapability | Optional fixed main-plus-preview view with exact focus control and independently remembered audio-follow preference. |
 | 0x160E | cast.airplayControl | cast | draft | object | CastAirPlayControlCapability | Secret-free AirPlay authentication and discovery observation with live rename. |
+| 0x160F | cast.touchback | cast | draft | object | CastTouchbackCapability | Per-target input gate and presentation policy; event semantics are explicit and AirPlay is excluded. |
+| 0x1610 | cast.receiverSettings | cast | draft | bool | - | Optional receiver preference methods discovered by name. The state declares supported restart-only fields and current save availability. |
 | 0x1701 | software.config | software | draft | object | SoftwareConfigCapability | Device supports reading, setting, and resetting the runtime configuration of software objects (such as the Launcher) and emitting configuration change notifications. |
 | 0x1702 | software.updatePolicy | software | draft | object | SoftwareUpdatePolicyCapability | Device supports reading, setting, and resetting the automatic update policy of software objects (such as the Launcher) and emitting update policy change notifications. |
 | 0x1801 | sport.eventDetection | sport | draft | object | SportEventDetectionCapabilities | Device supports cross-sport event detection capability discovery, per-sport toggle control, runtime state events, and unified sport event delivery. |
@@ -237,9 +244,10 @@ The generated registry groups methods by domain. Each method keeps a stable `bit
 | Domain | Methods |
 | ---- | ---- |
 | audio | 1: audio.getAlgorithmConfig<br>2: audio.setAlgorithmConfig<br>0: audio.getAlgorithmCapabilities<br>3: audio.resetAlgorithmConfig<br>4: audio.getStreamCapabilities<br>5: audio.openStream<br>6: audio.closeStream<br>7: audio.getStreamState<br>8: audio.getStreamSourceState |
-| cast | 0: cast.getSession<br>1: cast.stopSession<br>2: cast.getAirPlayName<br>3: cast.setAirPlayName<br>4: cast.getAudio<br>5: cast.setAudio<br>6: cast.setMuted<br>7: cast.getPinCodeConfig<br>8: cast.setPinCodeConfig<br>9: cast.setPinCode<br>10: cast.getWindowState<br>11: cast.setWindowState<br>12: cast.getBackendStatus<br>13: cast.restartBackend<br>14: cast.getFlowControlState<br>15: cast.setRenderFps<br>16: cast.setFlowPolicy<br>17: cast.getStatus<br>18: cast.setAudioDelay<br>19: cast.setVideoStreamParams<br>20: cast.getControlCapabilities<br>21: cast.stopPresentation<br>22: cast.setSessionAudioEnabled<br>23: cast.getControlOperation<br>24: cast.setPresentationSettings<br>25: cast.getWebCastBackendState<br>26: cast.setPresentationFocus |
+| cast | 0: cast.getSession<br>1: cast.stopSession<br>2: cast.getAirPlayName<br>3: cast.setAirPlayName<br>4: cast.getAudio<br>5: cast.setAudio<br>6: cast.setMuted<br>7: cast.getPinCodeConfig<br>8: cast.setPinCodeConfig<br>9: cast.setPinCode<br>10: cast.getWindowState<br>11: cast.setWindowState<br>12: cast.getBackendStatus<br>13: cast.restartBackend<br>14: cast.getFlowControlState<br>15: cast.setRenderFps<br>16: cast.setFlowPolicy<br>17: cast.getStatus<br>18: cast.setAudioDelay<br>19: cast.setVideoStreamParams<br>20: cast.getControlCapabilities<br>21: cast.stopPresentation<br>22: cast.setSessionAudioEnabled<br>23: cast.getControlOperation<br>24: cast.setPresentationSettings<br>25: cast.getWebCastBackendState<br>26: cast.setPresentationFocus<br>27: cast.getTouchbackState<br>28: cast.setTouchbackEnabled<br>30: cast.setTouchbackResolutionPreference<br>31: cast.getInputMode<br>32: cast.setInputMode<br>33: cast.getTouchbackMaster<br>34: cast.setTouchbackMaster<br>35: cast.getReceiverSettings<br>36: cast.setReceiverSettings<br>37: cast.restoreReceiverSettings |
 | device | 0: device.getInfo<br>1: device.getPairingCode<br>2: device.getEnrollmentState<br>3: device.setEnrollmentState |
 | firmware | 0: firmware.getUpdateCapabilities<br>1: firmware.beginUpdate<br>3: firmware.getUpdateState<br>2: firmware.finishUpdate |
+| input | 0: input.openStream<br>1: input.closeStream |
 | license | 0: license.registerIdentity<br>1: license.reportReceipt<br>2: license.reconcile<br>3: license.deliverCredential<br>4: license.resolveCredential |
 | network | 2: network.getIpConfig<br>3: network.setIpConfig<br>5: network.getWifiConfig<br>6: network.setWifiConfig<br>7: network.scanWifi<br>8: network.connectWifi<br>9: network.disconnectWifi<br>10: network.getWifiState<br>12: network.getApConfig<br>13: network.setApConfig<br>15: network.startAp<br>16: network.stopAp<br>14: network.getApState<br>0: network.getInterfaces<br>1: network.getInterfaceInfo<br>4: network.getWifiCapabilities<br>11: network.getApCapabilities<br>17: network.getApClients |
 | signage | 0: signage.getPlaylistCapabilities<br>1: signage.getPlaylistConfig<br>2: signage.setPlaylistConfig<br>3: signage.resetPlaylistConfig<br>4: signage.getPlaylistItemUrl<br>5: signage.getPlaylistItem |
@@ -671,6 +679,16 @@ Type: `AudioStreamSourceState`
 - [cast.setPresentationSettings](#castsetpresentationsettings)
 - [cast.getWebCastBackendState](#castgetwebcastbackendstate)
 - [cast.setPresentationFocus](#castsetpresentationfocus)
+- [cast.getTouchbackState](#castgettouchbackstate)
+- [cast.setTouchbackEnabled](#castsettouchbackenabled)
+- [cast.setTouchbackResolutionPreference](#castsettouchbackresolutionpreference)
+- [cast.getInputMode](#castgetinputmode)
+- [cast.setInputMode](#castsetinputmode)
+- [cast.getTouchbackMaster](#castgettouchbackmaster)
+- [cast.setTouchbackMaster](#castsettouchbackmaster)
+- [cast.getReceiverSettings](#castgetreceiversettings)
+- [cast.setReceiverSettings](#castsetreceiversettings)
+- [cast.restoreReceiverSettings](#castrestorereceiversettings)
 
 ---
 
@@ -1471,6 +1489,7 @@ Type: `CastStatus`
 | ?presentationSettings | CastPresentationSettingsState | 0x0F | Required only when P1 is supported and explicitly requested; combined P0/P1 capture shares one host commit boundary and keeps independent event barriers. | None | Omit if not used. |
 | ?webcastBackend | CastWebCastBackendSnapshot | 0x10 | Explicit optional backend snapshot with its own barrier; not implied by unifiedControl or settings. | None | Omit if not used. |
 | ?airplay | CastAirPlayControlState | 0x11 | Secret-free discovery and authentication state at the P0 snapshot boundary. | None | Omit if not used. |
+| ?touchback | Array<CastTouchbackState> | 0x12 | Per-target Touchback state; omitted for AirPlay-only receivers. | array.itemType=CastTouchbackState | Omit if not used. |
 
 ---
 
@@ -1597,6 +1616,7 @@ Type: `CastControlCapabilities`
 | ?webcastBackend | CastWebCastBackendCapability | 0x0B | Required iff this independent backend method/event/status section is supported. | None | Omit if not used. |
 | ?meetingPresentation | CastMeetingPresentationCapability | 0x0C | Explicit optional meeting focus and policy support. | None | Omit if not used. |
 | ?airplayControl | CastAirPlayControlCapability | 0x0D | Secret-free authentication and discovery observation. | None | Omit if not used. |
+| ?touchback | CastTouchbackCapability | 0x0E | Required when cast.touchback is supported; never advertised for AirPlay-only presentation targets. | None | Omit if not used. |
 
 ---
 
@@ -1881,6 +1901,412 @@ Type: `CastControlOperation`
 | ?outcomeReason | String | 0x0C | Required terminal bounded business reason; not a new numeric error space and never secret data. | maxLength=64 | Omit if not used. |
 | ?ownerCleanup | Enum | 0x0D | Cleanup observation at terminalization for the target owner only; not entire receiver exit. | enum=notApplicable/pending/complete/failed | Omit if not used. |
 | ?settingsResult | CastPresentationSettingsOperationResult | 0x0E | Required for kind=setPresentationSettings including queued/rejected/failed; reports configuration/application/persistence separately. | None | Omit if not used. |
+
+---
+
+### cast.getTouchbackState
+
+Return per-target gates, actual input lifecycle, accepted types and presentation state.
+
+- Method ID: `0x161C`
+- Domain: `cast`
+- bitOffset: `27`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `cast.touchback`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `NOT_FOUND`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `CastTouchbackTargetRequest`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| target | CastTouchbackTarget | 0x01 | Complete target identity and generation fence. | None | N/A |
+
+#### Response Fields
+
+Type: `CastTouchbackState`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| target | CastTouchbackTarget | 0x01 | Complete target identity. | None | N/A |
+| receiverOptIn | Boolean | 0x02 | Receiver-local touchback gate. | None | N/A |
+| controllerRequested | Boolean | 0x03 | Launcher/controller requested gate. | None | N/A |
+| effectiveEnabled | Boolean | 0x04 | Computed effective gate; true only when both gates allow input. | None | N/A |
+| resolutionPreference | Enum | 0x07 | Independent source quality preference; normalized input layout does not change. | enum=inherit/prefer1080p | N/A |
+| ?streamId | UInt32 | 0x08 | Active input.stream identifier. | None | Omit if not used. |
+| canvasRevision | String | 0x0A | Canvas revision bound to this target. | maxLength=128 | N/A |
+| geometryRevision | String | 0x0B | Geometry revision bound to this target. | maxLength=128 | N/A |
+| revision | String | 0x0E | Monotonic touchback state revision. | maxLength=128 | N/A |
+| ?diagnosticReason | String | 0x0F | Bounded diagnostic reason. | maxLength=256 | Omit if not used. |
+| acceptedInputTypes | Array<String> | 0x10 | Actual accepted types while active; empty otherwise. | array.itemType=string | N/A |
+| lifecycleState | Enum | 0x11 | Truthful per-target input owner lifecycle. | enum=inactive/opening/active/closing/faulted/cleanup_blocked | N/A |
+| ?format | String | 0x12 | Actual opened format when a context exists. | maxLength=64 | Omit if not used. |
+| ?resolutionState | Enum | 0x13 | Actual source-quality request state, separate from input readiness and geometry. | enum=inherit/pending/applied/degraded/unsupported/failed | Omit if not used. |
+
+---
+
+### cast.setTouchbackEnabled
+
+Set the launcher/controller touchback gate for one cast target.
+
+- Method ID: `0x161D`
+- Domain: `cast`
+- bitOffset: `28`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `cast.touchback`
+- Possible Events: `cast.touchbackChanged`
+- Possible Errors: `SUCCESS`, `PERMISSION_DENIED`, `INVALID_ARGUMENT`, `INVALID_STATE`, `NOT_FOUND`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `CastTouchbackEnabledRequest`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| target | CastTouchbackTarget | 0x01 | Target identity and generation fence. | None | N/A |
+| enabled | Boolean | 0x02 | Requested controller gate. | None | N/A |
+| commandId | String | 0x03 | Idempotency key. | maxLength=128 | N/A |
+
+#### Response Fields
+
+Type: `CastTouchbackState`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| target | CastTouchbackTarget | 0x01 | Complete target identity. | None | N/A |
+| receiverOptIn | Boolean | 0x02 | Receiver-local touchback gate. | None | N/A |
+| controllerRequested | Boolean | 0x03 | Launcher/controller requested gate. | None | N/A |
+| effectiveEnabled | Boolean | 0x04 | Computed effective gate; true only when both gates allow input. | None | N/A |
+| resolutionPreference | Enum | 0x07 | Independent source quality preference; normalized input layout does not change. | enum=inherit/prefer1080p | N/A |
+| ?streamId | UInt32 | 0x08 | Active input.stream identifier. | None | Omit if not used. |
+| canvasRevision | String | 0x0A | Canvas revision bound to this target. | maxLength=128 | N/A |
+| geometryRevision | String | 0x0B | Geometry revision bound to this target. | maxLength=128 | N/A |
+| revision | String | 0x0E | Monotonic touchback state revision. | maxLength=128 | N/A |
+| ?diagnosticReason | String | 0x0F | Bounded diagnostic reason. | maxLength=256 | Omit if not used. |
+| acceptedInputTypes | Array<String> | 0x10 | Actual accepted types while active; empty otherwise. | array.itemType=string | N/A |
+| lifecycleState | Enum | 0x11 | Truthful per-target input owner lifecycle. | enum=inactive/opening/active/closing/faulted/cleanup_blocked | N/A |
+| ?format | String | 0x12 | Actual opened format when a context exists. | maxLength=64 | Omit if not used. |
+| ?resolutionState | Enum | 0x13 | Actual source-quality request state, separate from input readiness and geometry. | enum=inherit/pending/applied/degraded/unsupported/failed | Omit if not used. |
+
+---
+
+### cast.setTouchbackResolutionPreference
+
+Set the touchback source-resolution preference for one cast target.
+
+- Method ID: `0x161F`
+- Domain: `cast`
+- bitOffset: `30`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `cast.touchback`
+- Possible Events: `cast.touchbackChanged`
+- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `INVALID_STATE`, `NOT_FOUND`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `CastTouchbackResolutionRequest`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| target | CastTouchbackTarget | 0x01 | Target identity and generation fence. | None | N/A |
+| resolutionPreference | Enum | 0x02 | Requested sender source-quality preference; packet coordinates remain normalized. | enum=inherit/prefer1080p | N/A |
+| commandId | String | 0x03 | Idempotency key. | maxLength=128 | N/A |
+
+#### Response Fields
+
+Type: `CastTouchbackState`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| target | CastTouchbackTarget | 0x01 | Complete target identity. | None | N/A |
+| receiverOptIn | Boolean | 0x02 | Receiver-local touchback gate. | None | N/A |
+| controllerRequested | Boolean | 0x03 | Launcher/controller requested gate. | None | N/A |
+| effectiveEnabled | Boolean | 0x04 | Computed effective gate; true only when both gates allow input. | None | N/A |
+| resolutionPreference | Enum | 0x07 | Independent source quality preference; normalized input layout does not change. | enum=inherit/prefer1080p | N/A |
+| ?streamId | UInt32 | 0x08 | Active input.stream identifier. | None | Omit if not used. |
+| canvasRevision | String | 0x0A | Canvas revision bound to this target. | maxLength=128 | N/A |
+| geometryRevision | String | 0x0B | Geometry revision bound to this target. | maxLength=128 | N/A |
+| revision | String | 0x0E | Monotonic touchback state revision. | maxLength=128 | N/A |
+| ?diagnosticReason | String | 0x0F | Bounded diagnostic reason. | maxLength=256 | Omit if not used. |
+| acceptedInputTypes | Array<String> | 0x10 | Actual accepted types while active; empty otherwise. | array.itemType=string | N/A |
+| lifecycleState | Enum | 0x11 | Truthful per-target input owner lifecycle. | enum=inactive/opening/active/closing/faulted/cleanup_blocked | N/A |
+| ?format | String | 0x12 | Actual opened format when a context exists. | maxLength=64 | Omit if not used. |
+| ?resolutionState | Enum | 0x13 | Actual source-quality request state, separate from input readiness and geometry. | enum=inherit/pending/applied/degraded/unsupported/failed | Omit if not used. |
+
+---
+
+### cast.getInputMode
+
+Query receiver input interpretation, gesture settings and authenticated source metadata.
+
+- Method ID: `0x1620`
+- Domain: `cast`
+- bitOffset: `31`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`
+- Required Capabilities: `cast.touchback`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `INVALID_STATE`, `BUSY`, `NOT_SUPPORTED`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `CastTouchbackTargetRequest`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| target | CastTouchbackTarget | 0x01 | Complete target identity and generation fence. | None | N/A |
+
+#### Response Fields
+
+Type: `CastInputModeState`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| target | CastTouchbackTarget | 0x01 | Exact generation-fenced target. | None | N/A |
+| inputMode | Enum | 0x02 | Receiver input interpretation policy. | enum=native/touch-to-mouse | N/A |
+| gestureSettings | CastGestureSettings | 0x03 | Effective receiver gesture settings. | None | N/A |
+| switching | Boolean | 0x04 | Owner switch is pending; acceptance is not activation proof. | None | N/A |
+| supported | Boolean | 0x05 | Source can offer the receiver input path. | None | N/A |
+| source | CastInputSourceInfo | 0x06 | Authenticated source metadata. | None | N/A |
+| gestureControlSupported | Boolean | 0x07 | Source supports receiver touch-to-mouse interpretation. | None | N/A |
+| state | CastTouchbackState | 0x08 | Current per-target gates and input lifecycle. | None | N/A |
+
+---
+
+### cast.setInputMode
+
+Set receiver input interpretation or gesture settings; never changes the typed input wire format.
+
+- Method ID: `0x1621`
+- Domain: `cast`
+- bitOffset: `32`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`
+- Required Capabilities: `cast.touchback`
+- Possible Events: `cast.touchbackChanged`
+- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `INVALID_STATE`, `BUSY`, `NOT_SUPPORTED`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `CastSetInputModeRequest`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| target | CastTouchbackTarget | 0x01 | Exact generation-fenced target. | None | N/A |
+| commandId | String | 0x02 | Nonempty idempotency key; reuse with different method or content conflicts. | maxLength=128 | N/A |
+| ?inputMode | Enum | 0x03 | Receiver interpretation policy. | enum=native/touch-to-mouse | Omit if not used. |
+| ?gestureSettings | CastGestureSettings | 0x04 | Full receiver gesture settings. | None | Omit if not used. |
+| controlVersion | UInt32 | 0x05 | Must be 1. | None | N/A |
+| runtimeInstanceId | String | 0x06 | Current receiver runtime UUID from capabilities. | maxLength=36 | N/A |
+
+#### Response Fields
+
+Type: `CastInputModeState`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| target | CastTouchbackTarget | 0x01 | Exact generation-fenced target. | None | N/A |
+| inputMode | Enum | 0x02 | Receiver input interpretation policy. | enum=native/touch-to-mouse | N/A |
+| gestureSettings | CastGestureSettings | 0x03 | Effective receiver gesture settings. | None | N/A |
+| switching | Boolean | 0x04 | Owner switch is pending; acceptance is not activation proof. | None | N/A |
+| supported | Boolean | 0x05 | Source can offer the receiver input path. | None | N/A |
+| source | CastInputSourceInfo | 0x06 | Authenticated source metadata. | None | N/A |
+| gestureControlSupported | Boolean | 0x07 | Source supports receiver touch-to-mouse interpretation. | None | N/A |
+| state | CastTouchbackState | 0x08 | Current per-target gates and input lifecycle. | None | N/A |
+
+---
+
+### cast.getTouchbackMaster
+
+Query the receiver-wide input gate; enabled does not grant per-target consent.
+
+- Method ID: `0x1622`
+- Domain: `cast`
+- bitOffset: `33`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`
+- Required Capabilities: `cast.touchback`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `INVALID_STATE`, `BUSY`, `NOT_SUPPORTED`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `Empty`
+
+No fields.
+
+#### Response Fields
+
+Type: `CastTouchbackMasterState`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| enabled | Boolean | 0x01 | Receiver-wide input gate intent. | None | N/A |
+| revision | String | 0x02 | Canonical uint64 decimal gate revision. | maxLength=20 | N/A |
+| runtimeInstanceId | String | 0x03 | Receiver runtime UUID; revisions only compare within this instance. | maxLength=36 | N/A |
+
+---
+
+### cast.setTouchbackMaster
+
+Set the receiver-wide input gate; disabling releases all input owners and enabling never replays input.
+
+- Method ID: `0x1623`
+- Domain: `cast`
+- bitOffset: `34`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`
+- Required Capabilities: `cast.touchback`
+- Possible Events: `cast.touchbackMasterChanged`
+- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `INVALID_STATE`, `BUSY`, `NOT_SUPPORTED`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `CastSetTouchbackMasterRequest`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| enabled | Boolean | 0x01 | Requested receiver input gate. | None | N/A |
+| commandId | String | 0x02 | Nonempty idempotency key; reuse with different method or content conflicts. | maxLength=128 | N/A |
+| controlVersion | UInt32 | 0x03 | Must be 1. | None | N/A |
+| runtimeInstanceId | String | 0x04 | Current receiver runtime UUID from capabilities. | maxLength=36 | N/A |
+
+#### Response Fields
+
+Type: `CastTouchbackMasterState`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| enabled | Boolean | 0x01 | Receiver-wide input gate intent. | None | N/A |
+| revision | String | 0x02 | Canonical uint64 decimal gate revision. | maxLength=20 | N/A |
+| runtimeInstanceId | String | 0x03 | Receiver runtime UUID; revisions only compare within this instance. | maxLength=36 | N/A |
+
+---
+
+### cast.getReceiverSettings
+
+Read configured and applied receiver startup preferences and the persisted override revision.
+
+- Method ID: `0x1624`
+- Domain: `cast`
+- bitOffset: `35`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`
+- Required Capabilities: `cast.receiverSettings`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `Empty`
+
+No fields.
+
+#### Response Fields
+
+Type: `CastReceiverSettingsState`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| runtimeInstanceId | String | 0x01 | Canonical UUID for this receiver process lifetime. | maxLength=36 | N/A |
+| storeRevision | String | 0x02 | Canonical decimal uint64 store revision or zero when absent. | maxLength=20 | N/A |
+| storageState | Enum | 0x03 | Observed condition of the saved settings. | enum=absent/loaded/saved/invalid/unavailable | N/A |
+| backupAvailable | Boolean | 0x04 | A valid settings backup is available. | None | N/A |
+| recoveredFromBackup | Boolean | 0x05 | The settings were read from a backup. | None | N/A |
+| supportsPersistence | Boolean | 0x06 | The store and current listener policy permit an explicit save. | None | N/A |
+| restartOnlyFields | Array<String> | 0x07 | Supported fields applied at restart. Includes both WS keys when supported. | array.itemType=string | N/A |
+| configured | CastReceiverPreferenceValues | 0x08 | Configured preferences. For the WS endpoint this is next-start intent including defaults. | None | N/A |
+| applied | CastReceiverPreferenceValues | 0x09 | Observed AirPlay state and currently listening WebSocket endpoint values. | None | N/A |
+| airplayEnabled | Boolean | 0x0A | AirPlay is enabled in this receiver instance. | None | N/A |
+| publishState | Enum | 0x0B | Observed AirPlay discovery state. | enum=published/republishing/pending/failed/unpublished | N/A |
+| pendingRestart | Array<String> | 0x0C | Restart-only fields with a configured value different from its applied value. | array.itemType=string | N/A |
+| persistedOverrides | CastReceiverPersistedOverrides | 0x0D | Explicit settings store values without defaults. | None | N/A |
+
+---
+
+### cast.setReceiverSettings
+
+Update one receiver preference with runtime and store revision checks. Saving an endpoint change takes effect at next startup.
+
+- Method ID: `0x1625`
+- Domain: `cast`
+- bitOffset: `36`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`
+- Required Capabilities: `cast.receiverSettings`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `INVALID_STATE`, `BUSY`, `UNAVAILABLE`, `INTERNAL_ERROR`
+
+#### Request Fields
+
+Type: `CastSetReceiverSettingsParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| runtimeInstanceId | String | 0x01 | Instance UUID from the last settings read. | maxLength=36 | N/A |
+| expectedStoreRevision | String | 0x02 | Exact last read store revision as canonical decimal uint64. | maxLength=20 | N/A |
+| persist | Boolean | 0x03 | Explicit save request. True is mandatory for either WebSocket endpoint field. | None | N/A |
+| patch | CastReceiverPreferenceValues | 0x04 | Exactly one supported field. Unknown and multiple keys are invalid. | None | N/A |
+
+#### Response Fields
+
+Type: `CastReceiverSettingsWriteResult`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| persistenceStatus | Enum | 0x01 | Save outcome. Stored confirms the write completed. | enum=notRequested/unchanged/stored | N/A |
+| applicationStatus | Enum | 0x02 | Runtime application state. Pending restart confirms no listener restart yet. | enum=unchanged/applied/pending/pendingRestart/failed | N/A |
+| settings | CastReceiverSettingsState | 0x03 | Post-operation settings observation and new revision when saved. | None | N/A |
+
+---
+
+### cast.restoreReceiverSettings
+
+Restore receiver settings defaults or an available backup after the runtime and store revision checks.
+
+- Method ID: `0x1626`
+- Domain: `cast`
+- bitOffset: `37`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`
+- Required Capabilities: `cast.receiverSettings`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `INVALID_ARGUMENT`, `INVALID_STATE`, `BUSY`, `UNAVAILABLE`, `INTERNAL_ERROR`
+
+#### Request Fields
+
+Type: `CastRestoreReceiverSettingsParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| runtimeInstanceId | String | 0x01 | Instance UUID from the last settings read. | maxLength=36 | N/A |
+| expectedStoreRevision | String | 0x02 | Exact last read store revision as canonical decimal uint64. | maxLength=20 | N/A |
+| source | Enum | 0x03 | Reset saved overrides or restore the available backup. | enum=defaults/backup | N/A |
+
+#### Response Fields
+
+Type: `CastReceiverSettingsWriteResult`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| persistenceStatus | Enum | 0x01 | Save outcome. Stored confirms the write completed. | enum=notRequested/unchanged/stored | N/A |
+| applicationStatus | Enum | 0x02 | Runtime application state. Pending restart confirms no listener restart yet. | enum=unchanged/applied/pending/pendingRestart/failed | N/A |
+| settings | CastReceiverSettingsState | 0x03 | Post-operation settings observation and new revision when saved. | None | N/A |
 
 ---
 
@@ -2192,6 +2618,106 @@ Type: `FinishUpdateResult`
 | updateSessionId | String | 0x01 | Firmware update session identifier. | maxLength=128 | N/A |
 | accepted | Boolean | 0x02 | Whether the device accepted the finish handoff. | None | N/A |
 | state | Enum | 0x03 | State after finish, normally verifying or failed. | None | N/A |
+
+---
+
+## input Methods
+
+### Methods in this domain
+
+- [input.openStream](#inputopenstream)
+- [input.closeStream](#inputclosestream)
+
+---
+
+### input.openStream
+
+Prepare a new immutable input context and return actually accepted input types and native limits.
+
+- Method ID: `0x0A01`
+- Domain: `input`
+- bitOffset: `0`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `input.stream`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `NOT_SUPPORTED`, `PERMISSION_DENIED`, `INVALID_ARGUMENT`, `INVALID_STATE`, `BUSY`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `InputOpenStreamParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| controlVersion | UInt32 | 0x01 | Control-plane contract version. | min=1, max=1 | N/A |
+| runtimeInstanceId | String | 0x02 | Runtime instance that owns the request. | maxLength=128 | N/A |
+| target | InputStreamTarget | 0x03 | Target identity and generation fence. | None | N/A |
+| streamKind | Enum | 0x04 | Business stream kind; v1 is touchback. | enum=touchback | N/A |
+| format | Enum | 0x05 | Canonical binary payload format after the AXTP STREAM header. | enum=input-sample-v1 | N/A |
+| commandId | String | 0x10 | Idempotency key for the open request. | maxLength=128 | N/A |
+| sourceBindingId | String | 0x11 | Opaque source binding supplied by the authenticated media/device integration; validated against current local capture/input region. | maxLength=128 | N/A |
+| inputTypes | Array<String> | 0x12 | Nonempty unique offered semantics: touch and/or mouse. | array.itemType=string | N/A |
+| maxDataBytes | UInt32 | 0x13 | Maximum input data bytes, including inputType; excludes STREAM and Frame. | min=8, max=4096 | N/A |
+| ?touch | InputTouchConstraints | 0x14 | Required exactly when touch is offered. | None | Omit if not used. |
+| ?mouse | InputMouseConstraints | 0x15 | Required exactly when mouse is offered. | None | Omit if not used. |
+
+#### Response Fields
+
+Type: `InputOpenStreamResult`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| streamId | UInt32 | 0x01 | AXTP STREAM identifier. | min=1 | N/A |
+| format | Enum | 0x04 | Canonical binary payload format. | enum=input-sample-v1 | N/A |
+| revision | String | 0x0A | Receiver input stream state revision. | maxLength=128 | N/A |
+| accepted | Boolean | 0x0B | True only when authentication, current binding, permission, geometry, exclusive native owner and preparation have succeeded. | None | N/A |
+| acceptedInputTypes | Array<String> | 0x0C | Nonempty unique subset of offered input types. | array.itemType=string | N/A |
+| maxDataBytes | UInt32 | 0x0D | Actual input data budget, no greater than request/native/transport limits. | min=8, max=4096 | N/A |
+| ?touch | InputTouchConstraints | 0x0E | Present exactly when touch is accepted. | None | Omit if not used. |
+| ?mouse | InputMouseConstraints | 0x0F | Present exactly when mouse is accepted. | None | Omit if not used. |
+
+---
+
+### input.closeStream
+
+Fence and release all input owned by an authenticated session and stream; acknowledge closed only after confirmed cleanup.
+
+- Method ID: `0x0A02`
+- Domain: `input`
+- bitOffset: `1`
+- Status: `draft`
+- Added in v1.0.0
+- Encodings: `json`, `tlv`
+- Required Capabilities: `input.stream`
+- Possible Events: `None`
+- Possible Errors: `SUCCESS`, `STREAM_NOT_FOUND`, `STREAM_CLOSED`, `INVALID_ARGUMENT`, `INVALID_STATE`, `UNAVAILABLE`
+
+#### Request Fields
+
+Type: `InputCloseStreamParams`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| controlVersion | UInt32 | 0x01 | Control-plane contract version. | min=1, max=1 | N/A |
+| runtimeInstanceId | String | 0x02 | Runtime instance that owns the request. | maxLength=128 | N/A |
+| target | InputStreamTarget | 0x03 | Target identity and generation fence. | None | N/A |
+| streamKind | Enum | 0x04 | Business stream kind; v1 is touchback. | enum=touchback | N/A |
+| streamId | UInt32 | 0x05 | AXTP STREAM identifier to close. | min=1 | N/A |
+| ?reason | Enum | 0x07 | Reason for closing the stream. | enum=requested/route_changed/disconnect/timeout/shutdown/profile_failure | Omit if not used. |
+| ?finalSeqId | UInt32 | 0x08 | Last sequence number accepted before close. | None | Omit if not used. |
+| commandId | String | 0x09 | Idempotency key for the close request. | maxLength=128 | N/A |
+
+#### Response Fields
+
+Type: `InputCloseStreamResult`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| streamId | UInt32 | 0x01 | AXTP STREAM identifier. | None | N/A |
+| closed | Boolean | 0x03 | True only after all native state owned by this context is confirmed released; cleanupPending is an UNAVAILABLE error. | None | N/A |
+| ?alreadyClosed | Boolean | 0x04 | Whether the stream was already closed and the operation converged idempotently. | None | Default: false |
+| revision | String | 0x05 | Receiver input stream state revision after close. | maxLength=128 | N/A |
 
 ---
 
@@ -4436,6 +4962,8 @@ Type: `AudioStreamStatsReportedEvent`
 - [cast.presentationSettingsChanged](#castpresentationsettingschanged)
 - [cast.webcastBackendChanged](#castwebcastbackendchanged)
 - [cast.airplayChanged](#castairplaychanged)
+- [cast.touchbackChanged](#casttouchbackchanged)
+- [cast.touchbackMasterChanged](#casttouchbackmasterchanged)
 
 ---
 
@@ -4970,6 +5498,54 @@ Type: `CastAirPlayChangedEvent`
 | ---- | :---: | :---: | ---- | :---: | ---- |
 | context | CastControlEventContext | 0x01 | Required atomic commit context. | None | N/A |
 | airplay | CastAirPlayControlState | 0x02 | Complete secret-free state. | None | N/A |
+
+---
+
+### cast.touchbackChanged
+
+Per-target gate, input lifecycle, accepted types, source quality or geometry changed.
+
+- Event ID: `0x1615`
+- Domain: `cast`
+- bitOffset: `20`
+- Status: `draft`
+- Severity: `info`
+- Added in v1.0.0
+- Trigger: `cast.setTouchbackEnabled`, `cast.setTouchbackResolutionPreference`, `cast.setInputMode`, `stream open`, `stream close`, `disconnect`
+- Required Capabilities: `cast.touchback`
+
+#### Payload Fields
+
+Type: `CastTouchbackChangedEvent`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| state | CastTouchbackState | 0x01 | Current target state. | None | N/A |
+| changedFields | Array<String> | 0x02 | Changed state fields. | array.itemType=string | N/A |
+| accepted | Boolean | 0x03 | Whether the owner lane accepted the triggering request. | None | N/A |
+
+---
+
+### cast.touchbackMasterChanged
+
+Receiver-wide input gate changed; clients replace the full state and resnapshot target gates.
+
+- Event ID: `0x1616`
+- Domain: `cast`
+- bitOffset: `21`
+- Status: `draft`
+- Severity: `info`
+- Added in v1.0.0
+- Trigger: `cast.setTouchbackMaster`, `receiver local gate changed`
+- Required Capabilities: `cast.touchback`
+
+#### Payload Fields
+
+Type: `CastTouchbackMasterChangedEvent`
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| state | CastTouchbackMasterState | 0x01 | Current complete receiver-wide gate state. | None | N/A |
 
 ---
 
@@ -6027,6 +6603,34 @@ Exact presentation fences; params.runtimeInstanceId completes the target and all
 
 ---
 
+## CastGestureSettings
+
+Receiver touch-to-mouse interpretation; physical wheel input never uses scrollSpeed. Omitted scrollSpeed means 1x.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| rightClick | Enum | 0x01 | Enabled right-click gesture. | enum=two-finger-tap/long-press/both | N/A |
+| rightHoldMs | UInt32 | 0x02 | Stationary hold threshold in milliseconds. | min=600, max=2000 | N/A |
+| scrollDirection | Enum | 0x03 | Receiver gesture direction mapping. | enum=follow-finger/reverse | N/A |
+| feedback | Boolean | 0x04 | Show local gesture feedback. | None | N/A |
+| ?scrollSpeed | Number | 0x05 | Finite gesture scroll multiplier; defaults to 1. | min=0.5, max=4 | Omit if not used. |
+
+---
+
+## CastInputSourceInfo
+
+Authenticated integration metadata; never substitutes for consent or openStream acceptance.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| platform | String | 0x01 | Actual source platform or unknown. | maxLength=64 | N/A |
+| clientKind | String | 0x02 | Actual integration kind or unknown. | maxLength=64 | N/A |
+| product | String | 0x03 | Actual integration product or unknown. | maxLength=128 | N/A |
+| displaySurface | String | 0x04 | Actual selected display surface or unknown. | maxLength=64 | N/A |
+| ?displayRole | String | 0x05 | Observed display role when available. | maxLength=64 | Omit if not used. |
+
+---
+
 ## CastLastError
 
 Redactable backend or receiver error summary.
@@ -6184,6 +6788,19 @@ All fields optional structurally but exactly one key required semantically; unkn
 | ?presentationFocusOnDoubleClick | Boolean | 0x0B | Remembered main-body double-click Focus entry preference; default true. Disabling restores Sidebar from Focus. | None | Omit if not used. |
 | ?presentationGridOnDoubleClick | Boolean | 0x0C | Remembered inclusion of Grid in main-body double-click cycle; default false. Independent of Focus entry. | None | Omit if not used. |
 | ?presentationAutoEnter | Boolean | 0x0D | Automatic Grid to Sidebar entry at two presented sources; independent of primary selection. Explicit Grid suppresses entry until full withdrawal. | None | Omit if not used. |
+| ?canvasMode | Enum | 0x0E | Canvas sizing policy for normalized input geometry. | enum=adaptive/fixed | Omit if not used. |
+| ?baseWidth | UInt32 | 0x0F | Fixed or preferred canvas width in pixels. | min=1, max=16384 | Omit if not used. |
+| ?baseHeight | UInt32 | 0x10 | Fixed or preferred canvas height in pixels. | min=1, max=16384 | Omit if not used. |
+| ?maxWidth | UInt32 | 0x11 | Adaptive canvas maximum width in pixels. | min=1, max=16384 | Omit if not used. |
+| ?maxHeight | UInt32 | 0x12 | Adaptive canvas maximum height in pixels. | min=1, max=16384 | Omit if not used. |
+| ?topBarTrigger | Enum | 0x13 | Timing for appearance of the enabled receiver controls and background. | enum=none/top-click/canvas-click/always | Omit if not used. |
+| ?topBarShowCastCode | Boolean | 0x14 | Whether the regular Cast Code appears in the visible receiver top bar. | None | Omit if not used. |
+| ?topBarShowDebug | Boolean | 0x15 | Whether the visible receiver top bar offers the local debugging entry. | None | Omit if not used. |
+| ?startupWindowMode | Enum | 0x16 | Restart-only initial local receiver window mode. | enum=fullscreen/windowed | Omit if not used. |
+| ?topBarShowLayout | Boolean | 0x17 | Whether to show the layout selector at the left of the receiver chrome. | None | Omit if not used. |
+| ?topBarShowMinimize | Boolean | 0x18 | Whether to show the window minimize button. | None | Omit if not used. |
+| ?topBarShowMaximize | Boolean | 0x19 | Whether to show the window maximize button. | None | Omit if not used. |
+| ?topBarShowBackground | Boolean | 0x1A | Whether to show the full-width top bar background independently of its elements. | None | Omit if not used. |
 
 ---
 
@@ -6231,6 +6848,19 @@ Supported setting values only; configured/known persisted projections are comple
 | ?presentationFocusOnDoubleClick | Boolean | 0x0B | Remembered main-body double-click Focus entry preference; default true. Disabling restores Sidebar from Focus. | None | Omit if not used. |
 | ?presentationGridOnDoubleClick | Boolean | 0x0C | Remembered inclusion of Grid in main-body double-click cycle; default false. Independent of Focus entry. | None | Omit if not used. |
 | ?presentationAutoEnter | Boolean | 0x0D | Automatic Grid to Sidebar entry at two presented sources; independent of primary selection. Explicit Grid suppresses entry until full withdrawal. | None | Omit if not used. |
+| ?canvasMode | Enum | 0x0E | Canvas sizing policy for normalized input geometry. | enum=adaptive/fixed | Omit if not used. |
+| ?baseWidth | UInt32 | 0x0F | Fixed or preferred canvas width in pixels. | min=1, max=16384 | Omit if not used. |
+| ?baseHeight | UInt32 | 0x10 | Fixed or preferred canvas height in pixels. | min=1, max=16384 | Omit if not used. |
+| ?maxWidth | UInt32 | 0x11 | Adaptive canvas maximum width in pixels. | min=1, max=16384 | Omit if not used. |
+| ?maxHeight | UInt32 | 0x12 | Adaptive canvas maximum height in pixels. | min=1, max=16384 | Omit if not used. |
+| ?topBarTrigger | Enum | 0x13 | Timing for appearance of the enabled receiver controls and background. | enum=none/top-click/canvas-click/always | Omit if not used. |
+| ?topBarShowCastCode | Boolean | 0x14 | Whether the regular Cast Code appears in the visible receiver top bar. | None | Omit if not used. |
+| ?topBarShowDebug | Boolean | 0x15 | Whether the visible receiver top bar offers the local debugging entry. | None | Omit if not used. |
+| ?startupWindowMode | Enum | 0x16 | Restart-only initial local receiver window mode. | enum=fullscreen/windowed | Omit if not used. |
+| ?topBarShowLayout | Boolean | 0x17 | Whether to show the layout selector at the left of the receiver chrome. | None | Omit if not used. |
+| ?topBarShowMinimize | Boolean | 0x18 | Whether to show the window minimize button. | None | Omit if not used. |
+| ?topBarShowMaximize | Boolean | 0x19 | Whether to show the window maximize button. | None | Omit if not used. |
+| ?topBarShowBackground | Boolean | 0x1A | Whether to show the full-width top bar background independently of its elements. | None | Omit if not used. |
 
 ---
 
@@ -6266,6 +6896,19 @@ Exactly the capability-declared restart-only intent accepted at this host startu
 | ?presentationFocusOnDoubleClick | Boolean | 0x0B | Remembered main-body double-click Focus entry preference; default true. Disabling restores Sidebar from Focus. | None | Omit if not used. |
 | ?presentationGridOnDoubleClick | Boolean | 0x0C | Remembered inclusion of Grid in main-body double-click cycle; default false. Independent of Focus entry. | None | Omit if not used. |
 | ?presentationAutoEnter | Boolean | 0x0D | Automatic Grid to Sidebar entry at two presented sources; independent of primary selection. Explicit Grid suppresses entry until full withdrawal. | None | Omit if not used. |
+| ?canvasMode | Enum | 0x0E | Canvas sizing policy for normalized input geometry. | enum=adaptive/fixed | Omit if not used. |
+| ?baseWidth | UInt32 | 0x0F | Fixed or preferred canvas width in pixels. | min=1, max=16384 | Omit if not used. |
+| ?baseHeight | UInt32 | 0x10 | Fixed or preferred canvas height in pixels. | min=1, max=16384 | Omit if not used. |
+| ?maxWidth | UInt32 | 0x11 | Adaptive canvas maximum width in pixels. | min=1, max=16384 | Omit if not used. |
+| ?maxHeight | UInt32 | 0x12 | Adaptive canvas maximum height in pixels. | min=1, max=16384 | Omit if not used. |
+| ?topBarTrigger | Enum | 0x13 | Timing for appearance of the enabled receiver controls and background. | enum=none/top-click/canvas-click/always | Omit if not used. |
+| ?topBarShowCastCode | Boolean | 0x14 | Whether the regular Cast Code appears in the visible receiver top bar. | None | Omit if not used. |
+| ?topBarShowDebug | Boolean | 0x15 | Whether the visible receiver top bar offers the local debugging entry. | None | Omit if not used. |
+| ?startupWindowMode | Enum | 0x16 | Restart-only initial local receiver window mode. | enum=fullscreen/windowed | Omit if not used. |
+| ?topBarShowLayout | Boolean | 0x17 | Whether to show the layout selector at the left of the receiver chrome. | None | Omit if not used. |
+| ?topBarShowMinimize | Boolean | 0x18 | Whether to show the window minimize button. | None | Omit if not used. |
+| ?topBarShowMaximize | Boolean | 0x19 | Whether to show the window maximize button. | None | Omit if not used. |
+| ?topBarShowBackground | Boolean | 0x1A | Whether to show the full-width top bar background independently of its elements. | None | Omit if not used. |
 
 ---
 
@@ -6287,6 +6930,58 @@ Atomically captured presentation lifecycle, capacity and slots; zero effective/a
 | slots | Array<CastPresentationSlotState> | 0x0A | Full bounded current slot set with no removed-session ghost binding. | array.itemType=CastPresentationSlotState | N/A |
 | ?meeting | CastMeetingPresentationState | 0x0B | Present only when meeting capability is advertised; part of the existing P0 presentation commit. | None | Omit if not used. |
 | contentAdaptation | Enum | 0x0C | Independent content adaptation; never changes the selected layout. | enum=fixed/auto-fit | N/A |
+
+---
+
+## CastReceiverPersistedOverrides
+
+Explicit receiver store overrides spanning presentation and receiver preferences. Omitted fields use defaults at next launch.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?layoutMode | Enum | 0x01 | Selected product layout; complete source withdrawal returns to grid. | enum=grid/presentation | Omit if not used. |
+| ?audioControlMode | Enum | 0x02 | Adopted or desired control policy; not proof of sound. | enum=automatic/manual | Omit if not used. |
+| ?audioMixMode | Enum | 0x03 | Adopted or desired audio mixing policy. | enum=exclusive/mix | Omit if not used. |
+| ?capacity | UInt32 | 0x04 | Desired capacity or actually adopted capacity according to containing projection; applied may be limited. | min=1 | Omit if not used. |
+| ?enabledProtocols | Array<String> | 0x05 | Adopted or desired enable policy; not receiver readiness. | array.itemType=string | Omit if not used. |
+| ?profileHint | String | 0x06 | Declared product combination profile identifier. | maxLength=64 | Omit if not used. |
+| ?contentAdaptation | Enum | 0x07 | Content aspect adaptation independent of Layout. | enum=fixed/auto-fit | Omit if not used. |
+| ?presentationMode | Enum | 0x08 | Meeting visual entry policy; not global audio policy. | enum=manual/automatic | Omit if not used. |
+| ?presentationSidebar | Enum | 0x09 | Meeting rail position independent of base layoutMode. | enum=left/right | Omit if not used. |
+| ?presentationAudioFollow | Boolean | 0x0A | Remembered follow preference independent of activity and global audio control mode. | None | Omit if not used. |
+| ?presentationFocusOnDoubleClick | Boolean | 0x0B | Remembered main-body double-click Focus entry preference; default true. Disabling restores Sidebar from Focus. | None | Omit if not used. |
+| ?presentationGridOnDoubleClick | Boolean | 0x0C | Remembered inclusion of Grid in main-body double-click cycle; default false. Independent of Focus entry. | None | Omit if not used. |
+| ?presentationAutoEnter | Boolean | 0x0D | Automatic Grid to Sidebar entry at two presented sources; independent of primary selection. Explicit Grid suppresses entry until full withdrawal. | None | Omit if not used. |
+| ?canvasMode | Enum | 0x0E | Canvas sizing policy for normalized input geometry. | enum=adaptive/fixed | Omit if not used. |
+| ?baseWidth | UInt32 | 0x0F | Fixed or preferred canvas width in pixels. | min=1, max=16384 | Omit if not used. |
+| ?baseHeight | UInt32 | 0x10 | Fixed or preferred canvas height in pixels. | min=1, max=16384 | Omit if not used. |
+| ?maxWidth | UInt32 | 0x11 | Adaptive canvas maximum width in pixels. | min=1, max=16384 | Omit if not used. |
+| ?maxHeight | UInt32 | 0x12 | Adaptive canvas maximum height in pixels. | min=1, max=16384 | Omit if not used. |
+| ?topBarTrigger | Enum | 0x13 | Timing for appearance of the enabled receiver controls and background. | enum=none/top-click/canvas-click/always | Omit if not used. |
+| ?topBarShowCastCode | Boolean | 0x14 | Whether the regular Cast Code appears in the visible receiver top bar. | None | Omit if not used. |
+| ?topBarShowDebug | Boolean | 0x15 | Whether the visible receiver top bar offers the local debugging entry. | None | Omit if not used. |
+| ?startupWindowMode | Enum | 0x16 | Restart-only initial local receiver window mode. | enum=fullscreen/windowed | Omit if not used. |
+| ?topBarShowLayout | Boolean | 0x17 | Whether to show the layout selector at the left of the receiver chrome. | None | Omit if not used. |
+| ?topBarShowMinimize | Boolean | 0x18 | Whether to show the window minimize button. | None | Omit if not used. |
+| ?topBarShowMaximize | Boolean | 0x19 | Whether to show the window maximize button. | None | Omit if not used. |
+| ?topBarShowBackground | Boolean | 0x1A | Whether to show the full-width top bar background independently of its elements. | None | Omit if not used. |
+| ?airplayName | String | 0x1B | AirPlay name preference. An empty configured name requests automatic naming. | maxLength=63 | Omit if not used. |
+| ?airplayRandomPassword | Boolean | 0x1C | AirPlay random-password policy. Contains no current password. | None | Omit if not used. |
+| ?controlPort | UInt32 | 0x1D | WebSocket control port. Default is 7020. Changes apply on the next start. | min=1, max=65535 | Omit if not used. |
+| ?controlListenOnLan | Boolean | 0x1E | Local-network WebSocket listener. Default is false for loopback only. Changes apply on the next start. | None | Omit if not used. |
+
+---
+
+## CastReceiverPreferenceValues
+
+Receiver preference values. A mutation patch contains exactly one declared field.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| ?airplayName | String | 0x01 | AirPlay name preference. An empty configured name requests automatic naming. | maxLength=63 | Omit if not used. |
+| ?airplayRandomPassword | Boolean | 0x02 | AirPlay random-password policy. Contains no current password. | None | Omit if not used. |
+| ?controlPort | UInt32 | 0x03 | WebSocket control port. Default is 7020. Changes apply on the next start. | min=1, max=65535 | Omit if not used. |
+| ?controlListenOnLan | Boolean | 0x04 | Local-network WebSocket listener. Default is false for loopback only. Changes apply on the next start. | None | Omit if not used. |
 
 ---
 
@@ -6380,6 +7075,20 @@ Summary of a cast source device or local AXTP sender.
 | ?address | String | 0x03 | Network or transport address summary when safe to expose. | maxLength=128 | Omit if not used. |
 | ?sourceId | String | 0x04 | Receiver-local source identifier. | maxLength=128 | Omit if not used. |
 | ?protocol | Enum | 0x05 | Protocol path that produced the source summary. | enum=airplay/hid/unknown | Omit if not used. |
+
+---
+
+## CastTouchbackTarget
+
+Per-route target identity for touchback control.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| sessionId | String | 0x01 | Cast session identifier. | maxLength=128 | N/A |
+| sessionGeneration | String | 0x02 | Decimal-string session generation. | maxLength=32 | N/A |
+| slotId | String | 0x03 | Per-route slot identifier. | maxLength=128 | N/A |
+| bindingGeneration | String | 0x04 | Decimal-string binding generation. | maxLength=32 | N/A |
+| lifecycleGeneration | String | 0x05 | Decimal-string receiver lifecycle generation. | maxLength=32 | N/A |
 
 ---
 
@@ -6620,6 +7329,44 @@ Minimal firmware update manifest.
 | ?version | String | 0x02 | Target firmware version string. | maxLength=64 | Omit if not used. |
 | files | Array<FirmwareUpdateFile> | 0x03 | Firmware update files. | schema=FirmwareUpdateFile, array.itemType=FirmwareUpdateFile, array.itemSchema=FirmwareUpdateFile | N/A |
 | ?devicePolicyVersion | String | 0x04 | Optional policy version used to interpret the package. | maxLength=64 | Omit if not used. |
+
+---
+
+## InputMouseConstraints
+
+Actually supported logical absolute Mouse features; unsupported actions never silently convert.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| buttonsMask | UInt32 | 0x01 | Allowed buttons: Left=1, Right=2, Middle=4, Back=8, Forward=16. | min=0, max=31 | N/A |
+| modifierMask | UInt16 | 0x02 | Allowed Shift=1, Ctrl=2, Alt=4, Meta=8; nonzero requires reliable owned release. | min=0, max=15 | N/A |
+| allowChords | Boolean | 0x03 | Whether more than one logical button can be held. | None | N/A |
+| wheelUnits | Array<String> | 0x04 | Unique supported units: detent120 and/or regionQ16_16; empty disables Wheel. | array.itemType=string | N/A |
+| continuousScroll | Boolean | 0x05 | Requires regionQ16_16 and phase/anchor support; otherwise false. | None | N/A |
+
+---
+
+## InputStreamTarget
+
+Complete target identity used to fence an input stream against stale sessions and bindings.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| sessionId | String | 0x01 | Stable cast session identifier. | maxLength=128 | N/A |
+| sessionGeneration | String | 0x02 | Decimal-string session generation. | maxLength=32 | N/A |
+| slotId | String | 0x03 | Per-route or per-display slot identifier. | maxLength=128 | N/A |
+| bindingGeneration | String | 0x04 | Decimal-string binding generation for the selected route. | maxLength=32 | N/A |
+| lifecycleGeneration | String | 0x05 | Decimal-string receiver lifecycle generation. | maxLength=32 | N/A |
+
+---
+
+## InputTouchConstraints
+
+Limits include all records in one complete sample, including terminal records.
+
+| Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
+| ---- | :---: | :---: | ---- | :---: | ---- |
+| maxContacts | UInt16 | 0x01 | Maximum records in a complete Touch sample; bounded by native complete-frame capacity and floor((maxDataBytes-1)/7). | min=1, max=256 | N/A |
 
 ---
 
@@ -7077,6 +7824,18 @@ Bounded runtime statistics for a video stream.
 - Required Methods: `None`
 - Required Events: `None`
 - Required Errors: `SUCCESS`, `RPC_METHOD_NOT_FOUND`, `RPC_PARAM_INVALID`, `STREAM_NOT_FOUND`, `STREAM_CRC_ERROR`, `BUSY`
+- Notes: -
+
+---
+
+## AXTP-TYPED-INPUT-V1
+
+- Status: `experimental`
+- Added in v1.0.0
+- Extends: `-`
+- Required Methods: `input.openStream`, `input.closeStream`, `stream.getState`
+- Required Events: `stream.stateChanged`
+- Required Errors: `NOT_SUPPORTED`, `PERMISSION_DENIED`, `INVALID_ARGUMENT`, `INVALID_STATE`, `BUSY`, `UNAVAILABLE`
 - Notes: -
 
 ---

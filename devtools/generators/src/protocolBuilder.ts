@@ -58,6 +58,7 @@ function buildSchemas(schemas: Schema[]): Record<string, Omit<TypeDefinition, "n
     result[schema.name] = {
       kind: schema.type,
       description: schema.description,
+      ...(schema.retiredFieldIds?.length ? {retiredFieldIds:schema.retiredFieldIds} : {}),
       fields: schema.fields.map(fieldToTypeField)
     };
   }
@@ -179,6 +180,8 @@ export function buildProtocolDefinitionRaw(source: ProtocolSourceModel): Record<
   const domainByHighByte = buildSourceDomainByHighByte(source);
   return {
     ...source.protocolMeta,
+    ...(source.inputStream ? {inputStream:source.inputStream} : {}),
+    ...(source.retiredAllocations?.length ? {retiredAllocations:source.retiredAllocations} : {}),
     schemas: buildSchemas(source.schemas),
     methods: source.methods.map((method) => methodToProtocol(method, emptyNames)),
     events: source.events.map((event) => eventToProtocol(event, emptyNames)),

@@ -89,6 +89,7 @@ export interface Field {
 }
 
 export interface Schema {
+  retiredFieldIds?: number[];
   name: string;
   type: string;
   description?: string;
@@ -100,6 +101,8 @@ export interface CommonRegistryItem extends RegistryItem {
 }
 
 export interface SpecModel {
+  inputStream?: import("./inputStream.js").InputStreamWire;
+  retiredAllocations?: import("./inputStream.js").RetiredAllocation[];
   specRoot: string;
   version: Record<string, unknown>;
   config: Record<string, any>;

@@ -1,6 +1,7 @@
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { execFileSync } from "node:child_process";
+import { mkdir, copyFile } from "node:fs/promises";
 import { resolveSpecInput } from "./axtp-spec-input.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
@@ -10,8 +11,11 @@ const { loadProtocolSources } = await import(pathToFileURL(path.join(root, "devt
 const { validateSpec } = await import(pathToFileURL(path.join(root, "devtools/generators/dist/validator.js")));
 const { emitCppFiles } = await import(pathToFileURL(path.join(root, "devtools/generators/dist/emitters/cpp.js")));
 const spec = await loadProtocolSources(specRoot);
+if (spec.inputStream?.format !== "input-sample-v1") throw new Error("This development runtime requires the adopted R2 input-sample-v1 facts");
 for (const message of validateSpec(spec)) console.log(message);
 await emitCppFiles(spec, path.join(root, "include/core/protocol/generated"));
+await mkdir(path.join(root, "tests/fixtures"), {recursive:true});
+await copyFile(path.join(specRoot, "contract/test-vectors/input_stream.json"), path.join(root, "tests/fixtures/input_stream.json"));
 await resolveSpecInput(root);
 execFileSync(process.execPath, [path.join(root, "devtools/scripts/axtp-versioning.mjs"), "generate", "--runtime-name", "axtp-cpp-runtime"], {stdio:"inherit"});
 console.log(`Generated C++ artifacts from ${input.tag} (${input.commit}), sourceMode=${input.sourceMode}`);

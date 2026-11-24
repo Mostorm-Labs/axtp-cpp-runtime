@@ -222,6 +222,28 @@
       "logicalServer": "Device",
       "helloSender": "Device",
       "notes": "Device initiates the WebSocket connection but remains the Logical Server."
+    },
+    {
+      "name": "AXTP-WEBRTC-DC",
+      "family": "webrtc-datachannel",
+      "mode": "standard-framed",
+      "frameProfile": "STANDARD_FRAME",
+      "production": false,
+      "rpcEncodings": [
+        "JSON",
+        "CBOR",
+        "MSGPACK",
+        "JSON_BINARY"
+      ],
+      "supportsControl": true,
+      "supportsStream": true,
+      "physicalClient": "DataChannel initiator",
+      "physicalServer": "DataChannel peer",
+      "logicalClient": "Input producer",
+      "logicalServer": "Input consumer",
+      "helloSender": "Input consumer",
+      "usage": "Typed input over an ordered reliable binary DataChannel bound to the existing authenticated media peer.",
+      "notes": "Full Standard Frame only. CONTROL then RPC APP_READY; product text demultiplexing is outside AXTP. No per-input ACK."
     }
   ],
   "payloadTypes": [
@@ -294,6 +316,257 @@
       "Phase 1 Standard Framed runtimes must implement STREAM data packets for adopted audio/video media stream profiles."
     ]
   },
+  "inputStream": {
+    "format": "input-sample-v1",
+    "byteOrder": "big-endian",
+    "streamHeaderBytes": 16,
+    "typeBytes": 1,
+    "maxDataBytes": 4096,
+    "inputTypes": {
+      "touch": 1,
+      "mouse": 2
+    },
+    "touch": {
+      "recordBytes": 7,
+      "maxContacts": 256,
+      "sampling": "complete",
+      "phases": {
+        "down": 0,
+        "move": 1,
+        "up": 2,
+        "cancel": 3
+      },
+      "fields": [
+        {
+          "name": "contactId",
+          "offset": 0,
+          "bytes": 2,
+          "type": "uint16"
+        },
+        {
+          "name": "phase",
+          "offset": 2,
+          "bytes": 1,
+          "type": "uint8"
+        },
+        {
+          "name": "x",
+          "offset": 3,
+          "bytes": 2,
+          "type": "uint16"
+        },
+        {
+          "name": "y",
+          "offset": 5,
+          "bytes": 2,
+          "type": "uint16"
+        }
+      ]
+    },
+    "mouse": {
+      "buttons": {
+        "left": 1,
+        "right": 2,
+        "middle": 4,
+        "back": 8,
+        "forward": 16
+      },
+      "modifiers": {
+        "shift": 1,
+        "ctrl": 2,
+        "alt": 4,
+        "meta": 8
+      },
+      "wheelUnits": {
+        "detent120": 0,
+        "regionQ16_16": 1
+      },
+      "wheelPhases": {
+        "none": 0,
+        "began": 1,
+        "changed": 2,
+        "ended": 3,
+        "cancelled": 4
+      },
+      "records": [
+        {
+          "name": "move",
+          "kind": 0,
+          "bytes": 11,
+          "fields": [
+            {
+              "name": "eventKind",
+              "offset": 0,
+              "bytes": 1,
+              "type": "uint8"
+            },
+            {
+              "name": "modifiers",
+              "offset": 1,
+              "bytes": 2,
+              "type": "uint16"
+            },
+            {
+              "name": "buttons",
+              "offset": 3,
+              "bytes": 4,
+              "type": "uint32"
+            },
+            {
+              "name": "x",
+              "offset": 7,
+              "bytes": 2,
+              "type": "uint16"
+            },
+            {
+              "name": "y",
+              "offset": 9,
+              "bytes": 2,
+              "type": "uint16"
+            }
+          ]
+        },
+        {
+          "name": "buttons",
+          "kind": 1,
+          "bytes": 11,
+          "fields": [
+            {
+              "name": "eventKind",
+              "offset": 0,
+              "bytes": 1,
+              "type": "uint8"
+            },
+            {
+              "name": "modifiers",
+              "offset": 1,
+              "bytes": 2,
+              "type": "uint16"
+            },
+            {
+              "name": "buttons",
+              "offset": 3,
+              "bytes": 4,
+              "type": "uint32"
+            },
+            {
+              "name": "x",
+              "offset": 7,
+              "bytes": 2,
+              "type": "uint16"
+            },
+            {
+              "name": "y",
+              "offset": 9,
+              "bytes": 2,
+              "type": "uint16"
+            }
+          ]
+        },
+        {
+          "name": "wheel",
+          "kind": 2,
+          "bytes": 21,
+          "fields": [
+            {
+              "name": "eventKind",
+              "offset": 0,
+              "bytes": 1,
+              "type": "uint8"
+            },
+            {
+              "name": "modifiers",
+              "offset": 1,
+              "bytes": 2,
+              "type": "uint16"
+            },
+            {
+              "name": "buttons",
+              "offset": 3,
+              "bytes": 4,
+              "type": "uint32"
+            },
+            {
+              "name": "x",
+              "offset": 7,
+              "bytes": 2,
+              "type": "uint16"
+            },
+            {
+              "name": "y",
+              "offset": 9,
+              "bytes": 2,
+              "type": "uint16"
+            },
+            {
+              "name": "wheelUnit",
+              "offset": 11,
+              "bytes": 1,
+              "type": "uint8"
+            },
+            {
+              "name": "wheelPhase",
+              "offset": 12,
+              "bytes": 1,
+              "type": "uint8"
+            },
+            {
+              "name": "wheelX",
+              "offset": 13,
+              "bytes": 4,
+              "type": "int32"
+            },
+            {
+              "name": "wheelY",
+              "offset": 17,
+              "bytes": 4,
+              "type": "int32"
+            }
+          ]
+        },
+        {
+          "name": "cancel",
+          "kind": 3,
+          "bytes": 1,
+          "fields": [
+            {
+              "name": "eventKind",
+              "offset": 0,
+              "bytes": 1,
+              "type": "uint8"
+            }
+          ]
+        },
+        {
+          "name": "modifiers",
+          "kind": 4,
+          "bytes": 3,
+          "fields": [
+            {
+              "name": "eventKind",
+              "offset": 0,
+              "bytes": 1,
+              "type": "uint8"
+            },
+            {
+              "name": "modifiers",
+              "offset": 1,
+              "bytes": 2,
+              "type": "uint16"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "retiredAllocations": [
+    {
+      "kind": "method",
+      "id": 5662,
+      "domain": "cast",
+      "bitOffset": 29
+    }
+  ],
   "compatibility": {
     "legacySources": [
       "workspace/legacy-migration/planning/AXTP-Legacy-Compatibility-Reference.md",
@@ -5659,6 +5932,16 @@
           "type": "CastAirPlayControlState",
           "required": false,
           "description": "Secret-free discovery and authentication state at the P0 snapshot boundary."
+        },
+        {
+          "fieldId": 18,
+          "name": "touchback",
+          "type": "array",
+          "required": false,
+          "array": {
+            "itemType": "CastTouchbackState"
+          },
+          "description": "Per-target Touchback state; omitted for AirPlay-only receivers."
         }
       ]
     },
@@ -6309,6 +6592,13 @@
           "type": "CastAirPlayControlCapability",
           "required": false,
           "description": "Secret-free authentication and discovery observation."
+        },
+        {
+          "fieldId": 14,
+          "name": "touchback",
+          "type": "CastTouchbackCapability",
+          "required": false,
+          "description": "Required when cast.touchback is supported; never advertised for AirPlay-only presentation targets."
         }
       ]
     },
@@ -7361,6 +7651,119 @@
           "type": "bool",
           "required": false,
           "description": "Automatic Grid to Sidebar entry at two presented sources; independent of primary selection. Explicit Grid suppresses entry until full withdrawal."
+        },
+        {
+          "fieldId": 14,
+          "name": "canvasMode",
+          "type": "enum",
+          "required": false,
+          "enumValues": [
+            "adaptive",
+            "fixed"
+          ],
+          "description": "Canvas sizing policy for normalized input geometry."
+        },
+        {
+          "fieldId": 15,
+          "name": "baseWidth",
+          "type": "uint32",
+          "required": false,
+          "min": 1,
+          "max": 16384,
+          "description": "Fixed or preferred canvas width in pixels."
+        },
+        {
+          "fieldId": 16,
+          "name": "baseHeight",
+          "type": "uint32",
+          "required": false,
+          "min": 1,
+          "max": 16384,
+          "description": "Fixed or preferred canvas height in pixels."
+        },
+        {
+          "fieldId": 17,
+          "name": "maxWidth",
+          "type": "uint32",
+          "required": false,
+          "min": 1,
+          "max": 16384,
+          "description": "Adaptive canvas maximum width in pixels."
+        },
+        {
+          "fieldId": 18,
+          "name": "maxHeight",
+          "type": "uint32",
+          "required": false,
+          "min": 1,
+          "max": 16384,
+          "description": "Adaptive canvas maximum height in pixels."
+        },
+        {
+          "fieldId": 19,
+          "name": "topBarTrigger",
+          "type": "enum",
+          "required": false,
+          "enumValues": [
+            "none",
+            "top-click",
+            "canvas-click",
+            "always"
+          ],
+          "description": "Timing for appearance of the enabled receiver controls and background."
+        },
+        {
+          "fieldId": 20,
+          "name": "topBarShowCastCode",
+          "type": "bool",
+          "required": false,
+          "description": "Whether the regular Cast Code appears in the visible receiver top bar."
+        },
+        {
+          "fieldId": 21,
+          "name": "topBarShowDebug",
+          "type": "bool",
+          "required": false,
+          "description": "Whether the visible receiver top bar offers the local debugging entry."
+        },
+        {
+          "fieldId": 22,
+          "name": "startupWindowMode",
+          "type": "enum",
+          "required": false,
+          "enumValues": [
+            "fullscreen",
+            "windowed"
+          ],
+          "description": "Restart-only initial local receiver window mode."
+        },
+        {
+          "fieldId": 23,
+          "name": "topBarShowLayout",
+          "type": "bool",
+          "required": false,
+          "description": "Whether to show the layout selector at the left of the receiver chrome."
+        },
+        {
+          "fieldId": 24,
+          "name": "topBarShowMinimize",
+          "type": "bool",
+          "required": false,
+          "description": "Whether to show the window minimize button."
+        },
+        {
+          "fieldId": 25,
+          "name": "topBarShowMaximize",
+          "type": "bool",
+          "required": false,
+          "description": "Whether to show the window maximize button."
+        },
+        {
+          "fieldId": 26,
+          "name": "topBarShowBackground",
+          "type": "bool",
+          "required": false,
+          "description": "Whether to show the full-width top bar background independently of its elements."
         }
       ]
     },
@@ -7488,6 +7891,659 @@
           "type": "bool",
           "required": false,
           "description": "Automatic Grid to Sidebar entry at two presented sources; independent of primary selection. Explicit Grid suppresses entry until full withdrawal."
+        },
+        {
+          "fieldId": 14,
+          "name": "canvasMode",
+          "type": "enum",
+          "required": false,
+          "enumValues": [
+            "adaptive",
+            "fixed"
+          ],
+          "description": "Canvas sizing policy for normalized input geometry."
+        },
+        {
+          "fieldId": 15,
+          "name": "baseWidth",
+          "type": "uint32",
+          "required": false,
+          "min": 1,
+          "max": 16384,
+          "description": "Fixed or preferred canvas width in pixels."
+        },
+        {
+          "fieldId": 16,
+          "name": "baseHeight",
+          "type": "uint32",
+          "required": false,
+          "min": 1,
+          "max": 16384,
+          "description": "Fixed or preferred canvas height in pixels."
+        },
+        {
+          "fieldId": 17,
+          "name": "maxWidth",
+          "type": "uint32",
+          "required": false,
+          "min": 1,
+          "max": 16384,
+          "description": "Adaptive canvas maximum width in pixels."
+        },
+        {
+          "fieldId": 18,
+          "name": "maxHeight",
+          "type": "uint32",
+          "required": false,
+          "min": 1,
+          "max": 16384,
+          "description": "Adaptive canvas maximum height in pixels."
+        },
+        {
+          "fieldId": 19,
+          "name": "topBarTrigger",
+          "type": "enum",
+          "required": false,
+          "enumValues": [
+            "none",
+            "top-click",
+            "canvas-click",
+            "always"
+          ],
+          "description": "Timing for appearance of the enabled receiver controls and background."
+        },
+        {
+          "fieldId": 20,
+          "name": "topBarShowCastCode",
+          "type": "bool",
+          "required": false,
+          "description": "Whether the regular Cast Code appears in the visible receiver top bar."
+        },
+        {
+          "fieldId": 21,
+          "name": "topBarShowDebug",
+          "type": "bool",
+          "required": false,
+          "description": "Whether the visible receiver top bar offers the local debugging entry."
+        },
+        {
+          "fieldId": 22,
+          "name": "startupWindowMode",
+          "type": "enum",
+          "required": false,
+          "enumValues": [
+            "fullscreen",
+            "windowed"
+          ],
+          "description": "Restart-only initial local receiver window mode."
+        },
+        {
+          "fieldId": 23,
+          "name": "topBarShowLayout",
+          "type": "bool",
+          "required": false,
+          "description": "Whether to show the layout selector at the left of the receiver chrome."
+        },
+        {
+          "fieldId": 24,
+          "name": "topBarShowMinimize",
+          "type": "bool",
+          "required": false,
+          "description": "Whether to show the window minimize button."
+        },
+        {
+          "fieldId": 25,
+          "name": "topBarShowMaximize",
+          "type": "bool",
+          "required": false,
+          "description": "Whether to show the window maximize button."
+        },
+        {
+          "fieldId": 26,
+          "name": "topBarShowBackground",
+          "type": "bool",
+          "required": false,
+          "description": "Whether to show the full-width top bar background independently of its elements."
+        }
+      ]
+    },
+    {
+      "name": "CastReceiverPreferenceValues",
+      "kind": "object",
+      "description": "Receiver preference values. A mutation patch contains exactly one declared field.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "airplayName",
+          "type": "string",
+          "required": false,
+          "maxLength": 63,
+          "description": "AirPlay name preference. An empty configured name requests automatic naming."
+        },
+        {
+          "fieldId": 2,
+          "name": "airplayRandomPassword",
+          "type": "bool",
+          "required": false,
+          "description": "AirPlay random-password policy. Contains no current password."
+        },
+        {
+          "fieldId": 3,
+          "name": "controlPort",
+          "type": "uint32",
+          "required": false,
+          "min": 1,
+          "max": 65535,
+          "description": "WebSocket control port. Default is 7020. Changes apply on the next start."
+        },
+        {
+          "fieldId": 4,
+          "name": "controlListenOnLan",
+          "type": "bool",
+          "required": false,
+          "description": "Local-network WebSocket listener. Default is false for loopback only. Changes apply on the next start."
+        }
+      ]
+    },
+    {
+      "name": "CastReceiverPersistedOverrides",
+      "kind": "object",
+      "description": "Explicit receiver store overrides spanning presentation and receiver preferences. Omitted fields use defaults at next launch.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "layoutMode",
+          "type": "enum",
+          "required": false,
+          "enumValues": [
+            "grid",
+            "presentation"
+          ],
+          "description": "Selected product layout; complete source withdrawal returns to grid."
+        },
+        {
+          "fieldId": 2,
+          "name": "audioControlMode",
+          "type": "enum",
+          "required": false,
+          "enumValues": [
+            "automatic",
+            "manual"
+          ],
+          "description": "Adopted or desired control policy; not proof of sound."
+        },
+        {
+          "fieldId": 3,
+          "name": "audioMixMode",
+          "type": "enum",
+          "required": false,
+          "enumValues": [
+            "exclusive",
+            "mix"
+          ],
+          "description": "Adopted or desired audio mixing policy."
+        },
+        {
+          "fieldId": 4,
+          "name": "capacity",
+          "type": "uint32",
+          "required": false,
+          "min": 1,
+          "description": "Desired capacity or actually adopted capacity according to containing projection; applied may be limited."
+        },
+        {
+          "fieldId": 5,
+          "name": "enabledProtocols",
+          "type": "array",
+          "required": false,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Adopted or desired enable policy; not receiver readiness."
+        },
+        {
+          "fieldId": 6,
+          "name": "profileHint",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "Declared product combination profile identifier."
+        },
+        {
+          "fieldId": 7,
+          "name": "contentAdaptation",
+          "type": "enum",
+          "required": false,
+          "enumValues": [
+            "fixed",
+            "auto-fit"
+          ],
+          "description": "Content aspect adaptation independent of Layout."
+        },
+        {
+          "fieldId": 8,
+          "name": "presentationMode",
+          "type": "enum",
+          "required": false,
+          "enumValues": [
+            "manual",
+            "automatic"
+          ],
+          "description": "Meeting visual entry policy; not global audio policy."
+        },
+        {
+          "fieldId": 9,
+          "name": "presentationSidebar",
+          "type": "enum",
+          "required": false,
+          "enumValues": [
+            "left",
+            "right"
+          ],
+          "description": "Meeting rail position independent of base layoutMode."
+        },
+        {
+          "fieldId": 10,
+          "name": "presentationAudioFollow",
+          "type": "bool",
+          "required": false,
+          "description": "Remembered follow preference independent of activity and global audio control mode."
+        },
+        {
+          "fieldId": 11,
+          "name": "presentationFocusOnDoubleClick",
+          "type": "bool",
+          "required": false,
+          "description": "Remembered main-body double-click Focus entry preference; default true. Disabling restores Sidebar from Focus."
+        },
+        {
+          "fieldId": 12,
+          "name": "presentationGridOnDoubleClick",
+          "type": "bool",
+          "required": false,
+          "description": "Remembered inclusion of Grid in main-body double-click cycle; default false. Independent of Focus entry."
+        },
+        {
+          "fieldId": 13,
+          "name": "presentationAutoEnter",
+          "type": "bool",
+          "required": false,
+          "description": "Automatic Grid to Sidebar entry at two presented sources; independent of primary selection. Explicit Grid suppresses entry until full withdrawal."
+        },
+        {
+          "fieldId": 14,
+          "name": "canvasMode",
+          "type": "enum",
+          "required": false,
+          "enumValues": [
+            "adaptive",
+            "fixed"
+          ],
+          "description": "Canvas sizing policy for normalized input geometry."
+        },
+        {
+          "fieldId": 15,
+          "name": "baseWidth",
+          "type": "uint32",
+          "required": false,
+          "min": 1,
+          "max": 16384,
+          "description": "Fixed or preferred canvas width in pixels."
+        },
+        {
+          "fieldId": 16,
+          "name": "baseHeight",
+          "type": "uint32",
+          "required": false,
+          "min": 1,
+          "max": 16384,
+          "description": "Fixed or preferred canvas height in pixels."
+        },
+        {
+          "fieldId": 17,
+          "name": "maxWidth",
+          "type": "uint32",
+          "required": false,
+          "min": 1,
+          "max": 16384,
+          "description": "Adaptive canvas maximum width in pixels."
+        },
+        {
+          "fieldId": 18,
+          "name": "maxHeight",
+          "type": "uint32",
+          "required": false,
+          "min": 1,
+          "max": 16384,
+          "description": "Adaptive canvas maximum height in pixels."
+        },
+        {
+          "fieldId": 19,
+          "name": "topBarTrigger",
+          "type": "enum",
+          "required": false,
+          "enumValues": [
+            "none",
+            "top-click",
+            "canvas-click",
+            "always"
+          ],
+          "description": "Timing for appearance of the enabled receiver controls and background."
+        },
+        {
+          "fieldId": 20,
+          "name": "topBarShowCastCode",
+          "type": "bool",
+          "required": false,
+          "description": "Whether the regular Cast Code appears in the visible receiver top bar."
+        },
+        {
+          "fieldId": 21,
+          "name": "topBarShowDebug",
+          "type": "bool",
+          "required": false,
+          "description": "Whether the visible receiver top bar offers the local debugging entry."
+        },
+        {
+          "fieldId": 22,
+          "name": "startupWindowMode",
+          "type": "enum",
+          "required": false,
+          "enumValues": [
+            "fullscreen",
+            "windowed"
+          ],
+          "description": "Restart-only initial local receiver window mode."
+        },
+        {
+          "fieldId": 23,
+          "name": "topBarShowLayout",
+          "type": "bool",
+          "required": false,
+          "description": "Whether to show the layout selector at the left of the receiver chrome."
+        },
+        {
+          "fieldId": 24,
+          "name": "topBarShowMinimize",
+          "type": "bool",
+          "required": false,
+          "description": "Whether to show the window minimize button."
+        },
+        {
+          "fieldId": 25,
+          "name": "topBarShowMaximize",
+          "type": "bool",
+          "required": false,
+          "description": "Whether to show the window maximize button."
+        },
+        {
+          "fieldId": 26,
+          "name": "topBarShowBackground",
+          "type": "bool",
+          "required": false,
+          "description": "Whether to show the full-width top bar background independently of its elements."
+        },
+        {
+          "fieldId": 27,
+          "name": "airplayName",
+          "type": "string",
+          "required": false,
+          "maxLength": 63,
+          "description": "AirPlay name preference. An empty configured name requests automatic naming."
+        },
+        {
+          "fieldId": 28,
+          "name": "airplayRandomPassword",
+          "type": "bool",
+          "required": false,
+          "description": "AirPlay random-password policy. Contains no current password."
+        },
+        {
+          "fieldId": 29,
+          "name": "controlPort",
+          "type": "uint32",
+          "required": false,
+          "min": 1,
+          "max": 65535,
+          "description": "WebSocket control port. Default is 7020. Changes apply on the next start."
+        },
+        {
+          "fieldId": 30,
+          "name": "controlListenOnLan",
+          "type": "bool",
+          "required": false,
+          "description": "Local-network WebSocket listener. Default is false for loopback only. Changes apply on the next start."
+        }
+      ]
+    },
+    {
+      "name": "CastReceiverSettingsState",
+      "kind": "object",
+      "description": "Active and next-start receiver preferences plus a secret-free store observation.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "runtimeInstanceId",
+          "type": "string",
+          "required": true,
+          "maxLength": 36,
+          "description": "Canonical UUID for this receiver process lifetime."
+        },
+        {
+          "fieldId": 2,
+          "name": "storeRevision",
+          "type": "string",
+          "required": true,
+          "maxLength": 20,
+          "description": "Canonical decimal uint64 store revision or zero when absent."
+        },
+        {
+          "fieldId": 3,
+          "name": "storageState",
+          "type": "enum",
+          "required": true,
+          "enumValues": [
+            "absent",
+            "loaded",
+            "saved",
+            "invalid",
+            "unavailable"
+          ],
+          "description": "Observed condition of the saved settings."
+        },
+        {
+          "fieldId": 4,
+          "name": "backupAvailable",
+          "type": "bool",
+          "required": true,
+          "description": "A valid settings backup is available."
+        },
+        {
+          "fieldId": 5,
+          "name": "recoveredFromBackup",
+          "type": "bool",
+          "required": true,
+          "description": "The settings were read from a backup."
+        },
+        {
+          "fieldId": 6,
+          "name": "supportsPersistence",
+          "type": "bool",
+          "required": true,
+          "description": "The store and current listener policy permit an explicit save."
+        },
+        {
+          "fieldId": 7,
+          "name": "restartOnlyFields",
+          "type": "array",
+          "required": true,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Supported fields applied at restart. Includes both WS keys when supported."
+        },
+        {
+          "fieldId": 8,
+          "name": "configured",
+          "type": "CastReceiverPreferenceValues",
+          "required": true,
+          "description": "Configured preferences. For the WS endpoint this is next-start intent including defaults."
+        },
+        {
+          "fieldId": 9,
+          "name": "applied",
+          "type": "CastReceiverPreferenceValues",
+          "required": true,
+          "description": "Observed AirPlay state and currently listening WebSocket endpoint values."
+        },
+        {
+          "fieldId": 10,
+          "name": "airplayEnabled",
+          "type": "bool",
+          "required": true,
+          "description": "AirPlay is enabled in this receiver instance."
+        },
+        {
+          "fieldId": 11,
+          "name": "publishState",
+          "type": "enum",
+          "required": true,
+          "enumValues": [
+            "published",
+            "republishing",
+            "pending",
+            "failed",
+            "unpublished"
+          ],
+          "description": "Observed AirPlay discovery state."
+        },
+        {
+          "fieldId": 12,
+          "name": "pendingRestart",
+          "type": "array",
+          "required": true,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Restart-only fields with a configured value different from its applied value."
+        },
+        {
+          "fieldId": 13,
+          "name": "persistedOverrides",
+          "type": "CastReceiverPersistedOverrides",
+          "required": true,
+          "description": "Explicit settings store values without defaults."
+        }
+      ]
+    },
+    {
+      "name": "CastSetReceiverSettingsParams",
+      "kind": "object",
+      "description": "Exact single-field mutation with a store version precondition. WebSocket endpoint fields require persistence.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "runtimeInstanceId",
+          "type": "string",
+          "required": true,
+          "maxLength": 36,
+          "description": "Instance UUID from the last settings read."
+        },
+        {
+          "fieldId": 2,
+          "name": "expectedStoreRevision",
+          "type": "string",
+          "required": true,
+          "maxLength": 20,
+          "description": "Exact last read store revision as canonical decimal uint64."
+        },
+        {
+          "fieldId": 3,
+          "name": "persist",
+          "type": "bool",
+          "required": true,
+          "description": "Explicit save request. True is mandatory for either WebSocket endpoint field."
+        },
+        {
+          "fieldId": 4,
+          "name": "patch",
+          "type": "CastReceiverPreferenceValues",
+          "required": true,
+          "description": "Exactly one supported field. Unknown and multiple keys are invalid."
+        }
+      ]
+    },
+    {
+      "name": "CastRestoreReceiverSettingsParams",
+      "kind": "object",
+      "description": "Revision-checked restore request for the receiver settings store.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "runtimeInstanceId",
+          "type": "string",
+          "required": true,
+          "maxLength": 36,
+          "description": "Instance UUID from the last settings read."
+        },
+        {
+          "fieldId": 2,
+          "name": "expectedStoreRevision",
+          "type": "string",
+          "required": true,
+          "maxLength": 20,
+          "description": "Exact last read store revision as canonical decimal uint64."
+        },
+        {
+          "fieldId": 3,
+          "name": "source",
+          "type": "enum",
+          "required": true,
+          "enumValues": [
+            "defaults",
+            "backup"
+          ],
+          "description": "Reset saved overrides or restore the available backup."
+        }
+      ]
+    },
+    {
+      "name": "CastReceiverSettingsWriteResult",
+      "kind": "object",
+      "description": "A successful preference update or restore with separate storage and runtime results.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "persistenceStatus",
+          "type": "enum",
+          "required": true,
+          "enumValues": [
+            "notRequested",
+            "unchanged",
+            "stored"
+          ],
+          "description": "Save outcome. Stored confirms the write completed."
+        },
+        {
+          "fieldId": 2,
+          "name": "applicationStatus",
+          "type": "enum",
+          "required": true,
+          "enumValues": [
+            "unchanged",
+            "applied",
+            "pending",
+            "pendingRestart",
+            "failed"
+          ],
+          "description": "Runtime application state. Pending restart confirms no listener restart yet."
+        },
+        {
+          "fieldId": 3,
+          "name": "settings",
+          "type": "CastReceiverSettingsState",
+          "required": true,
+          "description": "Post-operation settings observation and new revision when saved."
         }
       ]
     },
@@ -7615,6 +8671,119 @@
           "type": "bool",
           "required": false,
           "description": "Automatic Grid to Sidebar entry at two presented sources; independent of primary selection. Explicit Grid suppresses entry until full withdrawal."
+        },
+        {
+          "fieldId": 14,
+          "name": "canvasMode",
+          "type": "enum",
+          "required": false,
+          "enumValues": [
+            "adaptive",
+            "fixed"
+          ],
+          "description": "Canvas sizing policy for normalized input geometry."
+        },
+        {
+          "fieldId": 15,
+          "name": "baseWidth",
+          "type": "uint32",
+          "required": false,
+          "min": 1,
+          "max": 16384,
+          "description": "Fixed or preferred canvas width in pixels."
+        },
+        {
+          "fieldId": 16,
+          "name": "baseHeight",
+          "type": "uint32",
+          "required": false,
+          "min": 1,
+          "max": 16384,
+          "description": "Fixed or preferred canvas height in pixels."
+        },
+        {
+          "fieldId": 17,
+          "name": "maxWidth",
+          "type": "uint32",
+          "required": false,
+          "min": 1,
+          "max": 16384,
+          "description": "Adaptive canvas maximum width in pixels."
+        },
+        {
+          "fieldId": 18,
+          "name": "maxHeight",
+          "type": "uint32",
+          "required": false,
+          "min": 1,
+          "max": 16384,
+          "description": "Adaptive canvas maximum height in pixels."
+        },
+        {
+          "fieldId": 19,
+          "name": "topBarTrigger",
+          "type": "enum",
+          "required": false,
+          "enumValues": [
+            "none",
+            "top-click",
+            "canvas-click",
+            "always"
+          ],
+          "description": "Timing for appearance of the enabled receiver controls and background."
+        },
+        {
+          "fieldId": 20,
+          "name": "topBarShowCastCode",
+          "type": "bool",
+          "required": false,
+          "description": "Whether the regular Cast Code appears in the visible receiver top bar."
+        },
+        {
+          "fieldId": 21,
+          "name": "topBarShowDebug",
+          "type": "bool",
+          "required": false,
+          "description": "Whether the visible receiver top bar offers the local debugging entry."
+        },
+        {
+          "fieldId": 22,
+          "name": "startupWindowMode",
+          "type": "enum",
+          "required": false,
+          "enumValues": [
+            "fullscreen",
+            "windowed"
+          ],
+          "description": "Restart-only initial local receiver window mode."
+        },
+        {
+          "fieldId": 23,
+          "name": "topBarShowLayout",
+          "type": "bool",
+          "required": false,
+          "description": "Whether to show the layout selector at the left of the receiver chrome."
+        },
+        {
+          "fieldId": 24,
+          "name": "topBarShowMinimize",
+          "type": "bool",
+          "required": false,
+          "description": "Whether to show the window minimize button."
+        },
+        {
+          "fieldId": 25,
+          "name": "topBarShowMaximize",
+          "type": "bool",
+          "required": false,
+          "description": "Whether to show the window maximize button."
+        },
+        {
+          "fieldId": 26,
+          "name": "topBarShowBackground",
+          "type": "bool",
+          "required": false,
+          "description": "Whether to show the full-width top bar background independently of its elements."
         }
       ]
     },
@@ -7822,7 +8991,7 @@
           "array": {
             "itemType": "string"
           },
-          "description": "Unique supported settings keys; meeting extension adds four separately advertised keys."
+          "description": "Unique supported settings keys including independently advertised extensions."
         },
         {
           "fieldId": 2,
@@ -7897,6 +9066,34 @@
           "type": "uint32",
           "required": false,
           "description": "Required when enabledProtocols supported; zero explicitly permits empty if control/settings can remain available independently."
+        },
+        {
+          "fieldId": 11,
+          "name": "canvasModes",
+          "type": "array",
+          "required": false,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Supported canvas sizing modes"
+        },
+        {
+          "fieldId": 12,
+          "name": "canvasMaxWidth",
+          "type": "uint32",
+          "required": false,
+          "min": 1,
+          "max": 16384,
+          "description": "Maximum supported canvas width in pixels."
+        },
+        {
+          "fieldId": 13,
+          "name": "canvasMaxHeight",
+          "type": "uint32",
+          "required": false,
+          "min": 1,
+          "max": 16384,
+          "description": "Maximum supported canvas height in pixels."
         }
       ]
     },
@@ -8850,6 +10047,667 @@
           "type": "CastAirPlayControlState",
           "required": true,
           "description": "Complete secret-free state."
+        }
+      ]
+    },
+    {
+      "name": "CastTouchbackTarget",
+      "kind": "object",
+      "description": "Per-route target identity for touchback control.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "sessionId",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Cast session identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "sessionGeneration",
+          "type": "string",
+          "required": true,
+          "maxLength": 32,
+          "description": "Decimal-string session generation."
+        },
+        {
+          "fieldId": 3,
+          "name": "slotId",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Per-route slot identifier."
+        },
+        {
+          "fieldId": 4,
+          "name": "bindingGeneration",
+          "type": "string",
+          "required": true,
+          "maxLength": 32,
+          "description": "Decimal-string binding generation."
+        },
+        {
+          "fieldId": 5,
+          "name": "lifecycleGeneration",
+          "type": "string",
+          "required": true,
+          "maxLength": 32,
+          "description": "Decimal-string receiver lifecycle generation."
+        }
+      ]
+    },
+    {
+      "name": "CastTouchbackTargetRequest",
+      "kind": "object",
+      "description": "Selector for one cast target.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "target",
+          "type": "CastTouchbackTarget",
+          "required": true,
+          "description": "Complete target identity and generation fence."
+        }
+      ]
+    },
+    {
+      "name": "CastTouchbackState",
+      "kind": "object",
+      "description": "Per-target touchback state with independent gates and geometry fencing.",
+      "retiredFieldIds": [
+        5,
+        6,
+        9,
+        12,
+        13
+      ],
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "target",
+          "type": "CastTouchbackTarget",
+          "required": true,
+          "description": "Complete target identity."
+        },
+        {
+          "fieldId": 2,
+          "name": "receiverOptIn",
+          "type": "bool",
+          "required": true,
+          "description": "Receiver-local touchback gate."
+        },
+        {
+          "fieldId": 3,
+          "name": "controllerRequested",
+          "type": "bool",
+          "required": true,
+          "description": "Launcher/controller requested gate."
+        },
+        {
+          "fieldId": 4,
+          "name": "effectiveEnabled",
+          "type": "bool",
+          "required": true,
+          "description": "Computed effective gate; true only when both gates allow input."
+        },
+        {
+          "fieldId": 7,
+          "name": "resolutionPreference",
+          "type": "enum",
+          "required": true,
+          "enumValues": [
+            "inherit",
+            "prefer1080p"
+          ],
+          "description": "Independent source quality preference; normalized input layout does not change."
+        },
+        {
+          "fieldId": 8,
+          "name": "streamId",
+          "type": "uint32",
+          "required": false,
+          "description": "Active input.stream identifier."
+        },
+        {
+          "fieldId": 10,
+          "name": "canvasRevision",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Canvas revision bound to this target."
+        },
+        {
+          "fieldId": 11,
+          "name": "geometryRevision",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Geometry revision bound to this target."
+        },
+        {
+          "fieldId": 14,
+          "name": "revision",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Monotonic touchback state revision."
+        },
+        {
+          "fieldId": 15,
+          "name": "diagnosticReason",
+          "type": "string",
+          "required": false,
+          "maxLength": 256,
+          "description": "Bounded diagnostic reason."
+        },
+        {
+          "fieldId": 16,
+          "name": "acceptedInputTypes",
+          "type": "array",
+          "required": true,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Actual accepted types while active; empty otherwise."
+        },
+        {
+          "fieldId": 17,
+          "name": "lifecycleState",
+          "type": "enum",
+          "required": true,
+          "enumValues": [
+            "inactive",
+            "opening",
+            "active",
+            "closing",
+            "faulted",
+            "cleanup_blocked"
+          ],
+          "description": "Truthful per-target input owner lifecycle."
+        },
+        {
+          "fieldId": 18,
+          "name": "format",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "Actual opened format when a context exists."
+        },
+        {
+          "fieldId": 19,
+          "name": "resolutionState",
+          "type": "enum",
+          "required": false,
+          "enumValues": [
+            "inherit",
+            "pending",
+            "applied",
+            "degraded",
+            "unsupported",
+            "failed"
+          ],
+          "description": "Actual source-quality request state, separate from input readiness and geometry."
+        }
+      ]
+    },
+    {
+      "name": "CastTouchbackEnabledRequest",
+      "kind": "object",
+      "description": "Request to set the controller touchback gate for one target.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "target",
+          "type": "CastTouchbackTarget",
+          "required": true,
+          "description": "Target identity and generation fence."
+        },
+        {
+          "fieldId": 2,
+          "name": "enabled",
+          "type": "bool",
+          "required": true,
+          "description": "Requested controller gate."
+        },
+        {
+          "fieldId": 3,
+          "name": "commandId",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Idempotency key."
+        }
+      ]
+    },
+    {
+      "name": "CastTouchbackResolutionRequest",
+      "kind": "object",
+      "description": "Request to set touchback coordinate resolution preference.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "target",
+          "type": "CastTouchbackTarget",
+          "required": true,
+          "description": "Target identity and generation fence."
+        },
+        {
+          "fieldId": 2,
+          "name": "resolutionPreference",
+          "type": "enum",
+          "required": true,
+          "enumValues": [
+            "inherit",
+            "prefer1080p"
+          ],
+          "description": "Requested sender source-quality preference; packet coordinates remain normalized."
+        },
+        {
+          "fieldId": 3,
+          "name": "commandId",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Idempotency key."
+        }
+      ]
+    },
+    {
+      "name": "CastTouchbackChangedEvent",
+      "kind": "object",
+      "description": "Per-target touchback state change event.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "state",
+          "type": "CastTouchbackState",
+          "required": true,
+          "description": "Current target state."
+        },
+        {
+          "fieldId": 2,
+          "name": "changedFields",
+          "type": "array",
+          "required": true,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Changed state fields."
+        },
+        {
+          "fieldId": 3,
+          "name": "accepted",
+          "type": "bool",
+          "required": true,
+          "description": "Whether the owner lane accepted the triggering request."
+        }
+      ]
+    },
+    {
+      "name": "CastGestureSettings",
+      "kind": "object",
+      "description": "Receiver touch-to-mouse interpretation; physical wheel input never uses scrollSpeed. Omitted scrollSpeed means 1x.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "rightClick",
+          "type": "enum",
+          "required": true,
+          "enumValues": [
+            "two-finger-tap",
+            "long-press",
+            "both"
+          ],
+          "description": "Enabled right-click gesture."
+        },
+        {
+          "fieldId": 2,
+          "name": "rightHoldMs",
+          "type": "uint32",
+          "required": true,
+          "min": 600,
+          "max": 2000,
+          "description": "Stationary hold threshold in milliseconds."
+        },
+        {
+          "fieldId": 3,
+          "name": "scrollDirection",
+          "type": "enum",
+          "required": true,
+          "enumValues": [
+            "follow-finger",
+            "reverse"
+          ],
+          "description": "Receiver gesture direction mapping."
+        },
+        {
+          "fieldId": 4,
+          "name": "feedback",
+          "type": "bool",
+          "required": true,
+          "description": "Show local gesture feedback."
+        },
+        {
+          "fieldId": 5,
+          "name": "scrollSpeed",
+          "type": "number",
+          "required": false,
+          "min": 0.5,
+          "max": 4,
+          "description": "Finite gesture scroll multiplier; defaults to 1."
+        }
+      ]
+    },
+    {
+      "name": "CastInputSourceInfo",
+      "kind": "object",
+      "description": "Authenticated integration metadata; never substitutes for consent or openStream acceptance.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "platform",
+          "type": "string",
+          "required": true,
+          "maxLength": 64,
+          "description": "Actual source platform or unknown."
+        },
+        {
+          "fieldId": 2,
+          "name": "clientKind",
+          "type": "string",
+          "required": true,
+          "maxLength": 64,
+          "description": "Actual integration kind or unknown."
+        },
+        {
+          "fieldId": 3,
+          "name": "product",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Actual integration product or unknown."
+        },
+        {
+          "fieldId": 4,
+          "name": "displaySurface",
+          "type": "string",
+          "required": true,
+          "maxLength": 64,
+          "description": "Actual selected display surface or unknown."
+        },
+        {
+          "fieldId": 5,
+          "name": "displayRole",
+          "type": "string",
+          "required": false,
+          "maxLength": 64,
+          "description": "Observed display role when available."
+        }
+      ]
+    },
+    {
+      "name": "CastInputModeState",
+      "kind": "object",
+      "description": "Receiver interpretation policy and observed lifecycle for an exact target; native never means a different wire packet mode.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "target",
+          "type": "CastTouchbackTarget",
+          "required": true,
+          "description": "Exact generation-fenced target."
+        },
+        {
+          "fieldId": 2,
+          "name": "inputMode",
+          "type": "enum",
+          "required": true,
+          "enumValues": [
+            "native",
+            "touch-to-mouse"
+          ],
+          "description": "Receiver input interpretation policy."
+        },
+        {
+          "fieldId": 3,
+          "name": "gestureSettings",
+          "type": "CastGestureSettings",
+          "required": true,
+          "description": "Effective receiver gesture settings."
+        },
+        {
+          "fieldId": 4,
+          "name": "switching",
+          "type": "bool",
+          "required": true,
+          "description": "Owner switch is pending; acceptance is not activation proof."
+        },
+        {
+          "fieldId": 5,
+          "name": "supported",
+          "type": "bool",
+          "required": true,
+          "description": "Source can offer the receiver input path."
+        },
+        {
+          "fieldId": 6,
+          "name": "source",
+          "type": "CastInputSourceInfo",
+          "required": true,
+          "description": "Authenticated source metadata."
+        },
+        {
+          "fieldId": 7,
+          "name": "gestureControlSupported",
+          "type": "bool",
+          "required": true,
+          "description": "Source supports receiver touch-to-mouse interpretation."
+        },
+        {
+          "fieldId": 8,
+          "name": "state",
+          "type": "CastTouchbackState",
+          "required": true,
+          "description": "Current per-target gates and input lifecycle."
+        }
+      ]
+    },
+    {
+      "name": "CastSetInputModeRequest",
+      "kind": "object",
+      "description": "Set at least one of inputMode and gestureSettings atomically for the exact target. Unknown optional fields are ignored. Command identity is scoped to the current runtime with bounded dedup.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "target",
+          "type": "CastTouchbackTarget",
+          "required": true,
+          "description": "Exact generation-fenced target."
+        },
+        {
+          "fieldId": 2,
+          "name": "commandId",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Nonempty idempotency key; reuse with different method or content conflicts."
+        },
+        {
+          "fieldId": 3,
+          "name": "inputMode",
+          "type": "enum",
+          "required": false,
+          "enumValues": [
+            "native",
+            "touch-to-mouse"
+          ],
+          "description": "Receiver interpretation policy."
+        },
+        {
+          "fieldId": 4,
+          "name": "gestureSettings",
+          "type": "CastGestureSettings",
+          "required": false,
+          "description": "Full receiver gesture settings."
+        },
+        {
+          "fieldId": 5,
+          "name": "controlVersion",
+          "type": "uint32",
+          "required": true,
+          "description": "Must be 1."
+        },
+        {
+          "fieldId": 6,
+          "name": "runtimeInstanceId",
+          "type": "string",
+          "required": true,
+          "maxLength": 36,
+          "description": "Current receiver runtime UUID from capabilities."
+        }
+      ]
+    },
+    {
+      "name": "CastTouchbackMasterState",
+      "kind": "object",
+      "description": "Runtime-scoped receiver gate and monotonic canonical decimal revision. Turning on grants no target consent; turning off begins owner cleanup.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "enabled",
+          "type": "bool",
+          "required": true,
+          "description": "Receiver-wide input gate intent."
+        },
+        {
+          "fieldId": 2,
+          "name": "revision",
+          "type": "string",
+          "required": true,
+          "maxLength": 20,
+          "description": "Canonical uint64 decimal gate revision."
+        },
+        {
+          "fieldId": 3,
+          "name": "runtimeInstanceId",
+          "type": "string",
+          "required": true,
+          "maxLength": 36,
+          "description": "Receiver runtime UUID; revisions only compare within this instance."
+        }
+      ]
+    },
+    {
+      "name": "CastSetTouchbackMasterRequest",
+      "kind": "object",
+      "description": "Runtime-fenced receiver-wide gate request with bounded dedup. Cleanup is observed through each target lifecycle, not implied by success.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "enabled",
+          "type": "bool",
+          "required": true,
+          "description": "Requested receiver input gate."
+        },
+        {
+          "fieldId": 2,
+          "name": "commandId",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Nonempty idempotency key; reuse with different method or content conflicts."
+        },
+        {
+          "fieldId": 3,
+          "name": "controlVersion",
+          "type": "uint32",
+          "required": true,
+          "description": "Must be 1."
+        },
+        {
+          "fieldId": 4,
+          "name": "runtimeInstanceId",
+          "type": "string",
+          "required": true,
+          "maxLength": 36,
+          "description": "Current receiver runtime UUID from capabilities."
+        }
+      ]
+    },
+    {
+      "name": "CastTouchbackMasterChangedEvent",
+      "kind": "object",
+      "description": "Replace receiver-wide gate state; gaps or reconnect require a fresh query.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "state",
+          "type": "CastTouchbackMasterState",
+          "required": true,
+          "description": "Current complete receiver-wide gate state."
+        }
+      ]
+    },
+    {
+      "name": "CastTouchbackCapability",
+      "kind": "object",
+      "description": "Capability descriptor for cast.touchback; AirPlay receivers do not advertise this capability.",
+      "retiredFieldIds": [
+        3
+      ],
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "capability",
+          "type": "string",
+          "required": true,
+          "maxLength": 32,
+          "description": "Fixed capability name cast.touchback."
+        },
+        {
+          "fieldId": 2,
+          "name": "protocols",
+          "type": "array",
+          "required": true,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Protocol paths supporting touchback, such as webcast and hid; airplay is excluded."
+        },
+        {
+          "fieldId": 4,
+          "name": "supportsPerTarget",
+          "type": "bool",
+          "required": true,
+          "description": "Whether state is independently controlled for each route."
+        },
+        {
+          "fieldId": 5,
+          "name": "supportsControlPlane",
+          "type": "bool",
+          "required": true,
+          "description": "Whether launcher control-plane gate methods are supported."
+        },
+        {
+          "fieldId": 6,
+          "name": "inputTypes",
+          "type": "array",
+          "required": true,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Actually implemented capture semantics for the product route."
+        },
+        {
+          "fieldId": 7,
+          "name": "formats",
+          "type": "array",
+          "required": true,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Explicit supported typed input formats."
         }
       ]
     },
@@ -9984,6 +11842,530 @@
           "type": "FirmwareUpdateErrorInfo",
           "required": false,
           "description": "Error details when state is failed."
+        }
+      ]
+    },
+    {
+      "name": "InputStreamTarget",
+      "kind": "object",
+      "description": "Complete target identity used to fence an input stream against stale sessions and bindings.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "sessionId",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Stable cast session identifier."
+        },
+        {
+          "fieldId": 2,
+          "name": "sessionGeneration",
+          "type": "string",
+          "required": true,
+          "maxLength": 32,
+          "description": "Decimal-string session generation."
+        },
+        {
+          "fieldId": 3,
+          "name": "slotId",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Per-route or per-display slot identifier."
+        },
+        {
+          "fieldId": 4,
+          "name": "bindingGeneration",
+          "type": "string",
+          "required": true,
+          "maxLength": 32,
+          "description": "Decimal-string binding generation for the selected route."
+        },
+        {
+          "fieldId": 5,
+          "name": "lifecycleGeneration",
+          "type": "string",
+          "required": true,
+          "maxLength": 32,
+          "description": "Decimal-string receiver lifecycle generation."
+        }
+      ]
+    },
+    {
+      "name": "InputOpenStreamParams",
+      "kind": "object",
+      "description": "Request to open the canonical input.stream touchback business stream.",
+      "retiredFieldIds": [
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "controlVersion",
+          "type": "uint32",
+          "required": true,
+          "min": 1,
+          "max": 1,
+          "description": "Control-plane contract version."
+        },
+        {
+          "fieldId": 2,
+          "name": "runtimeInstanceId",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Runtime instance that owns the request."
+        },
+        {
+          "fieldId": 3,
+          "name": "target",
+          "type": "InputStreamTarget",
+          "required": true,
+          "description": "Target identity and generation fence."
+        },
+        {
+          "fieldId": 4,
+          "name": "streamKind",
+          "type": "enum",
+          "required": true,
+          "enumValues": [
+            "touchback"
+          ],
+          "description": "Business stream kind; v1 is touchback."
+        },
+        {
+          "fieldId": 5,
+          "name": "format",
+          "type": "enum",
+          "required": true,
+          "enumValues": [
+            "input-sample-v1"
+          ],
+          "description": "Canonical binary payload format after the AXTP STREAM header."
+        },
+        {
+          "fieldId": 16,
+          "name": "commandId",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Idempotency key for the open request."
+        },
+        {
+          "fieldId": 17,
+          "name": "sourceBindingId",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Opaque source binding supplied by the authenticated media/device integration; validated against current local capture/input region."
+        },
+        {
+          "fieldId": 18,
+          "name": "inputTypes",
+          "type": "array",
+          "required": true,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Nonempty unique offered semantics: touch and/or mouse."
+        },
+        {
+          "fieldId": 19,
+          "name": "maxDataBytes",
+          "type": "uint32",
+          "required": true,
+          "min": 8,
+          "max": 4096,
+          "description": "Maximum input data bytes, including inputType; excludes STREAM and Frame."
+        },
+        {
+          "fieldId": 20,
+          "name": "touch",
+          "type": "InputTouchConstraints",
+          "required": false,
+          "description": "Required exactly when touch is offered."
+        },
+        {
+          "fieldId": 21,
+          "name": "mouse",
+          "type": "InputMouseConstraints",
+          "required": false,
+          "description": "Required exactly when mouse is offered."
+        }
+      ]
+    },
+    {
+      "name": "InputOpenStreamResult",
+      "kind": "object",
+      "description": "Result of input.openStream negotiation.",
+      "retiredFieldIds": [
+        2,
+        3,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "streamId",
+          "type": "uint32",
+          "required": true,
+          "min": 1,
+          "description": "AXTP STREAM identifier."
+        },
+        {
+          "fieldId": 4,
+          "name": "format",
+          "type": "enum",
+          "required": true,
+          "enumValues": [
+            "input-sample-v1"
+          ],
+          "description": "Canonical binary payload format."
+        },
+        {
+          "fieldId": 10,
+          "name": "revision",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Receiver input stream state revision."
+        },
+        {
+          "fieldId": 11,
+          "name": "accepted",
+          "type": "bool",
+          "required": true,
+          "description": "True only when authentication, current binding, permission, geometry, exclusive native owner and preparation have succeeded."
+        },
+        {
+          "fieldId": 12,
+          "name": "acceptedInputTypes",
+          "type": "array",
+          "required": true,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Nonempty unique subset of offered input types."
+        },
+        {
+          "fieldId": 13,
+          "name": "maxDataBytes",
+          "type": "uint32",
+          "required": true,
+          "min": 8,
+          "max": 4096,
+          "description": "Actual input data budget, no greater than request/native/transport limits."
+        },
+        {
+          "fieldId": 14,
+          "name": "touch",
+          "type": "InputTouchConstraints",
+          "required": false,
+          "description": "Present exactly when touch is accepted."
+        },
+        {
+          "fieldId": 15,
+          "name": "mouse",
+          "type": "InputMouseConstraints",
+          "required": false,
+          "description": "Present exactly when mouse is accepted."
+        }
+      ]
+    },
+    {
+      "name": "InputCloseStreamParams",
+      "kind": "object",
+      "description": "Close an immutable input context; failed native cleanup remains retryable and never reports closed.",
+      "retiredFieldIds": [
+        6
+      ],
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "controlVersion",
+          "type": "uint32",
+          "required": true,
+          "min": 1,
+          "max": 1,
+          "description": "Control-plane contract version."
+        },
+        {
+          "fieldId": 2,
+          "name": "runtimeInstanceId",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Runtime instance that owns the request."
+        },
+        {
+          "fieldId": 3,
+          "name": "target",
+          "type": "InputStreamTarget",
+          "required": true,
+          "description": "Target identity and generation fence."
+        },
+        {
+          "fieldId": 4,
+          "name": "streamKind",
+          "type": "enum",
+          "required": true,
+          "enumValues": [
+            "touchback"
+          ],
+          "description": "Business stream kind; v1 is touchback."
+        },
+        {
+          "fieldId": 5,
+          "name": "streamId",
+          "type": "uint32",
+          "required": true,
+          "min": 1,
+          "description": "AXTP STREAM identifier to close."
+        },
+        {
+          "fieldId": 7,
+          "name": "reason",
+          "type": "enum",
+          "required": false,
+          "enumValues": [
+            "requested",
+            "route_changed",
+            "disconnect",
+            "timeout",
+            "shutdown",
+            "profile_failure"
+          ],
+          "description": "Reason for closing the stream."
+        },
+        {
+          "fieldId": 8,
+          "name": "finalSeqId",
+          "type": "uint32",
+          "required": false,
+          "description": "Last sequence number accepted before close."
+        },
+        {
+          "fieldId": 9,
+          "name": "commandId",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Idempotency key for the close request."
+        }
+      ]
+    },
+    {
+      "name": "InputCloseStreamResult",
+      "kind": "object",
+      "description": "Result of input.closeStream.",
+      "retiredFieldIds": [
+        2
+      ],
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "streamId",
+          "type": "uint32",
+          "required": true,
+          "description": "AXTP STREAM identifier."
+        },
+        {
+          "fieldId": 3,
+          "name": "closed",
+          "type": "bool",
+          "required": true,
+          "description": "True only after all native state owned by this context is confirmed released; cleanupPending is an UNAVAILABLE error."
+        },
+        {
+          "fieldId": 4,
+          "name": "alreadyClosed",
+          "type": "bool",
+          "required": false,
+          "default": false,
+          "description": "Whether the stream was already closed and the operation converged idempotently."
+        },
+        {
+          "fieldId": 5,
+          "name": "revision",
+          "type": "string",
+          "required": true,
+          "maxLength": 128,
+          "description": "Receiver input stream state revision after close."
+        }
+      ]
+    },
+    {
+      "name": "InputStreamCapability",
+      "kind": "object",
+      "description": "Capability descriptor for input.stream.",
+      "retiredFieldIds": [
+        4,
+        6,
+        7,
+        8,
+        9,
+        10
+      ],
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "capability",
+          "type": "string",
+          "required": true,
+          "maxLength": 32,
+          "description": "Fixed capability name input.stream."
+        },
+        {
+          "fieldId": 2,
+          "name": "direction",
+          "type": "enum",
+          "required": true,
+          "enumValues": [
+            "receiver_to_source"
+          ],
+          "description": "Touchback data flows from the receiver to the source."
+        },
+        {
+          "fieldId": 3,
+          "name": "formats",
+          "type": "array",
+          "required": true,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Explicit layouts supported by this implementation; this revision defines input-sample-v1."
+        },
+        {
+          "fieldId": 5,
+          "name": "reliability",
+          "type": "enum",
+          "required": true,
+          "enumValues": [
+            "ordered_reliable"
+          ],
+          "description": "Data-channel delivery requirement; ordinary packets have no application ACK."
+        },
+        {
+          "fieldId": 11,
+          "name": "inputTypes",
+          "type": "array",
+          "required": true,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Implemented input semantics, distinct from attached physical devices."
+        },
+        {
+          "fieldId": 12,
+          "name": "maxDataBytes",
+          "type": "uint32",
+          "required": true,
+          "min": 8,
+          "max": 4096,
+          "description": "Maximum input data bytes including type."
+        },
+        {
+          "fieldId": 13,
+          "name": "touch",
+          "type": "InputTouchConstraints",
+          "required": false,
+          "description": "Present exactly when touch is implemented."
+        },
+        {
+          "fieldId": 14,
+          "name": "mouse",
+          "type": "InputMouseConstraints",
+          "required": false,
+          "description": "Present exactly when mouse is implemented."
+        },
+        {
+          "fieldId": 15,
+          "name": "profiles",
+          "type": "array",
+          "required": true,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Implemented input profiles; AXTP-TYPED-INPUT-V1 requires the common stream-state subset."
+        }
+      ]
+    },
+    {
+      "name": "InputTouchConstraints",
+      "kind": "object",
+      "description": "Limits include all records in one complete sample, including terminal records.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "maxContacts",
+          "type": "uint16",
+          "required": true,
+          "min": 1,
+          "max": 256,
+          "description": "Maximum records in a complete Touch sample; bounded by native complete-frame capacity and floor((maxDataBytes-1)/7)."
+        }
+      ]
+    },
+    {
+      "name": "InputMouseConstraints",
+      "kind": "object",
+      "description": "Actually supported logical absolute Mouse features; unsupported actions never silently convert.",
+      "fields": [
+        {
+          "fieldId": 1,
+          "name": "buttonsMask",
+          "type": "uint32",
+          "required": true,
+          "min": 0,
+          "max": 31,
+          "description": "Allowed buttons: Left=1, Right=2, Middle=4, Back=8, Forward=16."
+        },
+        {
+          "fieldId": 2,
+          "name": "modifierMask",
+          "type": "uint16",
+          "required": true,
+          "min": 0,
+          "max": 15,
+          "description": "Allowed Shift=1, Ctrl=2, Alt=4, Meta=8; nonzero requires reliable owned release."
+        },
+        {
+          "fieldId": 3,
+          "name": "allowChords",
+          "type": "bool",
+          "required": true,
+          "description": "Whether more than one logical button can be held."
+        },
+        {
+          "fieldId": 4,
+          "name": "wheelUnits",
+          "type": "array",
+          "required": true,
+          "array": {
+            "itemType": "string"
+          },
+          "description": "Unique supported units: detent120 and/or regionQ16_16; empty disables Wheel."
+        },
+        {
+          "fieldId": 5,
+          "name": "continuousScroll",
+          "type": "bool",
+          "required": true,
+          "description": "Requires regionQ16_16 and phase/anchor support; otherwise false."
         }
       ]
     },
@@ -16585,6 +18967,311 @@
       ]
     },
     {
+      "name": "cast.getTouchbackState",
+      "description": "Return per-target gates, actual input lifecycle, accepted types and presentation state.",
+      "methodId": 5660,
+      "bitOffset": 27,
+      "domain": "cast",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "CastTouchbackTargetRequest"
+      },
+      "response": {
+        "type": "CastTouchbackState"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "cast.touchback"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "INVALID_ARGUMENT",
+        "NOT_FOUND",
+        "UNAVAILABLE"
+      ]
+    },
+    {
+      "name": "cast.setTouchbackEnabled",
+      "description": "Set the launcher/controller touchback gate for one cast target.",
+      "methodId": 5661,
+      "bitOffset": 28,
+      "domain": "cast",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "CastTouchbackEnabledRequest"
+      },
+      "response": {
+        "type": "CastTouchbackState"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "cast.touchback"
+      ],
+      "events": [
+        "cast.touchbackChanged"
+      ],
+      "errors": [
+        "SUCCESS",
+        "PERMISSION_DENIED",
+        "INVALID_ARGUMENT",
+        "INVALID_STATE",
+        "NOT_FOUND",
+        "UNAVAILABLE"
+      ]
+    },
+    {
+      "name": "cast.setTouchbackResolutionPreference",
+      "description": "Set the touchback source-resolution preference for one cast target.",
+      "methodId": 5663,
+      "bitOffset": 30,
+      "domain": "cast",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "CastTouchbackResolutionRequest"
+      },
+      "response": {
+        "type": "CastTouchbackState"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "cast.touchback"
+      ],
+      "events": [
+        "cast.touchbackChanged"
+      ],
+      "errors": [
+        "SUCCESS",
+        "INVALID_ARGUMENT",
+        "INVALID_STATE",
+        "NOT_FOUND",
+        "UNAVAILABLE"
+      ]
+    },
+    {
+      "name": "cast.getInputMode",
+      "description": "Query receiver input interpretation, gesture settings and authenticated source metadata.",
+      "methodId": 5664,
+      "bitOffset": 31,
+      "domain": "cast",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "CastTouchbackTargetRequest"
+      },
+      "response": {
+        "type": "CastInputModeState"
+      },
+      "encodings": [
+        "json"
+      ],
+      "capabilities": [
+        "cast.touchback"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "INVALID_ARGUMENT",
+        "INVALID_STATE",
+        "BUSY",
+        "NOT_SUPPORTED",
+        "UNAVAILABLE"
+      ]
+    },
+    {
+      "name": "cast.setInputMode",
+      "description": "Set receiver input interpretation or gesture settings; never changes the typed input wire format.",
+      "methodId": 5665,
+      "bitOffset": 32,
+      "domain": "cast",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "CastSetInputModeRequest"
+      },
+      "response": {
+        "type": "CastInputModeState"
+      },
+      "encodings": [
+        "json"
+      ],
+      "capabilities": [
+        "cast.touchback"
+      ],
+      "events": [
+        "cast.touchbackChanged"
+      ],
+      "errors": [
+        "SUCCESS",
+        "INVALID_ARGUMENT",
+        "INVALID_STATE",
+        "BUSY",
+        "NOT_SUPPORTED",
+        "UNAVAILABLE"
+      ]
+    },
+    {
+      "name": "cast.getTouchbackMaster",
+      "description": "Query the receiver-wide input gate; enabled does not grant per-target consent.",
+      "methodId": 5666,
+      "bitOffset": 33,
+      "domain": "cast",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "Empty"
+      },
+      "response": {
+        "type": "CastTouchbackMasterState"
+      },
+      "encodings": [
+        "json"
+      ],
+      "capabilities": [
+        "cast.touchback"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "INVALID_ARGUMENT",
+        "INVALID_STATE",
+        "BUSY",
+        "NOT_SUPPORTED",
+        "UNAVAILABLE"
+      ]
+    },
+    {
+      "name": "cast.setTouchbackMaster",
+      "description": "Set the receiver-wide input gate; disabling releases all input owners and enabling never replays input.",
+      "methodId": 5667,
+      "bitOffset": 34,
+      "domain": "cast",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "CastSetTouchbackMasterRequest"
+      },
+      "response": {
+        "type": "CastTouchbackMasterState"
+      },
+      "encodings": [
+        "json"
+      ],
+      "capabilities": [
+        "cast.touchback"
+      ],
+      "events": [
+        "cast.touchbackMasterChanged"
+      ],
+      "errors": [
+        "SUCCESS",
+        "INVALID_ARGUMENT",
+        "INVALID_STATE",
+        "BUSY",
+        "NOT_SUPPORTED",
+        "UNAVAILABLE"
+      ]
+    },
+    {
+      "name": "cast.getReceiverSettings",
+      "description": "Read configured and applied receiver startup preferences and the persisted override revision.",
+      "methodId": 5668,
+      "bitOffset": 35,
+      "domain": "cast",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "Empty"
+      },
+      "response": {
+        "type": "CastReceiverSettingsState"
+      },
+      "encodings": [
+        "json"
+      ],
+      "capabilities": [
+        "cast.receiverSettings"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "INVALID_ARGUMENT",
+        "UNAVAILABLE"
+      ]
+    },
+    {
+      "name": "cast.setReceiverSettings",
+      "description": "Update one receiver preference with runtime and store revision checks. Saving an endpoint change takes effect at next startup.",
+      "methodId": 5669,
+      "bitOffset": 36,
+      "domain": "cast",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "CastSetReceiverSettingsParams"
+      },
+      "response": {
+        "type": "CastReceiverSettingsWriteResult"
+      },
+      "encodings": [
+        "json"
+      ],
+      "capabilities": [
+        "cast.receiverSettings"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "INVALID_ARGUMENT",
+        "INVALID_STATE",
+        "BUSY",
+        "UNAVAILABLE",
+        "INTERNAL_ERROR"
+      ]
+    },
+    {
+      "name": "cast.restoreReceiverSettings",
+      "description": "Restore receiver settings defaults or an available backup after the runtime and store revision checks.",
+      "methodId": 5670,
+      "bitOffset": 37,
+      "domain": "cast",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "CastRestoreReceiverSettingsParams"
+      },
+      "response": {
+        "type": "CastReceiverSettingsWriteResult"
+      },
+      "encodings": [
+        "json"
+      ],
+      "capabilities": [
+        "cast.receiverSettings"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "INVALID_ARGUMENT",
+        "INVALID_STATE",
+        "BUSY",
+        "UNAVAILABLE",
+        "INTERNAL_ERROR"
+      ]
+    },
+    {
       "name": "device.getInfo",
       "description": "Return the current endpoint main device identity, product, hardware, OS, software, AXTP runtime, and optional capability summary.",
       "methodId": 257,
@@ -16825,6 +19512,69 @@
         "SUCCESS",
         "NOT_FOUND",
         "FW_TRANSFER_NOT_STARTED"
+      ]
+    },
+    {
+      "name": "input.openStream",
+      "description": "Prepare a new immutable input context and return actually accepted input types and native limits.",
+      "methodId": 2561,
+      "bitOffset": 0,
+      "domain": "input",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "InputOpenStreamParams"
+      },
+      "response": {
+        "type": "InputOpenStreamResult"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "input.stream"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "NOT_SUPPORTED",
+        "PERMISSION_DENIED",
+        "INVALID_ARGUMENT",
+        "INVALID_STATE",
+        "BUSY",
+        "UNAVAILABLE"
+      ]
+    },
+    {
+      "name": "input.closeStream",
+      "description": "Fence and release all input owned by an authenticated session and stream; acknowledge closed only after confirmed cleanup.",
+      "methodId": 2562,
+      "bitOffset": 1,
+      "domain": "input",
+      "since": "1.0.0",
+      "status": "draft",
+      "request": {
+        "type": "InputCloseStreamParams"
+      },
+      "response": {
+        "type": "InputCloseStreamResult"
+      },
+      "encodings": [
+        "json",
+        "tlv"
+      ],
+      "capabilities": [
+        "input.stream"
+      ],
+      "events": [],
+      "errors": [
+        "SUCCESS",
+        "STREAM_NOT_FOUND",
+        "STREAM_CLOSED",
+        "INVALID_ARGUMENT",
+        "INVALID_STATE",
+        "UNAVAILABLE"
       ]
     },
     {
@@ -19077,6 +21827,50 @@
       ],
       "capabilities": [
         "cast.airplayControl"
+      ]
+    },
+    {
+      "name": "cast.touchbackChanged",
+      "description": "Per-target gate, input lifecycle, accepted types, source quality or geometry changed.",
+      "eventId": 5653,
+      "bitOffset": 20,
+      "domain": "cast",
+      "since": "1.0.0",
+      "status": "draft",
+      "payload": {
+        "type": "CastTouchbackChangedEvent"
+      },
+      "severity": "info",
+      "trigger": [
+        "cast.setTouchbackEnabled",
+        "cast.setTouchbackResolutionPreference",
+        "cast.setInputMode",
+        "stream open",
+        "stream close",
+        "disconnect"
+      ],
+      "capabilities": [
+        "cast.touchback"
+      ]
+    },
+    {
+      "name": "cast.touchbackMasterChanged",
+      "description": "Receiver-wide input gate changed; clients replace the full state and resnapshot target gates.",
+      "eventId": 5654,
+      "bitOffset": 21,
+      "domain": "cast",
+      "since": "1.0.0",
+      "status": "draft",
+      "payload": {
+        "type": "CastTouchbackMasterChangedEvent"
+      },
+      "severity": "info",
+      "trigger": [
+        "cast.setTouchbackMaster",
+        "receiver local gate changed"
+      ],
+      "capabilities": [
+        "cast.touchback"
       ]
     },
     {
@@ -21349,6 +24143,25 @@
       "schema": "CastAirPlayControlCapability"
     },
     {
+      "name": "cast.touchback",
+      "description": "Per-target input gate and presentation policy; event semantics are explicit and AirPlay is excluded.",
+      "capabilityId": 5647,
+      "domain": "cast",
+      "since": "1.0.0",
+      "status": "draft",
+      "type": "object",
+      "schema": "CastTouchbackCapability"
+    },
+    {
+      "name": "cast.receiverSettings",
+      "description": "Optional receiver preference methods discovered by name. The state declares supported restart-only fields and current save availability.",
+      "capabilityId": 5648,
+      "domain": "cast",
+      "since": "1.0.0",
+      "status": "draft",
+      "type": "bool"
+    },
+    {
       "name": "device.info",
       "description": "Device supports read-only device information discovery.",
       "capabilityId": 257,
@@ -21377,6 +24190,16 @@
       "status": "draft",
       "type": "object",
       "schema": "FirmwareUpdateCapabilities"
+    },
+    {
+      "name": "input.stream",
+      "description": "Supports explicitly typed receiver-to-source input; format and actual native features are negotiated once on open.",
+      "capabilityId": 2561,
+      "domain": "input",
+      "since": "1.0.0",
+      "status": "draft",
+      "type": "object",
+      "schema": "InputStreamCapability"
     },
     {
       "name": "license.registration",
@@ -21566,6 +24389,36 @@
       ],
       "frameProfile": "STANDARD_FRAME",
       "frameProfiles": []
+    },
+    {
+      "name": "AXTP-TYPED-INPUT-V1",
+      "since": "1.0.0",
+      "status": "experimental",
+      "requiredMethods": [
+        "input.openStream",
+        "input.closeStream",
+        "stream.getState"
+      ],
+      "requiredEvents": [
+        "stream.stateChanged"
+      ],
+      "requiredTypes": [],
+      "requiredErrors": [
+        "NOT_SUPPORTED",
+        "PERMISSION_DENIED",
+        "INVALID_ARGUMENT",
+        "INVALID_STATE",
+        "BUSY",
+        "UNAVAILABLE"
+      ],
+      "transportProfiles": [
+        "AXTP-TCP",
+        "AXTP-USB-HID",
+        "AXTP-WEBRTC-DC"
+      ],
+      "frameProfiles": [
+        "STANDARD_FRAME"
+      ]
     }
   ]
 }

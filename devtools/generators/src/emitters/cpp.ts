@@ -63,7 +63,8 @@ export async function emitCppFiles(spec: SpecModel, cppDir: string): Promise<voi
     writeTextFile(path.join(cppDir, "axtp_tlv_codec_generated.h"), emitTlvSkeleton(spec)),
     writeTextFile(path.join(cppDir, "method_traits.h"), emitMethodTraits(spec)),
     writeTextFile(path.join(cppDir, "schema_codec.h"), emitSchemaCodec()),
-    writeTextFile(path.join(cppDir, "schema_json_facts.hpp"), emitJsonFacts(spec))
+    writeTextFile(path.join(cppDir, "schema_json_facts.hpp"), emitJsonFacts(spec)),
+    ...(spec.inputStream ? [writeTextFile(path.join(cppDir, "axtp_input_stream_generated.h"), emitInputStream(spec.inputStream))] : [])
   ]);
 }
 
@@ -449,4 +450,23 @@ function emitStruct(schema: Schema): string {
     return `    ${type} ${field.name} = ${defaultValue};${has}`;
   }).join("\n");
   return `struct ${cppName(schema.name)} {\n${fields}\n};`;
+}
+
+function emitInputStream(w: import("../inputStream.js").InputStreamWire): string {
+  const constant = (name: string, value: number) => `inline constexpr std::size_t k${name} = ${value};`;
+  const rows = [constant("StreamHeaderBytes",w.streamHeaderBytes), constant("TypeBytes",w.typeBytes),
+    constant("MaxDataBytes",w.maxDataBytes),constant("TouchRecordBytes",w.touch.recordBytes),
+    constant("MaxContacts",w.touch.maxContacts)];
+  const map = (prefix: string, values: Record<string,number>) => {
+    for (const [name,value] of Object.entries(values)) rows.push(constant(prefix+cppName(name),value));
+  };
+  map("Type",w.inputTypes); map("Phase",w.touch.phases); map("Button",w.mouse.buttons);
+  map("Modifier",w.mouse.modifiers); map("WheelUnit",w.mouse.wheelUnits); map("WheelPhase",w.mouse.wheelPhases);
+  for (const f of w.touch.fields) rows.push(constant("Touch"+cppName(f.name)+"Offset",f.offset));
+  for (const r of w.mouse.records) {
+    const name=cppName(r.name);
+    rows.push(constant(name+"Kind",r.kind),constant(name+"RecordBytes",r.bytes));
+    for (const f of r.fields) rows.push(constant(name+cppName(f.name)+"Offset",f.offset));
+  }
+  return `${banner}#pragma once\n#include <cstddef>\nnamespace axtp::input_wire {\ninline constexpr char kFormat[] = "${w.format}";\n${rows.join("\n")}\n} // namespace axtp::input_wire\n`;
 }
