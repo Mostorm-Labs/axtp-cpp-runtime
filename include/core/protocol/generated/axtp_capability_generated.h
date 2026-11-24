@@ -25,6 +25,7 @@ inline constexpr CapabilityDescriptor kCapabilityRegistry[] = {
     { 0x0801, "video.stream", "video", "object", "VideoStreamCapabilities" },
     { 0x0901, "audio.algorithm", "audio", "object", "AudioAlgorithmCapability" },
     { 0x0902, "audio.stream", "audio", "object", "AudioStreamCapabilities" },
+    { 0x0A01, "input.stream", "input", "object", "InputStreamCapability" },
     { 0x0D01, "signage.playlist", "signage", "object", "SignagePlaylistCapability" },
     { 0x0E01, "network.interface", "network", "object", "NetworkInterfaceCapability" },
     { 0x0E02, "network.ip", "network", "object", "NetworkIpCapability" },
@@ -44,6 +45,8 @@ inline constexpr CapabilityDescriptor kCapabilityRegistry[] = {
     { 0x160C, "cast.webcastBackend", "cast", "object", "CastWebCastBackendCapability" },
     { 0x160D, "cast.meetingPresentation", "cast", "object", "CastMeetingPresentationCapability" },
     { 0x160E, "cast.airplayControl", "cast", "object", "CastAirPlayControlCapability" },
+    { 0x160F, "cast.touchback", "cast", "object", "CastTouchbackCapability" },
+    { 0x1610, "cast.receiverSettings", "cast", "bool", "" },
     { 0x1701, "software.config", "software", "object", "SoftwareConfigCapability" },
     { 0x1702, "software.updatePolicy", "software", "object", "SoftwareUpdatePolicyCapability" },
     { 0x1801, "sport.eventDetection", "sport", "object", "SportEventDetectionCapabilities" },
@@ -53,6 +56,6 @@ inline constexpr CapabilityDescriptor kCapabilityRegistry[] = {
     { 0x1903, "license.reconciliation", "license", "object", "LicenseReconciliationCapabilities" },
 };
 
-inline constexpr std::size_t kCapabilityRegistryCount = 37;
+inline constexpr std::size_t kCapabilityRegistryCount = 40;
 
 } // namespace axtp

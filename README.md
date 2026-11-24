@@ -6,6 +6,10 @@ implements those facts for C++.
 
 ## Architecture
 
+Typed Touch/Mouse data codecs and the current unpublished R2 binding are described
+in [Typed Input v1](docs/TYPED_INPUT_V1.md). Native injection and product policy
+remain outside this Runtime.
+
 Before changing code, read [Layer Boundaries](docs/LAYER_BOUNDARIES.md). It is
 the ownership checklist shared with Axent and product hosts.
 

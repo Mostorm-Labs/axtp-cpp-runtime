@@ -45,6 +45,8 @@ inline constexpr MethodDescriptor kMethodRegistry[] = {
     { 0x0911, "audio.closeStream", "audio", "AudioCloseStreamParams", "AudioCloseStreamResult" },
     { 0x0912, "audio.getStreamState", "audio", "AudioGetStreamStateParams", "AudioStreamState" },
     { 0x0913, "audio.getStreamSourceState", "audio", "AudioGetStreamSourceStateParams", "AudioStreamSourceState" },
+    { 0x0A01, "input.openStream", "input", "InputOpenStreamParams", "InputOpenStreamResult" },
+    { 0x0A02, "input.closeStream", "input", "InputCloseStreamParams", "InputCloseStreamResult" },
     { 0x0D01, "signage.getPlaylistCapabilities", "signage", "SignageGetPlaylistCapabilitiesParams", "SignagePlaylistCapabilitiesResult" },
     { 0x0D02, "signage.getPlaylistConfig", "signage", "SignageGetPlaylistConfigParams", "SignagePlaylistConfigResult" },
     { 0x0D03, "signage.setPlaylistConfig", "signage", "SignageSetPlaylistConfigParams", "SignageSetPlaylistConfigResult" },
@@ -96,6 +98,16 @@ inline constexpr MethodDescriptor kMethodRegistry[] = {
     { 0x1619, "cast.setPresentationSettings", "cast", "CastSetPresentationSettingsParams", "CastControlOperation" },
     { 0x161A, "cast.getWebCastBackendState", "cast", "CastGetWebCastBackendStateParams", "CastWebCastBackendSnapshot" },
     { 0x161B, "cast.setPresentationFocus", "cast", "CastSetPresentationFocusParams", "CastControlOperation" },
+    { 0x161C, "cast.getTouchbackState", "cast", "CastTouchbackTargetRequest", "CastTouchbackState" },
+    { 0x161D, "cast.setTouchbackEnabled", "cast", "CastTouchbackEnabledRequest", "CastTouchbackState" },
+    { 0x161F, "cast.setTouchbackResolutionPreference", "cast", "CastTouchbackResolutionRequest", "CastTouchbackState" },
+    { 0x1620, "cast.getInputMode", "cast", "CastTouchbackTargetRequest", "CastInputModeState" },
+    { 0x1621, "cast.setInputMode", "cast", "CastSetInputModeRequest", "CastInputModeState" },
+    { 0x1622, "cast.getTouchbackMaster", "cast", "CastTouchbackMasterQuery", "CastTouchbackMasterState" },
+    { 0x1623, "cast.setTouchbackMaster", "cast", "CastSetTouchbackMasterRequest", "CastTouchbackMasterState" },
+    { 0x1624, "cast.getReceiverSettings", "cast", "Empty", "CastReceiverSettingsState" },
+    { 0x1625, "cast.setReceiverSettings", "cast", "CastSetReceiverSettingsParams", "CastReceiverSettingsWriteResult" },
+    { 0x1626, "cast.restoreReceiverSettings", "cast", "CastRestoreReceiverSettingsParams", "CastReceiverSettingsWriteResult" },
     { 0x1701, "software.getConfig", "software", "SoftwareGetConfigParams", "SoftwareConfig" },
     { 0x1702, "software.setConfig", "software", "SoftwareSetConfigParams", "SoftwareSetConfigResult" },
     { 0x1703, "software.resetConfig", "software", "SoftwareResetConfigParams", "SoftwareConfig" },
@@ -116,6 +128,6 @@ inline constexpr MethodDescriptor kMethodRegistry[] = {
     { 0x1905, "license.resolveCredential", "license", "ResolveCredentialParams", "ResolveCredentialResult" },
 };
 
-inline constexpr std::size_t kMethodRegistryCount = 100;
+inline constexpr std::size_t kMethodRegistryCount = 112;
 
 } // namespace axtp

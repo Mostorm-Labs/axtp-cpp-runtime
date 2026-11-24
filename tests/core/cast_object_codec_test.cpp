@@ -92,6 +92,21 @@ int main() {
         auto expanded=focus;expanded.erase("sidebarPage");expanded["display"]="focus";
         require(axtp::SchemaObjectCodec::decodeJson("CastSetPresentationFocusParams",expanded.dump())==expanded,"adopted Focus display roundtrips exact identity through generated facts");
         expanded["display"]="not-adopted";require(!axtp::SchemaObjectCodec::validate("CastSetPresentationFocusParams",expanded),"unknown view cannot acquire semantics");
+        require(axtp::MethodRegistry::fromGeneratedDefaults().findMethodId("cast.setInputMode")==0x1621,"input policy standard route");
+        require(axtp::MethodRegistry::fromGeneratedDefaults().findMethodId("cast.setTouchbackMaster")==0x1623,"master standard route");
+        const nlohmann::json gestures={{"rightClick","both"},{"rightHoldMs",2000},{"scrollDirection","reverse"},{"feedback",true},{"scrollSpeed",1.0}};
+        require(axtp::SchemaObjectCodec::decodeJson("CastGestureSettings",gestures.dump())==gestures,"gesture settings JSON roundtrip");
+        for(const auto& speed:nlohmann::json::array({0.5,1,4})){
+            auto value=gestures;value["scrollSpeed"]=speed;
+            require(axtp::SchemaObjectCodec::validate("CastGestureSettings",value),"finite gesture speed bounds accepted");
+        }
+        for(const auto& speed:nlohmann::json::array({0.49,4.01,"1",true,nullptr,std::numeric_limits<double>::infinity(),std::numeric_limits<double>::quiet_NaN()})){
+            auto value=gestures;value["scrollSpeed"]=speed;
+            require(!axtp::SchemaObjectCodec::validate("CastGestureSettings",value),"invalid or nonfinite gesture speed rejected");
+        }
+        auto master=nlohmann::json{{"enabled",false},{"revision","18446744073709551615"},{"runtimeInstanceId",context.at("runtimeInstanceId")}};
+        require(axtp::SchemaObjectCodec::decodeJson("CastTouchbackMasterState",master.dump())==master,"master uint64 revision roundtrip");
+        master["revision"]="01";require(!axtp::SchemaObjectCodec::validate("CastTouchbackMasterState",master),"master revision is canonical");
         const nlohmann::json patch={{"presentationAudioFollow",false}};
         const auto patchWire=axtp::SchemaObjectCodec::encodeTlv8("CastPresentationSettingsPatch",patch);
         require(patchWire&&axtp::SchemaObjectCodec::decodeTlv8("CastPresentationSettingsPatch",*patchWire)==patch,"false follow preference survives TLV encoding");

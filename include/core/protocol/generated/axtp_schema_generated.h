@@ -876,6 +876,7 @@ inline constexpr FieldDescriptor kCastStatusFields[] = {
     { 0x0F, "presentationSettings", FieldType::Object, false, 0, 0 },
     { 0x10, "webcastBackend", FieldType::Object, false, 0, 0 },
     { 0x11, "airplay", FieldType::Object, false, 0, 0 },
+    { 0x12, "touchback", FieldType::Array, false, 0, 0 },
 };
 
 inline constexpr FieldDescriptor kCastSessionCapabilityFields[] = {
@@ -980,6 +981,7 @@ inline constexpr FieldDescriptor kCastControlCapabilitiesFields[] = {
     { 0x0B, "webcastBackend", FieldType::Object, false, 0, 0 },
     { 0x0C, "meetingPresentation", FieldType::Object, false, 0, 0 },
     { 0x0D, "airplayControl", FieldType::Object, false, 0, 0 },
+    { 0x0E, "touchback", FieldType::Object, false, 0, 0 },
 };
 
 inline constexpr FieldDescriptor kCastPresentationCapabilityFields[] = {
@@ -1135,6 +1137,19 @@ inline constexpr FieldDescriptor kCastPresentationSettingsPatchFields[] = {
     { 0x0B, "presentationFocusOnDoubleClick", FieldType::Bool, false, 0, 0 },
     { 0x0C, "presentationGridOnDoubleClick", FieldType::Bool, false, 0, 0 },
     { 0x0D, "presentationAutoEnter", FieldType::Bool, false, 0, 0 },
+    { 0x0E, "canvasMode", FieldType::Enum, false, 0, 0 },
+    { 0x0F, "baseWidth", FieldType::Uint32, false, 1, 16384 },
+    { 0x10, "baseHeight", FieldType::Uint32, false, 1, 16384 },
+    { 0x11, "maxWidth", FieldType::Uint32, false, 1, 16384 },
+    { 0x12, "maxHeight", FieldType::Uint32, false, 1, 16384 },
+    { 0x13, "topBarTrigger", FieldType::Enum, false, 0, 0 },
+    { 0x14, "topBarShowCastCode", FieldType::Bool, false, 0, 0 },
+    { 0x15, "topBarShowDebug", FieldType::Bool, false, 0, 0 },
+    { 0x16, "startupWindowMode", FieldType::Enum, false, 0, 0 },
+    { 0x17, "topBarShowLayout", FieldType::Bool, false, 0, 0 },
+    { 0x18, "topBarShowMinimize", FieldType::Bool, false, 0, 0 },
+    { 0x19, "topBarShowMaximize", FieldType::Bool, false, 0, 0 },
+    { 0x1A, "topBarShowBackground", FieldType::Bool, false, 0, 0 },
 };
 
 inline constexpr FieldDescriptor kCastPresentationSettingsValuesFields[] = {
@@ -1151,6 +1166,94 @@ inline constexpr FieldDescriptor kCastPresentationSettingsValuesFields[] = {
     { 0x0B, "presentationFocusOnDoubleClick", FieldType::Bool, false, 0, 0 },
     { 0x0C, "presentationGridOnDoubleClick", FieldType::Bool, false, 0, 0 },
     { 0x0D, "presentationAutoEnter", FieldType::Bool, false, 0, 0 },
+    { 0x0E, "canvasMode", FieldType::Enum, false, 0, 0 },
+    { 0x0F, "baseWidth", FieldType::Uint32, false, 1, 16384 },
+    { 0x10, "baseHeight", FieldType::Uint32, false, 1, 16384 },
+    { 0x11, "maxWidth", FieldType::Uint32, false, 1, 16384 },
+    { 0x12, "maxHeight", FieldType::Uint32, false, 1, 16384 },
+    { 0x13, "topBarTrigger", FieldType::Enum, false, 0, 0 },
+    { 0x14, "topBarShowCastCode", FieldType::Bool, false, 0, 0 },
+    { 0x15, "topBarShowDebug", FieldType::Bool, false, 0, 0 },
+    { 0x16, "startupWindowMode", FieldType::Enum, false, 0, 0 },
+    { 0x17, "topBarShowLayout", FieldType::Bool, false, 0, 0 },
+    { 0x18, "topBarShowMinimize", FieldType::Bool, false, 0, 0 },
+    { 0x19, "topBarShowMaximize", FieldType::Bool, false, 0, 0 },
+    { 0x1A, "topBarShowBackground", FieldType::Bool, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastReceiverPreferenceValuesFields[] = {
+    { 0x01, "airplayName", FieldType::String, false, 0, 0 },
+    { 0x02, "airplayRandomPassword", FieldType::Bool, false, 0, 0 },
+    { 0x03, "controlPort", FieldType::Uint32, false, 1, 65535 },
+    { 0x04, "controlListenOnLan", FieldType::Bool, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastReceiverPersistedOverridesFields[] = {
+    { 0x01, "layoutMode", FieldType::Enum, false, 0, 0 },
+    { 0x02, "audioControlMode", FieldType::Enum, false, 0, 0 },
+    { 0x03, "audioMixMode", FieldType::Enum, false, 0, 0 },
+    { 0x04, "capacity", FieldType::Uint32, false, 1, 0 },
+    { 0x05, "enabledProtocols", FieldType::Array, false, 0, 0 },
+    { 0x06, "profileHint", FieldType::String, false, 0, 0 },
+    { 0x07, "contentAdaptation", FieldType::Enum, false, 0, 0 },
+    { 0x08, "presentationMode", FieldType::Enum, false, 0, 0 },
+    { 0x09, "presentationSidebar", FieldType::Enum, false, 0, 0 },
+    { 0x0A, "presentationAudioFollow", FieldType::Bool, false, 0, 0 },
+    { 0x0B, "presentationFocusOnDoubleClick", FieldType::Bool, false, 0, 0 },
+    { 0x0C, "presentationGridOnDoubleClick", FieldType::Bool, false, 0, 0 },
+    { 0x0D, "presentationAutoEnter", FieldType::Bool, false, 0, 0 },
+    { 0x0E, "canvasMode", FieldType::Enum, false, 0, 0 },
+    { 0x0F, "baseWidth", FieldType::Uint32, false, 1, 16384 },
+    { 0x10, "baseHeight", FieldType::Uint32, false, 1, 16384 },
+    { 0x11, "maxWidth", FieldType::Uint32, false, 1, 16384 },
+    { 0x12, "maxHeight", FieldType::Uint32, false, 1, 16384 },
+    { 0x13, "topBarTrigger", FieldType::Enum, false, 0, 0 },
+    { 0x14, "topBarShowCastCode", FieldType::Bool, false, 0, 0 },
+    { 0x15, "topBarShowDebug", FieldType::Bool, false, 0, 0 },
+    { 0x16, "startupWindowMode", FieldType::Enum, false, 0, 0 },
+    { 0x17, "topBarShowLayout", FieldType::Bool, false, 0, 0 },
+    { 0x18, "topBarShowMinimize", FieldType::Bool, false, 0, 0 },
+    { 0x19, "topBarShowMaximize", FieldType::Bool, false, 0, 0 },
+    { 0x1A, "topBarShowBackground", FieldType::Bool, false, 0, 0 },
+    { 0x1B, "airplayName", FieldType::String, false, 0, 0 },
+    { 0x1C, "airplayRandomPassword", FieldType::Bool, false, 0, 0 },
+    { 0x1D, "controlPort", FieldType::Uint32, false, 1, 65535 },
+    { 0x1E, "controlListenOnLan", FieldType::Bool, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastReceiverSettingsStateFields[] = {
+    { 0x01, "runtimeInstanceId", FieldType::String, true, 0, 0 },
+    { 0x02, "storeRevision", FieldType::String, true, 0, 0 },
+    { 0x03, "storageState", FieldType::Enum, true, 0, 0 },
+    { 0x04, "backupAvailable", FieldType::Bool, true, 0, 0 },
+    { 0x05, "recoveredFromBackup", FieldType::Bool, true, 0, 0 },
+    { 0x06, "supportsPersistence", FieldType::Bool, true, 0, 0 },
+    { 0x07, "restartOnlyFields", FieldType::Array, true, 0, 0 },
+    { 0x08, "configured", FieldType::Object, true, 0, 0 },
+    { 0x09, "applied", FieldType::Object, true, 0, 0 },
+    { 0x0A, "airplayEnabled", FieldType::Bool, true, 0, 0 },
+    { 0x0B, "publishState", FieldType::Enum, true, 0, 0 },
+    { 0x0C, "pendingRestart", FieldType::Array, true, 0, 0 },
+    { 0x0D, "persistedOverrides", FieldType::Object, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastSetReceiverSettingsParamsFields[] = {
+    { 0x01, "runtimeInstanceId", FieldType::String, true, 0, 0 },
+    { 0x02, "expectedStoreRevision", FieldType::String, true, 0, 0 },
+    { 0x03, "persist", FieldType::Bool, true, 0, 0 },
+    { 0x04, "patch", FieldType::Object, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastRestoreReceiverSettingsParamsFields[] = {
+    { 0x01, "runtimeInstanceId", FieldType::String, true, 0, 0 },
+    { 0x02, "expectedStoreRevision", FieldType::String, true, 0, 0 },
+    { 0x03, "source", FieldType::Enum, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastReceiverSettingsWriteResultFields[] = {
+    { 0x01, "persistenceStatus", FieldType::Enum, true, 0, 0 },
+    { 0x02, "applicationStatus", FieldType::Enum, true, 0, 0 },
+    { 0x03, "settings", FieldType::Object, true, 0, 0 },
 };
 
 inline constexpr FieldDescriptor kCastPresentationStartupSettingsFields[] = {
@@ -1167,6 +1270,19 @@ inline constexpr FieldDescriptor kCastPresentationStartupSettingsFields[] = {
     { 0x0B, "presentationFocusOnDoubleClick", FieldType::Bool, false, 0, 0 },
     { 0x0C, "presentationGridOnDoubleClick", FieldType::Bool, false, 0, 0 },
     { 0x0D, "presentationAutoEnter", FieldType::Bool, false, 0, 0 },
+    { 0x0E, "canvasMode", FieldType::Enum, false, 0, 0 },
+    { 0x0F, "baseWidth", FieldType::Uint32, false, 1, 16384 },
+    { 0x10, "baseHeight", FieldType::Uint32, false, 1, 16384 },
+    { 0x11, "maxWidth", FieldType::Uint32, false, 1, 16384 },
+    { 0x12, "maxHeight", FieldType::Uint32, false, 1, 16384 },
+    { 0x13, "topBarTrigger", FieldType::Enum, false, 0, 0 },
+    { 0x14, "topBarShowCastCode", FieldType::Bool, false, 0, 0 },
+    { 0x15, "topBarShowDebug", FieldType::Bool, false, 0, 0 },
+    { 0x16, "startupWindowMode", FieldType::Enum, false, 0, 0 },
+    { 0x17, "topBarShowLayout", FieldType::Bool, false, 0, 0 },
+    { 0x18, "topBarShowMinimize", FieldType::Bool, false, 0, 0 },
+    { 0x19, "topBarShowMaximize", FieldType::Bool, false, 0, 0 },
+    { 0x1A, "topBarShowBackground", FieldType::Bool, false, 0, 0 },
 };
 
 inline constexpr FieldDescriptor kCastPresentationSettingsStateFields[] = {
@@ -1205,6 +1321,9 @@ inline constexpr FieldDescriptor kCastPresentationSettingsCapabilityFields[] = {
     { 0x0A, "contentAdaptations", FieldType::Array, false, 0, 0 },
     { 0x07, "profileHints", FieldType::Array, false, 0, 0 },
     { 0x08, "minEnabledProtocols", FieldType::Uint32, false, 0, 0 },
+    { 0x0B, "canvasModes", FieldType::Array, false, 0, 0 },
+    { 0x0C, "canvasMaxWidth", FieldType::Uint32, false, 1, 16384 },
+    { 0x0D, "canvasMaxHeight", FieldType::Uint32, false, 1, 16384 },
 };
 
 inline constexpr FieldDescriptor kCastPresentationSettingsOperationResultFields[] = {
@@ -1369,6 +1488,119 @@ inline constexpr FieldDescriptor kCastAirPlayControlStateFields[] = {
 inline constexpr FieldDescriptor kCastAirPlayChangedEventFields[] = {
     { 0x01, "context", FieldType::Object, true, 0, 0 },
     { 0x02, "airplay", FieldType::Object, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastTouchbackTargetFields[] = {
+    { 0x01, "sessionId", FieldType::String, true, 0, 0 },
+    { 0x02, "sessionGeneration", FieldType::String, true, 0, 0 },
+    { 0x03, "slotId", FieldType::String, true, 0, 0 },
+    { 0x04, "bindingGeneration", FieldType::String, true, 0, 0 },
+    { 0x05, "lifecycleGeneration", FieldType::String, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastTouchbackTargetRequestFields[] = {
+    { 0x01, "target", FieldType::Object, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastTouchbackStateFields[] = {
+    { 0x01, "target", FieldType::Object, true, 0, 0 },
+    { 0x02, "receiverOptIn", FieldType::Bool, true, 0, 0 },
+    { 0x03, "controllerRequested", FieldType::Bool, true, 0, 0 },
+    { 0x04, "effectiveEnabled", FieldType::Bool, true, 0, 0 },
+    { 0x07, "resolutionPreference", FieldType::Enum, true, 0, 0 },
+    { 0x08, "streamId", FieldType::Uint32, false, 0, 0 },
+    { 0x0A, "canvasRevision", FieldType::String, true, 0, 0 },
+    { 0x0B, "geometryRevision", FieldType::String, true, 0, 0 },
+    { 0x0E, "revision", FieldType::String, true, 0, 0 },
+    { 0x0F, "diagnosticReason", FieldType::String, false, 0, 0 },
+    { 0x10, "acceptedInputTypes", FieldType::Array, true, 0, 0 },
+    { 0x11, "lifecycleState", FieldType::Enum, true, 0, 0 },
+    { 0x12, "format", FieldType::String, false, 0, 0 },
+    { 0x13, "resolutionState", FieldType::Enum, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastTouchbackEnabledRequestFields[] = {
+    { 0x01, "target", FieldType::Object, true, 0, 0 },
+    { 0x02, "enabled", FieldType::Bool, true, 0, 0 },
+    { 0x03, "commandId", FieldType::String, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastTouchbackResolutionRequestFields[] = {
+    { 0x01, "target", FieldType::Object, true, 0, 0 },
+    { 0x02, "resolutionPreference", FieldType::Enum, true, 0, 0 },
+    { 0x03, "commandId", FieldType::String, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastTouchbackChangedEventFields[] = {
+    { 0x01, "state", FieldType::Object, true, 0, 0 },
+    { 0x02, "changedFields", FieldType::Array, true, 0, 0 },
+    { 0x03, "accepted", FieldType::Bool, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastGestureSettingsFields[] = {
+    { 0x01, "rightClick", FieldType::Enum, true, 0, 0 },
+    { 0x02, "rightHoldMs", FieldType::Uint32, true, 600, 2000 },
+    { 0x03, "scrollDirection", FieldType::Enum, true, 0, 0 },
+    { 0x04, "feedback", FieldType::Bool, true, 0, 0 },
+    { 0x05, "scrollSpeed", FieldType::Object, false, 0.5, 4 },
+};
+
+inline constexpr FieldDescriptor kCastInputSourceInfoFields[] = {
+    { 0x01, "platform", FieldType::String, true, 0, 0 },
+    { 0x02, "clientKind", FieldType::String, true, 0, 0 },
+    { 0x03, "product", FieldType::String, true, 0, 0 },
+    { 0x04, "displaySurface", FieldType::String, true, 0, 0 },
+    { 0x05, "displayRole", FieldType::String, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastInputModeStateFields[] = {
+    { 0x01, "target", FieldType::Object, true, 0, 0 },
+    { 0x02, "inputMode", FieldType::Enum, true, 0, 0 },
+    { 0x03, "gestureSettings", FieldType::Object, true, 0, 0 },
+    { 0x04, "switching", FieldType::Bool, true, 0, 0 },
+    { 0x05, "supported", FieldType::Bool, true, 0, 0 },
+    { 0x06, "source", FieldType::Object, true, 0, 0 },
+    { 0x07, "gestureControlSupported", FieldType::Bool, true, 0, 0 },
+    { 0x08, "state", FieldType::Object, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastSetInputModeRequestFields[] = {
+    { 0x01, "target", FieldType::Object, true, 0, 0 },
+    { 0x02, "commandId", FieldType::String, true, 0, 0 },
+    { 0x03, "inputMode", FieldType::Enum, false, 0, 0 },
+    { 0x04, "gestureSettings", FieldType::Object, false, 0, 0 },
+    { 0x05, "controlVersion", FieldType::Uint32, true, 0, 0 },
+    { 0x06, "runtimeInstanceId", FieldType::String, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastTouchbackMasterQueryFields[] = {
+
+};
+
+inline constexpr FieldDescriptor kCastTouchbackMasterStateFields[] = {
+    { 0x01, "enabled", FieldType::Bool, true, 0, 0 },
+    { 0x02, "revision", FieldType::String, true, 0, 0 },
+    { 0x03, "runtimeInstanceId", FieldType::String, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastSetTouchbackMasterRequestFields[] = {
+    { 0x01, "enabled", FieldType::Bool, true, 0, 0 },
+    { 0x02, "commandId", FieldType::String, true, 0, 0 },
+    { 0x03, "controlVersion", FieldType::Uint32, true, 0, 0 },
+    { 0x04, "runtimeInstanceId", FieldType::String, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastTouchbackMasterChangedEventFields[] = {
+    { 0x01, "state", FieldType::Object, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kCastTouchbackCapabilityFields[] = {
+    { 0x01, "capability", FieldType::String, true, 0, 0 },
+    { 0x02, "protocols", FieldType::Array, true, 0, 0 },
+    { 0x04, "supportsPerTarget", FieldType::Bool, true, 0, 0 },
+    { 0x05, "supportsControlPlane", FieldType::Bool, true, 0, 0 },
+    { 0x06, "inputTypes", FieldType::Array, true, 0, 0 },
+    { 0x07, "formats", FieldType::Array, true, 0, 0 },
 };
 
 inline constexpr FieldDescriptor kGetDeviceInfoParamsFields[] = {
@@ -1584,6 +1816,81 @@ inline constexpr FieldDescriptor kFirmwareUpdateStateChangedEventFields[] = {
     { 0x01, "updateSessionId", FieldType::String, true, 0, 0 },
     { 0x02, "state", FieldType::Enum, true, 0, 0 },
     { 0x03, "error", FieldType::Object, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kInputStreamTargetFields[] = {
+    { 0x01, "sessionId", FieldType::String, true, 0, 0 },
+    { 0x02, "sessionGeneration", FieldType::String, true, 0, 0 },
+    { 0x03, "slotId", FieldType::String, true, 0, 0 },
+    { 0x04, "bindingGeneration", FieldType::String, true, 0, 0 },
+    { 0x05, "lifecycleGeneration", FieldType::String, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kInputOpenStreamParamsFields[] = {
+    { 0x01, "controlVersion", FieldType::Uint32, true, 1, 1 },
+    { 0x02, "runtimeInstanceId", FieldType::String, true, 0, 0 },
+    { 0x03, "target", FieldType::Object, true, 0, 0 },
+    { 0x04, "streamKind", FieldType::Enum, true, 0, 0 },
+    { 0x05, "format", FieldType::Enum, true, 0, 0 },
+    { 0x10, "commandId", FieldType::String, true, 0, 0 },
+    { 0x11, "sourceBindingId", FieldType::String, true, 0, 0 },
+    { 0x12, "inputTypes", FieldType::Array, true, 0, 0 },
+    { 0x13, "maxDataBytes", FieldType::Uint32, true, 8, 4096 },
+    { 0x14, "touch", FieldType::Object, false, 0, 0 },
+    { 0x15, "mouse", FieldType::Object, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kInputOpenStreamResultFields[] = {
+    { 0x01, "streamId", FieldType::Uint32, true, 1, 0 },
+    { 0x04, "format", FieldType::Enum, true, 0, 0 },
+    { 0x0A, "revision", FieldType::String, true, 0, 0 },
+    { 0x0B, "accepted", FieldType::Bool, true, 0, 0 },
+    { 0x0C, "acceptedInputTypes", FieldType::Array, true, 0, 0 },
+    { 0x0D, "maxDataBytes", FieldType::Uint32, true, 8, 4096 },
+    { 0x0E, "touch", FieldType::Object, false, 0, 0 },
+    { 0x0F, "mouse", FieldType::Object, false, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kInputCloseStreamParamsFields[] = {
+    { 0x01, "controlVersion", FieldType::Uint32, true, 1, 1 },
+    { 0x02, "runtimeInstanceId", FieldType::String, true, 0, 0 },
+    { 0x03, "target", FieldType::Object, true, 0, 0 },
+    { 0x04, "streamKind", FieldType::Enum, true, 0, 0 },
+    { 0x05, "streamId", FieldType::Uint32, true, 1, 0 },
+    { 0x07, "reason", FieldType::Enum, false, 0, 0 },
+    { 0x08, "finalSeqId", FieldType::Uint32, false, 0, 0 },
+    { 0x09, "commandId", FieldType::String, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kInputCloseStreamResultFields[] = {
+    { 0x01, "streamId", FieldType::Uint32, true, 0, 0 },
+    { 0x03, "closed", FieldType::Bool, true, 0, 0 },
+    { 0x04, "alreadyClosed", FieldType::Bool, false, 0, 0 },
+    { 0x05, "revision", FieldType::String, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kInputStreamCapabilityFields[] = {
+    { 0x01, "capability", FieldType::String, true, 0, 0 },
+    { 0x02, "direction", FieldType::Enum, true, 0, 0 },
+    { 0x03, "formats", FieldType::Array, true, 0, 0 },
+    { 0x05, "reliability", FieldType::Enum, true, 0, 0 },
+    { 0x0B, "inputTypes", FieldType::Array, true, 0, 0 },
+    { 0x0C, "maxDataBytes", FieldType::Uint32, true, 8, 4096 },
+    { 0x0D, "touch", FieldType::Object, false, 0, 0 },
+    { 0x0E, "mouse", FieldType::Object, false, 0, 0 },
+    { 0x0F, "profiles", FieldType::Array, true, 0, 0 },
+};
+
+inline constexpr FieldDescriptor kInputTouchConstraintsFields[] = {
+    { 0x01, "maxContacts", FieldType::Uint16, true, 1, 256 },
+};
+
+inline constexpr FieldDescriptor kInputMouseConstraintsFields[] = {
+    { 0x01, "buttonsMask", FieldType::Uint32, true, 0, 31 },
+    { 0x02, "modifierMask", FieldType::Uint16, true, 0, 15 },
+    { 0x03, "allowChords", FieldType::Bool, true, 0, 0 },
+    { 0x04, "wheelUnits", FieldType::Array, true, 0, 0 },
+    { 0x05, "continuousScroll", FieldType::Bool, true, 0, 0 },
 };
 
 inline constexpr FieldDescriptor kRegisterIdentityResultFields[] = {
@@ -2709,7 +3016,7 @@ inline constexpr SchemaDescriptor kCastGetStatusParamsSchema = { "CastGetStatusP
 inline constexpr SchemaDescriptor kCastReceiverSummarySchema = { "CastReceiverSummary", kCastReceiverSummaryFields, 4 };
 inline constexpr SchemaDescriptor kCastSessionStatusSummarySchema = { "CastSessionStatusSummary", kCastSessionStatusSummaryFields, 5 };
 inline constexpr SchemaDescriptor kCastPinCodeStatusSummarySchema = { "CastPinCodeStatusSummary", kCastPinCodeStatusSummaryFields, 6 };
-inline constexpr SchemaDescriptor kCastStatusSchema = { "CastStatus", kCastStatusFields, 17 };
+inline constexpr SchemaDescriptor kCastStatusSchema = { "CastStatus", kCastStatusFields, 18 };
 inline constexpr SchemaDescriptor kCastSessionCapabilitySchema = { "CastSessionCapability", kCastSessionCapabilityFields, 5 };
 inline constexpr SchemaDescriptor kCastAudioCapabilitySchema = { "CastAudioCapability", kCastAudioCapabilityFields, 6 };
 inline constexpr SchemaDescriptor kCastPinCodeCapabilitySchema = { "CastPinCodeCapability", kCastPinCodeCapabilityFields, 5 };
@@ -2721,7 +3028,7 @@ inline constexpr SchemaDescriptor kCastSessionRefSchema = { "CastSessionRef", kC
 inline constexpr SchemaDescriptor kCastControlTargetSchema = { "CastControlTarget", kCastControlTargetFields, 4 };
 inline constexpr SchemaDescriptor kCastControlSnapshotCursorSchema = { "CastControlSnapshotCursor", kCastControlSnapshotCursorFields, 4 };
 inline constexpr SchemaDescriptor kCastControlEventContextSchema = { "CastControlEventContext", kCastControlEventContextFields, 7 };
-inline constexpr SchemaDescriptor kCastControlCapabilitiesSchema = { "CastControlCapabilities", kCastControlCapabilitiesFields, 13 };
+inline constexpr SchemaDescriptor kCastControlCapabilitiesSchema = { "CastControlCapabilities", kCastControlCapabilitiesFields, 14 };
 inline constexpr SchemaDescriptor kCastPresentationCapabilitySchema = { "CastPresentationCapability", kCastPresentationCapabilityFields, 7 };
 inline constexpr SchemaDescriptor kCastAudioPolicyCapabilitySchema = { "CastAudioPolicyCapability", kCastAudioPolicyCapabilityFields, 5 };
 inline constexpr SchemaDescriptor kCastControlOperationsCapabilitySchema = { "CastControlOperationsCapability", kCastControlOperationsCapabilityFields, 3 };
@@ -2736,12 +3043,18 @@ inline constexpr SchemaDescriptor kCastSetSessionAudioEnabledParamsSchema = { "C
 inline constexpr SchemaDescriptor kCastGetControlOperationParamsSchema = { "CastGetControlOperationParams", kCastGetControlOperationParamsFields, 4 };
 inline constexpr SchemaDescriptor kCastControlOperationSchema = { "CastControlOperation", kCastControlOperationFields, 14 };
 inline constexpr SchemaDescriptor kCastSetPresentationSettingsParamsSchema = { "CastSetPresentationSettingsParams", kCastSetPresentationSettingsParamsFields, 7 };
-inline constexpr SchemaDescriptor kCastPresentationSettingsPatchSchema = { "CastPresentationSettingsPatch", kCastPresentationSettingsPatchFields, 13 };
-inline constexpr SchemaDescriptor kCastPresentationSettingsValuesSchema = { "CastPresentationSettingsValues", kCastPresentationSettingsValuesFields, 13 };
-inline constexpr SchemaDescriptor kCastPresentationStartupSettingsSchema = { "CastPresentationStartupSettings", kCastPresentationStartupSettingsFields, 13 };
+inline constexpr SchemaDescriptor kCastPresentationSettingsPatchSchema = { "CastPresentationSettingsPatch", kCastPresentationSettingsPatchFields, 26 };
+inline constexpr SchemaDescriptor kCastPresentationSettingsValuesSchema = { "CastPresentationSettingsValues", kCastPresentationSettingsValuesFields, 26 };
+inline constexpr SchemaDescriptor kCastReceiverPreferenceValuesSchema = { "CastReceiverPreferenceValues", kCastReceiverPreferenceValuesFields, 4 };
+inline constexpr SchemaDescriptor kCastReceiverPersistedOverridesSchema = { "CastReceiverPersistedOverrides", kCastReceiverPersistedOverridesFields, 30 };
+inline constexpr SchemaDescriptor kCastReceiverSettingsStateSchema = { "CastReceiverSettingsState", kCastReceiverSettingsStateFields, 13 };
+inline constexpr SchemaDescriptor kCastSetReceiverSettingsParamsSchema = { "CastSetReceiverSettingsParams", kCastSetReceiverSettingsParamsFields, 4 };
+inline constexpr SchemaDescriptor kCastRestoreReceiverSettingsParamsSchema = { "CastRestoreReceiverSettingsParams", kCastRestoreReceiverSettingsParamsFields, 3 };
+inline constexpr SchemaDescriptor kCastReceiverSettingsWriteResultSchema = { "CastReceiverSettingsWriteResult", kCastReceiverSettingsWriteResultFields, 3 };
+inline constexpr SchemaDescriptor kCastPresentationStartupSettingsSchema = { "CastPresentationStartupSettings", kCastPresentationStartupSettingsFields, 26 };
 inline constexpr SchemaDescriptor kCastPresentationSettingsStateSchema = { "CastPresentationSettingsState", kCastPresentationSettingsStateFields, 16 };
 inline constexpr SchemaDescriptor kCastPresentationSettingIssueSchema = { "CastPresentationSettingIssue", kCastPresentationSettingIssueFields, 4 };
-inline constexpr SchemaDescriptor kCastPresentationSettingsCapabilitySchema = { "CastPresentationSettingsCapability", kCastPresentationSettingsCapabilityFields, 9 };
+inline constexpr SchemaDescriptor kCastPresentationSettingsCapabilitySchema = { "CastPresentationSettingsCapability", kCastPresentationSettingsCapabilityFields, 12 };
 inline constexpr SchemaDescriptor kCastPresentationSettingsOperationResultSchema = { "CastPresentationSettingsOperationResult", kCastPresentationSettingsOperationResultFields, 6 };
 inline constexpr SchemaDescriptor kCastSettingsEventContextSchema = { "CastSettingsEventContext", kCastSettingsEventContextFields, 4 };
 inline constexpr SchemaDescriptor kCastPresentationSettingsChangedEventSchema = { "CastPresentationSettingsChangedEvent", kCastPresentationSettingsChangedEventFields, 2 };
@@ -2765,6 +3078,21 @@ inline constexpr SchemaDescriptor kCastAirPlayControlCapabilitySchema = { "CastA
 inline constexpr SchemaDescriptor kCastAirPlayAuthenticationAttemptSchema = { "CastAirPlayAuthenticationAttempt", kCastAirPlayAuthenticationAttemptFields, 5 };
 inline constexpr SchemaDescriptor kCastAirPlayControlStateSchema = { "CastAirPlayControlState", kCastAirPlayControlStateFields, 6 };
 inline constexpr SchemaDescriptor kCastAirPlayChangedEventSchema = { "CastAirPlayChangedEvent", kCastAirPlayChangedEventFields, 2 };
+inline constexpr SchemaDescriptor kCastTouchbackTargetSchema = { "CastTouchbackTarget", kCastTouchbackTargetFields, 5 };
+inline constexpr SchemaDescriptor kCastTouchbackTargetRequestSchema = { "CastTouchbackTargetRequest", kCastTouchbackTargetRequestFields, 1 };
+inline constexpr SchemaDescriptor kCastTouchbackStateSchema = { "CastTouchbackState", kCastTouchbackStateFields, 14 };
+inline constexpr SchemaDescriptor kCastTouchbackEnabledRequestSchema = { "CastTouchbackEnabledRequest", kCastTouchbackEnabledRequestFields, 3 };
+inline constexpr SchemaDescriptor kCastTouchbackResolutionRequestSchema = { "CastTouchbackResolutionRequest", kCastTouchbackResolutionRequestFields, 3 };
+inline constexpr SchemaDescriptor kCastTouchbackChangedEventSchema = { "CastTouchbackChangedEvent", kCastTouchbackChangedEventFields, 3 };
+inline constexpr SchemaDescriptor kCastGestureSettingsSchema = { "CastGestureSettings", kCastGestureSettingsFields, 5 };
+inline constexpr SchemaDescriptor kCastInputSourceInfoSchema = { "CastInputSourceInfo", kCastInputSourceInfoFields, 5 };
+inline constexpr SchemaDescriptor kCastInputModeStateSchema = { "CastInputModeState", kCastInputModeStateFields, 8 };
+inline constexpr SchemaDescriptor kCastSetInputModeRequestSchema = { "CastSetInputModeRequest", kCastSetInputModeRequestFields, 6 };
+inline constexpr SchemaDescriptor kCastTouchbackMasterQuerySchema = { "CastTouchbackMasterQuery", kCastTouchbackMasterQueryFields, 0 };
+inline constexpr SchemaDescriptor kCastTouchbackMasterStateSchema = { "CastTouchbackMasterState", kCastTouchbackMasterStateFields, 3 };
+inline constexpr SchemaDescriptor kCastSetTouchbackMasterRequestSchema = { "CastSetTouchbackMasterRequest", kCastSetTouchbackMasterRequestFields, 4 };
+inline constexpr SchemaDescriptor kCastTouchbackMasterChangedEventSchema = { "CastTouchbackMasterChangedEvent", kCastTouchbackMasterChangedEventFields, 1 };
+inline constexpr SchemaDescriptor kCastTouchbackCapabilitySchema = { "CastTouchbackCapability", kCastTouchbackCapabilityFields, 6 };
 inline constexpr SchemaDescriptor kGetDeviceInfoParamsSchema = { "GetDeviceInfoParams", kGetDeviceInfoParamsFields, 1 };
 inline constexpr SchemaDescriptor kDeviceInfoSchema = { "DeviceInfo", kDeviceInfoFields, 7 };
 inline constexpr SchemaDescriptor kDeviceIdentitySchema = { "DeviceIdentity", kDeviceIdentityFields, 4 };
@@ -2798,6 +3126,14 @@ inline constexpr SchemaDescriptor kFirmwareUpdateStateSchema = { "FirmwareUpdate
 inline constexpr SchemaDescriptor kFirmwareUpdateErrorInfoSchema = { "FirmwareUpdateErrorInfo", kFirmwareUpdateErrorInfoFields, 3 };
 inline constexpr SchemaDescriptor kFirmwareUpdateProgressEventSchema = { "FirmwareUpdateProgressEvent", kFirmwareUpdateProgressEventFields, 4 };
 inline constexpr SchemaDescriptor kFirmwareUpdateStateChangedEventSchema = { "FirmwareUpdateStateChangedEvent", kFirmwareUpdateStateChangedEventFields, 3 };
+inline constexpr SchemaDescriptor kInputStreamTargetSchema = { "InputStreamTarget", kInputStreamTargetFields, 5 };
+inline constexpr SchemaDescriptor kInputOpenStreamParamsSchema = { "InputOpenStreamParams", kInputOpenStreamParamsFields, 11 };
+inline constexpr SchemaDescriptor kInputOpenStreamResultSchema = { "InputOpenStreamResult", kInputOpenStreamResultFields, 8 };
+inline constexpr SchemaDescriptor kInputCloseStreamParamsSchema = { "InputCloseStreamParams", kInputCloseStreamParamsFields, 8 };
+inline constexpr SchemaDescriptor kInputCloseStreamResultSchema = { "InputCloseStreamResult", kInputCloseStreamResultFields, 4 };
+inline constexpr SchemaDescriptor kInputStreamCapabilitySchema = { "InputStreamCapability", kInputStreamCapabilityFields, 9 };
+inline constexpr SchemaDescriptor kInputTouchConstraintsSchema = { "InputTouchConstraints", kInputTouchConstraintsFields, 1 };
+inline constexpr SchemaDescriptor kInputMouseConstraintsSchema = { "InputMouseConstraints", kInputMouseConstraintsFields, 5 };
 inline constexpr SchemaDescriptor kRegisterIdentityResultSchema = { "RegisterIdentityResult", kRegisterIdentityResultFields, 3 };
 inline constexpr SchemaDescriptor kReportReceiptParamsSchema = { "ReportReceiptParams", kReportReceiptParamsFields, 5 };
 inline constexpr SchemaDescriptor kReportReceiptResultSchema = { "ReportReceiptResult", kReportReceiptResultFields, 1 };
