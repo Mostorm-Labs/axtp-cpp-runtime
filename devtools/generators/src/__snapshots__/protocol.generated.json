@@ -12483,9 +12483,9 @@
         {
           "fieldId": 2,
           "name": "version",
-          "type": "LicenseVersionTriple",
+          "type": "LicenseVersionPair",
           "required": false,
-          "description": "Device-held version triple; omitted entirely when the device holds no credential."
+          "description": "Device-held version pair; omitted entirely when the device holds no credential."
         }
       ]
     },
@@ -12493,6 +12493,9 @@
       "name": "ReconcileResult",
       "kind": "object",
       "description": "Reconciliation answer in one of three mutually exclusive forms, namely up to date, latest credential attached, or reissue accepted.",
+      "retiredFieldIds": [
+        2
+      ],
       "fields": [
         {
           "fieldId": 1,
@@ -12500,13 +12503,6 @@
           "type": "bool",
           "required": true,
           "description": "True only when the device pointer is self-consistent and the aggregate matches the ledger."
-        },
-        {
-          "fieldId": 2,
-          "name": "policyVersion",
-          "type": "uint32",
-          "required": false,
-          "description": "Current policy rowset revision; returned alongside the credential for device-side persistence."
         },
         {
           "fieldId": 3,
@@ -12554,9 +12550,9 @@
         {
           "fieldId": 2,
           "name": "version",
-          "type": "LicenseVersionTriple",
+          "type": "LicenseVersionPair",
           "required": false,
-          "description": "Held version triple; required when hasCredential is true."
+          "description": "Held version pair; required when hasCredential is true."
         }
       ]
     },
@@ -12564,6 +12560,9 @@
       "name": "DeliverCredentialParams",
       "kind": "object",
       "description": "Credential push with channel-side metadata; the CBOR artifact itself is opaque to the protocol.",
+      "retiredFieldIds": [
+        2
+      ],
       "fields": [
         {
           "fieldId": 1,
@@ -12572,13 +12571,6 @@
           "required": true,
           "maxLength": 64,
           "description": "Platform delivery attempt identifier, echoed by reportReceipt.deliveryRef."
-        },
-        {
-          "fieldId": 2,
-          "name": "policyVersion",
-          "type": "uint32",
-          "required": true,
-          "description": "Policy rowset revision of the credential source; channel-side metadata persisted by the device."
         },
         {
           "fieldId": 3,
@@ -12661,9 +12653,12 @@
       ]
     },
     {
-      "name": "LicenseVersionTriple",
+      "name": "LicenseVersionPair",
       "kind": "object",
-      "description": "Shared version triple reused by reconcile params and the resolveCredential answer.",
+      "description": "Shared version pair reused by reconcile params and the resolveCredential answer.",
+      "retiredFieldIds": [
+        3
+      ],
       "fields": [
         {
           "fieldId": 1,
@@ -12678,13 +12673,6 @@
           "type": "uint32",
           "required": true,
           "description": "Credential generation."
-        },
-        {
-          "fieldId": 3,
-          "name": "policyVersion",
-          "type": "uint32",
-          "required": true,
-          "description": "Installed policy rowset revision persisted by the device."
         }
       ]
     },
@@ -12743,10 +12731,10 @@
       "fields": [
         {
           "fieldId": 1,
-          "name": "persistentPolicyVersion",
+          "name": "persistentHeldVersion",
           "type": "bool",
           "required": true,
-          "description": "Whether the device persists policyVersion locally for reconcile and probe reporting."
+          "description": "Whether the device persists the held (authorityRevision, credentialGeneration) pair locally for reconcile and probe reporting."
         }
       ]
     },
@@ -19633,7 +19621,7 @@
     },
     {
       "name": "license.reconcile",
-      "description": "Pull-channel reconciliation on device online/reconnect; compares credential and policy-rowset versions and answers in one of three forms.",
+      "description": "Pull-channel reconciliation on device online/reconnect; compares the held credential version pair against the ledger and answers in one of three forms.",
       "methodId": 6403,
       "bitOffset": 2,
       "domain": "license",
@@ -19687,7 +19675,7 @@
     },
     {
       "name": "license.resolveCredential",
-      "description": "Pure pre-delivery version probe; returns the device-held version triple and never carries credential bytes.",
+      "description": "Pure pre-delivery version probe; returns the device-held version pair and never carries credential bytes.",
       "methodId": 6405,
       "bitOffset": 4,
       "domain": "license",
@@ -24223,7 +24211,7 @@
     },
     {
       "name": "license.reconciliation",
-      "description": "Device persists credential and policy-rowset versions and reports them for reconciliation and pre-delivery probes.",
+      "description": "Device persists the held credential version pair and reports it for reconciliation and pre-delivery probes.",
       "capabilityId": 6403,
       "domain": "license",
       "since": "1.0.0",

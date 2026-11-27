@@ -1918,7 +1918,6 @@ inline constexpr FieldDescriptor kReconcileParamsFields[] = {
 
 inline constexpr FieldDescriptor kReconcileResultFields[] = {
     { 0x01, "upToDate", FieldType::Bool, true, 0, 0 },
-    { 0x02, "policyVersion", FieldType::Uint32, false, 0, 0 },
     { 0x03, "credential", FieldType::Object, false, 0, 0 },
     { 0x04, "reissueAccepted", FieldType::Bool, false, 0, 0 },
 };
@@ -1934,7 +1933,6 @@ inline constexpr FieldDescriptor kResolveCredentialResultFields[] = {
 
 inline constexpr FieldDescriptor kDeliverCredentialParamsFields[] = {
     { 0x01, "deliveryId", FieldType::String, true, 0, 0 },
-    { 0x02, "policyVersion", FieldType::Uint32, true, 0, 0 },
     { 0x03, "credential", FieldType::Object, true, 0, 0 },
 };
 
@@ -1951,10 +1949,9 @@ inline constexpr FieldDescriptor kLicenseCredentialInfoFields[] = {
     { 0x05, "cborBase64", FieldType::String, true, 0, 0 },
 };
 
-inline constexpr FieldDescriptor kLicenseVersionTripleFields[] = {
+inline constexpr FieldDescriptor kLicenseVersionPairFields[] = {
     { 0x01, "authorityRevision", FieldType::Uint32, true, 0, 0 },
     { 0x02, "credentialGeneration", FieldType::Uint32, true, 0, 0 },
-    { 0x03, "policyVersion", FieldType::Uint32, true, 0, 0 },
 };
 
 inline constexpr FieldDescriptor kLicenseRegistrationCapabilitiesFields[] = {
@@ -1968,7 +1965,7 @@ inline constexpr FieldDescriptor kLicenseCredentialDeliveryCapabilitiesFields[] 
 };
 
 inline constexpr FieldDescriptor kLicenseReconciliationCapabilitiesFields[] = {
-    { 0x01, "persistentPolicyVersion", FieldType::Bool, true, 0, 0 },
+    { 0x01, "persistentHeldVersion", FieldType::Bool, true, 0, 0 },
 };
 
 inline constexpr FieldDescriptor kNetworkGetInterfacesParamsFields[] = {
@@ -3138,13 +3135,13 @@ inline constexpr SchemaDescriptor kRegisterIdentityResultSchema = { "RegisterIde
 inline constexpr SchemaDescriptor kReportReceiptParamsSchema = { "ReportReceiptParams", kReportReceiptParamsFields, 5 };
 inline constexpr SchemaDescriptor kReportReceiptResultSchema = { "ReportReceiptResult", kReportReceiptResultFields, 1 };
 inline constexpr SchemaDescriptor kReconcileParamsSchema = { "ReconcileParams", kReconcileParamsFields, 2 };
-inline constexpr SchemaDescriptor kReconcileResultSchema = { "ReconcileResult", kReconcileResultFields, 4 };
+inline constexpr SchemaDescriptor kReconcileResultSchema = { "ReconcileResult", kReconcileResultFields, 3 };
 inline constexpr SchemaDescriptor kResolveCredentialParamsSchema = { "ResolveCredentialParams", kResolveCredentialParamsFields, 1 };
 inline constexpr SchemaDescriptor kResolveCredentialResultSchema = { "ResolveCredentialResult", kResolveCredentialResultFields, 2 };
-inline constexpr SchemaDescriptor kDeliverCredentialParamsSchema = { "DeliverCredentialParams", kDeliverCredentialParamsFields, 3 };
+inline constexpr SchemaDescriptor kDeliverCredentialParamsSchema = { "DeliverCredentialParams", kDeliverCredentialParamsFields, 2 };
 inline constexpr SchemaDescriptor kDeliverCredentialResultSchema = { "DeliverCredentialResult", kDeliverCredentialResultFields, 2 };
 inline constexpr SchemaDescriptor kLicenseCredentialInfoSchema = { "LicenseCredentialInfo", kLicenseCredentialInfoFields, 5 };
-inline constexpr SchemaDescriptor kLicenseVersionTripleSchema = { "LicenseVersionTriple", kLicenseVersionTripleFields, 3 };
+inline constexpr SchemaDescriptor kLicenseVersionPairSchema = { "LicenseVersionPair", kLicenseVersionPairFields, 2 };
 inline constexpr SchemaDescriptor kLicenseRegistrationCapabilitiesSchema = { "LicenseRegistrationCapabilities", kLicenseRegistrationCapabilitiesFields, 1 };
 inline constexpr SchemaDescriptor kLicenseCredentialDeliveryCapabilitiesSchema = { "LicenseCredentialDeliveryCapabilities", kLicenseCredentialDeliveryCapabilitiesFields, 3 };
 inline constexpr SchemaDescriptor kLicenseReconciliationCapabilitiesSchema = { "LicenseReconciliationCapabilities", kLicenseReconciliationCapabilitiesFields, 1 };

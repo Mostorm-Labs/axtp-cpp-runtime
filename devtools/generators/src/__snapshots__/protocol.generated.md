@@ -235,7 +235,7 @@ Generated capabilities are the feature-level switches that runtimes and devices 
 | 0x1802 | sport.basketball | sport | draft | object | SportBasketballCapability | Device supports basketball shot and goal event semantics through sport.eventDetection. |
 | 0x1901 | license.registration | license | draft | object | LicenseRegistrationCapabilities | Device registers its identity after successful connection identification and accepts asynchronous automatic issuance. |
 | 0x1902 | license.credentialDelivery | license | draft | object | LicenseCredentialDeliveryCapabilities | Device receives signed credentials, verifies and installs them atomically, and reports delivery receipts. |
-| 0x1903 | license.reconciliation | license | draft | object | LicenseReconciliationCapabilities | Device persists credential and policy-rowset versions and reports them for reconciliation and pre-delivery probes. |
+| 0x1903 | license.reconciliation | license | draft | object | LicenseReconciliationCapabilities | Device persists the held credential version pair and reports it for reconciliation and pre-delivery probes. |
 
 ## Generated Method Index
 
@@ -2803,7 +2803,7 @@ Type: `ReportReceiptResult`
 
 ### license.reconcile
 
-Pull-channel reconciliation on device online/reconnect; compares credential and policy-rowset versions and answers in one of three forms.
+Pull-channel reconciliation on device online/reconnect; compares the held credential version pair against the ledger and answers in one of three forms.
 
 - Method ID: `0x1903`
 - Domain: `license`
@@ -2822,7 +2822,7 @@ Type: `ReconcileParams`
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
 | deviceId | String | 0x01 | Connection addressing key current self-reported value (registered form, axldev_ prefix); filled with the current self-reported value also when the platform addresses via the identity fallback. | maxLength=40 | N/A |
-| ?version | LicenseVersionTriple | 0x02 | Device-held version triple; omitted entirely when the device holds no credential. | None | Omit if not used. |
+| ?version | LicenseVersionPair | 0x02 | Device-held version pair; omitted entirely when the device holds no credential. | None | Omit if not used. |
 
 #### Response Fields
 
@@ -2831,7 +2831,6 @@ Type: `ReconcileResult`
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
 | upToDate | Boolean | 0x01 | True only when the device pointer is self-consistent and the aggregate matches the ledger. | None | N/A |
-| ?policyVersion | UInt32 | 0x02 | Current policy rowset revision; returned alongside the credential for device-side persistence. | None | Omit if not used. |
 | ?credential | LicenseCredentialInfo | 0x03 | Latest ledger credential; present only in the credential form. | None | Omit if not used. |
 | ?reissueAccepted | Boolean | 0x04 | Reissue acceptance form; present only when issuance must rerun asynchronously and no credential bytes are returned. | None | Omit if not used. |
 
@@ -2858,7 +2857,6 @@ Type: `DeliverCredentialParams`
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
 | deliveryId | String | 0x01 | Platform delivery attempt identifier, echoed by reportReceipt.deliveryRef. | maxLength=64 | N/A |
-| policyVersion | UInt32 | 0x02 | Policy rowset revision of the credential source; channel-side metadata persisted by the device. | None | N/A |
 | credential | LicenseCredentialInfo | 0x03 | Signed credential object shared with the reconcile answer. | None | N/A |
 
 #### Response Fields
@@ -2874,7 +2872,7 @@ Type: `DeliverCredentialResult`
 
 ### license.resolveCredential
 
-Pure pre-delivery version probe; returns the device-held version triple and never carries credential bytes.
+Pure pre-delivery version probe; returns the device-held version pair and never carries credential bytes.
 
 - Method ID: `0x1905`
 - Domain: `license`
@@ -2901,7 +2899,7 @@ Type: `ResolveCredentialResult`
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
 | hasCredential | Boolean | 0x01 | Whether the device currently holds a credential. | None | N/A |
-| ?version | LicenseVersionTriple | 0x02 | Held version triple; required when hasCredential is true. | None | Omit if not used. |
+| ?version | LicenseVersionPair | 0x02 | Held version pair; required when hasCredential is true. | None | Omit if not used. |
 
 ---
 
@@ -7420,15 +7418,14 @@ Shared credential object reused by deliverCredential params and the reconcile an
 
 ---
 
-## LicenseVersionTriple
+## LicenseVersionPair
 
-Shared version triple reused by reconcile params and the resolveCredential answer.
+Shared version pair reused by reconcile params and the resolveCredential answer.
 
 | Name | Type | Field ID | Description | Value Restrictions | ?Default Behavior |
 | ---- | :---: | :---: | ---- | :---: | ---- |
 | authorityRevision | UInt32 | 0x01 | Credential authority revision. | None | N/A |
 | credentialGeneration | UInt32 | 0x02 | Credential generation. | None | N/A |
-| policyVersion | UInt32 | 0x03 | Installed policy rowset revision persisted by the device. | None | N/A |
 
 ---
 

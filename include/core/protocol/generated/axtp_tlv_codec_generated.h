@@ -1888,7 +1888,6 @@ constexpr std::uint8_t VERSION = 0x02;
 
 namespace fields::reconcile_result {
 constexpr std::uint8_t UP_TO_DATE = 0x01;
-constexpr std::uint8_t POLICY_VERSION = 0x02;
 constexpr std::uint8_t CREDENTIAL = 0x03;
 constexpr std::uint8_t REISSUE_ACCEPTED = 0x04;
 }
@@ -1904,7 +1903,6 @@ constexpr std::uint8_t VERSION = 0x02;
 
 namespace fields::deliver_credential_params {
 constexpr std::uint8_t DELIVERY_ID = 0x01;
-constexpr std::uint8_t POLICY_VERSION = 0x02;
 constexpr std::uint8_t CREDENTIAL = 0x03;
 }
 
@@ -1921,10 +1919,9 @@ constexpr std::uint8_t REASON = 0x04;
 constexpr std::uint8_t CBOR_BASE64 = 0x05;
 }
 
-namespace fields::license_version_triple {
+namespace fields::license_version_pair {
 constexpr std::uint8_t AUTHORITY_REVISION = 0x01;
 constexpr std::uint8_t CREDENTIAL_GENERATION = 0x02;
-constexpr std::uint8_t POLICY_VERSION = 0x03;
 }
 
 namespace fields::license_registration_capabilities {
@@ -1938,7 +1935,7 @@ constexpr std::uint8_t SUPPORTED_REASONS = 0x03;
 }
 
 namespace fields::license_reconciliation_capabilities {
-constexpr std::uint8_t PERSISTENT_POLICY_VERSION = 0x01;
+constexpr std::uint8_t PERSISTENT_HELD_VERSION = 0x01;
 }
 
 namespace fields::network_get_interfaces_params {
@@ -5464,8 +5461,6 @@ struct ReconcileParams {
 
 struct ReconcileResult {
     bool upToDate = false;
-    std::uint32_t policyVersion = 0;
-    bool has_policyVersion = false;
     std::uint32_t credential = 0;
     bool has_credential = false;
     bool reissueAccepted = false;
@@ -5484,7 +5479,6 @@ struct ResolveCredentialResult {
 
 struct DeliverCredentialParams {
     const char* deliveryId = nullptr;
-    std::uint32_t policyVersion = 0;
     std::uint32_t credential = 0;
 };
 
@@ -5502,10 +5496,9 @@ struct LicenseCredentialInfo {
     const char* cborBase64 = nullptr;
 };
 
-struct LicenseVersionTriple {
+struct LicenseVersionPair {
     std::uint32_t authorityRevision = 0;
     std::uint32_t credentialGeneration = 0;
-    std::uint32_t policyVersion = 0;
 };
 
 struct LicenseRegistrationCapabilities {
@@ -5519,7 +5512,7 @@ struct LicenseCredentialDeliveryCapabilities {
 };
 
 struct LicenseReconciliationCapabilities {
-    bool persistentPolicyVersion = false;
+    bool persistentHeldVersion = false;
 };
 
 struct NetworkGetInterfacesParams {
@@ -7424,8 +7417,8 @@ bool DecodeDeliverCredentialResult(TlvReader& reader, DeliverCredentialResult* o
 bool EncodeLicenseCredentialInfo(const LicenseCredentialInfo& input, TlvWriter& writer, ErrorCode* error);
 bool DecodeLicenseCredentialInfo(TlvReader& reader, LicenseCredentialInfo* output, ErrorCode* error);
 
-bool EncodeLicenseVersionTriple(const LicenseVersionTriple& input, TlvWriter& writer, ErrorCode* error);
-bool DecodeLicenseVersionTriple(TlvReader& reader, LicenseVersionTriple* output, ErrorCode* error);
+bool EncodeLicenseVersionPair(const LicenseVersionPair& input, TlvWriter& writer, ErrorCode* error);
+bool DecodeLicenseVersionPair(TlvReader& reader, LicenseVersionPair* output, ErrorCode* error);
 
 bool EncodeLicenseRegistrationCapabilities(const LicenseRegistrationCapabilities& input, TlvWriter& writer, ErrorCode* error);
 bool DecodeLicenseRegistrationCapabilities(TlvReader& reader, LicenseRegistrationCapabilities* output, ErrorCode* error);

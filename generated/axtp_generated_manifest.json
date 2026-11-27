@@ -1,25 +1,25 @@
 {
-  "generatedAt": "2026-11-24T01:43:57Z",
+  "generatedAt": "2026-11-27T02:54:21Z",
   "generator": {
     "name": "@axtp/cpp-runtime-generator",
     "version": "1.0.0",
-    "commit": "ee8b8515de5dd9c071928003028e46a5ab09af00"
+    "commit": "4e79b63cd8bcbf773e92b1b0d6198e6270bbf275"
   },
   "axtpSpec": {
     "repository": "https://github.com/Mostorm-Labs/axtp",
-    "tag": "spec/v0.20.0",
-    "version": "0.20.0",
-    "commit": "014beba6a5d97506647cc1d359ab8867774b8a76",
+    "tag": "spec/v0.21.0",
+    "version": "0.21.0",
+    "commit": "431cbab27953721138661395486d7978bfa04815",
     "sourceMode": "release",
     "published": true
   },
   "runtime": {
     "name": "axtp-cpp-runtime",
-    "version": "0.20.0.0",
-    "commit": "ee8b8515de5dd9c071928003028e46a5ab09af00"
+    "version": "0.21.0.0",
+    "commit": "4e79b63cd8bcbf773e92b1b0d6198e6270bbf275"
   },
   "inputs": {
-    "registryHash": "sha256:bb2cd92b02a3715835e766e5ed829a752c2974371d3464300f145a6d29a65f72",
+    "registryHash": "sha256:4b18bdf8fb50eadffb4720820acf157ee87918d28d91355f1ad2793a060ba7ae",
     "schemasHash": null,
     "conformanceHash": "sha256:cea3f4cddee09fbebeb01adcc783ba9cf61e57effc2279f2d4539227bf5485d2"
   }
